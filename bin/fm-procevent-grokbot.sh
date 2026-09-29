@@ -78,9 +78,12 @@
 #     document) skips only that bot; the other bots are still delivered. The
 #     bot is named once in a bot-error line, recorded privately in
 #     state/grokbot-watch/bot-errors by autohandle, retried quietly while it
-#     keeps failing, and cleared when it polls successfully again.
-#   - A failure affecting every bot (gbot or node missing, doctor not usable,
-#     bots list failing, an invalid config) produces one diagnostic result.
+#     keeps failing, and cleared when it polls successfully again. bot_errors=
+#     above zero means named bots newly failed, whatever the result's class.
+#   - A thread read failure makes the round re-run gbot doctor once. A failure
+#     affecting every bot (gbot or node missing, doctor not usable, bots list
+#     failing, an invalid config, or every watched bot failing in one round)
+#     produces one diagnostic result and no per-bot bot-error lines.
 #     While that same diagnostic stays recorded, the source retries quietly
 #     with a doubling backoff (capped at 6 hours) and reports `recovered` once
 #     polling works again. Every gbot call is bounded by
@@ -486,11 +489,25 @@ resolve_gbot() {  # [recorded-path]
 # A per-bot failure skips only that bot for the round. It is reported the first
 # time it is seen; while its record stays committed the bot is retried quietly.
 bot_fail() {  # <ref> <name> <code> <detail>
+  FAILED=$((FAILED + 1))
+  LAST_BOT_DETAIL=$4
   bot_error_recorded "$1" && return 0
   HEADER+="bot-error	$1	$2	$3"$'\n'
   BODY+="### $2 - cannot poll this bot ($3)"$'\n'"$4"$'\n'"The other watched bots are still polled; this bot is retried quietly and reported again only if it fails anew after recovering."$'\n\n'
   BOT_ERRORS_NEW=$((BOT_ERRORS_NEW + 1))
   FOUND=$((FOUND + 1))
+}
+
+# Whether the Grok Bot session itself is usable, asked of gbot doctor at most
+# once per round. A thread failure the session explains is the whole watcher's.
+session_usable() {  # <tmpdir>
+  local line
+  [ "$SESSION_CHECKED" -eq 0 ] || return 0
+  SESSION_CHECKED=1
+  run_gbot "$1/doctor.out" "$1/doctor.err" doctor --json --gateway \
+    || poll_fail unauthenticated "gbot doctor failed: $(one_line "$1/doctor.err")" || return 1
+  line=$(parse_json doctor < "$1/doctor.out") || poll_fail unexpected-response "gbot doctor returned an unrecognised document" || return 1
+  [ "$line" = ok ] || poll_fail unauthenticated "Grok Bot session not usable: ${line#unusable	}"
 }
 
 bot_ok() {  # <ref> <name>
@@ -501,18 +518,18 @@ bot_ok() {  # <ref> <name>
 
 # One full round over every watched bot. On success sets HEADER, BODY, SHOWN,
 # OMITTED, GAPS, BOT_ERRORS_NEW, and FOUND (bots that surfaced something). A
-# failure that affects every bot sets POLL_CODE/POLL_DETAIL and returns 1.
+# failure that affects every bot - including every watched bot failing, or a
+# thread failure doctor attributes to the session - sets POLL_CODE/POLL_DETAIL
+# and returns 1, so it is one diagnostic and never per-bot announcements.
 poll_round() {  # <tmpdir> <doctor-needed 0|1>
   local tmp=$1 doctor=$2 ref name line cursor saved to gap bot_name bot_count shown quota
   HEADER=; BODY=; SHOWN=0; OMITTED=0; GAPS=0; BOT_ERRORS_NEW=0; FOUND=0
+  SESSION_CHECKED=0; ATTEMPTED=0; FAILED=0; LAST_BOT_DETAIL=
   load_config_or_default || poll_fail config-invalid "$CONFIG_ERROR" || return 1
   [ -n "$GBOT" ] || poll_fail gbot-missing "gbot is not installed or not on PATH" || return 1
   command -v node >/dev/null 2>&1 || poll_fail node-missing "node, which gbot runs on, is not on PATH" || return 1
   if [ "$doctor" -eq 1 ]; then
-    run_gbot "$tmp/out" "$tmp/err" doctor --json --gateway \
-      || poll_fail unauthenticated "gbot doctor failed: $(one_line "$tmp/err")" || return 1
-    line=$(parse_json doctor < "$tmp/out") || poll_fail unexpected-response "gbot doctor returned an unrecognised document" || return 1
-    [ "$line" = ok ] || poll_fail unauthenticated "Grok Bot session not usable: ${line#unusable	}" || return 1
+    session_usable "$tmp" || return 1
   fi
   if [ -n "$WATCH_BOTS" ]; then
     printf '%s' "$WATCH_BOTS" | awk '{print $0 "\t" $0}' > "$tmp/bots"
@@ -525,6 +542,7 @@ poll_round() {  # <tmpdir> <doctor-needed 0|1>
   while IFS=$'\t' read -r ref name; do
     [ -n "$ref" ] || continue
     bot_ref_valid "$ref" || continue
+    ATTEMPTED=$((ATTEMPTED + 1))
     quota=$((MAX_MESSAGES - SHOWN))
     [ "$quota" -ge 0 ] || quota=0
     saved=1
@@ -533,7 +551,7 @@ poll_round() {  # <tmpdir> <doctor-needed 0|1>
       # First sight, or an unreadable saved cursor: baseline at the current
       # tail, replay nothing.
       run_gbot "$tmp/out" "$tmp/err" thread "$ref" --limit 1 --json --gateway --no-history \
-        || { bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
+        || { session_usable "$tmp" || return 1; bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
       parse_json thread 0 "$MAX_MESSAGE_BYTES" < "$tmp/out" > "$tmp/thread" \
         || { bot_fail "$ref" "$name" unexpected-response "gbot thread $name returned an unrecognised document"; continue; }
       IFS=$'\t' read -r _ to _ bot_name _ _ < "$tmp/thread"
@@ -554,10 +572,10 @@ poll_round() {  # <tmpdir> <doctor-needed 0|1>
     fi
     if [ "$cursor" = - ]; then
       run_gbot "$tmp/out" "$tmp/err" thread "$ref" --limit "$THREAD_LIMIT" --json --gateway --no-history \
-        || { bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
+        || { session_usable "$tmp" || return 1; bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
     else
       run_gbot "$tmp/out" "$tmp/err" thread "$ref" --after "$cursor" --limit "$THREAD_LIMIT" --json --gateway --no-history \
-        || { bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
+        || { session_usable "$tmp" || return 1; bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
     fi
     parse_json thread "$quota" "$MAX_MESSAGE_BYTES" < "$tmp/out" > "$tmp/thread" \
       || { bot_fail "$ref" "$name" unexpected-response "gbot thread $name returned an unrecognised document"; continue; }
@@ -582,6 +600,10 @@ poll_round() {  # <tmpdir> <doctor-needed 0|1>
       cursor_cas "$ref" "$cursor" "$to" || true
     fi
   done < "$tmp/bots"
+  if [ "$ATTEMPTED" -gt 0 ] && [ "$FAILED" -eq "$ATTEMPTED" ]; then
+    session_usable "$tmp" || return 1
+    poll_fail gateway-error "every watched bot failed; last: $LAST_BOT_DETAIL" || return 1
+  fi
   return 0
 }
 

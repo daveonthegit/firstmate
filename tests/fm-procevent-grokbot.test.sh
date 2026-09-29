@@ -14,7 +14,9 @@
 # continues from the saved cursors. It also proves one failing bot never blocks
 # another bot's delivery and is named only once, an unrecognised baseline never
 # saves an empty cursor, invalid tuning falls back to the defaults, and a mixed
-# gap and messages round still carries its gap count.
+# gap and messages round still carries its gap count. Every watched bot failing
+# after a good round, or a thread failure doctor attributes to the session, is
+# one whole-watcher diagnostic with one recovery notice, never per-bot noise.
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -76,7 +78,7 @@ if (cmd === "doctor") {
 if (cmd === "bots" && argv[1] === "list") print(JSON.parse(fs.readFileSync(path.join(dir, "bots.json"), "utf8")));
 if (cmd === "thread") {
   const ref = argv[1];
-  if (flag("thread-" + ref + ".fail")) fail("Gateway error 404: unknown bot " + ref);
+  if (flag("threads.fail") || flag("thread-" + ref + ".fail")) fail("Gateway error 404: unknown bot " + ref);
   if (flag("thread-" + ref + ".bad")) print({ unexpected: true });
   const file = path.join(dir, "thread-" + ref + ".json");
   const all = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : [];
@@ -403,7 +405,11 @@ pass "one failing bot is skipped and named once while the other bots still deliv
 
 # --- an unrecognised baseline never saves an empty cursor --------------------
 new_home badbase
+printf '[{"id":"bot-a","name":"Alpha","kind":"bot"},{"id":"bot-b","name":"Beta","kind":"bot"}]\n' > "$D/bots.json"
 printf '[%s]\n' "$(bot_msg b1 'history')" > "$D/thread-bot-a.json"
+printf '[%s]\n' "$(bot_msg c1 'beta history')" > "$D/thread-bot-b.json"
+mkdir -p "$H/state/grokbot-watch"
+printf 'bot-b\tc1\n' > "$H/state/grokbot-watch/cursors.tsv"
 : > "$D/thread-bot-a.bad"
 gb arm >/dev/null
 start_runner
@@ -463,3 +469,64 @@ assert_grep "gaps=1" "$R" "a mixed round still carries its gap count"
 assert_grep "beta fresh" "$R" "a mixed round delivers the new message"
 assert_no_grep "GAP-HISTORY" "$R" "a mixed round replays no gap history"
 pass "a mixed gap and messages round carries the gap count"
+
+# --- every watched bot failing escalates to one whole-watcher diagnostic -----
+new_home allfail
+printf 'bot=bot-a\nbot=bot-b\n' > "$H/config/grokbot-watch"
+printf '[%s]\n' "$(bot_msg b1 'history')" > "$D/thread-bot-a.json"
+printf '[%s]\n' "$(bot_msg c1 'beta history')" > "$D/thread-bot-b.json"
+mkdir -p "$H/state/grokbot-watch"
+printf 'bot-a\tb1\nbot-b\tc1\n' > "$H/state/grokbot-watch/cursors.tsv"
+gb arm >/dev/null
+start_runner
+wait_polls 2 || fail "the configured bots are polled after a good first round"
+[ "$(grep -c '^doctor ' "$D/calls.log")" -eq 1 ] || fail "doctor runs only on the first good round"
+: > "$D/threads.fail"
+wait_runner || fail "every watched bot failing completes the source"
+R=$(last_result)
+[ "$(result_count)" -eq 1 ] || fail "every watched bot failing produces exactly one result"
+[ "$(gb classify "$R")" = diagnostic ] || fail "every watched bot failing is one whole-watcher diagnostic"
+assert_grep "diagnostic=gateway-error" "$R" "a usable session with every bot failing is a gateway error"
+assert_no_grep "bot-error" "$R" "the shared outage is not also announced per bot"
+[ "$(grep -c '^doctor ' "$D/calls.log")" -ge 2 ] || fail "doctor is re-run to classify the shared failure"
+assert_absent "$H/state/grokbot-watch/bot-errors" "the shared outage creates no per-bot failure records"
+assert_grep "gateway-error" "$H/state/grokbot-watch/diagnostic" "autohandle records the whole-watcher diagnostic"
+: > "$D/calls.log"
+start_runner
+for _ in $(seq 1 150); do
+  [ "$(grep -c '^thread bot-a' "$D/calls.log")" -ge 2 ] && break
+  sleep 0.1
+done
+[ "$(grep -c '^thread bot-a' "$D/calls.log")" -ge 2 ] || fail "the source keeps retrying quietly"
+[ "$(result_count)" -eq 1 ] || fail "the same shared outage is not re-announced"
+rm -f "$D/threads.fail"
+wait_runner || fail "the source completes once the bots poll again"
+R=$(last_result)
+[ "$(result_count)" -eq 2 ] || fail "recovery produces exactly one more result"
+[ "$(gb classify "$R")" = recovered ] || fail "the cleared shared outage reports recovery"
+assert_grep "recovered_from=gateway-error" "$R" "the recovery names the cleared diagnostic"
+assert_absent "$H/state/grokbot-watch/diagnostic" "recovery clears the recorded diagnostic"
+pass "every watched bot failing is one diagnostic, quiet backoff, and one recovery notice"
+
+# --- a thread failure the session explains is unauthenticated ---------------
+new_home sessionfail
+printf '[{"id":"bot-a","name":"Alpha","kind":"bot"},{"id":"bot-b","name":"Beta","kind":"bot"}]\n' > "$D/bots.json"
+printf '[%s]\n' "$(bot_msg c1 'beta history')" > "$D/thread-bot-b.json"
+mkdir -p "$H/state/grokbot-watch"
+printf 'bot-a\t-\nbot-b\tc1\n' > "$H/state/grokbot-watch/cursors.tsv"
+gb arm >/dev/null
+start_runner
+for _ in $(seq 1 150); do
+  grep -q '^thread bot-b --after' "$D/calls.log" && break
+  sleep 0.1
+done
+grep -q '^thread bot-b --after' "$D/calls.log" || fail "the bots are polled after a good first round"
+: > "$D/doctor.unusable"
+: > "$D/thread-bot-a.fail"
+wait_runner || fail "a session-wide thread failure completes the source"
+R=$(last_result)
+[ "$(gb classify "$R")" = diagnostic ] || fail "a session-wide thread failure is a whole-watcher diagnostic"
+assert_grep "diagnostic=unauthenticated" "$R" "doctor classifies the failure as unauthenticated"
+assert_no_grep "bot-error" "$R" "a session-wide failure is not announced per bot"
+assert_absent "$H/state/grokbot-watch/bot-errors" "a session-wide failure creates no per-bot records"
+pass "a thread failure doctor attributes to the session is one unauthenticated diagnostic"
