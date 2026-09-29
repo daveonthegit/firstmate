@@ -498,7 +498,8 @@ It is read-only toward Grok Bot: an explicit allowlist permits only `gbot doctor
 The optional private `config/grokbot-watch` sets `interval=<seconds>` (default 1800, floor 120, because the Grok Bot API is unofficial and polling must stay human-paced) and any number of `bot=<name-or-id>` lines; with none, every bot from `gbot bots list` is watched.
 Per-bot cursors live privately under `state/grokbot-watch/`, a first-seen bot or a lost cursor is re-baselined at its current tail without replaying history, and only bot-authored messages are surfaced, bounded in count and per-message size.
 Its autohandle runs only after the result's wake is durably queued, then commits the delivered cursors and acknowledges the result, so firstmate still reads the messages from that wake while the restarted source continues from the committed cursors.
-A missing or unauthenticated `gbot` or a gateway error produces one diagnostic result, then quiet backoff and a single recovery notice rather than a retry loop; the adapter's header and `--help` own its commands, result document, and tuning variables.
+One bot whose thread read fails is skipped for that round and named once, while every other bot is still delivered.
+A missing or unauthenticated `gbot` or a failing bot list produces one diagnostic result, then quiet backoff and a single recovery notice rather than a retry loop; the adapter's header and `--help` own its commands, result document, and tuning variables.
 
 This section is the single owner of the runner's operating contract.
 Registration writes one private record under `state/procevent/`, and a completed result plus its immutable adapter identity are captured under `state/procevent-inbox/` before any announcement or event can reference it.

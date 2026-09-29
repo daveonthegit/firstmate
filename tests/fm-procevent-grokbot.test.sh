@@ -11,7 +11,10 @@
 # keeps polling quietly; a missing or unauthenticated gbot yields exactly one
 # diagnostic and a later recovery notice; the interval floor holds; the
 # read-only allowlist refuses every mutating command; and a restart or re-arm
-# continues from the saved cursors.
+# continues from the saved cursors. It also proves one failing bot never blocks
+# another bot's delivery and is named only once, an unrecognised baseline never
+# saves an empty cursor, invalid tuning falls back to the defaults, and a mixed
+# gap and messages round still carries its gap count.
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -73,6 +76,8 @@ if (cmd === "doctor") {
 if (cmd === "bots" && argv[1] === "list") print(JSON.parse(fs.readFileSync(path.join(dir, "bots.json"), "utf8")));
 if (cmd === "thread") {
   const ref = argv[1];
+  if (flag("thread-" + ref + ".fail")) fail("Gateway error 404: unknown bot " + ref);
+  if (flag("thread-" + ref + ".bad")) print({ unexpected: true });
   const file = path.join(dir, "thread-" + ref + ".json");
   const all = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : [];
   const limit = Math.min(Math.max(parseInt(opt("--limit") || "40", 10), 1), 200);
@@ -352,3 +357,109 @@ R=$(last_result)
 assert_no_grep "sk-live-SECRET" "$R" "a credential in gbot's error text is never persisted"
 [ "$(result_count)" -eq 1 ] || fail "one gateway failure produces one diagnostic"
 pass "unauthenticated and gateway failures each produce one redacted diagnostic"
+
+# --- one failing bot never blocks another, and is named only once -----------
+new_home onebad
+printf '[{"id":"bot-a","name":"Alpha","kind":"bot"},{"id":"bot-b","name":"Beta","kind":"bot"}]\n' > "$D/bots.json"
+printf '[%s]\n' "$(bot_msg b1 'history')" > "$D/thread-bot-a.json"
+printf '[%s]\n' "$(bot_msg c1 'beta history')" > "$D/thread-bot-b.json"
+mkdir -p "$H/state/grokbot-watch"
+printf 'bot-a\tb1\nbot-b\tc1\n' > "$H/state/grokbot-watch/cursors.tsv"
+printf '[%s,%s]\n' "$(bot_msg b1 'history')" "$(bot_msg b2 'alpha still delivers' 3)" > "$D/thread-bot-a.json"
+: > "$D/thread-bot-b.fail"
+gb arm >/dev/null
+start_runner
+wait_runner || fail "a round with one failing bot still completes"
+R=$(last_result)
+[ "$(gb classify "$R")" = messages ] || fail "the other bot's messages are still delivered"
+assert_grep "alpha still delivers" "$R" "the healthy bot's message is in the result"
+assert_grep "$(printf 'bot-error\tbot-b\tBeta\tgateway-error')" "$R" "the failing bot is named with its code"
+assert_grep "bot_errors=1" "$R" "the header counts the newly failing bot"
+[ "$(cursor_of bot-a)" = b2 ] || fail "the healthy bot's cursor is committed"
+[ "$(cursor_of bot-b)" = c1 ] || fail "the failing bot's cursor is left alone"
+assert_grep "bot-b" "$H/state/grokbot-watch/bot-errors" "autohandle records the reported bot failure"
+: > "$D/calls.log"
+start_runner
+wait_polls 2 || fail "the source keeps polling while the same bot keeps failing"
+[ "$(result_count)" -eq 1 ] || fail "a bot that keeps failing must not be re-announced on its own"
+printf '[%s,%s,%s]\n' "$(bot_msg b1 'history')" "$(bot_msg b2 'alpha still delivers' 3)" \
+  "$(bot_msg b3 'alpha again' 4)" > "$D/thread-bot-a.json"
+wait_runner || fail "the next healthy message completes the source"
+R=$(last_result)
+[ "$(result_count)" -eq 2 ] || fail "the next healthy message produces one more result"
+assert_grep "alpha again" "$R" "the next result carries the new message"
+assert_no_grep "bot-error" "$R" "the same failing bot is not re-announced"
+assert_grep "bot_errors=0" "$R" "the header counts no newly failing bot"
+rm -f "$D/thread-bot-b.fail"
+start_runner
+for _ in $(seq 1 150); do
+  [ -e "$H/state/grokbot-watch/bot-errors" ] || break
+  sleep 0.1
+done
+assert_absent "$H/state/grokbot-watch/bot-errors" "a bot that polls again clears its failure record"
+[ "$(result_count)" -eq 2 ] || fail "a recovery alone produces no result"
+stop_runner
+pass "one failing bot is skipped and named once while the other bots still deliver"
+
+# --- an unrecognised baseline never saves an empty cursor --------------------
+new_home badbase
+printf '[%s]\n' "$(bot_msg b1 'history')" > "$D/thread-bot-a.json"
+: > "$D/thread-bot-a.bad"
+gb arm >/dev/null
+start_runner
+wait_runner || fail "an unrecognised baseline document completes the source"
+R=$(last_result)
+[ "$(gb classify "$R")" = bot-error ] || fail "an unrecognised baseline is that bot's failure"
+assert_grep "$(printf 'bot-error\tbot-a\tAlpha\tunexpected-response')" "$R" "the bot-error names the bot and the code"
+if awk -F '\t' '$1 == "bot-a"' "$H/state/grokbot-watch/cursors.tsv" 2>/dev/null | grep -q .; then
+  fail "an unrecognised baseline must not save a cursor"
+fi
+rm -f "$D/thread-bot-a.bad"
+start_runner
+wait_cursor bot-a b1 || fail "the bot is baselined once its document is readable again"
+[ "$(result_count)" -eq 1 ] || fail "a successful baseline produces no result"
+stop_runner
+new_home emptycursor
+printf '[%s]\n' "$(bot_msg b1 'EARLIER-HISTORY')" > "$D/thread-bot-a.json"
+mkdir -p "$H/state/grokbot-watch"
+printf 'bot-a\t\n' > "$H/state/grokbot-watch/cursors.tsv"
+gb arm >/dev/null
+start_runner
+wait_runner || fail "an unreadable saved cursor completes the source"
+R=$(last_result)
+[ "$(gb classify "$R")" = gap ] || fail "an unreadable saved cursor is re-baselined as a gap"
+assert_grep "gaps=1" "$R" "the re-baseline is counted as a gap"
+assert_no_grep "EARLIER-HISTORY" "$R" "the re-baseline replays nothing"
+[ "$(cursor_of bot-a)" = b1 ] || fail "an unreadable saved cursor is rebased to the current tail"
+pass "an unrecognised baseline never saves an empty cursor, and an unreadable one is re-baselined"
+
+# --- invalid tuning falls back to the defaults ------------------------------
+new_home tuning
+gb arm >/dev/null
+FM_GROKBOT_MAX_MESSAGES=lots FM_GROKBOT_MAX_MESSAGE_BYTES=-5 FM_GROKBOT_CALL_TIMEOUT=0 start_runner
+wait_cursor bot-a - || fail "invalid tuning still lets the bot baseline"
+mid=$(printf 'M%.0s' $(seq 1 600))
+printf '[%s,%s,%s]\n' "$(bot_msg t1 one)" "$(bot_msg t2 two)" "$(bot_msg t3 "$mid")" > "$D/thread-bot-a.json"
+wait_runner || fail "invalid tuning still delivers messages"
+R=$(last_result)
+assert_grep "messages=3" "$R" "an invalid message cap falls back to the default"
+assert_grep "omitted=0" "$R" "nothing is omitted under the default cap"
+assert_no_grep "truncated" "$R" "an invalid per-message bound falls back to the default"
+pass "invalid tuning values fall back to their defaults"
+
+# --- a mixed gap and messages round carries the gap count -------------------
+new_home mixed
+printf '[{"id":"bot-a","name":"Alpha","kind":"bot"},{"id":"bot-b","name":"Beta","kind":"bot"}]\n' > "$D/bots.json"
+printf '[%s]\n' "$(bot_msg x1 'GAP-HISTORY')" > "$D/thread-bot-a.json"
+printf '[%s,%s]\n' "$(bot_msg c1 'beta history')" "$(bot_msg c2 'beta fresh' 2)" > "$D/thread-bot-b.json"
+mkdir -p "$H/state/grokbot-watch"
+printf 'bot-a\tvanished-entry\nbot-b\tc1\n' > "$H/state/grokbot-watch/cursors.tsv"
+gb arm >/dev/null
+start_runner
+wait_runner || fail "a mixed round completes the source"
+R=$(last_result)
+[ "$(gb classify "$R")" = messages ] || fail "a mixed round classifies as messages"
+assert_grep "gaps=1" "$R" "a mixed round still carries its gap count"
+assert_grep "beta fresh" "$R" "a mixed round delivers the new message"
+assert_no_grep "GAP-HISTORY" "$R" "a mixed round replays no gap history"
+pass "a mixed gap and messages round carries the gap count"

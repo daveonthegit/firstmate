@@ -21,8 +21,8 @@
 #            cycle; arm never blocks and never calls gbot.
 # retire     Stop watching and retire the registration. Saved cursors under
 #            state/grokbot-watch/ are kept, so a later arm continues from them.
-# classify   Print the captured result's class: messages, gap, diagnostic,
-#            recovered, or malformed.
+# classify   Print the captured result's class: messages, gap, bot-error,
+#            diagnostic, recovered, or malformed.
 # config     Print the effective settings: interval (after the floor) and the
 #            watched bots ("all" when config/grokbot-watch lists none).
 # check-argv Exit 0 when the read-only allowlist would let this adapter run
@@ -30,11 +30,13 @@
 # source     The blocking child the runner executes; never run it in a
 #            conversational turn. It polls every watched bot on the interval and
 #            prints one result document, then exits, as soon as any bot has new
-#            bot-authored messages, a bot's cursor was lost, the source cannot
-#            poll (a new diagnostic), or a previously reported diagnostic cleared.
+#            bot-authored messages, a bot's cursor was lost, one bot newly
+#            cannot be polled, the source cannot poll at all (a new diagnostic),
+#            or a previously reported diagnostic cleared.
 # autohandle The runner's seam, called right after the result's wake is durably
-#            queued: commit the result's cursor advances, record or clear the
-#            reported diagnostic, and acknowledge the result. Firstmate still
+#            queued: commit the result's cursor advances, record the reported
+#            bot failures, record or clear the reported diagnostic, and
+#            acknowledge the result. Firstmate still
 #            receives the queued wake and reads the messages from the result;
 #            the runner restarts the source on its next cycle, continuing from
 #            the committed cursors.
@@ -66,12 +68,19 @@
 #     surfaced as an approval request that only the Grok Bot app may answer.
 #   - gapReset (the saved cursor fell out of the gateway's bounded tail) rebases
 #     the bot to its current tail, surfaces none of that tail as new, and says
-#     so in the result.
+#     so in the result; an unreadable saved cursor is rebased the same way.
+#     A mixed round still classifies as messages, so gaps=<n> above zero always
+#     means messages may have been missed.
 #   - Each message is truncated to FM_GROKBOT_MAX_MESSAGE_BYTES (4096) and each
 #     result shows at most FM_GROKBOT_MAX_MESSAGES (20), keeping the newest
 #     messages and counting the omitted ones.
-#   - A failure (gbot or node missing, doctor not usable, a gateway error, an
-#     unexpected response, an invalid config) produces one diagnostic result.
+#   - A failure of one bot's thread read (a gateway error or an unrecognised
+#     document) skips only that bot; the other bots are still delivered. The
+#     bot is named once in a bot-error line, recorded privately in
+#     state/grokbot-watch/bot-errors by autohandle, retried quietly while it
+#     keeps failing, and cleared when it polls successfully again.
+#   - A failure affecting every bot (gbot or node missing, doctor not usable,
+#     bots list failing, an invalid config) produces one diagnostic result.
 #     While that same diagnostic stays recorded, the source retries quietly
 #     with a doubling backoff (capped at 6 hours) and reports `recovered` once
 #     polling works again. Every gbot call is bounded by
@@ -82,13 +91,15 @@
 #
 # Result document (the captured result named by the wake):
 #   schema=fm-grokbot-watch.v1
-#   status=messages|gap|diagnostic|recovered
+#   status=messages|gap|bot-error|diagnostic|recovered
 #   generated_at=<UTC ISO-8601>
-#   messages=<shown>  omitted=<count>           (one line each)
+#   messages=<shown>  omitted=<count>  gaps=<count>  bot_errors=<count>
+#                                                (one line each)
 #   recovered_from=<code>                        (when a diagnostic cleared)
 #   diagnostic=<code>  detail=<one line>         (diagnostic only)
 #   advance<TAB><bot-ref><TAB><from-cursor><TAB><to-cursor>
 #   gap<TAB><bot-ref><TAB><bot-name>
+#   bot-error<TAB><bot-ref><TAB><bot-name><TAB><code>
 #   <blank line>
 #   human-readable body: one section per message, then gap notes
 # The header ends at the first blank line, so message text can never forge a
@@ -120,13 +131,21 @@ LOCK="$WATCH_DIR/.lock"
 DEFAULT_INTERVAL=1800
 INTERVAL_FLOOR=120
 BACKOFF_CAP=21600
-MAX_MESSAGE_BYTES=${FM_GROKBOT_MAX_MESSAGE_BYTES:-4096}
-MAX_MESSAGES=${FM_GROKBOT_MAX_MESSAGES:-20}
-CALL_TIMEOUT=${FM_GROKBOT_CALL_TIMEOUT:-120}
+BOT_ERRORS="$WATCH_DIR/bot-errors"
 THREAD_LIMIT=200
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
-usage() { sed -n '2,95p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
+
+# A tuning value that is not a positive whole number falls back to its default,
+# so no setting can disable the gbot call bound or break the round arithmetic.
+positive_int_or() {  # <value> <default>
+  case "${1-}" in ''|*[!0-9]*) printf '%s' "$2"; return 0 ;; esac
+  if [ "${#1}" -le 9 ] && [ "$((10#$1))" -gt 0 ]; then printf '%s' "$((10#$1))"; else printf '%s' "$2"; fi
+}
+MAX_MESSAGE_BYTES=$(positive_int_or "${FM_GROKBOT_MAX_MESSAGE_BYTES-}" 4096)
+MAX_MESSAGES=$(positive_int_or "${FM_GROKBOT_MAX_MESSAGES-}" 20)
+CALL_TIMEOUT=$(positive_int_or "${FM_GROKBOT_CALL_TIMEOUT-}" 120)
+usage() { sed -n '2,106p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 2; }
 
 # --- read-only allowlist -----------------------------------------------------
 
@@ -309,6 +328,29 @@ cursor_cas() {  # <ref> <expected> <to>
 
 recorded_diagnostic() { read_private "$DIAGNOSTIC" 2>/dev/null | head -1; }
 
+bot_error_recorded() {  # <ref>
+  [ -f "$BOT_ERRORS" ] && [ ! -L "$BOT_ERRORS" ] || return 1
+  LC_ALL=C awk -F '\t' -v ref="$1" '$1 == ref { found = 1 } END { exit !found }' "$BOT_ERRORS"
+}
+
+# Record one bot's reported failure code under the watch lock, or clear it when
+# <code> is empty.
+bot_error_set() {  # <ref> [code]
+  local ref=$1 code=${2-} rc=0 content
+  ensure_watch_dir || return 1
+  fm_lock_acquire_wait "$LOCK"
+  content=$( { [ -f "$BOT_ERRORS" ] && [ ! -L "$BOT_ERRORS" ] && LC_ALL=C awk -F '\t' -v ref="$ref" '$1 != ref' "$BOT_ERRORS"; [ -z "$code" ] || printf '%s\t%s\n' "$ref" "$code"; } ) || rc=1
+  if [ "$rc" -eq 0 ]; then
+    if [ -n "$content" ]; then
+      write_private "$BOT_ERRORS" "$content"$'\n' || rc=1
+    else
+      rm -f -- "$BOT_ERRORS" || rc=1
+    fi
+  fi
+  fm_lock_release "$LOCK"
+  return "$rc"
+}
+
 # --- gbot JSON, parsed by the node gbot itself runs on ------------------------
 
 # Reads one gbot JSON document on stdin. Modes:
@@ -441,11 +483,28 @@ resolve_gbot() {  # [recorded-path]
   export PATH
 }
 
+# A per-bot failure skips only that bot for the round. It is reported the first
+# time it is seen; while its record stays committed the bot is retried quietly.
+bot_fail() {  # <ref> <name> <code> <detail>
+  bot_error_recorded "$1" && return 0
+  HEADER+="bot-error	$1	$2	$3"$'\n'
+  BODY+="### $2 - cannot poll this bot ($3)"$'\n'"$4"$'\n'"The other watched bots are still polled; this bot is retried quietly and reported again only if it fails anew after recovering."$'\n\n'
+  BOT_ERRORS_NEW=$((BOT_ERRORS_NEW + 1))
+  FOUND=$((FOUND + 1))
+}
+
+bot_ok() {  # <ref> <name>
+  bot_error_recorded "$1" || return 0
+  bot_error_set "$1" || return 0
+  BODY+="### $2 - polling works again"$'\n\n'
+}
+
 # One full round over every watched bot. On success sets HEADER, BODY, SHOWN,
-# FOUND (bots that surfaced something). On failure sets POLL_CODE/POLL_DETAIL.
+# OMITTED, GAPS, BOT_ERRORS_NEW, and FOUND (bots that surfaced something). A
+# failure that affects every bot sets POLL_CODE/POLL_DETAIL and returns 1.
 poll_round() {  # <tmpdir> <doctor-needed 0|1>
-  local tmp=$1 doctor=$2 ref name line cursor gap bot_name bot_count shown quota advanced=0
-  HEADER=; BODY=; SHOWN=0; OMITTED=0; FOUND=0
+  local tmp=$1 doctor=$2 ref name line cursor saved to gap bot_name bot_count shown quota
+  HEADER=; BODY=; SHOWN=0; OMITTED=0; GAPS=0; BOT_ERRORS_NEW=0; FOUND=0
   load_config_or_default || poll_fail config-invalid "$CONFIG_ERROR" || return 1
   [ -n "$GBOT" ] || poll_fail gbot-missing "gbot is not installed or not on PATH" || return 1
   command -v node >/dev/null 2>&1 || poll_fail node-missing "node, which gbot runs on, is not on PATH" || return 1
@@ -468,32 +527,49 @@ poll_round() {  # <tmpdir> <doctor-needed 0|1>
     bot_ref_valid "$ref" || continue
     quota=$((MAX_MESSAGES - SHOWN))
     [ "$quota" -ge 0 ] || quota=0
-    if ! cursor=$(cursor_get "$ref"); then
-      # First sight of this bot: baseline at its current tail, replay nothing.
+    saved=1
+    cursor=$(cursor_get "$ref") || { saved=0; cursor=; }
+    if [ "$saved" -eq 0 ] || ! cursor_valid "$cursor"; then
+      # First sight, or an unreadable saved cursor: baseline at the current
+      # tail, replay nothing.
       run_gbot "$tmp/out" "$tmp/err" thread "$ref" --limit 1 --json --gateway --no-history \
-        || poll_fail gateway-error "gbot thread $name failed: $(one_line "$tmp/err")" || return 1
-      line=$(parse_json thread 0 "$MAX_MESSAGE_BYTES" < "$tmp/out" | head -1) \
-        || poll_fail unexpected-response "gbot thread $name returned an unrecognised document" || return 1
-      IFS=$'\t' read -r _ cursor _ _ _ _ <<< "$line"
-      cursor_cas "$ref" '*' "$cursor" || true
+        || { bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
+      parse_json thread 0 "$MAX_MESSAGE_BYTES" < "$tmp/out" > "$tmp/thread" \
+        || { bot_fail "$ref" "$name" unexpected-response "gbot thread $name returned an unrecognised document"; continue; }
+      IFS=$'\t' read -r _ to _ bot_name _ _ < "$tmp/thread"
+      cursor_valid "$to" \
+        || { bot_fail "$ref" "$name" unexpected-response "gbot thread $name returned an unusable cursor"; continue; }
+      bot_ok "$ref" "$name"
+      if [ "$saved" -eq 0 ]; then
+        cursor_cas "$ref" '*' "$to" || true
+        continue
+      fi
+      [ -n "$bot_name" ] || bot_name=$name
+      cursor_cas "$ref" "$cursor" "$to" || true
+      HEADER+="gap	$ref	$bot_name"$'\n'
+      BODY+="### $bot_name - saved position unreadable"$'\n'"The saved position for this bot could not be read, so it was re-baselined at its current tail. Its earlier history was not replayed; messages since the last check may have been missed - read them with gbot thread."$'\n\n'
+      GAPS=$((GAPS + 1))
+      FOUND=$((FOUND + 1))
       continue
     fi
-    cursor_valid "$cursor" || poll_fail cursor-invalid "the saved cursor for $name is unreadable" || return 1
     if [ "$cursor" = - ]; then
-      run_gbot "$tmp/out" "$tmp/err" thread "$ref" --limit "$THREAD_LIMIT" --json --gateway --no-history || \
-        poll_fail gateway-error "gbot thread $name failed: $(one_line "$tmp/err")" || return 1
+      run_gbot "$tmp/out" "$tmp/err" thread "$ref" --limit "$THREAD_LIMIT" --json --gateway --no-history \
+        || { bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
     else
-      run_gbot "$tmp/out" "$tmp/err" thread "$ref" --after "$cursor" --limit "$THREAD_LIMIT" --json --gateway --no-history || \
-        poll_fail gateway-error "gbot thread $name failed: $(one_line "$tmp/err")" || return 1
+      run_gbot "$tmp/out" "$tmp/err" thread "$ref" --after "$cursor" --limit "$THREAD_LIMIT" --json --gateway --no-history \
+        || { bot_fail "$ref" "$name" gateway-error "gbot thread $name failed: $(one_line "$tmp/err")"; continue; }
     fi
     parse_json thread "$quota" "$MAX_MESSAGE_BYTES" < "$tmp/out" > "$tmp/thread" \
-      || poll_fail unexpected-response "gbot thread $name returned an unrecognised document" || return 1
+      || { bot_fail "$ref" "$name" unexpected-response "gbot thread $name returned an unrecognised document"; continue; }
     IFS=$'\t' read -r _ to gap bot_name bot_count shown < "$tmp/thread"
     [ -n "$bot_name" ] || bot_name=$name
-    cursor_valid "$to" || poll_fail unexpected-response "gbot thread $name returned an unusable cursor" || return 1
+    cursor_valid "$to" \
+      || { bot_fail "$ref" "$name" unexpected-response "gbot thread $name returned an unusable cursor"; continue; }
+    bot_ok "$ref" "$name"
     if [ "$gap" = 1 ]; then
       HEADER+="advance	$ref	$cursor	$to"$'\n'"gap	$ref	$bot_name"$'\n'
       BODY+="### $bot_name - cursor lost (gap reset)"$'\n'"The saved position fell out of Grok Bot's recent history, so this bot was re-baselined at its current tail. Its earlier history was not replayed; messages since the last check may have been missed - read them with gbot thread."$'\n\n'
+      GAPS=$((GAPS + 1))
       FOUND=$((FOUND + 1))
     elif [ "$bot_count" -gt 0 ]; then
       HEADER+="advance	$ref	$cursor	$to"$'\n'
@@ -504,7 +580,6 @@ poll_round() {  # <tmpdir> <doctor-needed 0|1>
     elif [ "$to" != "$cursor" ]; then
       # Only the captain's own sends moved the cursor; nothing to deliver.
       cursor_cas "$ref" "$cursor" "$to" || true
-      advanced=$((advanced + 1))
     fi
   done < "$tmp/bots"
   return 0
@@ -530,9 +605,12 @@ cmd_source() {
       [ -z "$recorded" ] || extra="recovered_from=$recorded"$'\n'
       if [ "$FOUND" -gt 0 ]; then
         status=messages
-        [ "$SHOWN" -gt 0 ] || status=gap
+        if [ "$SHOWN" -eq 0 ]; then
+          status=bot-error
+          [ "$GAPS" -eq 0 ] || status=gap
+        fi
         [ "$OMITTED" -eq 0 ] || BODY+="[$OMITTED older message(s) not shown; read them with gbot thread]"$'\n'
-        emit "$status" "${extra}messages=$SHOWN"$'\n'"omitted=$OMITTED"$'\n'"$HEADER" "$BODY"
+        emit "$status" "${extra}messages=$SHOWN"$'\n'"omitted=$OMITTED"$'\n'"gaps=$GAPS"$'\n'"bot_errors=$BOT_ERRORS_NEW"$'\n'"$HEADER" "$BODY"
         return 0
       fi
       if [ -n "$recorded" ]; then
@@ -573,7 +651,7 @@ cmd_classify() {
   status=$(header_field "$file" status 2>/dev/null || true)
   [ "$schema" = "$SCHEMA" ] || { printf 'malformed\n'; return 0; }
   case "$status" in
-    messages|gap|diagnostic|recovered) printf '%s\n' "$status" ;;
+    messages|gap|bot-error|diagnostic|recovered) printf '%s\n' "$status" ;;
     *) printf 'malformed\n' ;;
   esac
 }
@@ -585,6 +663,12 @@ cmd_autohandle() {
   class=$(cmd_classify "$result")
   [ "$class" != malformed ] || die "grokbot result is malformed"
   while IFS=$'\t' read -r kind ref from to; do
+    if [ "$kind" = bot-error ]; then
+      bot_ref_valid "$ref" || die "grokbot result carries an invalid bot-error"
+      case "$to" in ''|*[!a-z-]*) die "grokbot result carries an invalid bot-error code" ;; esac
+      bot_error_set "$ref" "$to" || die "cannot record the reported bot failure"
+      continue
+    fi
     [ "$kind" = advance ] || continue
     if ! bot_ref_valid "$ref" || ! cursor_valid "$from" || ! cursor_valid "$to"; then
       die "grokbot result carries an invalid advance"
