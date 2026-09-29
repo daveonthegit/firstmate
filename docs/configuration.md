@@ -493,6 +493,13 @@ The (condition, action) spec is stored privately under `state/when/` and hash-bo
 Every failure path - a mutated spec or action executable, a condition error past its budget, an expired deadline, a failed action, or an earlier fire whose outcome was never captured - produces a terminal captured outcome that wakes firstmate rather than a silent retry, and a durable single-fire marker claimed before the action makes restarts and re-polls unable to fire it twice.
 The adapter automates only the exact deterministic subset: anything needing judgment, and anything destructive, irreversible, or security-sensitive, keeps the ordinary check-fires-then-firstmate-decides flow, and the adapter's header and `--help` own its commands, flags, and outcome document.
 
+The Grok Bot reply adapter (`bin/fm-procevent-grokbot.sh`) wakes firstmate when a watched Grok Bot bot posts, through one machine-wide source whose blocking child polls `gbot` on an interval and completes only when it has something to report.
+It is read-only toward Grok Bot: an explicit allowlist permits only `gbot doctor`, `gbot bots list`, and `gbot thread`, each with `--json` and `--gateway`, so the silent local-files fallback and every sending or mutating command are refused before execution.
+The optional private `config/grokbot-watch` sets `interval=<seconds>` (default 1800, floor 120, because the Grok Bot API is unofficial and polling must stay human-paced) and any number of `bot=<name-or-id>` lines; with none, every bot from `gbot bots list` is watched.
+Per-bot cursors live privately under `state/grokbot-watch/`, a first-seen bot or a lost cursor is re-baselined at its current tail without replaying history, and only bot-authored messages are surfaced, bounded in count and per-message size.
+Its autohandle runs only after the result's wake is durably queued, then commits the delivered cursors and acknowledges the result, so firstmate still reads the messages from that wake while the restarted source continues from the committed cursors.
+A missing or unauthenticated `gbot` or a gateway error produces one diagnostic result, then quiet backoff and a single recovery notice rather than a retry loop; the adapter's header and `--help` own its commands, result document, and tuning variables.
+
 This section is the single owner of the runner's operating contract.
 Registration writes one private record under `state/procevent/`, and a completed result plus its immutable adapter identity are captured under `state/procevent-inbox/` before any announcement or event can reference it.
 By default, results are published as ordinary `check` wakes carrying the source id and committed result sequence through the existing durable wake queue, so the runner adds no second notification control plane.
@@ -590,6 +597,9 @@ FM_CHECK_TIMEOUT=30     # seconds allowed per slow check script
 FM_PROCEVENT_MAX_OUTPUT_BYTES=1048576   # bound on one captured process-to-event result
 FM_PROCEVENT_CLAIM_ROOT=                # machine-wide source claim root; default $XDG_STATE_HOME/firstmate/procevent-claims
 FM_WHEN_OUTPUT_TAIL_BYTES=8192          # bound on the command-output tail inside one condition->action outcome document
+FM_GROKBOT_MAX_MESSAGES=20              # most Grok Bot messages shown in one reply-watcher result (newest kept)
+FM_GROKBOT_MAX_MESSAGE_BYTES=4096       # per-message truncation bound in a Grok Bot reply-watcher result
+FM_GROKBOT_CALL_TIMEOUT=120             # seconds allowed per read-only gbot call in the Grok Bot reply watcher
 FM_CODEX_WATCH_CHECKPOINT=180   # seconds per foreground watcher checkpoint in Codex primary supervision
 FM_CREW_STATE_NM_TIMEOUT=10   # seconds allowed per no-mistakes query inside fm-crew-state.sh
 FM_TEARDOWN_NM_TIMEOUT=10    # seconds allowed per no-mistakes query or abort inside fm-teardown.sh
