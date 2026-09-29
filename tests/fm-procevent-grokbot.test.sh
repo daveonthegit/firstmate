@@ -78,7 +78,13 @@ if (cmd === "doctor") {
 if (cmd === "bots" && argv[1] === "list") print(JSON.parse(fs.readFileSync(path.join(dir, "bots.json"), "utf8")));
 if (cmd === "thread") {
   const ref = argv[1];
-  if (flag("threads.fail") || flag("thread-" + ref + ".fail")) fail("Gateway error 404: unknown bot " + ref);
+  // threads.fail-window="<first> <last>" fails thread reads numbered first..last
+  // in calls.log, so an outage starts and ends exactly on a round boundary.
+  const [winFirst, winLast] = flag("threads.fail-window")
+    ? fs.readFileSync(path.join(dir, "threads.fail-window"), "utf8").trim().split(/\s+/).map(Number) : [Infinity, 0];
+  const threadCalls = fs.readFileSync(path.join(dir, "calls.log"), "utf8").split("\n").filter((l) => l.startsWith("thread ")).length;
+  const inWindow = threadCalls >= winFirst && threadCalls <= winLast;
+  if (flag("threads.fail") || flag("thread-" + ref + ".fail") || inWindow) fail("Gateway error 404: unknown bot " + ref);
   if (flag("thread-" + ref + ".bad")) print({ unexpected: true });
   const file = path.join(dir, "thread-" + ref + ".json");
   const all = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, "utf8")) : [];
@@ -478,11 +484,13 @@ printf '[%s]\n' "$(bot_msg c1 'beta history')" > "$D/thread-bot-b.json"
 mkdir -p "$H/state/grokbot-watch"
 printf 'bot-a\tb1\nbot-b\tc1\n' > "$H/state/grokbot-watch/cursors.tsv"
 gb arm >/dev/null
+# The first round (one read per bot) succeeds and every later read fails, so the
+# outage begins on a round boundary rather than between two bots' reads.
+printf '3 999999\n' > "$D/threads.fail-window"
 start_runner
-wait_polls 2 || fail "the configured bots are polled after a good first round"
-[ "$(grep -c '^doctor ' "$D/calls.log")" -eq 1 ] || fail "doctor runs only on the first good round"
-: > "$D/threads.fail"
 wait_runner || fail "every watched bot failing completes the source"
+[ "$(sed -n 1p "$D/calls.log")" = "doctor --json --gateway" ] || fail "doctor runs before the first round"
+[ "$(sed -n 2,3p "$D/calls.log" | grep -c '^thread ')" -eq 2 ] || fail "the first round reads both bots with doctor run once"
 R=$(last_result)
 [ "$(result_count)" -eq 1 ] || fail "every watched bot failing produces exactly one result"
 [ "$(gb classify "$R")" = diagnostic ] || fail "every watched bot failing is one whole-watcher diagnostic"
@@ -492,17 +500,13 @@ assert_no_grep "bot-error" "$R" "the shared outage is not also announced per bot
 assert_absent "$H/state/grokbot-watch/bot-errors" "the shared outage creates no per-bot failure records"
 assert_grep "gateway-error" "$H/state/grokbot-watch/diagnostic" "autohandle records the whole-watcher diagnostic"
 : > "$D/calls.log"
+# After the restart two more whole rounds fail, then every bot heals at once.
+printf '1 4\n' > "$D/threads.fail-window"
 start_runner
-for _ in $(seq 1 150); do
-  [ "$(grep -c '^thread bot-a' "$D/calls.log")" -ge 2 ] && break
-  sleep 0.1
-done
-[ "$(grep -c '^thread bot-a' "$D/calls.log")" -ge 2 ] || fail "the source keeps retrying quietly"
-[ "$(result_count)" -eq 1 ] || fail "the same shared outage is not re-announced"
-rm -f "$D/threads.fail"
 wait_runner || fail "the source completes once the bots poll again"
+[ "$(grep -c '^thread bot-a' "$D/calls.log")" -ge 3 ] || fail "the source keeps retrying quietly"
 R=$(last_result)
-[ "$(result_count)" -eq 2 ] || fail "recovery produces exactly one more result"
+[ "$(result_count)" -eq 2 ] || fail "the same shared outage is not re-announced and recovery is one more result"
 [ "$(gb classify "$R")" = recovered ] || fail "the cleared shared outage reports recovery"
 assert_grep "recovered_from=gateway-error" "$R" "the recovery names the cleared diagnostic"
 assert_absent "$H/state/grokbot-watch/diagnostic" "recovery clears the recorded diagnostic"
