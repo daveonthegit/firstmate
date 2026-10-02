@@ -54,6 +54,11 @@
 # it carries the AGENTS.md authoring bar (widely useful knowledge only, pointers
 # over copied detail) and has the crewmate add the fm-ensure-agents-md.sh
 # self-governance section when a touched project AGENTS.md lacks it.
+# When this home's config/obsidian-vault turns the vault journal on, ship and
+# scout briefs also carry a "# Work journal" section asking the worker to write
+# data/<task-id>/journal.md from `bin/fm-vault.sh template`, and their
+# stay-inside-the-worktree rule names that one file as allowed. Without the
+# config the generated briefs are unchanged.
 # Refuses to overwrite an existing brief.
 set -eu
 
@@ -101,6 +106,7 @@ if [ -n "${FM_STATE_OVERRIDE:-}" ]; then
 else
   STATE="$FM_HOME/state"
 fi
+CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 KIND=ship
 HERDR_LAB=0
 NO_PROJECTS=0
@@ -266,6 +272,32 @@ fi
 
 REPO=${POS[1]}
 
+# Work-journal capture, present only when the vault journal is on (the presence
+# check is bin/fm-vault.sh's own `path` subcommand, so the opt-in has one owner).
+JOURNAL_SECTION=
+SHIP_RULE2='2. Stay inside this worktree; modify nothing outside it.'
+SCOUT_RULE2='2. Stay inside this worktree; the only files you may write outside it are the report and the status file below.'
+if FM_HOME="$FM_HOME" FM_CONFIG_OVERRIDE="$CONFIG" "$SCRIPT_DIR/fm-vault.sh" path >/dev/null 2>&1; then
+  SHIP_RULE2='2. Stay inside this worktree; modify nothing outside it except the status file and the work-journal file named under Work journal.'
+  SCOUT_RULE2='2. Stay inside this worktree; the only files you may write outside it are the report, the status file below, and the work-journal file named under Work journal.'
+  IFS= read -r -d '' JOURNAL_SECTION <<EOF || true
+
+# Work journal
+Before your first \`done:\` line, write \`$DATA/$ID/journal.md\`: a plain-language account of this task for the captain's long-term work journal and career archive.
+Start from the template printed by \`$FM_ROOT/bin/fm-vault.sh template\` and follow every rule in it, including real metrics only and its confidentiality rules.
+If a later stage changes the outcome, update the file before your next \`done:\` line.
+Firstmate copies it into the captain's vault after cleanup; never write to the vault yourself.
+EOF
+  JOURNAL_SECTION=${JOURNAL_SECTION%$'\n'}
+fi
+SHIP_JOURNAL_SECTION=
+SCOUT_JOURNAL_SECTION=
+if [ -n "$JOURNAL_SECTION" ]; then
+  SHIP_JOURNAL_SECTION="$JOURNAL_SECTION"$'\n'
+  SCOUT_JOURNAL_SECTION=$'\n'"$JOURNAL_SECTION"
+fi
+
+
 if [ "$HERDR_LAB" -eq 1 ]; then
 HERDR_LAB_HELPER=$(shell_quote "$FM_ROOT/bin/fm-herdr-lab.sh")
 # shellcheck disable=SC2016  # single quotes are deliberate: these lines are literal brief text whose backtick-wrapped $(...) and "$HERDR_LAB_SESSION" snippets must reach the reading agent verbatim, not expand at scaffold time; only the '"$VAR"' break-outs interpolate.
@@ -315,7 +347,7 @@ The report is the only thing that survives, so anything worth keeping must be in
 
 # Rules
 1. Never push to any remote and never open a PR.
-2. Stay inside this worktree; the only files you may write outside it are the report and the status file below.
+$SCOUT_RULE2
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`echo "{state}: {one short line}" >> $STATUS_FILE\`
@@ -342,7 +374,7 @@ The report must stand alone: what you did, what you found, the evidence (command
 If your deliverable is a visual artifact the captain will review and iterate on, you may host the Lavish review loop yourself (poll, revise, re-serve, staying alive) instead of handing it back to firstmate.
 Before reporting done, read and follow \`$FM_ROOT/.agents/skills/decision-hold-lifecycle/SKILL.md\` and pass its shared completion gate for the report and any visual review.
 When the report is complete, append \`done: {one-line conclusion}\` to the status file and stop.
-If your findings reveal work that should ship (e.g. you reproduced a bug and the fix is clear), say so in the report; firstmate may promote this task in place, and you would then receive mode-specific ship instructions as a follow-up message.
+If your findings reveal work that should ship (e.g. you reproduced a bug and the fix is clear), say so in the report; firstmate may promote this task in place, and you would then receive mode-specific ship instructions as a follow-up message.$SCOUT_JOURNAL_SECTION
 EOF
 echo "scaffolded: $BRIEF (scout; replace {TASK})"
 exit 0
@@ -429,7 +461,7 @@ If the top-level path is the primary checkout or not the worktree you were launc
 
 # Rules
 $RULE1
-2. Stay inside this worktree; modify nothing outside it.
+$SHIP_RULE2
 3. Use gh-axi for GitHub operations and chrome-devtools-axi for browser operations.
 4. Report status by appending one line:
    \`echo "{state}: {one short line}" >> $STATUS_FILE\`
@@ -459,7 +491,7 @@ Record only project knowledge useful to almost every future session.
 For anything the codebase already shows, prefer a pointer to the authoritative file, command, or doc over copying the detail.
 If you touch a project \`AGENTS.md\` that lacks \`## Maintaining this file\`, add that short self-governance section from \`$FM_ROOT/bin/fm-ensure-agents-md.sh\` in the same pass.
 Keep it proportionate: skip \`AGENTS.md\` edits for trivial tasks that produced no durable project knowledge.
-
+$SHIP_JOURNAL_SECTION
 $DOD
 EOF
 echo "scaffolded: $BRIEF (ship, mode=$MODE; replace {TASK})"

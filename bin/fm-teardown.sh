@@ -3,7 +3,9 @@
 # worktree, or retire a secondmate home; kill the recorded runtime endpoint,
 # clear volatile state, refresh/prune the project's clone for PR-based ship
 # tasks, then print a backlog-refresh reminder for ship and scout teardowns
-# (a secondmate teardown prints none, since secondmates are not backlog items).
+# (a secondmate teardown prints none, since secondmates are not backlog items),
+# and finally run the opt-in vault journal export for ship and scout tasks
+# (bin/fm-vault.sh journal; off unless config/obsidian-vault is set, never fatal).
 # REFUSES if the worktree holds work that has not LANDED, because cleanup
 # hard-resets/removes the worktree and kills its processes. Work has landed when it is
 # reachable from any remote-tracking branch (a fork counts as a remote, so
@@ -2562,6 +2564,8 @@ fm_backend_clear_transition "$BACKEND" "$STATE" "$T" || true
 remove_pr_poll_artifacts "$STATE" "$ID" || exit 1
 retire_busy_state "$STATE" "$ID" "$BUSY_GEN" || exit 1
 status_retire_presentation_task "$STATE" "$ID" || exit 1
+# The vault journal export below runs after the meta is gone, so hand it a copy.
+VAULT_META_SNAPSHOT=$(cat "$META" 2>/dev/null || true)
 rm -f "$STATE/$ID.turn-ended" "$STATE/$ID.meta" \
   "$STATE/$ID.pi-ext.ts" "$STATE/$ID.grok-turnend-token" \
   "$STATE/$ID.kimi-turnend-token" "$STATE/$ID.muse-session" \
@@ -2579,3 +2583,11 @@ else
   echo "teardown $ID complete (worktree $WT; recorded endpoint $T left untouched, released record)"
 fi
 backlog_refresh_reminder
+# Opt-in work-journal export into the captain's vault (bin/fm-vault.sh). It is a
+# silent no-op unless config/obsidian-vault is set, prints at most one line, and
+# its failure never changes teardown's outcome.
+if [ "$KIND" != secondmate ]; then
+  printf '%s\n' "$VAULT_META_SNAPSHOT" \
+    | FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
+      "$FM_ROOT/bin/fm-vault.sh" journal "$ID" --meta - 2>&1 || true
+fi

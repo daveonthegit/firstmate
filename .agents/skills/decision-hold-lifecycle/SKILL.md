@@ -44,6 +44,7 @@ Bearings reads the resulting structured state and must never compensate by scrap
 7. Put the captain's exact durable decision in a file and close the hold with the script's `resolve` command and every routed task, its `answer` command when the captain answered a hold with no routed work behind it, its `decline` command when the answer routes no work at all, or its `repair` command when the hold was already closed outside the script.
    A hold that a channel already closed by feeding its keyed answer needs none of these; confirm it in step 8 instead.
 8. Confirm Bearings no longer shows the closed hold and that any routed work remains in structured backlog state.
+9. When `bin/fm-vault.sh path` succeeds, record the closed decision in the captain's vault with `bin/fm-vault.sh decision <origin-id> <decision-key>`; the internal `firstmate-vault` skill owns that record, and a vault error never reopens or blocks the hold.
 
 `bin/fm-decision-hold.sh --help` owns command syntax, identity construction, completion attestation, retry behavior, and close ordering.
 `docs/decision-hold-lifecycle.md` records the mechanism and regression evidence without restating this policy.
