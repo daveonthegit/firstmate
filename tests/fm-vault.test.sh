@@ -150,6 +150,8 @@ test_redaction() {
     printf 'q9Zk+Lm/Np0r+StUv\n'
     printf -- '-----END RSA PRIVATE KEY----- after the key.\n'
     printf 'Text after the key block.\n'
+    printf 'Fix the risk-assessment flow in fm-ask-user-authority for task-pi-watch-flake on disk-cleanup.\n'
+    printf 'Leaked sk-proj1234abcd5678 and AKIAIOSFODNN7EXAMPLE here.\n'
   } >> "$HOME_DIR/data/t1/journal.md"
   vault journal t1 >/dev/null 2>&1 || fail "journal for redaction case failed"
   note="$VAULT/Journal/Tasks/2026/2026-10-02-t1.md"
@@ -162,6 +164,10 @@ test_redaction() {
   assert_no_grep '18664916158' "$note" "phone redacted"
   assert_no_grep 'c9379a0c46ea5142e81ab7567cbe5678' "$note" "opaque id redacted"
   assert_no_grep 'ghp_abcdefghijklmnopqrstuvwx' "$note" "token redacted"
+  assert_grep 'Fix the risk-assessment flow in fm-ask-user-authority for task-pi-watch-flake on disk-cleanup.' "$note" "hyphenated words containing token prefixes survive"
+  assert_no_grep 'sk-proj1234abcd5678' "$note" "sk- token redacted"
+  assert_no_grep 'AKIAIOSFODNN7EXAMPLE' "$note" "AKIA key redacted"
+  assert_grep 'Leaked [redacted-secret] and [redacted-secret] here.' "$note" "token redaction keeps the preceding text"
   assert_grep '[redacted-email]' "$note" "redaction leaves a marker"
   assert_grep 'Second line "quoted".' "$note" "backlog note decoded"
   assert_grep 'pr: "https://github.com/o/r/pull/9"' "$note" "structured links are not redacted"

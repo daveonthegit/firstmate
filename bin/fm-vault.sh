@@ -4,8 +4,9 @@
 # Opt-in and home-private: the feature is on only when this home's gitignored
 # config/obsidian-vault names an existing vault directory (first non-comment
 # line; a leading ~ expands to $HOME; an empty value or "off" means off). With
-# the file absent every subcommand except `template` exits 0 and prints nothing,
-# so an unconfigured home pays nothing. The file is not inherited by secondmate
+# the file absent every subcommand except `template` and `path` exits 0 and
+# prints nothing, so an unconfigured home pays nothing; `path` exits 1 silently
+# so callers can use it as the on/off probe. The file is not inherited by secondmate
 # homes; a secondmate home opts in with its own file.
 #
 # Usage:
@@ -256,7 +257,7 @@ redact() {
     { print }
   ' | sed -E \
     -e 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/[redacted-email]/g' \
-    -e 's/(sk-|sk_live_|sk_test_|rk_live_|ghp_|gho_|ghs_|ghu_|github_pat_|glpat-|xox[abprs]-|AKIA|ASIA)[A-Za-z0-9_-]{8,}/[redacted-secret]/g' \
+    -e 's/(^|[^A-Za-z0-9_-])(sk-|sk_live_|sk_test_|rk_live_|ghp_|gho_|ghs_|ghu_|github_pat_|glpat-|xox[abprs]-|AKIA|ASIA)[A-Za-z0-9_-]{8,}/\1[redacted-secret]/g' \
     -e 's/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/[redacted-token]/g' \
     -e 's/[A-Fa-f0-9]{24,}/[redacted-id]/g' \
     -e 's/[A-Za-z0-9]{32,}/[redacted-id]/g' \

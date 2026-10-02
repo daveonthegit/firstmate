@@ -158,7 +158,7 @@ There is no shared learnings file by captain decision.
 ## Obsidian vault journal (config/obsidian-vault / config/obsidian-vault-git)
 
 The optional local, gitignored `config/obsidian-vault` turns on an export of finished work into the captain's existing Obsidian vault: one note per finished ship or scout task, dated captain-decision records, and generated project, month, skill, and investigation indexes.
-Its first non-comment line is the absolute path of an existing vault directory, and a leading `~` expands to the home directory; absent, empty, or `off` keeps the feature off and every export a silent no-op.
+Its first non-comment line is the absolute path of an existing vault directory, and a leading `~` expands to the home directory; absent, empty, or `off` keeps the feature off and every export a silent no-op, while `bin/fm-vault.sh path` exits 1 silently as the on/off probe.
 Firstmate writes only under the vault's `Journal/` folder and leaves the rest of the vault to the captain.
 Teardown runs the export after a successful cleanup, and with the feature on, generated ship and scout briefs ask the worker for a narrative capture at `data/<task-id>/journal.md`.
 A vault error prints one line and never blocks or alters teardown or any other fleet operation.
