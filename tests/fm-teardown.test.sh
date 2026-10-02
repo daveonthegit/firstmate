@@ -604,6 +604,45 @@ test_teardown_prompts_tasks_axi_done_when_compatible() {
   pass "teardown prompts tasks-axi backlog refresh when compatible"
 }
 
+test_teardown_exports_vault_journal_when_configured() {
+  local case_dir out rc note
+  case_dir=$(make_case vault-on)
+  write_meta "$case_dir" no-mistakes ship
+  printf '%s\n' 'pr=https://github.com/example/repo/pull/7' >> "$case_dir/state/task-x1.meta"
+  add_compatible_tasks_axi "$case_dir"
+  mkdir -p "$case_dir/vault"
+  printf '%s\n' "$case_dir/vault" > "$case_dir/config/obsidian-vault"
+
+  out=$(run_teardown "$case_dir" 2>&1) || fail "teardown failed with the vault journal on: $out"
+  assert_contains "$out" "teardown task-x1 complete" "vault-on: teardown completes"
+  assert_contains "$out" "vault: journaled task-x1" "vault-on: teardown runs the journal export"
+  assert_absent "$case_dir/state/task-x1.meta" "vault-on: meta is still removed"
+  note=$(find "$case_dir/vault/Journal/Tasks" -name '*-task-x1.md' | head -1)
+  [ -n "$note" ] || fail "vault-on: no task note was written"
+  assert_grep 'pr: "https://github.com/example/repo/pull/7"' "$note" "vault-on: note carries the PR from the removed meta"
+
+  case_dir=$(make_case vault-broken)
+  write_meta "$case_dir" no-mistakes ship
+  add_compatible_tasks_axi "$case_dir"
+  printf '%s\n' "$case_dir/no-such-vault" > "$case_dir/config/obsidian-vault"
+  set +e
+  out=$(run_teardown "$case_dir" 2>&1)
+  rc=$?
+  set -e
+  expect_code 0 "$rc" "vault-broken: a vault error must not fail teardown"
+  assert_contains "$out" "teardown task-x1 complete" "vault-broken: teardown completes"
+  [ "$(printf '%s\n' "$out" | grep -c '^fm-vault:')" = 1 ] || fail "vault-broken: expected one fm-vault line: $out"
+  assert_absent "$case_dir/state/task-x1.meta" "vault-broken: meta is still removed"
+
+  case_dir=$(make_case vault-off)
+  write_meta "$case_dir" no-mistakes ship
+  add_compatible_tasks_axi "$case_dir"
+  out=$(run_teardown "$case_dir" 2>&1) || fail "teardown failed with the vault journal off: $out"
+  assert_not_contains "$out" "fm-vault:" "vault-off: teardown prints no vault error"
+  assert_not_contains "$out" "vault: journaled" "vault-off: teardown runs no vault export"
+  pass "teardown exports the vault journal only when configured and never fails on it"
+}
+
 test_teardown_manual_backend_prompts_hand_edit_even_when_tasks_axi_present() {
   local case_dir out
   case_dir=$(make_case tasks-axi-manual-optout)
@@ -2702,6 +2741,7 @@ EOF
 
 test_local_only_fork_remote_allows
 test_teardown_prompts_tasks_axi_done_when_compatible
+test_teardown_exports_vault_journal_when_configured
 test_teardown_manual_backend_prompts_hand_edit_even_when_tasks_axi_present
 test_local_only_truly_unpushed_refuses
 test_local_only_merged_to_local_main_allows
