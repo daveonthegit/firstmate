@@ -67,7 +67,8 @@
 #
 # Environment: FM_HOME, FM_DATA_OVERRIDE, FM_STATE_OVERRIDE, FM_CONFIG_OVERRIDE
 # select the home; FM_VAULT_TODAY (YYYY-MM-DD) pins today's date for tests;
-# FM_VAULT_LOCK_WAIT_SECS bounds the lock wait (default 20).
+# FM_VAULT_LOCK_WAIT_SECS bounds the lock wait (default 20);
+# FM_VAULT_GIT_TIMEOUT_SECS bounds each opt-in vault git step (default 60).
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -80,6 +81,11 @@ VAULT_CONFIG="$CONFIG/obsidian-vault"
 VAULT_GIT_CONFIG="$CONFIG/obsidian-vault-git"
 TODAY=${FM_VAULT_TODAY:-$(date +%Y-%m-%d)}
 LOCK_WAIT=${FM_VAULT_LOCK_WAIT_SECS:-20}
+GIT_WAIT=${FM_VAULT_GIT_TIMEOUT_SECS:-60}
+case "$GIT_WAIT" in ''|*[!0-9]*|0) GIT_WAIT=60 ;; esac
+
+# shellcheck source=bin/fm-timeout-lib.sh
+. "$SCRIPT_DIR/fm-timeout-lib.sh"
 
 GEN_MARKER='<!-- fm-journal:generated - firstmate rewrites everything above this line on a rerun; the captain writes below it -->'
 HUB_BEGIN='<!-- fm-journal:begin generated -->'
@@ -238,8 +244,17 @@ vault_write() {
 
 # Redacts sensitive shapes from free text on stdin.
 redact() {
-  sed -E \
-    -e 's/-----BEGIN [A-Z ]*PRIVATE KEY-----.*/[redacted-key]/' \
+  awk '
+    inkey { if ($0 ~ /-----END [A-Z ]*PRIVATE KEY-----/) inkey = 0; next }
+    /-----BEGIN [A-Z ]*PRIVATE KEY-----/ {
+      pre = $0
+      sub(/-----BEGIN [A-Z ]*PRIVATE KEY-----.*/, "", pre)
+      print pre "[redacted-key]"
+      if ($0 !~ /-----BEGIN [A-Z ]*PRIVATE KEY-----.*-----END [A-Z ]*PRIVATE KEY-----/) inkey = 1
+      next
+    }
+    { print }
+  ' | sed -E \
     -e 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/[redacted-email]/g' \
     -e 's/(sk-|sk_live_|sk_test_|rk_live_|ghp_|gho_|ghs_|ghu_|github_pat_|glpat-|xox[abprs]-|AKIA|ASIA)[A-Za-z0-9_-]{8,}/[redacted-secret]/g' \
     -e 's/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/[redacted-token]/g' \
@@ -535,6 +550,19 @@ old_value() {
   fm_value "$VAULT/$EXISTING_NOTE" "$1"
 }
 
+# A generated section of the existing task note, for sections no live source
+# has: old_section status prints the Final status text; old_section <callout
+# heading> prints that callout's quoted lines.
+old_section() {
+  [ -n "$EXISTING_NOTE" ] || return 0
+  awk -v want="$1" '
+    index($0, "<!-- fm-journal:generated") == 1 { exit }
+    want == "status" && index($0, "- **Final status:** ") == 1 { print substr($0, 21); exit }
+    on { if ($0 ~ /^>/) { print; next } exit }
+    want != "status" && $0 == want { on = 1 }
+  ' "$VAULT/$EXISTING_NOTE" 2>/dev/null
+}
+
 # A frontmatter value from the narrative file, empty while it is a placeholder.
 narrative_value() {
   local v
@@ -547,7 +575,7 @@ narrative_value() {
 write_journal() {
   local id=$1 existing rel title kind mode closed started project repo_path pr pr_head report
   local repo body ask outcome narrative jfile employer client skills metrics worker harness model
-  local month tags s keys key dnote decisions year narrative_state
+  local month tags s keys key dnote decisions year narrative_state old_ask old_body
   load_show "$id"
   existing=$(find_note Tasks "$id")
   EXISTING_NOTE=$existing
@@ -628,6 +656,10 @@ write_journal() {
   if [ -f "$STATE/$id.status" ]; then
     outcome=$(grep -E '^(done|failed)( \[key=[^]]*\])?:' "$STATE/$id.status" 2>/dev/null | tail -1)
   fi
+  [ -n "$outcome" ] || outcome=$(old_section status)
+  old_ask=; old_body=
+  [ -n "$ask" ] || old_ask=$(old_section '> [!quote]- The ask, as briefed')
+  [ -n "$body" ] || old_body=$(old_section '> [!info]- Backlog note')
   narrative=
   narrative_state=missing
   if [ -f "$jfile" ]; then
@@ -698,10 +730,14 @@ write_journal() {
     if [ -n "$ask" ]; then
       printf '\n> [!quote]- The ask, as briefed\n'
       printf '%s\n' "$ask" | redact | callout_lines
+    elif [ -n "$old_ask" ]; then
+      printf '\n> [!quote]- The ask, as briefed\n%s\n' "$old_ask"
     fi
     if [ -n "$body" ]; then
       printf '\n> [!info]- Backlog note\n'
       printf '%s\n' "$body" | redact | callout_lines
+    elif [ -n "$old_body" ]; then
+      printf '\n> [!info]- Backlog note\n%s\n' "$old_body"
     fi
     printf '\n'
     preserved_tail "$VAULT/$rel"
@@ -878,20 +914,28 @@ run_index() {
 
 # ---------------------------------------------------------------- git opt-in
 
+# Vault git never prompts, never signs, reads no stdin, and is time-bounded,
+# so missing credentials or a pinentry cannot hang teardown under the lock.
+vault_git() {
+  fm_run_timed "$GIT_WAIT" env GIT_TERMINAL_PROMPT=0 GIT_ASKPASS=true SSH_ASKPASS=true \
+    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -o BatchMode=yes" \
+    git -c commit.gpgsign=false -c core.askPass=true -C "$VAULT" "$@" </dev/null
+}
+
 git_sync() {  # <message>
   local mode
   mode=$(git_mode)
   [ "$mode" != off ] || return 0
-  git -C "$VAULT" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+  vault_git rev-parse --is-inside-work-tree >/dev/null 2>&1 \
     || fail "config/obsidian-vault-git is set but $VAULT is not a git repository; notes written, not committed"
-  git -C "$VAULT" add -A -- Journal >/dev/null 2>&1 || fail "notes written; git add of Journal/ failed"
-  if ! git -C "$VAULT" diff --cached --quiet -- Journal 2>/dev/null; then
-    git -C "$VAULT" commit -q -m "$1" --only -- Journal >/dev/null 2>&1 \
-      || fail "notes written; vault commit failed (a hook or git identity may have refused it)"
+  vault_git add -A -- Journal >/dev/null 2>&1 || fail "notes written; git add of Journal/ failed"
+  if ! vault_git diff --cached --quiet -- Journal >/dev/null 2>&1; then
+    vault_git commit -q -m "$1" --only -- Journal >/dev/null 2>&1 \
+      || fail "notes written; vault commit failed or timed out (a hook or git identity may have refused it)"
   fi
   if [ "$mode" = push ]; then
-    git -C "$VAULT" push -q >/dev/null 2>&1 \
-      || fail "notes committed locally; vault push failed and will be retried by the next export"
+    vault_git push -q >/dev/null 2>&1 \
+      || fail "notes committed locally; vault push failed or timed out and will be retried by the next export"
   fi
 }
 

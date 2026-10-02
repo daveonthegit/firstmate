@@ -144,8 +144,19 @@ test_redaction() {
   local note
   new_case redact
   seed_ship_task t1
+  {
+    printf '\nKey pasted by mistake: -----BEGIN RSA PRIVATE KEY-----\n'
+    printf 'MIIEow+IBAAKCAQEA/x7Qz+abc/def\n'
+    printf 'q9Zk+Lm/Np0r+StUv\n'
+    printf -- '-----END RSA PRIVATE KEY----- after the key.\n'
+  } >> "$HOME_DIR/data/t1/journal.md"
   vault journal t1 >/dev/null 2>&1 || fail "journal for redaction case failed"
   note="$VAULT/Journal/Tasks/2026/2026-10-02-t1.md"
+  assert_no_grep 'MIIEow+IBAAKCAQEA' "$note" "PEM body line redacted"
+  assert_no_grep 'q9Zk+Lm/Np0r+StUv' "$note" "every PEM body line redacted"
+  assert_no_grep 'END RSA PRIVATE KEY' "$note" "PEM END line redacted"
+  assert_grep 'Key pasted by mistake: [redacted-key]' "$note" "PEM block leaves one marker"
+  assert_grep 'Second line "quoted".' "$note" "text after the PEM block survives"
   assert_no_grep 'ops@example.com' "$note" "email redacted"
   assert_no_grep '18664916158' "$note" "phone redacted"
   assert_no_grep 'c9379a0c46ea5142e81ab7567cbe5678' "$note" "opaque id redacted"
@@ -205,6 +216,19 @@ test_missing_inputs_and_rerun_without_meta() {
   assert_grep 'pr_head: "deadbeef"' "$note" "pr_head kept from the earlier note"
   assert_grep 'mode: no-mistakes' "$note" "mode kept from the earlier note"
   assert_grep 'worker: "claude claude-opus-5-5"' "$note" "worker kept from the earlier note"
+
+  new_case gone
+  seed_ship_task t3
+  vault journal t3 --meta - < "$HOME_DIR/state/t3.meta" >/dev/null 2>&1 || fail "journal before teardown failed"
+  rm -f "$HOME_DIR/state/t3.meta" "$HOME_DIR/state/t3.status" "$HOME_DIR/fake-show/t3" "$HOME_DIR/data/t3/brief.md"
+  vault journal t3 >/dev/null 2>&1 || fail "rerun after records are gone failed"
+  note="$VAULT/Journal/Tasks/2026/2026-10-02-t3.md"
+  assert_grep '- **Final status:** done: PR https://github.com/o/r/pull/9 checks green' "$note" "final status kept from the earlier note"
+  assert_grep '> [!info]- Backlog note' "$note" "backlog callout kept from the earlier note"
+  assert_grep '> Second line "quoted".' "$note" "backlog callout text kept from the earlier note"
+  assert_grep '> [!quote]- The ask, as briefed' "$note" "brief callout kept from the earlier note"
+  assert_grep '> Build the widget export.' "$note" "brief callout text kept from the earlier note"
+  assert_no_grep 'ops@example.com' "$note" "kept backlog text stays redacted"
   pass "fm-vault: missing inputs degrade gracefully and reruns never blank recorded values"
 }
 
@@ -315,7 +339,7 @@ test_unwritable_vault_fails_open() {
 }
 
 test_vault_git_is_opt_in() {
-  local remote count
+  local remote count out rc start elapsed
   fm_git_identity
   new_case git
   git -C "$VAULT" init -q
@@ -344,6 +368,20 @@ test_vault_git_is_opt_in() {
   printf '\nmore narrative\n' >> "$HOME_DIR/data/t1/journal.md"
   vault journal t1 >/dev/null 2>&1 || fail "journal with push opt-in failed"
   [ "$(git -C "$remote" rev-parse HEAD)" = "$(git -C "$VAULT" rev-parse HEAD)" ] || fail "push opt-in did not push"
+
+  git -C "$VAULT" config commit.gpgsign true
+  git -C "$VAULT" config gpg.program false
+  printf '#!/bin/sh\nsleep 30\n' > "$VAULT/.git/hooks/pre-push"
+  chmod +x "$VAULT/.git/hooks/pre-push"
+  printf '\nstill more narrative\n' >> "$HOME_DIR/data/t1/journal.md"
+  start=$(date +%s)
+  out=$(FM_VAULT_GIT_TIMEOUT_SECS=2 vault journal t1 2>&1); rc=$?
+  elapsed=$(( $(date +%s) - start ))
+  expect_code 1 "$rc" "a hung vault push fails open"
+  [ "$elapsed" -lt 20 ] || fail "a hung vault push was not bounded (${elapsed}s)"
+  [ "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" = 1 ] || fail "a hung push must print one line, got: $out"
+  assert_contains "$out" "vault push failed or timed out" "hung push reports itself"
+  [ "$(git -C "$VAULT" rev-list --count HEAD)" = 4 ] || fail "commit must not depend on a signing program"
   pass "fm-vault: vault git is untouched by default; commit and push are opt-in and Journal-only"
 }
 
