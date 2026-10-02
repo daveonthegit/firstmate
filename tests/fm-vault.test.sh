@@ -149,6 +149,7 @@ test_redaction() {
     printf 'MIIEow+IBAAKCAQEA/x7Qz+abc/def\n'
     printf 'q9Zk+Lm/Np0r+StUv\n'
     printf -- '-----END RSA PRIVATE KEY----- after the key.\n'
+    printf 'Text after the key block.\n'
   } >> "$HOME_DIR/data/t1/journal.md"
   vault journal t1 >/dev/null 2>&1 || fail "journal for redaction case failed"
   note="$VAULT/Journal/Tasks/2026/2026-10-02-t1.md"
@@ -156,7 +157,7 @@ test_redaction() {
   assert_no_grep 'q9Zk+Lm/Np0r+StUv' "$note" "every PEM body line redacted"
   assert_no_grep 'END RSA PRIVATE KEY' "$note" "PEM END line redacted"
   assert_grep 'Key pasted by mistake: [redacted-key]' "$note" "PEM block leaves one marker"
-  assert_grep 'Second line "quoted".' "$note" "text after the PEM block survives"
+  assert_grep 'Text after the key block.' "$note" "text after the PEM block survives"
   assert_no_grep 'ops@example.com' "$note" "email redacted"
   assert_no_grep '18664916158' "$note" "phone redacted"
   assert_no_grep 'c9379a0c46ea5142e81ab7567cbe5678' "$note" "opaque id redacted"
@@ -219,6 +220,7 @@ test_missing_inputs_and_rerun_without_meta() {
 
   new_case gone
   seed_ship_task t3
+  printf '\n- **Final status:** narrative decoy\n\n> [!info]- Backlog note\n> narrative decoy body\n' >> "$HOME_DIR/data/t3/journal.md"
   vault journal t3 --meta - < "$HOME_DIR/state/t3.meta" >/dev/null 2>&1 || fail "journal before teardown failed"
   rm -f "$HOME_DIR/state/t3.meta" "$HOME_DIR/state/t3.status" "$HOME_DIR/fake-show/t3" "$HOME_DIR/data/t3/brief.md"
   vault journal t3 >/dev/null 2>&1 || fail "rerun after records are gone failed"
@@ -382,6 +384,16 @@ test_vault_git_is_opt_in() {
   [ "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" = 1 ] || fail "a hung push must print one line, got: $out"
   assert_contains "$out" "vault push failed or timed out" "hung push reports itself"
   [ "$(git -C "$VAULT" rev-list --count HEAD)" = 4 ] || fail "commit must not depend on a signing program"
+
+  rm -f "$VAULT/.git/hooks/pre-push"
+  printf '#!/bin/sh\nprintf "%%s\\n" "$*" > "%s/ssh-args"\nexit 1\n' "$TMP_ROOT/git" > "$TMP_ROOT/git/fake-ssh"
+  chmod +x "$TMP_ROOT/git/fake-ssh"
+  git -C "$VAULT" config core.sshCommand "$TMP_ROOT/git/fake-ssh -i vault_key"
+  git -C "$VAULT" remote set-url origin ssh://git@example.invalid/vault.git
+  printf '\nand a last line\n' >> "$HOME_DIR/data/t1/journal.md"
+  out=$(env -u GIT_SSH_COMMAND FM_HOME="$HOME_DIR" "$VAULT_SH" journal t1 2>&1); rc=$?
+  expect_code 1 "$rc" "a refused ssh push fails open"
+  assert_grep '-i vault_key -o BatchMode=yes' "$TMP_ROOT/git/ssh-args" "vault ssh keeps core.sshCommand and adds BatchMode"
   pass "fm-vault: vault git is untouched by default; commit and push are opt-in and Journal-only"
 }
 

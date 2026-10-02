@@ -557,9 +557,12 @@ old_section() {
   [ -n "$EXISTING_NOTE" ] || return 0
   awk -v want="$1" '
     index($0, "<!-- fm-journal:generated") == 1 { exit }
-    want == "status" && index($0, "- **Final status:** ") == 1 { print substr($0, 21); exit }
-    on { if ($0 ~ /^>/) { print; next } exit }
+    $0 == "## Records" { rec = 1; got = 0; on = 0; out = ""; next }
+    !rec || got { next }
+    on { if ($0 ~ /^>/) { out = out $0 "\n"; next } on = 0; got = 1; next }
+    want == "status" && index($0, "- **Final status:** ") == 1 { out = substr($0, 21) "\n"; got = 1; next }
     want != "status" && $0 == want { on = 1 }
+    END { printf "%s", out }
   ' "$VAULT/$EXISTING_NOTE" 2>/dev/null
 }
 
@@ -917,8 +920,11 @@ run_index() {
 # Vault git never prompts, never signs, reads no stdin, and is time-bounded,
 # so missing credentials or a pinentry cannot hang teardown under the lock.
 vault_git() {
+  local ssh_cmd=${GIT_SSH_COMMAND:-}
+  [ -n "$ssh_cmd" ] || ssh_cmd=$(git -C "$VAULT" config --get core.sshCommand </dev/null 2>/dev/null)
+  [ -n "$ssh_cmd" ] || ssh_cmd=ssh
   fm_run_timed "$GIT_WAIT" env GIT_TERMINAL_PROMPT=0 GIT_ASKPASS=true SSH_ASKPASS=true \
-    GIT_SSH_COMMAND="${GIT_SSH_COMMAND:-ssh} -o BatchMode=yes" \
+    GIT_SSH_COMMAND="$ssh_cmd -o BatchMode=yes" \
     git -c commit.gpgsign=false -c core.askPass=true -C "$VAULT" "$@" </dev/null
 }
 
