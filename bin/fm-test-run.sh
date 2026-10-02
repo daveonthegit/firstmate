@@ -442,6 +442,7 @@ tests/fm-teardown.test.sh 23237
 tests/fm-test-isolation-proof.test.sh 326
 tests/fm-turnend-guard.test.sh 5986
 tests/fm-update.test.sh 1894
+tests/fm-vault.test.sh 11000
 tests/fm-vendor-auth-probe.test.sh 42796
 tests/fm-wake-daemon-lifecycle-e2e.test.sh 4284
 tests/fm-wake-drain-unread-status.test.sh 4000
