@@ -155,6 +155,20 @@ Fleet-local operational facts and gotchas live locally in `data/learnings.md`; i
 The file is created lazily on first learning and follows the internal [`stow` skill's](../.agents/skills/stow/SKILL.md) aging-tier and cold-archive contract: inspect the current file first and curate it instead of appending forever.
 There is no shared learnings file by captain decision.
 
+## Obsidian vault journal (config/obsidian-vault / config/obsidian-vault-git)
+
+The optional local, gitignored `config/obsidian-vault` turns on an export of finished work into the captain's existing Obsidian vault: one note per finished ship or scout task, dated captain-decision records, and generated project, month, skill, and investigation indexes.
+Its first non-comment line is the absolute path of an existing vault directory, and a leading `~` expands to the home directory; absent, empty, or `off` keeps the feature off and every export a silent no-op.
+Firstmate writes only under the vault's `Journal/` folder and leaves the rest of the vault to the captain.
+Teardown runs the export after a successful cleanup, and with the feature on, generated ship and scout briefs ask the worker for a narrative capture at `data/<task-id>/journal.md`.
+A vault error prints one line and never blocks or alters teardown or any other fleet operation.
+
+Vault git is untouched by default.
+The optional `config/obsidian-vault-git` opts in: `commit` commits only `Journal/` paths after each export, and `push` also runs a plain `git push`; the export never pulls, rebases, stashes, or forces.
+
+Both files are home-local and are not inherited by secondmate homes, so routed secondmate work is journaled only when that home sets its own `config/obsidian-vault`.
+`bin/fm-vault.sh`'s header owns the note layout, generated-text markers, redaction, confinement, and exit contract, and the internal [`firstmate-vault` skill](../.agents/skills/firstmate-vault/SKILL.md) owns when firstmate writes and reads the vault.
+
 ## Startup memory budget (config/startup-memory-budget)
 
 `config/startup-memory-budget` is the primary-authoritative per-home allowance for the startup prompt-memory surface: `data/captain.md`, `data/captain-shared.md`, and `data/learnings.md` together.
