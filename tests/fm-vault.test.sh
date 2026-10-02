@@ -117,7 +117,7 @@ test_journal_writes_linked_notes_from_records() {
   assert_grep 'skills: [typescript, postgres]' "$note" "skills normalized"
   assert_grep 'tags: [task, project/widget-app, employer/personal, skill/typescript, skill/postgres]' "$note" "tags"
   assert_grep 'review: draft' "$note" "notes start as drafts"
-  assert_grep 'narrative: captured' "$note" "narrative marked captured"
+  assert_grep 'narrative: incomplete' "$note" "a narrative with template placeholders left is marked incomplete"
   assert_grep 'Staff exported widgets by hand.' "$note" "narrative body copied"
   assert_no_grep 'Delete these comments' "$note" "template guidance comments stripped"
   assert_grep 'Build the widget export.' "$note" "the ask is quoted from the brief"
@@ -206,6 +206,19 @@ test_missing_inputs_and_rerun_without_meta() {
   assert_grep 'mode: no-mistakes' "$note" "mode kept from the earlier note"
   assert_grep 'worker: "claude claude-opus-5-5"' "$note" "worker kept from the earlier note"
   pass "fm-vault: missing inputs degrade gracefully and reruns never blank recorded values"
+}
+
+test_filled_narrative_is_marked_captured() {
+  local note
+  new_case filled
+  mkdir -p "$HOME_DIR/data/f1"
+  printf -- '---\ntitle: Faster exports\nskills: [bash]\n---\n## STAR summary\n- **Situation:** Exports were slow.\n' \
+    > "$HOME_DIR/data/f1/journal.md"
+  vault journal f1 >/dev/null 2>&1 || fail "journal for filled narrative failed"
+  note="$VAULT/Journal/Tasks/2026/2026-10-02-f1.md"
+  assert_grep 'narrative: captured' "$note" "a filled narrative is marked captured"
+  assert_grep 'Exports were slow.' "$note" "filled narrative copied"
+  pass "fm-vault: narrative state distinguishes captured from incomplete"
 }
 
 test_captain_reviewed_note_is_never_rewritten() {
@@ -339,6 +352,7 @@ test_journal_writes_linked_notes_from_records
 test_redaction
 test_idempotent_and_captain_text_survives
 test_missing_inputs_and_rerun_without_meta
+test_filled_narrative_is_marked_captured
 test_captain_reviewed_note_is_never_rewritten
 test_scout_report_is_indexed_not_copied
 test_decision_subcommand

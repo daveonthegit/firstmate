@@ -50,6 +50,8 @@
 #   and `<!-- fm-journal:end generated -->` is replaced. A task note whose
 #   frontmatter says `review: captain-reviewed` is never rewritten.
 # - An unchanged note is not rewritten, so reruns are idempotent.
+# - frontmatter `narrative:` is captured, incomplete (template placeholders
+#   remain), or missing.
 # - Free text taken from records or narratives passes a redaction filter for
 #   email addresses, phone numbers, token and key shapes, PEM blocks, JWTs, and
 #   long opaque ids before it reaches the vault. Notes are written `review: draft`.
@@ -630,7 +632,14 @@ write_journal() {
   narrative_state=missing
   if [ -f "$jfile" ]; then
     narrative=$(narrative_body "$jfile")
-    [ -z "$narrative" ] || narrative_state=captured
+    if [ -n "$narrative" ]; then
+      narrative_state=captured
+      # Template placeholders still present mean the worker left gaps.
+      print_template | grep -o '<[^>]*>' | sort -u > "$WORK/placeholders"
+      if printf '%s\n' "$narrative" | grep -Fqf "$WORK/placeholders"; then
+        narrative_state=incomplete
+      fi
+    fi
   fi
 
   tags="task, project/$project"
