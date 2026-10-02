@@ -121,15 +121,7 @@ record_pi_busy() {  # <state-dir> <id>
     --source pi-ext --event agent-start
 }
 
-# A TERM that lands while bash is mid-parse can be swallowed by the watcher's
-# trap ("trap: unexpected EOF"), so escalate to KILL rather than wait forever.
-reap() {
-  local i=0
-  kill "$1" 2>/dev/null || true
-  while kill -0 "$1" 2>/dev/null && [ "$i" -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
-  kill -KILL "$1" 2>/dev/null || true
-  wait "$1" 2>/dev/null || true
-}
+reap() { kill "$1" 2>/dev/null || true; wait "$1" 2>/dev/null || true; }
 
 # --- pure classifier predicates (fm-classify-lib.sh) ------------------------
 
