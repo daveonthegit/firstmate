@@ -254,7 +254,7 @@ yq() {
 
 # Text safe as a wikilink alias.
 link_alias() {
-  printf '%s' "$1" | tr '|[]\n' '/() '
+  printf '%s' "$1" | tr '\n' ' ' | sed -e 's#|#/#g' -e 's#\[#(#g' -e 's#\]#)#g'
 }
 
 # Reads a frontmatter scalar from a note: fm_value <file> <key>.
@@ -732,7 +732,7 @@ collect_rows() {
         if (!done || f["id"] == "") exit
         if (f["type"] == "decision") { date = f["decided"]; kind = "decision" }
         else { date = f["closed"]; kind = f["kind"] }
-        sk = f["skills"]; gsub(/[][ ]/, "", sk)
+        sk = f["skills"]; gsub(/\[/, "", sk); gsub(/\]/, "", sk); gsub(/ /, "", sk)
         t = f["title"]; gsub(/\|/, "/", t); gsub(/\[/, "(", t); gsub(/\]/, ")", t)
         printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", date, kind, f["id"], f["project"], t, rel, sk, f["report"], f["status"], f["origin"], f["repo_path"]
       }
