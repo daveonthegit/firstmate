@@ -712,6 +712,46 @@ test_scout_and_secondmate_scaffold() {
   pass "fm-brief: scout and secondmate code paths still scaffold well-formed briefs"
 }
 
+# The vault work-journal section appears only when this home's vault journal is
+# on, names the capture file, points at the template owner, and carves that one
+# file out of the stay-inside-the-worktree rule. Off, briefs carry none of it.
+test_work_journal_section_follows_vault_opt_in() {
+  local home="$TMP_ROOT/journal-home" vault="$TMP_ROOT/journal-vault" brief
+  mkdir -p "$home/data" "$home/config" "$vault"
+
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" journal-off-q1 alpha --mode no-mistakes >/dev/null 2>&1 \
+    || fail "ship scaffold without vault config exited non-zero"
+  brief="$home/data/journal-off-q1/brief.md"
+  assert_no_grep "# Work journal" "$brief" "ship brief must not ask for a journal when the vault is off"
+  assert_grep "2. Stay inside this worktree; modify nothing outside it." "$brief" \
+    "ship brief keeps the plain worktree rule when the vault is off"
+
+  printf '%s\n' "$vault" > "$home/config/obsidian-vault"
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" journal-on-q1 alpha --mode no-mistakes >/dev/null 2>&1 \
+    || fail "ship scaffold with vault config exited non-zero"
+  brief="$home/data/journal-on-q1/brief.md"
+  assert_grep "# Work journal" "$brief" "ship brief must carry the work-journal section when the vault is on"
+  assert_grep "$home/data/journal-on-q1/journal.md" "$brief" "ship brief must name the capture file"
+  assert_grep "$ROOT/bin/fm-vault.sh template" "$brief" "ship brief must point at the template owner"
+  assert_grep "except the status file and the work-journal file named under Work journal." "$brief" \
+    "ship brief must carve the capture file out of the worktree rule"
+  assert_grep "Delivery contract: mode=no-mistakes" "$brief" "ship brief keeps its delivery contract"
+
+  FM_HOME="$home" "$ROOT/bin/fm-brief.sh" journal-on-q2 alpha --scout >/dev/null 2>&1 \
+    || fail "scout scaffold with vault config exited non-zero"
+  brief="$home/data/journal-on-q2/brief.md"
+  assert_grep "# Work journal" "$brief" "scout brief must carry the work-journal section when the vault is on"
+  assert_grep "$home/data/journal-on-q2/journal.md" "$brief" "scout brief must name the capture file"
+  assert_grep "the report, the status file below, and the work-journal file named under Work journal." "$brief" \
+    "scout brief must carve the capture file out of the worktree rule"
+
+  FM_SECONDMATE_CHARTER='Supervise alpha.' FM_HOME="$home" \
+    "$ROOT/bin/fm-brief.sh" journal-sm-q1 --secondmate alpha >/dev/null 2>&1 \
+    || fail "secondmate scaffold with vault config exited non-zero"
+  assert_no_grep "# Work journal" "$home/data/journal-sm-q1/brief.md" "secondmate charters never ask for a journal"
+  pass "fm-brief: work-journal capture follows the vault opt-in for ship and scout briefs only"
+}
+
 test_script_parses
 test_no_heredoc_in_command_substitution
 test_help_includes_entire_header
@@ -732,3 +772,4 @@ test_secondmate_directory_paths_are_absolute_and_output_is_stable
 test_pause_verb_override_renders_all_brief_scaffolds
 test_scout_and_secondmate_load_decision_hold_policy
 test_scout_and_secondmate_scaffold
+test_work_journal_section_follows_vault_opt_in
