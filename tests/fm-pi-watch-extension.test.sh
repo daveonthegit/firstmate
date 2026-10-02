@@ -1338,7 +1338,13 @@ const hooks = await mod.FmPrimaryWatchArm({
 const event = { event: { type: "session.idle", properties: { sessionID: "session-test" } } };
 writeFileSync(`${process.env.FM_HOME}/state/.lock`, "999999\n");
 await hooks.event(event);
-await new Promise((resolve) => setTimeout(resolve, 120));
+// The idle hook launches without awaiting; join that in-flight launch so the
+// lock is not rewritten before its ownership check settles.
+const readOnly = await globalThis.__firstmateOpenCodeWatchArm.ensureArmed("session-test", client);
+if (readOnly !== "read-only") {
+  console.error(`expected read-only before owning the lock, got ${readOnly}`);
+  process.exit(1);
+}
 if (existsSync(process.env.FM_ARM_LOG)) {
   console.error("watch arm ran without owning the session lock");
   process.exit(1);
