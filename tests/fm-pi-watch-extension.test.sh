@@ -941,15 +941,11 @@ function pidAlive(pid) {
   }
 }
 
-// Deadline-bounded so a loaded CI host's slow child spawns and exits cannot
-// fail the transition contract; only a condition that never holds times out.
-async function waitFor(pred, label, timeoutMs = 30000) {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
+async function waitFor(pred, label, attempts = 250) {
+  for (let i = 0; i < attempts; i += 1) {
     if (pred()) return;
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
-  if (pred()) return;
   throw new Error(`timeout waiting for ${label}`);
 }
 
@@ -1073,7 +1069,7 @@ if (liveArmPids().length !== 0) {
 EOF
 )
   status=$?
-  expect_code 0 "$status" "Pi session transitions must rearm through an explicit generation owner: $out"
+  expect_code 0 "$status" "Pi session transitions must rearm through an explicit generation owner"
   [ -z "$out" ] || fail "Pi session-transition generation owner test printed output: $out"
   pass "Pi session transitions use a generation owner across /new /resume /fork, stale callbacks, and quit"
 }
