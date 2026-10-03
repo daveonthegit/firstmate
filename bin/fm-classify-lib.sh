@@ -84,6 +84,16 @@ last_status_line() {
   grep -v '^[[:space:]]*$' "$f" 2>/dev/null | tail -1
 }
 
+# 0 if a no-mistakes ship's done event lacks a marked HTTPS PR URL.
+# Current-state readers map this event to parked, not completed; it remains
+# captain-relevant so supervision surfaces the missing validation/shipping work.
+# Active, code-matched run evidence still takes precedence over this log event.
+status_done_requires_validation() {  # <line> <mode> <kind>
+  [ "$2" = no-mistakes ] && [ "$3" = ship ] || return 1
+  [ "$(status_line_verb "$1")" = "done" ] || return 1
+  ! printf '%s\n' "$1" | grep -Eq 'PR[[:space:]]+https://[^[:space:]]+'
+}
+
 # 0 if the given (last) status line's leading verb is a real terminal captain verb
 # (done, needs-decision, blocked, failed). Free-text tokens alone never count here;
 # callers that need legacy free-text matching use status_is_captain_relevant.

@@ -107,6 +107,7 @@ meta_value() {  # <key>
 
 WT=$(meta_value worktree)
 KIND=$(meta_value kind)
+MODE=$(meta_value mode)
 HARNESS=$(meta_value harness)
 REMOTE_HOST=$(meta_value remote_host)
 [ -n "$KIND" ] || KIND=ship
@@ -139,7 +140,12 @@ map_log_state() {  # <line>
     working)        echo working ;;
     needs-decision) echo parked ;;
     blocked)        echo blocked ;;
-    done)           echo "done" ;;
+    done)
+      if status_done_requires_validation "$1" "$MODE" "$KIND"; then
+        echo parked
+      else
+        echo "done"
+      fi ;;
     failed)         echo failed ;;
     *)              echo unknown ;;
   esac
@@ -292,6 +298,7 @@ nm_gate_findings_count() {
 }
 log_reports_ci_ready() {
   [ "$LOG_VERB" = "done" ] || return 1
+  status_done_requires_validation "$LOG_LINE" "$MODE" "$KIND" && return 1
   case "$(status_line_note "$LOG_LINE")" in
     *PR*"checks green"*|*"checks green"*PR*) return 0 ;;
     *) return 1 ;;

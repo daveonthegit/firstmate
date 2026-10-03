@@ -783,6 +783,46 @@ EOF
   pass "another branch's run is ignored, falls back"
 }
 
+# A no-mistakes ship's local-only done event must surface without completing
+# the task. Other delivery modes and scouts keep their existing completion rule.
+test_no_mistakes_done_requires_pr() {
+  reset_fakes
+  local d out mode kind line
+  d=$(new_case premature-done)
+  make_repo_on_branch "$d/wt" fm/premature-done
+  make_fakebin "$d" >/dev/null
+  arm_idle_record "$d/state" premature-done
+  for mode in no-mistakes direct-PR local-only ''; do
+    for kind in ship scout; do
+      fm_write_meta "$d/state/premature-done.meta" "window=fm:fm-premature-done" "worktree=$d/wt" "kind=$kind" "mode=$mode" "harness=claude"
+      for line in 'done: local tests passing' 'done: PR ready checks green' 'done: PR http://github.com/o/r/pull/2 checks green' 'done: PR https://github.com/o/r/pull/2 checks green'; do
+        printf '%s\n' "$line" > "$d/state/premature-done.status"
+        out=$(run_crew_state "$d" premature-done)
+        if [ "$mode" = no-mistakes ] && [ "$kind" = ship ] && [[ "$line" != *https://* ]]; then
+          assert_contains "$out" 'state: parked' 'premature done is not completion'
+          assert_contains "$out" 'source: status-log' 'missing run falls back to guarded log'
+          status_is_captain_relevant "$line" || fail 'premature done must surface'
+          FM_CREW_STATE_BIN="$CREW_STATE" PATH="$d/fakebin:$PATH" FM_STATE_OVERRIDE="$d/state" crew_is_provably_working premature-done && fail 'premature done must not be absorbed'
+        else
+          assert_contains "$out" 'state: done' 'valid PR or unaffected mode/kind keeps completion'
+        fi
+      done
+    done
+  done
+  fm_write_meta "$d/state/premature-done.meta" "window=fm:fm-premature-done" "worktree=$d/wt" 'kind=ship' 'mode=no-mistakes' 'harness=claude'
+  printf 'done: local tests passing\n' > "$d/state/premature-done.status"
+  FM_FAKE_AXI_STATUS="$(run_running fm/premature-done)"
+  out=$(run_crew_state "$d" premature-done)
+  assert_contains "$out" 'state: working' 'active matching run still takes precedence'
+  assert_contains "$out" 'source: run-step' 'run remains authoritative'
+  printf 'done: PR ready checks green\n' > "$d/state/premature-done.status"
+  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/premature-done)"
+  out=$(run_crew_state "$d" premature-done)
+  assert_contains "$out" 'state: working' 'URL-free ready event cannot override CI monitoring'
+  assert_contains "$out" 'source: run-step' 'CI monitoring remains authoritative'
+  pass 'no-mistakes done without HTTPS PR is parked and surfaced'
+}
+
 # (f) no run for this crew + a busy pane -> working via pane
 test_no_run_busy_pane() {
   reset_fakes
@@ -1432,6 +1472,7 @@ test_cross_branch_attribution_via_runs_list
 test_cross_branch_attribution_picks_most_recent_row
 test_coarse_run_does_not_probe_other_branch_ci_log_for_ready_status
 test_other_branch_run_ignored
+test_no_mistakes_done_requires_pr
 test_no_run_busy_pane
 test_no_run_footer_text_alone_is_not_working
 test_no_run_grok_uses_isolated_fallback
