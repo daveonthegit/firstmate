@@ -194,6 +194,25 @@ fm_control_backend_state_verified() {  # <backend>
   return 1
 }
 
+# Tracked project settings must never be overwritten or removed as task wiring.
+# info/exclude only protects untracked files, so tracked Claude settings use an
+# additional --settings file in private state instead.
+fm_control_claude_settings_path() {  # <worktree> <state-dir> <id>
+  local tracked
+  tracked=$(git -C "$1" ls-files -- .claude/settings.local.json) || return 1
+  if [ -n "$tracked" ]; then
+    printf '%s\n' "$2/$3.claude-settings.json"
+  else
+    printf '%s\n' "$1/.claude/settings.local.json"
+  fi
+}
+
+fm_control_remove_claude_project_settings() {  # <worktree>
+  local tracked
+  tracked=$(git -C "$1" ls-files -- .claude/settings.local.json) || return 1
+  [ -n "$tracked" ] || rm -f "$1/.claude/settings.local.json"
+}
+
 # The per-task wiring artifacts a harness leaves behind, so a relaunch that
 # changes harness (or re-arms the same one with a fresh busy generation) can
 # clear the previous incarnation's wiring instead of leaving a stale hook
@@ -204,7 +223,10 @@ fm_control_harness_wiring_paths() {  # <harness> <worktree> <state-dir> <id>
   local harness=${1-} wt=${2-} state=${3-} id=${4-}
   [ -n "$wt" ] && [ -n "$state" ] && [ -n "$id" ] || return 1
   case "$harness" in
-    claude) printf '%s\n' "$wt/.claude/settings.local.json" ;;
+    claude)
+      fm_control_claude_settings_path "$wt" "$state" "$id" || return 1
+      printf '%s\n' "$state/$id.claude-settings.json"
+      ;;
     opencode) printf '%s\n' "$wt/.opencode/plugins/fm-busy-state.js" ;;
     pi|pi-signed) printf '%s\n' "$state/$id.pi-ext.ts" ;;
     grok)

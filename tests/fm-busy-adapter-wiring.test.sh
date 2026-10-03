@@ -256,6 +256,31 @@ run_claude_hook() {  # <settings.json> <hook-event>
   sh -c "$cmd"
 }
 
+test_claude_tracked_settings_preserved() {
+  local rec id=busy-cl-tracked out settings before
+  rec=$(make_spawn_case claude-tracked claude "$id")
+  read_case_record "$rec"
+  mkdir -p "$WT_DIR/.claude"
+  settings="$WT_DIR/.claude/settings.local.json"
+  printf '%s\n' '{"permissions":{"allow":["Bash(git status:*)"]},"hooks":{"Stop":[{"hooks":[{"type":"command","command":"true"}]}]}}' > "$settings"
+  git -C "$WT_DIR" add -f .claude/settings.local.json || fail "cannot track settings fixture"
+  git -C "$WT_DIR" commit -qm 'Track project permissions and hooks' || fail "cannot commit settings fixture"
+  # Spawn refreshes a pooled copy to the remote default before installing hooks.
+  git -C "$PROJ_DIR" cherry-pick "$(git -C "$WT_DIR" rev-parse HEAD)" >/dev/null \
+    || fail "cannot publish tracked settings on fixture default"
+  git -C "$PROJ_DIR" push -q origin HEAD || fail "cannot refresh fixture origin"
+  before=$(git -C "$WT_DIR" hash-object "$settings")
+  out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
+  expect_code 0 $? "claude spawn should succeed: $out"
+  [ "$(git -C "$WT_DIR" hash-object "$settings")" = "$before" ] \
+    || fail "spawn overwrote tracked project settings"
+  [ -z "$(git -C "$WT_DIR" status --porcelain)" ] \
+    || fail "spawn dirtied the project"
+  run_claude_hook "$HOME_DIR/state/$id.claude-settings.json" Stop
+  assert_present "$HOME_DIR/state/$id.turn-ended" "external Stop hook must notify"
+  pass "claude spawn preserves tracked settings and installs an external hook"
+}
+
 test_claude_hooks_semantic_lifecycle() {
   local rec id=busy-cl-1 out state settings
   rec=$(make_spawn_case claude-lifecycle claude "$id")
@@ -347,6 +372,7 @@ test_pi_extension_serializes_settle_before_next_start
 test_pi_extension_stale_incarnation_rejected
 test_kimi_and_grok_install_no_unverified_wiring
 test_opencode_plugin_semantic_lifecycle
+test_claude_tracked_settings_preserved
 test_claude_hooks_semantic_lifecycle
 test_claude_hooks_stale_incarnation_harmless
 test_codex_unverified_until_a_semantic_source_exists
