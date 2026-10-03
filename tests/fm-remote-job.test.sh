@@ -32,6 +32,19 @@ cleanup_remote_job_fixture() {
 }
 trap cleanup_remote_job_fixture EXIT
 
+# A worker startup failure is only diagnosable from the worker's own persisted
+# log and ownership state, which the fixture cleanup deletes; surface both.
+fail_worker_startup() {
+  local log="$STATE_ROOT/logs/dev.firstmate.remote-job.log" f
+  printf '# worker log tail (%s):\n' "$log" >&2
+  tail -n 40 "$log" 2>/dev/null | sed 's/^/#   /' >&2 || true
+  for f in worker.pid worker.identity worker.lock/pid worker.lock/command worker.lock/quarantine; do
+    [ -f "$STATE_ROOT/$f" ] && printf '# %s: %s\n' "$f" "$(head -n 1 "$STATE_ROOT/$f")" >&2
+  done
+  pgrep -fl fm-remote-job-worker 2>/dev/null | sed 's/^/#   /' >&2 || true
+  fail "$1"
+}
+
 cp "$ROOT/bin/fm-remote-job-lib.sh" "$ROOT/bin/fm-remote-job-worker.sh" \
   "$ROOT/bin/fm-remote-delta-read.sh" "$REMOTE_ROOT/bin/"
 printf 'fixture\n' > "$REMOTE_ROOT/AGENTS.md"
@@ -264,7 +277,7 @@ fm_remote_job_worker_owned_alive "$RELOCATED_ROOT" "$ACCOUNT_HOME" \
 # Linux, whose persisted pid can still look like a live lock owner.
 kill -CONT -- "-$OLD_WORKER_PGID"
 fm_remote_job_ensure_worker "$RELOCATED_ROOT" "$ACCOUNT_HOME" \
-  || fail "$FM_REMOTE_JOB_ERROR"
+  || fail_worker_startup "$FM_REMOTE_JOB_ERROR"
 NEW_WORKER_PID=$(cat "$STATE_ROOT/worker.pid")
 [ "$NEW_WORKER_PID" != "$OLD_WORKER_PID" ] || fail "ensure retained a worker bound to a different code root"
 ! kill -0 -- "-$OLD_WORKER_PGID" 2>/dev/null \
