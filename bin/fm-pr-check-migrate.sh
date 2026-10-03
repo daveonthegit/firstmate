@@ -287,6 +287,10 @@ if fm_pid_alive "$pid"; then
   fi
 fi
 
+# Defer a stop signal until the cleanup trap below can release a claimed lock;
+# a default-disposition TERM in between would leave the lock behind.
+MIGRATION_STOP_SIGNAL=
+trap 'MIGRATION_STOP_SIGNAL=1' HUP INT TERM
 lock_held=0
 i=0
 while [ "$i" -lt 100 ]; do
@@ -338,6 +342,7 @@ migration_cleanup() {
 }
 trap migration_cleanup EXIT
 trap 'exit 1' HUP INT TERM
+[ -z "$MIGRATION_STOP_SIGNAL" ] || exit 1
 
 if [ ! -d "$STATE" ] || [ -L "$STATE" ]; then
   echo "PR_CHECK_MIGRATION: state directory is not a private ordinary directory; migration did not complete safely" >&2

@@ -724,6 +724,11 @@ fi
   exit 1
 }
 
+# Defer a stop signal across the claim-to-trap window: a default-disposition
+# TERM there (a short fm-watch-checkpoint timeout on a slow host) would kill the
+# shell with no EXIT trap and leave a live-looking lock pid behind.
+FM_WATCH_STARTUP_SIGNAL=
+trap 'FM_WATCH_STARTUP_SIGNAL=1' HUP INT TERM
 if ! fm_lock_try_acquire "$WATCH_LOCK"; then
   BEAT="$STATE/.last-watcher-beat"
   if [ -n "${FM_LOCK_HELD_PID:-}" ]; then
@@ -781,6 +786,7 @@ trap 'exit 1' HUP INT TERM
 # ${BASHPID:-$$} from this same main shell). Read directly, never via a command
 # substitution, so it matches the stored holder pid for the self-eviction check.
 WATCHER_PID=${BASHPID:-$$}
+[ -z "$FM_WATCH_STARTUP_SIGNAL" ] || exit 1
 printf '%s\n' "$FM_HOME" > "$WATCH_LOCK/fm-home" || true
 printf '%s\n' "$WATCH_PATH" > "$WATCH_LOCK/watcher-path" || true
 # shellcheck disable=SC2034 # Consumed by wake() in the separately linted transition owner.
