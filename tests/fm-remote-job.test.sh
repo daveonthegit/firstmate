@@ -258,6 +258,11 @@ fm_remote_job_lock_owner_matches_process "$ACCOUNT_HOME" \
   || fail "the relocation fixture lost its verified live owner"
 fm_remote_job_worker_owned_alive "$RELOCATED_ROOT" "$ACCOUNT_HOME" \
   || fail "a stale heartbeat hid the verified live worker owner"
+# The stale-heartbeat ownership assertion above is now complete. Resume before
+# replacement so TERM can release the lock and the supervisor can reap its child.
+# Killing a stopped supervisor and child together leaves orphaned zombies on
+# Linux, whose persisted pid can still look like a live lock owner.
+kill -CONT -- "-$OLD_WORKER_PGID"
 fm_remote_job_ensure_worker "$RELOCATED_ROOT" "$ACCOUNT_HOME" \
   || fail "$FM_REMOTE_JOB_ERROR"
 NEW_WORKER_PID=$(cat "$STATE_ROOT/worker.pid")
