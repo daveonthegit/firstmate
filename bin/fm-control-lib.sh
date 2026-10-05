@@ -208,8 +208,10 @@ fm_control_claude_settings_path() {  # <worktree> <state-dir> <id>
 }
 
 fm_control_remove_claude_project_settings() {  # <worktree>
-  local tracked
-  tracked=$(git -C "$1" ls-files -- .claude/settings.local.json) || return 1
+  local tracked=
+  if git -C "$1" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    tracked=$(git -C "$1" ls-files -- .claude/settings.local.json) || return 1
+  fi
   [ -n "$tracked" ] || rm -f "$1/.claude/settings.local.json"
 }
 
