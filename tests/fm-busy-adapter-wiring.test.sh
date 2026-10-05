@@ -11,12 +11,15 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+fm_git_identity
 
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-busy-lib.sh"
 
 SPAWN="$ROOT/bin/fm-spawn.sh"
 TMP_ROOT=$(fm_test_tmproot fm-busy-adapter-wiring)
+# Spawn uses resolved paths; macOS /var and /tmp may be symlink aliases.
+TMP_ROOT=$(cd "$TMP_ROOT" && pwd -P)
 
 make_spawn_fakebin() {
   local dir=$1 fakebin

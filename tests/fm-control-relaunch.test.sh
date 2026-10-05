@@ -21,6 +21,7 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+fm_git_identity
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-control-lib.sh"
 # shellcheck source=/dev/null
@@ -437,8 +438,8 @@ test_tracked_claude_settings_survive_relaunch_and_switch() {
   settings="$dir/wt/.claude/settings.local.json"
   mkdir -p "${settings%/*}"
   printf '%s\n' '{"permissions":{"allow":["Bash(git status:*)"]}}' > "$settings"
-  git -C "$dir/wt" add -f .claude/settings.local.json
-  git -C "$dir/wt" commit -qm 'Track project permissions'
+  git -C "$dir/wt" add -f .claude/settings.local.json || fail "cannot track settings fixture"
+  git -C "$dir/wt" commit -qm 'Track project permissions' || fail "cannot commit settings fixture"
   before=$(git -C "$dir/wt" hash-object "$settings")
   out=$(run_control "$dir" rltracked relaunch --note "preserve project settings")
   expect_code 0 $? "tracked settings relaunch should succeed: $out"
