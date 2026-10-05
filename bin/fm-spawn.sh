@@ -107,7 +107,17 @@
 #   /updatefirstmate, restart). A bare adapter name (claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse)
 #   overrides it for this spawn (either kind). A non-flag string containing
 #   whitespace is treated as a RAW launch command - the escape hatch for verifying
-#   new adapters. For pi and pi-signed, fm-spawn resolves the selected executable
+#   new adapters. Claude crewmate/scout hooks use an untracked project
+#   .claude/settings.local.json as before; when Git tracks that file, hooks go
+#   into private state/<id>.claude-settings.json loaded through Claude --settings
+#   instead. Tracked project settings remain untouched during spawn, relaunch,
+#   harness switch, and cleanup; info/exclude cannot protect tracked files.
+#   A raw Claude launch for a tracked-settings project must include
+#   __CLAUDESETTINGSFLAG__ where Claude accepts options, or spawn refuses before
+#   installing hooks or launching the agent. The placeholder expands to the
+#   private --settings argument, or to nothing for an untracked-settings project.
+#   Built-in Claude launches supply it automatically; secondmates are unaffected.
+#   For pi and pi-signed, fm-spawn resolves the selected executable
 #   name from PATH once, probes that concrete path with --help, and launches the
 #   same path. It adds --tui-mode regular only when that help advertises the flag;
 #   a failed or inconclusive probe omits it so older Pi versions remain launchable.
