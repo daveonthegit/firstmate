@@ -2344,6 +2344,27 @@ exclude_path() {
   mkdir -p "$(dirname "$EXCL")"
   grep -qxF "$rel" "$EXCL" 2>/dev/null || echo "$rel" >> "$EXCL"
 }
+CLAUDE_SETTINGS_FLAG=
+if [ "$KIND" != secondmate ]; then
+  case "$HARNESS" in
+    claude*)
+      claude_settings=$(fm_control_claude_settings_path "$WT" "$STATE_REAL" "$ID") || {
+        echo "error: cannot inspect tracked Claude settings; refusing to install hooks" >&2
+        exit 1
+      }
+      if [ "$claude_settings" != "$WT/.claude/settings.local.json" ]; then
+        case "$LAUNCH" in
+          *__CLAUDESETTINGSFLAG__*) ;;
+          *)
+            echo "error: tracked Claude settings require __CLAUDESETTINGSFLAG__ in the raw launch command; refusing to launch without task hooks" >&2
+            exit 1
+            ;;
+        esac
+        CLAUDE_SETTINGS_FLAG="--settings $(shell_quote "$claude_settings") "
+      fi
+      ;;
+  esac
+fi
 if [ "$RELAUNCH" -eq 1 ]; then
   # Retire the previous incarnation's per-task harness wiring before arming the
   # new one. Without this, a harness switch would leave the old adapter's hook
@@ -2359,7 +2380,6 @@ if [ "$RELAUNCH" -eq 1 ]; then
   RELAUNCH_REPLACEMENT_STATE=$STATE_REAL
   RELAUNCH_REPLACEMENT_WT=$WT
 fi
-CLAUDE_SETTINGS_FLAG=
 if [ "$KIND" != secondmate ]; then
   # Arm the semantic busy-state contract (bin/fm-busy-lib.sh) for every
   # adapter with a verified semantic source. The launch brief sent below IS a
@@ -2407,16 +2427,9 @@ if [ "$KIND" != secondmate ]; then
       # the turn-ended NOTIFICATION touch for the watcher. Every
       # hook command tolerates a refused event (|| true) so a stale-gen writer
       # can never break Claude's own lifecycle.
-      claude_settings=$(fm_control_claude_settings_path "$WT" "$STATE_REAL" "$ID") || {
-        echo "error: cannot inspect tracked Claude settings; refusing to install hooks" >&2
-        exit 1
-      }
       if [ "$claude_settings" = "$WT/.claude/settings.local.json" ]; then
         mkdir -p "$WT/.claude"
         exclude_path '.claude/settings.local.json'
-      else
-        # --settings adds task hooks without editing committed project settings.
-        CLAUDE_SETTINGS_FLAG="--settings $(shell_quote "$claude_settings") "
       fi
       busy_cmd_prefix="$(shell_quote "$FM_ROOT/bin/fm-busy-event.sh") apply $(shell_quote "$STATE_REAL") $(shell_quote "$ID")"
       busy_suffix="--gen $(shell_quote "$BUSY_GEN") --source claude-hook"

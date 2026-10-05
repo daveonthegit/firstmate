@@ -30,7 +30,8 @@ esac
 case "${1:-}" in
   display-message) printf 'firstmate\n'; exit 0 ;;
   list-windows) exit 0 ;;
-  has-session|new-session|new-window|kill-window|send-keys) exit 0 ;;
+  send-keys) printf '%s\n' "$*" >> "$FM_FAKE_TMUX_LOG"; exit 0 ;;
+  has-session|new-session|new-window|kill-window) exit 0 ;;
 esac
 exit 0
 SH
@@ -66,6 +67,7 @@ run_spawn() {  # <home> <wt> <fakebin> <spawn-args...>
     FM_STATE_OVERRIDE="$home/state" FM_DATA_OVERRIDE="$home/data" \
     FM_PROJECTS_OVERRIDE="$home/projects" FM_CONFIG_OVERRIDE="$home/config" \
     FM_SPAWN_NO_GUARD=1 FM_FAKE_PANE_PATH="$wt" TMUX="fake,1,0" \
+    FM_FAKE_TMUX_LOG="$home/state/tmux-commands.log" \
     GROK_HOME="$home/grok-home" PATH="$fakebin:$PATH" \
     "$SPAWN" "$@" 2>&1
 }
@@ -256,12 +258,9 @@ run_claude_hook() {  # <settings.json> <hook-event>
   sh -c "$cmd"
 }
 
-test_claude_tracked_settings_preserved() {
-  local rec id=busy-cl-tracked out settings before
-  rec=$(make_spawn_case claude-tracked claude "$id")
-  read_case_record "$rec"
+track_claude_settings() {
+  local settings="$WT_DIR/.claude/settings.local.json"
   mkdir -p "$WT_DIR/.claude"
-  settings="$WT_DIR/.claude/settings.local.json"
   printf '%s\n' '{"permissions":{"allow":["Bash(git status:*)"]},"hooks":{"Stop":[{"hooks":[{"type":"command","command":"true"}]}]}}' > "$settings"
   git -C "$WT_DIR" add -f .claude/settings.local.json || fail "cannot track settings fixture"
   git -C "$WT_DIR" commit -qm 'Track project permissions and hooks' || fail "cannot commit settings fixture"
@@ -269,6 +268,51 @@ test_claude_tracked_settings_preserved() {
   git -C "$PROJ_DIR" cherry-pick "$(git -C "$WT_DIR" rev-parse HEAD)" >/dev/null \
     || fail "cannot publish tracked settings on fixture default"
   git -C "$PROJ_DIR" push -q origin HEAD || fail "cannot refresh fixture origin"
+}
+
+test_claude_raw_tracked_settings() {
+  local rec id out settings before raw variant commands rc
+  for variant in missing-placeholder with-placeholder; do
+    id="busy-cl-raw-$variant"
+    rec=$(make_spawn_case "claude-raw-$variant" claude "$id")
+    read_case_record "$rec"
+    track_claude_settings
+    settings="$WT_DIR/.claude/settings.local.json"
+    before=$(git -C "$WT_DIR" hash-object "$settings")
+    raw='claude --dangerously-skip-permissions'
+    [ "$variant" != with-placeholder ] || raw="$raw __CLAUDESETTINGSFLAG__"
+    out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR" "$raw")
+    rc=$?
+    if [ "$variant" = missing-placeholder ]; then
+      expect_code 1 "$rc" "raw claude launch must refuse tracked settings: $out"
+      assert_contains "$out" '__CLAUDESETTINGSFLAG__' "refusal must name the required placeholder"
+      assert_absent "$HOME_DIR/state/$id.busy-gen" "refusal must not arm busy state"
+      assert_absent "$HOME_DIR/state/$id.claude-settings.json" "refusal must not install task hooks"
+      if grep -q -- '--dangerously-skip-permissions' "$HOME_DIR/state/tmux-commands.log"; then
+        fail "refused raw command reached the worker pane"
+      fi
+    else
+      expect_code 0 "$rc" "raw claude launch with placeholder must succeed: $out"
+      assert_contains "$out" "spawned $id harness=claude" "raw launch with placeholder must succeed"
+      commands=$(< "$HOME_DIR/state/tmux-commands.log")
+      assert_contains "$commands" "--settings '$HOME_DIR/state/$id.claude-settings.json'" "raw launch must load private task settings"
+      run_claude_hook "$HOME_DIR/state/$id.claude-settings.json" Stop
+      assert_present "$HOME_DIR/state/$id.turn-ended" "raw launch Stop hook must notify"
+    fi
+    [ "$(git -C "$WT_DIR" hash-object "$settings")" = "$before" ] \
+      || fail "raw spawn overwrote tracked project settings"
+    [ -z "$(git -C "$WT_DIR" status --porcelain)" ] \
+      || fail "raw spawn dirtied the project"
+  done
+  pass "raw claude launches require the private-settings placeholder only for tracked settings"
+}
+
+test_claude_tracked_settings_preserved() {
+  local rec id=busy-cl-tracked out settings before
+  rec=$(make_spawn_case claude-tracked claude "$id")
+  read_case_record "$rec"
+  track_claude_settings
+  settings="$WT_DIR/.claude/settings.local.json"
   before=$(git -C "$WT_DIR" hash-object "$settings")
   out=$(run_spawn "$HOME_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$PROJ_DIR")
   expect_code 0 $? "claude spawn should succeed: $out"
@@ -373,6 +417,7 @@ test_pi_extension_stale_incarnation_rejected
 test_kimi_and_grok_install_no_unverified_wiring
 test_opencode_plugin_semantic_lifecycle
 test_claude_tracked_settings_preserved
+test_claude_raw_tracked_settings
 test_claude_hooks_semantic_lifecycle
 test_claude_hooks_stale_incarnation_harmless
 test_codex_unverified_until_a_semantic_source_exists
