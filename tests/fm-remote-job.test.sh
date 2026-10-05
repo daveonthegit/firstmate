@@ -247,8 +247,17 @@ pass "ensure replaces a live worker after its code changes"
 RELOCATED_ROOT="$TMP_ROOT/relocated-root"
 cp -R "$REMOTE_ROOT" "$RELOCATED_ROOT"
 OLD_WORKER_PID=$NEW_WORKER_PID
-OLD_WORKER_PGID=$(fm_remote_job_process_pgid "$OLD_WORKER_PID") \
+# A stale heartbeat must not hide a verified live owner during root replacement.
+# Freeze the whole isolated worker group so the heartbeat cannot race this setup.
+OLD_WORKER_PGID=$(fm_remote_job_worker_process_group "$OLD_WORKER_PID") \
   || fail "the worker replacement fixture could not resolve its process group"
+kill -STOP -- "-$OLD_WORKER_PGID"
+touch -t 200001010000 "$STATE_ROOT/worker.ready"
+fm_remote_job_probe "$ACCOUNT_HOME" && fail "the relocation fixture heartbeat is still fresh"
+fm_remote_job_lock_owner_matches_process "$ACCOUNT_HOME" \
+  || fail "the relocation fixture lost its verified live owner"
+fm_remote_job_worker_owned_alive "$RELOCATED_ROOT" "$ACCOUNT_HOME" \
+  || fail "a stale heartbeat hid the verified live worker owner"
 fm_remote_job_ensure_worker "$RELOCATED_ROOT" "$ACCOUNT_HOME" \
   || fail "$FM_REMOTE_JOB_ERROR"
 NEW_WORKER_PID=$(cat "$STATE_ROOT/worker.pid")
@@ -262,7 +271,7 @@ fm_remote_job_wait "$ACCOUNT_HOME" "$JOB_ID" || fail "$FM_REMOTE_JOB_ERROR"
 fm_remote_job_reap "$ACCOUNT_HOME" "$JOB_ID" || fail "the relocated-root probe could not be reaped"
 fm_remote_job_ensure_worker "$REMOTE_ROOT" "$ACCOUNT_HOME" || fail "$FM_REMOTE_JOB_ERROR"
 NEW_WORKER_PID=$(cat "$STATE_ROOT/worker.pid")
-pass "worker identity binds the canonical configured code root"
+pass "worker identity binds the canonical configured code root despite a stale owner heartbeat"
 
 CRASHED_WORKER_PID=$NEW_WORKER_PID
 kill -KILL "$CRASHED_WORKER_PID"

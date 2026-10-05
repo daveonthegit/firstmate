@@ -815,11 +815,13 @@ fm_remote_job_worker_owned_alive() {
   case "$pid" in ''|*[!0-9]*) return 1 ;; esac
   identity_file=$(fm_remote_job_worker_identity_path)
   fm_remote_job_regular_bounded "$identity_file" 256 || return 1
-  fm_remote_job_probe "$account_home" || return 1
+  # Heartbeat freshness proves readiness, not ownership. A stalled but verified
+  # owner must still be stopped before replacing its code or configured root.
   if fm_remote_job_lock_owner_matches_process "$account_home"; then
     [ "$pid" = "$FM_REMOTE_JOB_OWNER_PID" ] || return 1
     return 0
   fi
+  fm_remote_job_probe "$account_home" || return 1
   [ ! -e "$lock/pid" ] && [ ! -L "$lock/pid" ] &&
     [ ! -e "$lock/start" ] && [ ! -L "$lock/start" ] &&
     [ ! -e "$lock/command" ] && [ ! -L "$lock/command" ] || return 1
