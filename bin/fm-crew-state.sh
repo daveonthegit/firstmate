@@ -49,7 +49,9 @@
 #   4. No run for this crew (pre-validation, or kind=scout): fall back to the
 #      recorded backend's pane busy state, then the status log's last line only
 #      when its verb maps to a recognized run-state. Decision-only events such as
-#      `resolved` never become current state or detail.
+#      `resolved` never become current state or detail. A mode=no-mistakes ship
+#      `done` lacking a `PR https://...` URL maps to parked, not done, and never
+#      counts as a CI-ready report (see status_done_requires_validation).
 #   5. Missing meta or torn-down worktree: report unknown · none. If no run is
 #      attributed to this crew, a dead endpoint also reports unknown · none rather
 #      than trusting a stale status log.
@@ -107,6 +109,7 @@ meta_value() {  # <key>
 
 WT=$(meta_value worktree)
 KIND=$(meta_value kind)
+MODE=$(meta_value mode)
 HARNESS=$(meta_value harness)
 REMOTE_HOST=$(meta_value remote_host)
 [ -n "$KIND" ] || KIND=ship
@@ -139,7 +142,12 @@ map_log_state() {  # <line>
     working)        echo working ;;
     needs-decision) echo parked ;;
     blocked)        echo blocked ;;
-    done)           echo "done" ;;
+    done)
+      if status_done_requires_validation "$1" "$MODE" "$KIND"; then
+        echo parked
+      else
+        echo "done"
+      fi ;;
     failed)         echo failed ;;
     *)              echo unknown ;;
   esac
@@ -292,6 +300,7 @@ nm_gate_findings_count() {
 }
 log_reports_ci_ready() {
   [ "$LOG_VERB" = "done" ] || return 1
+  status_done_requires_validation "$LOG_LINE" "$MODE" "$KIND" && return 1
   case "$(status_line_note "$LOG_LINE")" in
     *PR*"checks green"*|*"checks green"*PR*) return 0 ;;
     *) return 1 ;;
