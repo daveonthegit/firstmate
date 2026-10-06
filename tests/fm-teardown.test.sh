@@ -59,6 +59,8 @@ set -u
 
 # shellcheck source=tests/lib.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=/dev/null
+. "$ROOT/bin/fm-control-lib.sh"
 fm_git_identity fmtest fmtest@example.invalid
 
 TEARDOWN="$ROOT/bin/fm-teardown.sh"
@@ -2739,6 +2741,45 @@ EOF
   pass "the run abort and the leaked-process reap both complete before the destructive worktree return"
 }
 
+test_teardown_preserves_tracked_claude_settings() {
+  local case_dir rc settings before
+  case_dir=$(make_case tracked-claude-settings)
+  write_meta "$case_dir" local-only ship
+  settings="$case_dir/wt/.claude/settings.local.json"
+  mkdir -p "${settings%/*}"
+  printf '%s\n' '{"permissions":{"allow":["Bash(git status:*)"]}}' > "$settings"
+  git -C "$case_dir/wt" add -f .claude/settings.local.json
+  git -C "$case_dir/wt" -c user.email=t@t -c user.name=t commit -q -m 'Track project permissions'
+  before=$(git -C "$case_dir/wt" hash-object "$settings")
+  printf '{}\n' > "$case_dir/state/task-x1.claude-settings.json"
+
+  set +e
+  run_teardown "$case_dir" --force > "$case_dir/stdout" 2> "$case_dir/stderr"
+  rc=$?
+  set -e
+
+  expect_code 0 "$rc" "tracked-claude-settings: teardown should succeed"
+  [ "$(git -C "$case_dir/wt" hash-object "$settings")" = "$before" ] \
+    || fail "tracked-claude-settings: teardown changed tracked project settings"
+  [ -z "$(git -C "$case_dir/wt" status --porcelain)" ] \
+    || fail "tracked-claude-settings: teardown dirtied the worktree"
+  assert_absent "$case_dir/state/task-x1.claude-settings.json" \
+    "tracked-claude-settings: teardown left the private hook settings"
+  pass "teardown preserves tracked Claude settings and retires the private hook settings"
+}
+
+test_claude_settings_removed_from_broken_checkout() {
+  local dir="$TMP_ROOT/broken-checkout"
+  mkdir -p "$dir/.claude"
+  printf 'gitdir: %s\n' "$dir/missing-gitdir" > "$dir/.git"
+  printf '{}\n' > "$dir/.claude/settings.local.json"
+  fm_control_remove_claude_project_settings "$dir" \
+    || fail "broken-checkout: settings removal refused a stale checkout"
+  assert_absent "$dir/.claude/settings.local.json" \
+    "broken-checkout: untracked hook settings were left behind"
+  pass "a stale checkout's hook settings are removed as untracked"
+}
+
 test_local_only_fork_remote_allows
 test_teardown_prompts_tasks_axi_done_when_compatible
 test_teardown_exports_vault_journal_when_configured
@@ -2749,6 +2790,8 @@ test_no_mistakes_origin_remote_allows
 test_no_mistakes_truly_unpushed_refuses
 test_local_only_force_overrides_unpushed
 test_teardown_missing_busy_sidecar_completes
+test_teardown_preserves_tracked_claude_settings
+test_claude_settings_removed_from_broken_checkout
 test_released_endpoint_with_unpushed_work_refuses
 test_released_endpoint_with_dirty_worktree_refuses
 test_released_endpoint_with_landed_work_allows_without_touching_herdr

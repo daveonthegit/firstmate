@@ -107,7 +107,17 @@
 #   /updatefirstmate, restart). A bare adapter name (claude|codex|opencode|pi|pi-signed|grok|kimi|cursor|muse)
 #   overrides it for this spawn (either kind). A non-flag string containing
 #   whitespace is treated as a RAW launch command - the escape hatch for verifying
-#   new adapters. For pi and pi-signed, fm-spawn resolves the selected executable
+#   new adapters. Claude crewmate/scout hooks use an untracked project
+#   .claude/settings.local.json as before; when Git tracks that file, hooks go
+#   into private state/<id>.claude-settings.json loaded through Claude --settings
+#   instead. Tracked project settings remain untouched during spawn, relaunch,
+#   harness switch, and cleanup; info/exclude cannot protect tracked files.
+#   A raw Claude launch for a tracked-settings project must include
+#   __CLAUDESETTINGSFLAG__ where Claude accepts options, or spawn refuses before
+#   installing hooks or launching the agent. The placeholder expands to the
+#   private --settings argument, or to nothing for an untracked-settings project.
+#   Built-in Claude launches supply it automatically; secondmates are unaffected.
+#   For pi and pi-signed, fm-spawn resolves the selected executable
 #   name from PATH once, probes that concrete path with --help, and launches the
 #   same path. It adds --tui-mode regular only when that help advertises the flag;
 #   a failed or inconclusive probe omits it so older Pi versions remain launchable.
@@ -1112,7 +1122,7 @@ launch_template() {
     # does NOT suppress the interactive ghost text (verified empirically), so the env
     # var is the correct control. The dim-aware composer reader in fm-tmux-lib.sh is
     # the defense-in-depth backstop for any pane this flag cannot reach.
-    claude) printf '%s' 'CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false claude --dangerously-skip-permissions __MODELFLAG____EFFORTFLAG__"$(__OPINPUT__ encode launch-brief < __BRIEF__)"' ;;
+    claude) printf '%s' 'CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false claude --dangerously-skip-permissions __CLAUDESETTINGSFLAG____MODELFLAG____EFFORTFLAG__"$(__OPINPUT__ encode launch-brief < __BRIEF__)"' ;;
     codex)
       if [ "$kind" = secondmate ]; then
         printf '%s' 'codex __MODELFLAG____EFFORTFLAG__--dangerously-bypass-approvals-and-sandbox "$(__OPINPUT__ encode launch-brief < __BRIEF__)"'
@@ -2344,6 +2354,27 @@ exclude_path() {
   mkdir -p "$(dirname "$EXCL")"
   grep -qxF "$rel" "$EXCL" 2>/dev/null || echo "$rel" >> "$EXCL"
 }
+CLAUDE_SETTINGS_FLAG=
+if [ "$KIND" != secondmate ]; then
+  case "$HARNESS" in
+    claude*)
+      claude_settings=$(fm_control_claude_settings_path "$WT" "$STATE_REAL" "$ID") || {
+        echo "error: cannot inspect tracked Claude settings; refusing to install hooks" >&2
+        exit 1
+      }
+      if [ "$claude_settings" != "$WT/.claude/settings.local.json" ]; then
+        case "$LAUNCH" in
+          *__CLAUDESETTINGSFLAG__*) ;;
+          *)
+            echo "error: tracked Claude settings require __CLAUDESETTINGSFLAG__ in the raw launch command; refusing to launch without task hooks" >&2
+            exit 1
+            ;;
+        esac
+        CLAUDE_SETTINGS_FLAG="--settings $(shell_quote "$claude_settings") "
+      fi
+      ;;
+  esac
+fi
 if [ "$RELAUNCH" -eq 1 ]; then
   # Retire the previous incarnation's per-task harness wiring before arming the
   # new one. Without this, a harness switch would leave the old adapter's hook
@@ -2406,17 +2437,19 @@ if [ "$KIND" != secondmate ]; then
       # the turn-ended NOTIFICATION touch for the watcher. Every
       # hook command tolerates a refused event (|| true) so a stale-gen writer
       # can never break Claude's own lifecycle.
-      mkdir -p "$WT/.claude"
+      if [ "$claude_settings" = "$WT/.claude/settings.local.json" ]; then
+        mkdir -p "$WT/.claude"
+        exclude_path '.claude/settings.local.json'
+      fi
       busy_cmd_prefix="$(shell_quote "$FM_ROOT/bin/fm-busy-event.sh") apply $(shell_quote "$STATE_REAL") $(shell_quote "$ID")"
       busy_suffix="--gen $(shell_quote "$BUSY_GEN") --source claude-hook"
       j_submit=$(json_escape "$busy_cmd_prefix busy $busy_suffix --event user-prompt-submit 2>/dev/null || true")
       j_stop=$(json_escape "touch $(shell_quote "$TURNEND"); $busy_cmd_prefix idle $busy_suffix --event stop 2>/dev/null || true")
       j_stopfail=$(json_escape "$busy_cmd_prefix idle $busy_suffix --event stop-failure 2>/dev/null || true")
       j_sessionend=$(json_escape "$busy_cmd_prefix idle $busy_suffix --event session-end 2>/dev/null || true")
-      cat > "$WT/.claude/settings.local.json" <<EOF
+      cat > "$claude_settings" <<EOF
 {"hooks":{"UserPromptSubmit":[{"hooks":[{"type":"command","command":"$j_submit"}]}],"Stop":[{"hooks":[{"type":"command","command":"$j_stop"}]}],"StopFailure":[{"hooks":[{"type":"command","command":"$j_stopfail"}]}],"SessionEnd":[{"hooks":[{"type":"command","command":"$j_sessionend"}]}]}}
 EOF
-      exclude_path '.claude/settings.local.json'
       ;;
     opencode*)
       mkdir -p "$WT/.opencode/plugins"
@@ -2776,6 +2809,7 @@ sq_opinput=$(shell_quote "$FM_ROOT/bin/fm-operational-input.sh")
 sq_worktree=$(shell_quote "$WT")
 MODELFLAG=$(model_flag_for_harness "$HARNESS" "$MODEL")
 EFFORTFLAG=$(effort_flag_for_harness "$HARNESS" "$EFFORT")
+LAUNCH=${LAUNCH//__CLAUDESETTINGSFLAG__/$CLAUDE_SETTINGS_FLAG}
 LAUNCH=${LAUNCH//__MODELFLAG__/$MODELFLAG}
 LAUNCH=${LAUNCH//__EFFORTFLAG__/$EFFORTFLAG}
 LAUNCH=${LAUNCH//__BRIEF__/$sq_brief}

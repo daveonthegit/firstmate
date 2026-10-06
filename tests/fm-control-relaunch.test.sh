@@ -21,6 +21,7 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+fm_git_identity
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-control-lib.sh"
 # shellcheck source=/dev/null
@@ -428,6 +429,35 @@ test_harness_switch_moves_the_record_and_clears_prior_wiring() {
   [ "$(journal_field "$dir" rl4 from_harness)" = claude ] || fail "the journal should record the origin harness"
   [ "$(journal_field "$dir" rl4 to_harness)" = codex ] || fail "the journal should record the target harness"
   pass "fm-control relaunch: switching harness is one ordinary relaunch, and the old wiring goes with the old agent"
+}
+
+test_tracked_claude_settings_survive_relaunch_and_switch() {
+  local dir settings before out
+  dir=$(new_case tracked-settings rltracked)
+  add_ship_task "$dir" rltracked claude
+  settings="$dir/wt/.claude/settings.local.json"
+  mkdir -p "${settings%/*}"
+  printf '%s\n' '{"permissions":{"allow":["Bash(git status:*)"]}}' > "$settings"
+  git -C "$dir/wt" add -f .claude/settings.local.json || fail "cannot track settings fixture"
+  git -C "$dir/wt" commit -qm 'Track project permissions' || fail "cannot commit settings fixture"
+  before=$(git -C "$dir/wt" hash-object "$settings")
+  out=$(run_control "$dir" rltracked relaunch --note "preserve project settings")
+  expect_code 0 $? "tracked settings relaunch should succeed: $out"
+  [ "$(git -C "$dir/wt" hash-object "$settings")" = "$before" ] \
+    || fail "relaunch changed tracked settings"
+  assert_contains "$(cat "$dir/fake/literal")" '--settings ' \
+    "tracked settings must select the additional settings launch flag"
+  [ -f "$dir/home/state/rltracked.claude-settings.json" ] \
+    || fail "relaunch must install private hook settings"
+  printf 'codex' > "$dir/fake/becomes"
+  out=$(run_control "$dir" rltracked relaunch --harness codex --note "switch away safely")
+  expect_code 0 $? "tracked settings switch should succeed: $out"
+  [ "$(git -C "$dir/wt" hash-object "$settings")" = "$before" ] \
+    || fail "harness switch removed tracked settings"
+  [ ! -e "$dir/home/state/rltracked.claude-settings.json" ] \
+    || fail "harness switch must retire private settings"
+  [ -z "$(git -C "$dir/wt" status --porcelain)" ] || fail "tracked settings must stay clean"
+  pass "fm-control relaunch: tracked Claude settings survive replacement and harness switch"
 }
 
 test_harness_switch_does_not_carry_the_old_profile_axes() {
@@ -1319,6 +1349,7 @@ test_disabled_relaunch_clears_prior_trace_context
 test_relaunch_appends_the_progress_note_to_the_instructions
 test_relaunch_requires_a_note_for_a_ship_task
 test_harness_switch_moves_the_record_and_clears_prior_wiring
+test_tracked_claude_settings_survive_relaunch_and_switch
 test_harness_switch_does_not_carry_the_old_profile_axes
 test_harness_switch_resolves_a_prefixed_recorded_harness
 test_prefixed_recorded_harness_requires_explicit_replacement

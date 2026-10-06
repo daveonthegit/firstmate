@@ -1,0 +1,573 @@
+Behavior portable serial 4	Run portable serial shard 4	﻿2026-10-05T20:33:42.6275384Z ##[group]Run set -eu
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6275700Z ^[[36;1mset -eu^[[0m
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6275956Z ^[[36;1mmkdir -p "$RUNNER_TEMP/fm-test"^[[0m
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6276317Z ^[[36;1mbin/fm-test-run.sh --lane "$FM_SERIAL_LANE" \^[[0m
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6276866Z ^[[36;1m  --json "$RUNNER_TEMP/fm-test/fm-test-timing-portable-serial-${FM_SERIAL_SHARD}.json"^[[0m
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6345548Z shell: /usr/bin/bash -e {0}
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6345833Z env:
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6346072Z   FM_SERIAL_LANE: portable-serial-4of4
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6346368Z   FM_SERIAL_SHARD: 4
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:42.6346598Z ##[endgroup]
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:43.5226164Z FM_TEST_BEGIN 2026-10-05T20:33:43Z tests/fm-secondmate-harness.test.sh family=secondmate expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:43.7834427Z ok - A1 fm-harness.sh secondmate resolves the fallback chain; crew mode unchanged
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:43.8207116Z ok - A2 a crewmate-only crew harness is skipped loudly for secondmate resolution; an explicit pin is preserved
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:43.8488562Z ok - fm-harness detects only Cursor Agent CLI's exact invocation marker
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:44.0437622Z ok - C1 fm-harness.sh secondmate-model/secondmate-effort resolve the optional tokens; bare harness stays empty (backward-compat)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:44.1769388Z ok - pi-signed identity: authoritative launch selection distinguishes shared wrapper ancestry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:44.2513512Z ok - harness identity: dash-leading ps command names are basename operands, not options
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:45.6040821Z ok - B1 propagate_inheritable_config: copy, idempotence, convergence, absence-mirror, exclusion, no-op, skip diagnostics
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:48.9931374Z ok - B2 spawn: secondmate runs the secondmate harness; its home inherits declared config
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:50.0194500Z ok - B3 spawn: an absent secondmate-harness falls back to the crew harness (backward-compat)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:51.0197653Z ok - B4 spawn: no config at all -> own harness and no propagation side effects
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:52.0013039Z ok - B5 spawn: an explicit per-spawn harness arg overrides config/secondmate-harness
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:52.1870634Z ok - B6 spawn: an unverified resolved secondmate harness is refused (guard intact)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:52.3833985Z skip: cursor executable not resolvable in this environment, so the launch could not be built
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:53.4159763Z ok - B5b spawn: FM_BACKEND wins over inherited config/backend
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:54.4427687Z ok - B5c spawn: explicit --backend wins over FM_BACKEND and inherited config/backend
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:55.4568857Z ok - C2 spawn: a bare harness-only secondmate-harness file launches with no model/effort flag (backward-compat)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:56.4841936Z ok - C3 spawn: config/secondmate-harness's model token threads --model into the launch and meta
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:57.5096335Z ok - C4 spawn: config/secondmate-harness's model+effort tokens thread into the launch and meta
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:58.5207377Z ok - C5 spawn: an explicit --model overrides config/secondmate-harness's model token; the file's effort token still applies
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:33:59.5358384Z ok - C6 spawn: an explicit --effort overrides config/secondmate-harness's effort token; the file's model token still applies
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:00.5299969Z ok - C7 spawn: an explicit --harness starts with clean model/effort defaults
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:01.5309440Z ok - C8 spawn: an explicit --harness still honors explicit model/effort flags
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:03.6972106Z ok - C9 spawn: secondmate launch pins supervision to its own harness
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:06.7504844Z ok - C9 spawn: the harness fallback chain still resolves with no tokens; crew/scout launches are unaffected by this feature
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:12.2585974Z ok - B7 bootstrap sweep pushes, re-converges, and mirrors absence; never inherits secondmate-harness
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:14.3476264Z ok - B8 bootstrap sweep propagates config even when the home's tracked files are already current
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:16.4205755Z ok - B9 bootstrap sweep defers new inherited config until the home ignores it
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:19.6042213Z ok - B10 bootstrap sweep materializes and inherits the startup-memory default while fast-forwarding
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:24.7569257Z ok - B12b backend inheritance: present values and primary absence converge exactly
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:30.3870186Z ok - B12c presentation inheritance: the primary default converges on, and only an explicit opt-out propagates off
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:32.3898692Z ok - B11 bootstrap sweep surfaces config propagation failures
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:34.4200982Z ok - B11 bootstrap rereads completed config writes after partial propagation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:36.6404631Z ok - B12 config-push propagates via shared live discovery, reports items, rereads on change only, and does not fast-forward
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:39.9626567Z ok - B13 config-push reports dirty, non-allowing, and invalid homes without failing warnings-only runs
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:40.6029409Z ok - B14 config-push exits nonzero on real propagation errors
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:42.4687118Z ok - B14 config-push rereads completed config writes after partial propagation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:45.8420324Z ok - B15 config reread is per-home, exact-byte, ordered, and pointer-only
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:57.2438915Z ok - B16 config reread isolation, ABSENT, generation safety, send failure, and retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:34:59.5643389Z ok - B20 config reread publication failures retain exact generations for retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:03.1111348Z ok - B21 config reread instruction-write failures retain exact retry generations
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:06.6631974Z ok - B21 config reread preserves exact bytes when temporary adoption also fails
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:10.9770489Z ok - B21 config reread serializes concurrent propagation and delivery
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:31.6048306Z ok - B22 full config reread retry queues drain before new publication
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:53.2567899Z ok - B23 mixed config reread delivery failures still bound sent history
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:53.6386733Z ok - B26 config reread delivery stops after the oldest failed generation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:54.3995499Z ok - B17 config reread skips unchanged homes and reads destination post-write bytes
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:57.4730027Z ok - B18 bootstrap config reread path works; spawn flexibility remains defaults-only
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:58.0738343Z ok - B19 bootstrap respawns before inherited-config reread
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:59.2370174Z ok - B25 spawn quarantines stale rereads without blocking relaunch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:59.3804290Z ok - B24 bootstrap detect-only mode remains filesystem read-only
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:59.3810053Z # all fm-secondmate-harness tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:59.5961513Z FM_TEST_END 2026-10-05T20:35:59Z tests/fm-secondmate-harness.test.sh exit=0 duration_ms=136067 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:59.6212752Z FM_TEST_BEGIN 2026-10-05T20:35:59Z tests/fm-claude-stop-autoarm.test.sh family=unclassified expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:59.7291090Z ok - auto-arm: inert in a linked child worktree even when in-flight
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:35:59.7860133Z ok - auto-arm: inert with no session lock
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:00.2598959Z ok - auto-arm: a demonstrably dead recorded session owner is reclaimed through fm-lock.sh before arming
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:00.6235342Z ok - auto-arm: inert without arm, rewake, or lock replacement when another live harness owns the home
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:00.7785060Z ok - auto-arm: inert while AFK owns supervision
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:01.4507928Z ok - auto-arm: stale-owner recovery leaves the AFK and supervision-need gates unchanged
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:01.6933228Z ok - auto-arm: resolves the outermost pid of a nested contiguous claude ancestry (bg-spare chain)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:01.8454380Z ok - auto-arm: inert with nothing in flight and no X-mode need
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:02.0459858Z ok - auto-arm: actionable close translates to exactly one exit-2 rewake with reason
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:02.5060693Z ok - auto-arm: actionable close survives a healthy successor without duplicate delivery
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:02.7219647Z ok - auto-arm: bounded failure verification emits one automatic-mechanism alarm
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:03.1195908Z ok - auto-arm: consecutive failures keep Stop-owned retry without repeating notice
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:03.3370192Z ok - auto-arm: unverified clean close exhausts retries and fails closed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:03.5387911Z ok - auto-arm: post-alarm actionable outcomes cannot continue or reset failure state
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:04.0373423Z ok - auto-arm: benign cycle end with a live watcher and fresh beacon stays silent across the next cycle
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:04.5642386Z ok - auto-arm: budget contention preserves the episode and forces a reset retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:04.7637942Z ok - auto-arm: X-mode poll need arms the cycle even with no tasks in flight
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:07.0164662Z ok - auto-arm: concurrent firings admit one owner and one rewake translation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:07.2233248Z ok - auto-arm: need vanishing mid-cycle closes without a rewake
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:07.4269799Z ok - auto-arm: mid-cycle AFK hands triage to the daemon with no rewake
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:07.6244104Z ok - auto-arm: active in a marked secondmate home
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:36:07.6333442Z ok - fm-lock: shared session-lock lib preserves the status path
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:00.3178173Z FM_TEST_END 2026-10-05T20:37:00Z tests/fm-claude-stop-autoarm.test.sh exit=0 duration_ms=60689 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:00.3427357Z FM_TEST_BEGIN 2026-10-05T20:37:00Z tests/fm-procevent.test.sh family=unclassified expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:00.4174363Z ok - no configured source means no generated state and no process
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:01.3656204Z ok - one blocking completion yields exactly one bounded normalized event
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:01.9120581Z not-autohandled: direct-src (left for the handler; still unacknowledged)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:01.9549378Z ok - public start owns the process group recorded by its claim
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:04.4859300Z ok - public start never claims an inherited caller process group
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:04.9603485Z ok - an unhandled result survives restart and repeat drains, and only explicit acknowledgement stops its re-announcement
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:05.4720285Z ok - publication cannot race a handled acknowledgement
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:05.6022690Z ok - handled acknowledgement creation is private and fails safely
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:06.2427196Z ok - automatic application waits for durable publication and failed publication remains recoverable
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:07.1986554Z ok - a self-announcing adapter applies quietly and still publishes what it could not apply
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:07.5938104Z not-autohandled: ends-src (left for the handler; still unacknowledged)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:07.9238199Z ok - an adapter-classified terminal result is captured once, announced, and retires its source automatically
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:08.2634713Z not-autohandled: open-src (left for the handler; still unacknowledged)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:08.3798924Z ok - a source stays armed unless its own adapter classifies the result terminal
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:09.2522069Z not-autohandled: replace-src (left for the handler; still unacknowledged)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:09.3688899Z ok - terminal retirement preserves and releases a concurrently replaced registration
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:10.2828296Z ok - failed terminal retirement is fail-closed and idempotently recoverable
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:13.2350076Z ok - one Send & End yields exactly one captured result, automatic retirement, and no recurring poll
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:14.6888430Z ok - a drained-but-unhandled result survives a replacement session and is retired only by explicit handling, never twice
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:15.0714986Z ok - pending results preserve numeric order and distinct wake identity
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:15.8675735Z ok - one owner per canonical source across homes
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:18.2290082Z ok - retiring a never-completing source stops its runner and its blocked child
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:21.1860572Z ok - reconcile reaps a runner whose source registration is gone
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:21.5864055Z not-autohandled: stale-src (left for the handler; still unacknowledged)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:21.6269082Z ok - stale-owner recovery removes abandoned output without displacing a live owner
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:22.0349607Z not-autohandled: cross-home-src (left for the handler; still unacknowledged)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:22.0762084Z ok - cross-home stale recovery removes abandoned output from the old state directory
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:28.8807421Z not-autohandled: race-src (left for the handler; still unacknowledged)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:29.7308835Z not-autohandled: race-src (left for the handler; still unacknowledged)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:29.7724987Z ok - concurrent stale-claim replacement starts exactly one runner
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:33.1950258Z ok - a crashed runner leader never lets a live owned group be reclaimed as stale
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:35.8091231Z ok - a truly dead generation with no surviving group is still safely reclaimed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:38.7859237Z ok - claim replacement cannot produce a torn ownership snapshot
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:39.2608643Z ok - retirement and start share one serialized lifecycle boundary
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:39.4118598Z ok - PID reuse cannot signal an unrelated process
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:42.0527298Z ok - transient identity failure preserves the live source for retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:47.4068417Z ok - bounded home sweep preflights then retires every locally owned source
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:50.1859379Z ok - home sweep leaves foreign-home claims and runners untouched
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:52.8936749Z ok - home sweep refuses safely until runner identity is readable
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:52.9204926Z ok - healthy runtime behavior remains registration-only
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:53.3858441Z ok - registration rejects unrepresentable newline arguments
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:53.6285813Z ok - nonzero exit with no output stays armed and silent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:54.0791274Z ok - oversized output is bounded rather than published whole or dropped
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:56.9704238Z ok - live output stays bounded and retirement reaps the whole source group
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:57.1827889Z ok - invalid output bounds fail closed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:57.3302813Z ok - the adapter derives physical identity without newline path corruption
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:57.7449606Z ok - source-only homes trigger the general supervision guard
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:57.8567078Z ok - the adapter classifies published poll output safely
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:58.0406544Z ok - the adapter owns which Lavish results end a source, and payload text cannot forge one
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:58.0835519Z ok - the published interfaces state the loss limitation and claim no lossless delivery
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:58.0845501Z 
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:58.0862674Z all procevent tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:37:59.9763017Z FM_TEST_END 2026-10-05T20:37:59Z tests/fm-procevent.test.sh exit=0 duration_ms=59626 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:00.0019583Z FM_TEST_BEGIN 2026-10-05T20:37:59Z tests/fm-afk-inject-e2e.test.sh family=afk expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:16.4584767Z ok - Scenario A: partial input defers injection; digest arrives clean after idle
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:27.6514726Z ok - Scenario B: swallowed Enter produces exactly one clean digest
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.1377329Z ok - Scenario C: a normal captain status injects exactly one clean single-line sentinel digest
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.1382768Z all e2e injection tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.1762826Z FM_TEST_END 2026-10-05T20:38:36Z tests/fm-afk-inject-e2e.test.sh exit=0 duration_ms=36166 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.2011024Z FM_TEST_BEGIN 2026-10-05T20:38:36Z tests/fm-cmux-claude-composer-live-e2e.test.sh family=live-harness-optin expected_gate_skip=optin-env
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.2051321Z skip: set FM_CMUX_CLAUDE_COMPOSER_LIVE=1 to run the real cmux Claude composer drift guard
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.2315216Z FM_TEST_END 2026-10-05T20:38:36Z tests/fm-cmux-claude-composer-live-e2e.test.sh exit=0 duration_ms=23 gate_skip=true
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.2556601Z FM_TEST_BEGIN 2026-10-05T20:38:36Z tests/fm-cursor-harness.test.sh family=unclassified expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.3900651Z ok - fm_cursor_process_matches: cursor's real shapes identify; real node/agent lookalikes do not
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.4213089Z ok - fm_cursor_process_matches: name and install-tree signals each carry a verdict alone
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.4456610Z ok - fm_cursor_verify_executable: the legacy alias is accepted only with cursor evidence
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.4528798Z ok - fm_cursor_resolve_binary: prints the stable launcher, not the versioned target
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.5065468Z ok - tmux liveness: a cursor pane is agent; an unrelated node/agent is other, never dead
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.5394098Z ok - fm-harness.sh: cursor's marker outranks an inherited CLAUDECODE
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.7701296Z ok - fm-harness.sh: cursor-like node script names do not establish ancestry identity
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.8701404Z ok - cursor transcript fold: role:user opens a turn, turn_ended closes it, aborts included
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:36.9282338Z ok - cursor transcript fold: malformed closes cannot settle through either parser
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:37.0024499Z ok - cursor transcript fold: partial appends never make an active turn idle
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:37.0421197Z ok - cursor transcript fold: an unresolvable binding is unknown, never idle
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:37.0805254Z ok - cursor transcript binding: exact recorded workspacePath only, never a prefix or rebuilt slug
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:38:37.1273548Z ok - cursor transcript fold: a prior conversation is excluded so a relaunch folds its own turn
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:06.3426829Z FM_TEST_END 2026-10-05T20:39:06Z tests/fm-cursor-harness.test.sh exit=0 duration_ms=30079 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:06.3680266Z FM_TEST_BEGIN 2026-10-05T20:39:06Z tests/fm-gh-account.test.sh family=backend-dispatch expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:06.5350796Z ok - each account is selected from the repository it owns access to, not from global gh state
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:07.0393087Z ok - every github.com origin form resolves alike; other forges and originless checkouts select nothing
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:07.2678457Z ok - an all-numeric owner survives the ssh-port handling instead of silently selecting nothing
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:07.4269768Z ok - an unreadable 'gh auth status' refuses only where an account was needed, and its override works
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:07.5186023Z ok - a home logged in to another host only is left exactly as it was, whatever that host is called
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:07.6110468Z ok - gh absent, nobody logged in, and a single account all leave gh untouched
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:07.8477968Z ok - an undeterminable or ambiguous account is refused with its fix; unequal access resolves
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:07.9325127Z ok - config/gh-accounts decides an owner offline, and a bad line is reported not worked around
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:08.0128318Z ok - FM_GH_ACCOUNT overrides one run, none opts out, and an unknown login is refused
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:08.1699815Z ok - exec passes the credential to exactly one child, stands aside, or refuses to run
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:08.3132430Z ok - the evaluated snippet carries the right credential, or an unusable one that fails loudly
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:12.9930033Z ok - a spawned lane operates as the account its own repository needs, recorded and never switched globally
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:15.0376726Z ok - where a gh call enters the wrapper a lane exports nothing and keeps per-repository keying
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:17.3898308Z ok - an installed wrapper nothing resolves to still leaves the lane its own credential
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:19.3877418Z ok - a home with one logged-in account spawns exactly as it did before
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:19.6287301Z ok - a spawn with no determinable account stops at dispatch with the reason and its fix
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:19.7430408Z ok - the wrapper passes account, config, help, and other-host commands straight to gh
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:19.7755441Z ok - a call that already carries a credential is never re-pointed at another account
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.0010153Z ok - repository work runs as that repository's own account; nothing to choose leaves gh alone
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.3251532Z ok - an attached -R, an api endpoint path, and a flag-looking value are all keyed off the right repository
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.4968150Z ok - an undeterminable account is refused, and an unreachable helper refuses only when a wrong account is possible
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.6426565Z ok - installing is idempotent and reversible, and a foreign gh is never replaced or removed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.6428214Z # all fm-gh-account tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.7361273Z FM_TEST_END 2026-10-05T20:39:20Z tests/fm-gh-account.test.sh exit=0 duration_ms=14361 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.7611581Z FM_TEST_BEGIN 2026-10-05T20:39:20Z tests/fm-lint-workflows.test.sh family=pure-contract-unit expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.7899173Z ok - fm-lint-workflows.sh pins an explicit actionlint version (1.7.12)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.8064087Z ok - current .github/workflows YAML files parse
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.8277089Z ok - column-0 heredoc workflow fails validation with a clear error
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.8484382Z ok - valid fixture workflow passes
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.8604982Z ok - empty workflows directory fails closed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.8764101Z ok - explicit malformed workflow path fails validation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.8965740Z ok - non-mapping workflow YAML root fails
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.9208625Z ok - missing actionlint fails closed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:20.9433740Z ok - fm-lint-workflows.sh refuses to lint under a non-pinned actionlint version
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.0140063Z ok - actionlint installer retries a transient download failure
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.3348036Z ok - actionlint installer selects the official archive, URL, and checksum per OS/arch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.3751241Z ok - actionlint installer rejects a wrong checksum
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.4421938Z ok - actionlint installer falls back to shasum -a 256 when sha256sum is absent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.4979287Z ok - actionlint installer prefers sha256sum when both hashers are present
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.5369710Z ok - actionlint installer rejects an unsupported OS or architecture
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.5956861Z ok - fm-lint.sh default path catches a self-broken ci.yml
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.6444075Z FM_TEST_END 2026-10-05T20:39:21Z tests/fm-lint-workflows.test.sh exit=0 duration_ms=876 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:21.6783004Z FM_TEST_BEGIN 2026-10-05T20:39:21Z tests/fm-peek-remote.test.sh family=unclassified expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:22.1638299Z ok - fm-peek remote: the capture routes over the remote transport, local adapters untouched
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:22.6244924Z ok - fm-peek remote: an unreachable host fails loudly without a false death claim
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:22.6253383Z all fm-peek-remote tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:22.6544198Z FM_TEST_END 2026-10-05T20:39:22Z tests/fm-peek-remote.test.sh exit=0 duration_ms=972 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:22.6812806Z FM_TEST_BEGIN 2026-10-05T20:39:22Z tests/fm-remote-backlog-handoff.test.sh family=secondmate expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:23.0083632Z ok - confined put rejects incomplete and superseded payload generations
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:23.1379219Z ok - confined put rejects directory replacement without external writes
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:25.5529825Z ok - ambiguous receipt leaves one durable outbox and no duplicate dispatchable source
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:27.3412124Z ok - re-delivery after unknown completion converges without duplication
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:30.7913892Z ok - dropped transfer recovery overwrites scratch and delivers exactly once
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:35.9600133Z ok - concurrent handoffs serialize staging through confirmed cleanup
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:40.9934027Z ok - receiver removes one proven dead stale lock and retries once
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:43.9547088Z ok - bootstrap detects pending outbox handoffs without a journal
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.2977376Z ok - route classification serializes with retirement before staging
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.6203847Z ok - unconfigured bootstrap has no remote handoff behavior
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.6223077Z ALL TESTS PASSED
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.6764229Z FM_TEST_END 2026-10-05T20:39:44Z tests/fm-remote-backlog-handoff.test.sh exit=0 duration_ms=21989 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.7012442Z FM_TEST_BEGIN 2026-10-05T20:39:44Z tests/fm-remote-job.test.sh family=secondmate expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.8411137Z ok - default queue and execution bounds independently cover long polls
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.8565748Z ok - operator PATH excludes a symlinked local bin
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.8933079Z ok - operator PATH honors nvm defaults with a deterministic fallback
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:44.9078082Z ok - operator PATH resolves the authorized Nix profile bin link
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:45.4437666Z ok - the worker preserves bounded argv and stdin in an empty environment
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:49.8622370Z ok - active jobs keep the worker ready for concurrent requests
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:39:50.4909077Z ok - ensure replaces a live worker after its code changes
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:40:39.0968023Z not ok - remote job worker did not report ready after startup
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:40:39.1324165Z FM_TEST_END 2026-10-05T20:40:39Z tests/fm-remote-job.test.sh exit=1 duration_ms=54426 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:40:39.1582081Z FM_TEST_BEGIN 2026-10-05T20:40:39Z tests/fm-remote-secondmate-trace-context.test.sh family=secondmate expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:40:51.5871704Z ok - disabled: a remote-routed second mate records and receives no carrier and stays enabled-off end to end
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:02.8879324Z ok - enabled: a remote-routed second mate receives one carrier in its pane, identical to the parent's recorded identity, before launch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:13.9828847Z ok - relaunch: a remote-routed second mate keeps one stable identity across restarts
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.1384205Z ok - boundary: each remote-routed second mate roots its own trace and never adopts the spawning environment's carrier
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.2815368Z ok - allowlist: the remote receiver accepts exactly the declared inherited-material set, including the enablement flag
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.4412148Z ok - delivery: a parent-supplied carrier is accepted only for a secondmate launch and only as a strict W3C value
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.4413584Z ALL TESTS PASSED
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.9013640Z FM_TEST_END 2026-10-05T20:41:26Z tests/fm-remote-secondmate-trace-context.test.sh exit=0 duration_ms=47735 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.9281600Z FM_TEST_BEGIN 2026-10-05T20:41:26Z tests/fm-sessionstart-hook-live-e2e.test.sh family=live-harness-optin expected_gate_skip=optin-env
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.9288056Z skip: set FM_SESSIONSTART_HOOK_LIVE_E2E=1 to run the live session-open hook regression
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.9555054Z FM_TEST_END 2026-10-05T20:41:26Z tests/fm-sessionstart-hook-live-e2e.test.sh exit=0 duration_ms=22 gate_skip=true
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:26.9809631Z FM_TEST_BEGIN 2026-10-05T20:41:26Z tests/fm-task-delivery.test.sh family=pure-contract-unit expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:27.2356113Z ok - fm-spawn: a ship spawn requires a valid explicit mode and yolo before anything is created
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:27.3485396Z ok - fm-spawn: scout and secondmate spawns refuse ship delivery flags
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:27.9073033Z ok - fm-spawn: the brief's recorded mode and the spawn's explicit mode must agree
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:29.2748719Z ok - fm-spawn: a rigor downgrade against the registered posture is announced, never blocked
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:29.4823877Z ok - fm-spawn: a scout spawn resolves no delivery posture from the registry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:30.0305242Z ok - fm-promote: promotion requires the delivery contract and records it exactly once
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:30.0900942Z ok - fm-project-mode: the conditional policy is accepted, mapped for mechanical callers, and readable raw
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:30.0902946Z # all fm-task-delivery tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:30.1244231Z FM_TEST_END 2026-10-05T20:41:30Z tests/fm-task-delivery.test.sh exit=0 duration_ms=3136 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:30.1500416Z FM_TEST_BEGIN 2026-10-05T20:41:30Z tests/fm-trace-context-spawn.test.sh family=backend-dispatch expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:32.2989454Z ok - enabled: one resolved carrier is recorded in meta and the identical TRACEPARENT is exported before launch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:34.3475745Z ok - disabled: neither traceparent= in meta nor a TRACEPARENT export is produced
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:36.4221408Z ok - failed TRACEPARENT delivery omits metadata while the source task still launches
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:37.8829450Z ok - uncleared TRACEPARENT input stops before the launch command is appended
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:39.9846467Z ok - failed traceparent metadata append removes the carrier from the launched task
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:40.3331050Z ok - duplicate secondmate preflight leaves trace-context unchanged
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:44.4795493Z ok - relaunch reuses the recorded carrier verbatim for both the meta record and the injected export
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:48.6409733Z ok - session start freezes the env override and later config or environment edits do not alter spawns
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:51.8229221Z ok - two-level: env-on/file-absent keeps the nested worker enabled, rooting its own per-task trace
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:41:54.9150378Z ok - two-level: env-off/file-present keeps the nested worker disabled even though the config file was copied into the secondmate home
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:01.1484077Z ok - two unrelated routed tasks through one persistent Secondmate root distinct traces, adopt nothing from its environment, and keep per-task identity across relaunch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:07.4221631Z ok - secondmate carrier and FM_TRACE_CONTEXT snapshot always agree, both derived from one frozen decision (file-decided path)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:07.4223898Z # all fm-trace-context-spawn tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:07.5137471Z FM_TEST_END 2026-10-05T20:42:07Z tests/fm-trace-context-spawn.test.sh exit=0 duration_ms=37355 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:07.5398278Z FM_TEST_BEGIN 2026-10-05T20:42:07Z tests/fm-fleet-sync.test.sh family=session-bootstrap expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:07.9877028Z ok - detached clean ancestor is re-attached and fast-forwarded (recovered)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:08.3355653Z ok - detached HEAD with unique commits is reported STUCK and left untouched
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:08.7035296Z ok - detached clean ancestor with diverged local default is reported STUCK and left untouched
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:09.0388650Z ok - dirty working tree is reported STUCK and left untouched
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:09.3738655Z ok - non-default named branch is reported STUCK and left untouched
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:09.7249006Z ok - diverged default branch is reported STUCK and left untouched
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:10.0752369Z ok - on-default clean behind clone still fast-forwards
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:10.3828679Z ok - already-current clone is reported unchanged
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:10.6199259Z ok - no-origin clone is skipped (benign), not flagged STUCK
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:10.9133078Z ok - local-only clone is skipped (benign), not flagged STUCK
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:11.2578106Z ok - single-project form accepts a bare project name
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:11.6002413Z ok - single-project bare name resolution is not cwd-sensitive
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:11.9431678Z ok - single-project form accepts a projects/<name> relative name
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:12.2889549Z ok - single-project projects/<name> resolution is not cwd-sensitive
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:12.4991149Z ok - single-project form leaves a genuinely bad name unresolved
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:13.5833734Z ok - whole-fleet form processes every clone under projects/
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:16.2765647Z ok - bootstrap relays recovered: and STUCK: fleet-sync outcomes
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:19.9578819Z ok - orphaned provably-stale packed-refs.lock is cleared and the clone syncs
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:23.8196273Z ok - a live packed-refs.lock is never removed and the sync fails loudly
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:27.4925922Z ok - a live process holding the clone worktree dir blocks lock removal (clone-dir liveness)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:27.9398889Z ok - a transient packed-refs.lock that self-clears is retried without a force-remove
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:28.2497593Z ok - a non-packed-refs.lock fetch failure keeps today's behavior (no retry)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:28.3823211Z FM_TEST_END 2026-10-05T20:42:28Z tests/fm-fleet-sync.test.sh exit=0 duration_ms=20834 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:28.4078907Z FM_TEST_BEGIN 2026-10-05T20:42:28Z tests/fm-pi-watch-extension.test.sh family=watcher-wake-lock expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:29.1637659Z ok - Pi extension reports external healthy watcher output
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:29.4833412Z ok - Pi custom tool exposes repair-only metadata and returns automatic-continuation guidance
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:29.9119691Z ok - Pi redundant tool call returns ownership guidance and spawns no second child
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:30.3592909Z ok - Pi scheduled retry remains extension-owned after another tool call
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:30.9404869Z ok - Pi actionable close starts one successor before wake delivery settles
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:32.1838316Z ok - Pi hung successor falls back to one typed actionable wake
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:32.9360477Z ok - Pi unretired successor falls back without an overlapping retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:34.6787215Z ok - Pi late unretired closes resume classified supervision
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:35.1136168Z ok - Pi clean empty close triggers a bounded continuity retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:35.6836798Z ok - Pi established clean closes stop at the configured retry limit
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:36.1048331Z ok - Pi close handler verifies session-lock ownership before successor launch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:36.5903184Z ok - Pi watcher arm distinguishes all session lock ownership states
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:39.5378403Z ok - Pi session transitions use a generation owner across /new /resume /fork, stale callbacks, and quit
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:39.7270737Z ok - Pi process-exit cleanup listener remains singular across session replacement
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:41.1762905Z ok - Pi process-exit cleanup stops the attached arm child
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:41.2196599Z ok - OpenCode plugins have an explicit ESM boundary even under a typeless parent package
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:41.3893385Z ok - OpenCode watcher plugin uses the effective FM_HOME state
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:41.5626238Z ok - OpenCode watcher plugin sources the effective config
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:41.8550771Z ok - OpenCode watcher plugin requires session lock ownership
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:42.0586761Z ok - OpenCode watcher coordinator respects primary scope
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:42.4704134Z ok - OpenCode watcher plugin starts one successor before wake prompt delivery settles
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:43.0688517Z ok - OpenCode pre-ready actionable close preserves its successor
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:44.1687650Z ok - OpenCode hung successor falls back to one typed actionable wake
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:44.7833615Z ok - OpenCode unretired successor falls back without an overlapping retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:46.2923361Z ok - OpenCode late unretired closes resume classified supervision
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:46.6097914Z ok - OpenCode clean empty close triggers a bounded continuity retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.0360694Z ok - OpenCode established clean closes stop at the configured retry limit
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.3029968Z ok - OpenCode close handler verifies session-lock ownership before successor launch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.4716185Z ok - OpenCode watcher plugin coordinates with the turn-end guard
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.6476529Z ok - OpenCode healthy arm output does not suppress the turn-end guard
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.7062850Z FM_TEST_END 2026-10-05T20:42:47Z tests/fm-pi-watch-extension.test.sh exit=0 duration_ms=19291 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.7315292Z FM_TEST_BEGIN 2026-10-05T20:42:47Z tests/fm-secondmate-sync.test.sh family=secondmate expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.8513499Z ok - T1 updated: a behind home fast-forwards to the primary's local HEAD
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.9130495Z ok - T2 current: an already-current home is a no-op and reports no instruction change
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:47.9763945Z ok - T3 dirty: an uncommitted home is skipped, its edit preserved
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:48.0532497Z ok - T4 diverged: a home that is not an ancestor of the primary's HEAD is skipped
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:48.1214368Z ok - T5 in-flight: a home on a feature branch is skipped, its work preserved
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:48.2419358Z ok - T6 no fetch: the local-HEAD sync never invokes git fetch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:48.3448575Z ok - T7 sweep nudges on a real instruction change only, but still fast-forwards
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:50.8063502Z ok - T8 bootstrap sweeps live homes and sends exactly one marked nudge for the instruction change
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:52.7502924Z ok - T8a bootstrap nudge send respects FM_STATE_OVERRIDE
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:53.0773665Z ok - T8f bootstrap nudge retry rejects malformed marker ids
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:54.2599933Z ok - T8c failed bootstrap nudge is surfaced and recorded for retry
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:57.4190189Z ok - T8d bootstrap nudge retry is idempotent after success
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:42:59.0388511Z ok - T8e bootstrap nudge retry refuses a changed home instead of guessing
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:02.7487497Z ok - T8b stale herdr nudge failures leave a retry marker after respawn rotates fm-<id> metadata
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:03.3362316Z ok - T9 bootstrap surfaces a skipped dirty live secondmate home
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:03.6488149Z ok - T10 spawn fast-forwards a secondmate worktree to the primary's local HEAD before launch
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:03.9377665Z ok - T11 spawn warns when pre-launch sync is skipped
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:04.0032245Z ok - T12 gitignored marker: a freshly seeded home reads clean to fleet-sync and the ff sweep
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:04.0956675Z ok - T13 gitignored marker: an existing marker-only-dirty home converges, then reads clean
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:04.1614108Z ok - T14 marker tolerance does not mask a genuinely dirty home
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:04.1615477Z # all fm-secondmate-sync tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:04.2623306Z FM_TEST_END 2026-10-05T20:43:04Z tests/fm-secondmate-sync.test.sh exit=0 duration_ms=16522 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:04.2876809Z FM_TEST_BEGIN 2026-10-05T20:43:04Z tests/fm-pending-reply.test.sh family=unclassified expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:04.6125347Z ok - normal correlated reply resolves once (idempotent)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:04.8523248Z ok - completed turn with no report triggers exactly one recovery
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:05.7311225Z ok - recovery attempts reconcile without reinjection
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:06.0343609Z ok - recovery reply resolves the original expectation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:06.5114941Z ok - second missed turn escalates once and remains durable
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:07.1234166Z ok - escalations and replies wake; the home's own escalation close stays quiet
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:07.5777389Z ok - failed escalation publication remains retryable and publishes once
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:07.8549850Z ok - legacy escalation closes under the shared default key
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:08.2368175Z ok - legacy escalation cannot close an unrelated default-key decision
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:08.8205859Z ok - foreign correlated blocker cannot impersonate a pending-reply escalation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:10.1892291Z ok - concurrent resolution closes one keyed escalation exactly once
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:12.9342346Z ok - concurrent escalation yields to a late correlated reply
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:13.0691565Z ok - transport success cannot masquerade as reply success
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:13.3810293Z ok - undelivered records remain immutable across scan paths
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:15.2910514Z ok - delivery confirmation fallback reconciles durably
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:15.5927749Z ok - unrelated events and stale correlation ids cannot resolve
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:15.7091373Z ok - restart preserves expectation and exact parent destination
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:16.0494329Z ok - wrong-home reports are detected but do not silently acknowledge
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:16.6263670Z ok - direct unmarked captain input creates no expectation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:17.3135155Z ok - fm-send marked secondmate path creates pending and embeds corr
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:17.4892669Z ok - status-pointed document resolves the expectation
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:17.6965319Z ok - optional helper report resolves without being required for correctness
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:17.8467078Z ok - backend busy/idle observation covers Pi/Claude paths without conversation scrape
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:21.2375792Z ok - tmux and zellij unknown states use bounded capture fallback
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:21.6579987Z ok - pending replies scope Kimi capture fallback by recorded harness
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:23.5952224Z ok - tick skips terminal records and reuses target observations
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:25.2732926Z ok - correlations are reused only for matching open task records
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:26.7373801Z ok - tick end-to-end: miss -> one recovery -> escalate -> durable
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:26.8524731Z ok - failed transport discards undelivered expectation only
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:26.8525719Z ok - all pending-reply tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:26.8900075Z FM_TEST_END 2026-10-05T20:43:26Z tests/fm-pending-reply.test.sh exit=0 duration_ms=22595 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:26.9147211Z FM_TEST_BEGIN 2026-10-05T20:43:26Z tests/fm-secondmate-lifecycle-e2e.test.sh family=secondmate expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1523277Z Note: switching to '5672f6c65b1e941f0c4970dee4a736d5a5f45a92'.
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1524231Z 
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1524808Z You are in 'detached HEAD' state. You can look around, make experimental
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1525927Z changes and commit them, and you can discard any commits you make in this
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1526974Z state without impacting any branches by switching back to a branch.
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1527677Z 
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1528185Z If you want to create a new branch to retain commits you create, you may
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1529251Z do so (now or later) by using -c with the switch command. Example:
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1529908Z 
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1530259Z   git switch -c <new-branch-name>
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1530784Z 
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1531128Z Or undo this operation with:
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1531620Z 
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1532263Z   git switch -
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1532710Z 
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1533250Z Turn off this advice by setting config variable advice.detachedHead to false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.1534011Z 
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.6057421Z ok - seed: registry scope+projects, charter copied, clones+origins, no-mistakes init in subhome only
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:27.9882103Z warning: secondmate design sync skipped before launch: primary default-branch commit cannot be resolved
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:28.8169500Z ok - spawn: launches in the subhome with persistent charter, records routing meta
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:31.1654358Z ok - send: a bare fm-<id> secondmate routes to the meta window with the from-firstmate marker
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:31.5922835Z ok - handoff: in-scope items move verbatim, out-of-scope stays, idempotent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:32.8151285Z ok - recovery: respawns from the durable registry and persistent home
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:33.6189015Z ok - teardown: removes the home, then clears meta and the registry route
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:33.6548410Z FM_TEST_END 2026-10-05T20:43:33Z tests/fm-secondmate-lifecycle-e2e.test.sh exit=0 duration_ms=6732 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:33.6794629Z FM_TEST_BEGIN 2026-10-05T20:43:33Z tests/fm-startup-memory-budget.test.sh family=secondmate expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:34.4178424Z ok - primary bootstrap materializes only the visible default and preserves valid captain choices
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:34.4903604Z ok - budget parser accepts one exact positive value and rejects malformed or unsafe inputs
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:34.5424069Z ok - budget accounting sums the three startup files and reports safe failures
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:35.0114595Z ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:35.0115957Z ●  WATCHER DOWN - SUPERVISION IS OFF
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:35.0120719Z ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 0s ago).
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:35.0127178Z ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:35.0128453Z ●  This is a supervision warning only; the guarded operation WILL still run.
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:35.0129938Z ●  repair missing watcher supervision according to the session-start block for this harness; do not use shell &.
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:35.0131183Z ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:37.0174723Z WARNING: watcher still down (same stale episode; last beat: 2s ago, grace 300s) - full banner already printed this episode.
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:38.6349683Z WARNING: watcher still down (same stale episode; last beat: 4s ago, grace 300s) - full banner already printed this episode.
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:40.4171543Z ok - budget propagation converges through config push with exact rereads, absence, and safe rejection
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:40.4174836Z # all fm-startup-memory-budget tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:40.4527828Z FM_TEST_END 2026-10-05T20:43:40Z tests/fm-startup-memory-budget.test.sh exit=0 duration_ms=6766 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:40.4784389Z FM_TEST_BEGIN 2026-10-05T20:43:40Z tests/fm-shared-captain-inheritance.test.sh family=secondmate expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:40.6255577Z ok - shared captain first copy converges, is read-only, and preserves local captain/learnings files
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:40.8513860Z ok - shared captain drift is quarantined collision-safely and repeated convergence is idempotent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:40.9036038Z ok - missing primary shared file mirrors absence only after quarantining a local copy
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:41.0801604Z ok - unsafe shared captain artifacts are rejected and failure restores read-only mode
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:41.4117759Z ok - spawn convergence point propagates data/captain-shared.md from FM_DATA_OVERRIDE
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:43.4208902Z ok - bootstrap convergence point propagates data/captain-shared.md from FM_DATA_OVERRIDE
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:44.1503117Z ok - fm-config-push convergence point updates changed shared captain source bytes from FM_DATA_OVERRIDE
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.5059113Z ok - session-start digest renders data/captain-shared.md with the shared read-only label
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.5060518Z # all fm-shared-captain-inheritance tests passed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.5499340Z FM_TEST_END 2026-10-05T20:43:45Z tests/fm-shared-captain-inheritance.test.sh exit=0 duration_ms=5064 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.5757943Z FM_TEST_BEGIN 2026-10-05T20:43:45Z tests/fm-backend-cmux.test.sh family=cmux expected_gate_skip=optional-binary
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.6304556Z ok - fm_backend_cmux_version_check: accepts the verified minimum (0.64.17)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.6530410Z ok - fm_backend_cmux_version_check: accepts a newer version (0.70.0)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.6761110Z ok - fm_backend_cmux_version_check: refuses an old version loudly
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.6876739Z ok - fm_backend_cmux_version_check: refuses loudly when cmux is not found on PATH or at the bundle path
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.6984986Z ok - fm_backend_cmux_password: reads the first non-empty line of config/cmux-socket-password
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.7091717Z ok - fm_backend_cmux_password: preserves spaces and tabs in config/cmux-socket-password
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.7199043Z ok - fm_backend_cmux_password: respects FM_CONFIG_OVERRIDE
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.7304226Z ok - fm_backend_cmux_password: empty when config/cmux-socket-password is absent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.7508247Z ok - fm_backend_cmux_cli: exports CMUX_SOCKET_PASSWORD when config/cmux-socket-password is set
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.7588950Z ok - fm_backend_cmux_parse_target: splits '<workspace_uuid>:<surface_uuid>' on the first colon
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.7699164Z ok - fm_backend_cmux_normalize_key: Enter/Escape/C-c map to cmux's verified enter/escape/ctrl-c
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.8234021Z ok - fm_backend_cmux_scoped_title: scopes a primary task title with firstmate plus root hash
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.8799540Z ok - fm_backend_cmux_scoped_title: scopes a secondmate task title with the home marker plus root hash
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.9870857Z ok - fm_backend_cmux_scoped_title: includes the resolved FM_ROOT hash in the home label
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:45.9872510Z ok - fm_backend_validate: cmux is a known backend
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.0010284Z ok - fm_backend_busy_state: cmux (no native primitive) always reports unknown, same as tmux/zellij/orca
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.0795701Z ok - fm_backend_composer_state: routes cmux to the cmux composer classifier
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.0997291Z ok - fm_backend_cmux_ping_state: reports 'ok' on PONG
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.1198780Z ok - fm_backend_cmux_ping_state: reports 'denied' when socketControlMode=cmuxOnly rejects the connection
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.1399110Z ok - fm_backend_cmux_ping_state: reports 'unauth' when password mode rejects a missing/wrong password
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.1597060Z ok - fm_backend_cmux_ping_state: reports 'unauth' when password mode rejects a wrong password (Invalid password)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.1796414Z ok - fm_backend_cmux_ping_state: reports 'down' when the app is not running yet
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.2027404Z ok - fm_backend_cmux_ensure_running: returns immediately when cmux is already reachable
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.2264034Z ok - fm_backend_cmux_ensure_running: fails fast on a denied socket without attempting to launch, naming every viable mode
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.2504155Z ok - fm_backend_cmux_ensure_running: fails fast on an unauthenticated socket, naming the password config and the Automation mode alternative
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.3189788Z ok - fm_backend_cmux_create_task: refuses a duplicate workspace title (cmux's own new-workspace has no uniqueness check)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.4146904Z ok - fm_backend_cmux_create_task: creates a workspace and parses workspace_id/surface_id from list responses
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.4385718Z ok - fm_backend_cmux_target_ready: fails when the workspace/surface is not found (list-panes structural check)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.5241433Z ok - fm_backend_cmux_target_ready: verifies the workspace title against the expected label first
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.5705569Z ok - fm_backend_cmux_target_ready: rejects a workspace id reused under a different title
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.6172918Z ok - fm_backend_cmux_capture: fetches generously and trims to N lines locally
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.6517386Z ok - fm_backend_cmux_capture: propagates a read-screen failure even when stdout is empty
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.6772588Z ok - fm_backend_cmux_capture: fails when the target surface is absent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.7090039Z ok - fm_backend_cmux_send_key: normalizes the key (Escape -> escape) and targets the explicit workspace/surface
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.8040375Z ok - fm_backend_cmux_send_key: recovers stale workspace/surface ids by expected label
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.8353360Z ok - fm_backend_cmux_send_literal: calls send with an explicit workspace/surface and a -- separator
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.8978467Z ok - fm_backend_cmux_send_text_line: clears partial input when Enter fails
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:46.9627039Z ok - fm_backend_cmux_send_text_line: reports unsafe input when cleanup also fails
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.3479378Z ok - fm_backend_cmux_current_path: actively probes with marked begin/end lines (zellij-shape frozen cwd)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.4156657Z ok - fm_backend_cmux_composer_state: a bare '❯' composer row reads empty
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.4794138Z ok - fm_backend_cmux_composer_state: a borderless Claude '❯' composer row reads empty
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.5398609Z ok - fm_backend_cmux_composer_state: a borderless Claude row outranks stale bordered scrollback
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.5958434Z ok - fm_backend_cmux_composer_state: a borderless Claude '❯'+NBSP composer row reads empty under LC_ALL=C
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.6632339Z ok - fm_backend_cmux_composer_state: plain-capture text after a bare glyph degrades to unknown (never false pending)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.7365939Z ok - fm_backend_cmux_composer_state: the ghost placeholder text reads empty, not pending
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.8104051Z ok - fm_backend_cmux_composer_state: real composer text reads pending
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.8847281Z ok - fm_backend_cmux_composer_state: a slash-command popup's argument-hint placeholder still reads pending (the incident fix)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.9096663Z ok - fm_backend_cmux_composer_state: reports unknown when the surface cannot be captured
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:47.9562203Z ok - fm_backend_cmux_composer_state: reports unknown when no verified composer row is found
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.0813936Z ok - fm_backend_cmux_send_text_submit: reports 'empty' once the composer row reads empty after one Enter
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.2947051Z ok - fm_backend_cmux_send_text_submit: reports 'pending' when the composer never clears after retried Enters (swallowed)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.5062602Z ok - fm_backend_cmux_send_text_submit: retries past a popup-placeholder-fill Enter and lands the real second Enter (the incident fix)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.5302093Z ok - fm_backend_cmux_send_text_submit: reports 'send-failed' when the target workspace/surface is absent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.5877369Z ok - fm_backend_cmux_window_of_workspace: walks windows and counts the membership-confirming workspace list
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.6255866Z ok - fm_backend_cmux_window_of_workspace: echoes nothing when no window holds the workspace
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.6754209Z ok - fm_backend_cmux_kill: closes the task workspace directly when it is not the last in its window
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.7397914Z ok - fm_backend_cmux_kill: adds a throwaway sibling then closes the target when it is the last workspace in its window
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.7889833Z ok - fm_backend_cmux_kill: never fails even when close-workspace fails
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:48.9095800Z ok - fm_backend_cmux_kill: recovers stale workspace/surface ids by expected label
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:49.0141268Z ok - fm_backend_cmux_list_live: lists only this home's scoped task workspaces using plain fm-<id> labels
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:49.3486194Z ok - fm-spawn.sh: refuses backend=cmux for --secondmate spawns (mirrors Orca's refusal; no secondmate launch design exists yet)
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:49.3922927Z FM_TEST_END 2026-10-05T20:43:49Z tests/fm-backend-cmux.test.sh exit=0 duration_ms=3808 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:49.4169530Z FM_TEST_BEGIN 2026-10-05T20:43:49Z tests/fm-afk-return.test.sh family=afk expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:49.9655034Z ok - return catch-up precedes Bearings, owns live blocker remediation, preserves evidence once, and clears idempotently
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:50.5918959Z ok - tmux and Herdr blockers require the same explicit durable reclassification before ordinary work
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:50.7040397Z ok - needs-decision remains reportable without masquerading as a firstmate-actionable blocker
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:50.9980384Z ok - AFK return re-drains published wakes until handling acknowledges
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.0346500Z ok - away-mode re-entry fails closed while the prior return catch-up is pending
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.2313385Z ok - check retries recorded terminal teardown and keeps catch-up gated until success
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.2629968Z FM_TEST_END 2026-10-05T20:43:51Z tests/fm-afk-return.test.sh exit=0 duration_ms=1838 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.2891279Z FM_TEST_BEGIN 2026-10-05T20:43:51Z tests/fm-documentation-audiences.test.sh family=pure-contract-unit expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.5342450Z ok - documentation inventory classifies every maintained prose surface exactly once
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.7620102Z ok - classification, setup routing, and maintained-prose scope fail safely
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.8488808Z ok - required documentation owner pointers cannot silently disappear
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.9580041Z ok - local links resolve while dates, versions, commands, and incident prose remain semantically reviewed
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:51.9891013Z FM_TEST_END 2026-10-05T20:43:51Z tests/fm-documentation-audiences.test.sh exit=0 duration_ms=691 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.0141142Z FM_TEST_BEGIN 2026-10-05T20:43:51Z tests/fm-sessionstart-nudge.test.sh family=session-bootstrap expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.0740014Z ok - fm-sessionstart-nudge: a genuine primary gets one explicitly marked instruction line
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.0904427Z ok - fm-sessionstart-nudge: NO_MISTAKES_GATE is silent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.1336003Z ok - fm-sessionstart-nudge: .no-mistakes gate common-dir is silent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.1795853Z ok - fm-sessionstart-nudge: an unmarked linked task worktree is silent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.2214540Z ok - fm-sessionstart-nudge: a marked linked secondmate home is a primary
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.2463746Z ok - fm-sessionstart-nudge: a checkout without state is silent
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.2863343Z ok - fm-sessionstart-nudge: a lock holder in process ancestry is already run
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:52.3523441Z ok - OpenCode session.created delivers the exact wrapper nudge once per session
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:43:54.4993204Z ok - run wrapper: startup runs the full digest and never also nudges
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:01.9092819Z ok - run wrapper: clear and compact re-emit the digest without repeating startup sweeps
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:06.4000683Z ok - run wrapper forwards only stale-cache rebuild sources to immutable-baseline instruction refresh
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:08.1930480Z ok - run wrapper refreshes a compact even when startup completion is unproven
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:10.3404580Z ok - run wrapper: clear falls back to full startup when completion is unproven
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:12.6381376Z ok - run wrapper: clear accepts completion only from the current harness
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:12.6752906Z ok - run wrapper: resume delegates to the nudge instead of re-running the digest
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:16.5966972Z ok - run wrapper: the hook payload's source field drives routing with no explicit argument
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:20.8108099Z ok - run wrapper: an unrecognized or absent source takes the helm rather than skipping it
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:20.8859239Z ok - run wrapper: a gate agent and an unmarked task worktree never run a session start
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.0373493Z ok - run wrapper: a session start that cannot take the lock still opens the session and says so
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.2736737Z ok - Pi distinguishes header-proven restored CLI sessions from named create-if-missing startups
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.6698815Z ok - Pi retains a bounded digest prefix and loudly marks oversized delivery
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.7440014Z FM_TEST_END 2026-10-05T20:44:22Z tests/fm-sessionstart-nudge.test.sh exit=0 duration_ms=30720 gate_skip=false
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.7693464Z FM_TEST_BEGIN 2026-10-05T20:44:22Z tests/fm-backend-herdr-focus-flash-e2e.test.sh family=unclassified expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.7720405Z skip: herdr not found
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.7983795Z FM_TEST_END 2026-10-05T20:44:22Z tests/fm-backend-herdr-focus-flash-e2e.test.sh exit=0 duration_ms=23 gate_skip=true
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.8248992Z FM_TEST_BEGIN 2026-10-05T20:44:22Z tests/fm-claude-stop-autoarm-live-e2e.test.sh family=unclassified expected_gate_skip=none
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.8256455Z skip: set FM_CLAUDE_LIVE_E2E=1 to run the Claude Stop auto-arm regression
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.8514167Z FM_TEST_END 2026-10-05T20:44:22Z tests/fm-claude-stop-autoarm-live-e2e.test.sh exit=0 duration_ms=21 gate_skip=true
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.8767978Z FM_TEST_BEGIN 2026-10-05T20:44:22Z tests/fm-pi-primary-live-e2e.test.sh family=live-harness-optin expected_gate_skip=optin-env
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.8794963Z skip: set FM_PI_LIVE_E2E=1 to run the isolated interactive Pi regression
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9055899Z FM_TEST_END 2026-10-05T20:44:22Z tests/fm-pi-primary-live-e2e.test.sh exit=0 duration_ms=21 gate_skip=true
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9283250Z FM_TEST_SUMMARY total=29 failed=1 skipped_gate=5 duration_ms=639430
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9307884Z FM_TEST_SUMMARY_FAMILY family=afk count=2 duration_ms=38004 failed=0
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9315256Z FM_TEST_SUMMARY_FAMILY family=backend-dispatch count=2 duration_ms=51716 failed=0
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9390096Z FM_TEST_SUMMARY_FAMILY family=cmux count=1 duration_ms=3808 failed=0
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9391221Z FM_TEST_SUMMARY_FAMILY family=live-harness-optin count=3 duration_ms=66 failed=0
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9392297Z FM_TEST_SUMMARY_FAMILY family=pure-contract-unit count=3 duration_ms=4703 failed=0
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9393166Z FM_TEST_SUMMARY_FAMILY family=secondmate count=8 duration_ms=295301 failed=1
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9394033Z FM_TEST_SUMMARY_FAMILY family=session-bootstrap count=2 duration_ms=51554 failed=0
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9394894Z FM_TEST_SUMMARY_FAMILY family=unclassified count=7 duration_ms=174005 failed=0
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9395901Z FM_TEST_SUMMARY_FAMILY family=watcher-wake-lock count=1 duration_ms=19291 failed=0
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9406084Z FM_TEST_SLOWEST rank=1 script=tests/fm-secondmate-harness.test.sh duration_ms=136067
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9407477Z FM_TEST_SLOWEST rank=2 script=tests/fm-claude-stop-autoarm.test.sh duration_ms=60689
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9409038Z FM_TEST_SLOWEST rank=3 script=tests/fm-procevent.test.sh duration_ms=59626
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9410249Z FM_TEST_SLOWEST rank=4 script=tests/fm-remote-job.test.sh duration_ms=54426
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9412215Z FM_TEST_SLOWEST rank=5 script=tests/fm-remote-secondmate-trace-context.test.sh duration_ms=47735
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9413509Z FM_TEST_SLOWEST rank=6 script=tests/fm-trace-context-spawn.test.sh duration_ms=37355
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9414731Z FM_TEST_SLOWEST rank=7 script=tests/fm-afk-inject-e2e.test.sh duration_ms=36166
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9415807Z FM_TEST_SLOWEST rank=8 script=tests/fm-sessionstart-nudge.test.sh duration_ms=30720
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9416891Z FM_TEST_SLOWEST rank=9 script=tests/fm-cursor-harness.test.sh duration_ms=30079
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9417932Z FM_TEST_SLOWEST rank=10 script=tests/fm-pending-reply.test.sh duration_ms=22595
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9419028Z FM_TEST_SLOWEST rank=11 script=tests/fm-remote-backlog-handoff.test.sh duration_ms=21989
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9420129Z FM_TEST_SLOWEST rank=12 script=tests/fm-fleet-sync.test.sh duration_ms=20834
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9421184Z FM_TEST_SLOWEST rank=13 script=tests/fm-pi-watch-extension.test.sh duration_ms=19291
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9422827Z FM_TEST_SLOWEST rank=14 script=tests/fm-secondmate-sync.test.sh duration_ms=16522
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9424018Z FM_TEST_SLOWEST rank=15 script=tests/fm-gh-account.test.sh duration_ms=14361
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9679303Z fm-test-run: wrote timing artifact: /home/runner/work/_temp/fm-test/fm-test-timing-portable-serial-4.json
+Behavior portable serial 4	Run portable serial shard 4	2026-10-05T20:44:22.9728727Z ##[error]Process completed with exit code 1.
