@@ -17,6 +17,11 @@ command -v jq >/dev/null 2>&1 \
 cat > "$FAKEBIN/gh" <<'SH'
 #!/usr/bin/env bash
 set -o pipefail
+case "$*" in
+  'auth status') printf '%s\n' 'Logged in to github.com account other' 'Logged in to github.com account o'; exit 0 ;;
+  'auth token --user o') printf 'repo-token\n'; exit 0 ;;
+esac
+[ "${GH_TOKEN:-}" = repo-token ] || { printf 'wrong active account\n' >&2; exit 1; }
 serve() {
   case "$*" in
     "api /repos/o/r/pulls/7 --jq "*)

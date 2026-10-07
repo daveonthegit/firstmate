@@ -25,6 +25,11 @@ OLD_HEAD_2=4dc2291e6969de1bf204fbdb53c9e57a8353d4e2
 cat > "$FAKEBIN/gh" <<'SH'
 #!/usr/bin/env bash
 set -o pipefail
+case "$*" in
+  'auth status') printf '%s\n' 'Logged in to github.com account other' 'Logged in to github.com account o'; exit 0 ;;
+  'auth token --user o') printf 'repo-token\n'; exit 0 ;;
+esac
+[ "${GH_TOKEN:-}" = repo-token ] || { printf 'wrong active account\n' >&2; exit 1; }
 head=c2eac54c17a1ddc2633ad51b83e21e5fe888142e
 serve() {
   case "$*" in

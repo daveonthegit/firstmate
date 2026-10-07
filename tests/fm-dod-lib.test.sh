@@ -89,9 +89,11 @@ test_no_mistakes_prevalidation_done_is_not_gated() {
   wt="$TMP_ROOT/preval-wt"
   fm_git_worktree "$repo" "$wt" fm/preval
   git -C "$wt" commit -q --allow-empty -m 'only in the disposable copy'
-  accept_done ship no-mistakes "$wt" "$repo" 'done: implementation complete' \
-    || fail "no-mistakes pre-validation done: must not require named-head reachability"
-  pass "no-mistakes pre-validation done: is not gated"
+  local reason rc=0
+  reason=$(accept_done ship no-mistakes "$wt" "$repo" 'done: implementation complete') || rc=$?
+  expect_code 1 "$rc" "implementation handoff must not be terminal"
+  assert_contains "$reason" 'handoff' "handoff refusal must explain pending delivery"
+  pass "no-mistakes pre-validation done remains nonterminal"
 }
 
 test_local_only_linked_branch_is_accepted() {

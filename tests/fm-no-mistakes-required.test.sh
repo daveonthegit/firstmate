@@ -5,7 +5,16 @@ set -u
 # shellcheck source=tests/lib.sh disable=SC1091
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
 
-ACTION_REF=32d396ac0f29135daf7fcb9964aba9d5f4e796d6
+ACTION_REF=$(ruby -ryaml -e '
+  workflow = YAML.load_file(ARGV.fetch(0))
+  uses = workflow.fetch("jobs").values.flat_map { |job| job.fetch("steps", []) }
+    .map { |step| step["uses"] }.compact
+    .select { |value| value.start_with?("kunchenguid/no-mistakes/.github/actions/require-no-mistakes@") }
+  abort "expected one pinned verifier action" unless uses.length == 1
+  ref = uses.first.split("@", 2).last
+  abort "verifier must be commit-pinned" unless ref.match?(/\A[0-9a-f]{40}\z/)
+  puts ref
+' "$ROOT/.github/workflows/no-mistakes-required.yml") || fail "could not resolve workflow verifier"
 TMP_ROOT=$(fm_test_tmproot fm-no-mistakes-required)
 VERIFY="$TMP_ROOT/verify.py"
 OLD_SHA=1111111111111111111111111111111111111111
@@ -66,7 +75,18 @@ test_missing_head_fails() {
   pass "shared action rejects an attestation with no head_sha"
 }
 
+test_unavailable_live_facts_fail_closed() {
+  local output rc=0
+  output=$(env -u PR_BODY -u PR_HEAD_SHA -u GITHUB_TOKEN -u GITHUB_EVENT_PATH \
+    PR_AUTHOR=regression PR_NUMBER=3006 GITHUB_REPOSITORY=o/r \
+    python3 "$VERIFY" 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] || fail "shared action accepted unavailable live PR facts"
+  assert_contains "$output" "Could not verify this PR's live body/head" "missing live facts did not fail closed"
+  pass "shared action refuses unavailable live PR facts"
+}
+
 fetch_shared_verifier
+test_unavailable_live_facts_fail_closed
 test_matching_head_and_completed_steps_pass
 test_mismatched_head_fails_with_both_shas
 test_missing_head_fails

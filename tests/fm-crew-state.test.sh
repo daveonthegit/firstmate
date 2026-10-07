@@ -2338,7 +2338,8 @@ EOF
   local out; out=$(run_crew_state "$d" feat-g)
   assert_not_contains "$out" "source: run-step" "another branch's run not misattributed"
   assert_contains "$out" "source: status-log" "no own run -> falls back to status-log"
-  assert_contains "$out" "state: done" "falls back to the log verb"
+  assert_contains "$out" "state: blocked" "default no-mistakes handoff is nonterminal"
+  assert_contains "$out" "implementation handoff" "fallback preserves handoff visibility"
   pass "another branch's run is ignored, falls back"
 }
 
@@ -2863,10 +2864,11 @@ test_single_owner_terminal_declaration_supersedes_stale_decision() {
   local d kind opener terminal out key expected
   d=$(new_case terminal-stale-decision)
   make_repo_on_branch "$d/wt" fm/task
+  git -C "$d/wt" update-ref refs/remotes/origin/main "$(git -C "$d/wt" rev-parse HEAD)"
   make_fakebin "$d" >/dev/null
   arm_idle_record "$d/state" task
   for kind in scout ship; do
-    fm_write_meta "$d/state/task.meta" "window=fm:fm-task" "worktree=$d/wt" "kind=$kind" "harness=claude"
+    fm_write_meta "$d/state/task.meta" "window=fm:fm-task" "worktree=$d/wt" "kind=$kind" "harness=claude" "mode=local-only"
     for opener in needs-decision blocked; do
       for terminal in 'done' failed; do
         printf '%s [key=choice]: an earlier decision\n%s: final outcome\nContinuation prose.\n\n' \

@@ -103,7 +103,8 @@ fi
 # The draft state is read before anything is recorded or armed. Only a positive
 # draft reading refuses, because an unreadable one must not block arming.
 if [ "$PROVIDER" = github ] && [ "${FM_PR_CHECK_MERGE:-}" != 1 ] && command -v gh >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
-  DRAFT_JSON=$(gh pr view "$URL" --json isDraft 2>/dev/null || true)
+  DRAFT_JSON=$(fm_pr_github_exec "$PROJECT_PATH" bash -c \
+    'gh pr view "$1" --json isDraft 2>/dev/null || true' _ "$URL") || exit 1
   if [ "$(fm_pr_json_draft_state "$DRAFT_JSON")" = true ]; then
     echo "error: $URL is a draft pull request; a draft cannot be merged, so merge monitoring would wait for an event that cannot occur - mark it ready for review and arm again, or declare a wait instead of done if the draft is deliberate" >&2
     exit 1

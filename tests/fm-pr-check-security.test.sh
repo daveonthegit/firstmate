@@ -139,6 +139,13 @@ SH
   cat > "$fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >> "$FM_TEST_GH_LOG"
+if [ "${FM_TEST_REPO_ACCOUNT:-0}" = 1 ]; then
+  case "$*" in
+    'auth status') printf '%s\n' 'Logged in to github.com account other' 'Logged in to github.com account o'; exit 0 ;;
+    'auth token --user o') printf 'repo-token\n'; exit 0 ;;
+  esac
+  [ "${GH_TOKEN:-}" = repo-token ] || { printf 'wrong active account\n' >&2; exit 1; }
+fi
 case "${1:-} ${2:-}" in
   "api graphql")
     printf '%s\n' \
@@ -633,10 +640,11 @@ test_invalid_entrypoints_have_zero_side_effects() {
 test_draft_pull_request_is_not_armed() {
   local dir rc
   dir=$(make_case draft-refused)
+  git -C "$dir/wt" remote add origin https://github.com/o/r.git
   write_task_meta "$dir"
   cp "$dir/home/state/task-a.meta" "$dir/meta.before"
   set +e
-  FM_TEST_GH_DRAFT=true run_check_entry "$dir" task-a https://github.com/o/r/pull/9 \
+  FM_TEST_REPO_ACCOUNT=1 FM_TEST_GH_DRAFT=true run_check_entry "$dir" task-a https://github.com/o/r/pull/9 \
     > "$dir/stdout" 2> "$dir/stderr"; rc=$?
   set -e
   [ "$rc" -ne 0 ] || fail "arming accepted a draft pull request"
@@ -648,8 +656,9 @@ test_draft_pull_request_is_not_armed() {
   [ ! -s "$dir/guard.log" ] || fail "a refused draft reached the guard"
 
   dir=$(make_case draft-cleared)
+  git -C "$dir/wt" remote add origin https://github.com/o/r.git
   write_task_meta "$dir"
-  FM_TEST_GH_DRAFT=false run_check_entry "$dir" task-a https://github.com/o/r/pull/9 \
+  FM_TEST_REPO_ACCOUNT=1 FM_TEST_GH_DRAFT=false run_check_entry "$dir" task-a https://github.com/o/r/pull/9 \
     > "$dir/stdout" 2> "$dir/stderr" || fail "arming refused a pull request that is not a draft"
   grep -qxF 'pr=https://github.com/o/r/pull/9' "$dir/home/state/task-a.meta" \
     || fail "a non-draft pull request was not recorded"
@@ -660,7 +669,10 @@ test_draft_pull_request_is_not_armed() {
   FM_TEST_GH_DRAFT=null run_check_entry "$dir" task-a https://github.com/o/r/pull/9 \
     > "$dir/stdout" 2> "$dir/stderr" || fail "an unreadable draft state blocked arming"
   [ -f "$dir/home/state/task-a.check.sh" ] || fail "an unreadable draft state was not armed"
-  pass "arming refuses a draft pull request, naming it, and arms a ready or unreadable one"
+  FM_TEST_REPO_ACCOUNT=1 FM_TEST_GH_LOG="$dir/gh.log" PATH="$dir/fakebin:$BASE_PATH" \
+    fm_pr_github_read_record o r 9 || fail "record read did not select repository account"
+  [ "$FM_PR_RECORD_STATE" = MERGED ] || fail "authenticated record state missing"
+  pass "arming refuses drafts and reads records with the repository account without a shim"
 }
 
 # A secondmate is a persistent worker, not a delivery lane: it never owns a
