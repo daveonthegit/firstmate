@@ -321,11 +321,14 @@ test_over_long_finding_set_is_capped_with_the_shared_marker() {
     seg="${seg}memory"
   done
   deep="$home/data"
-  while [ "${#deep}" -lt 1200 ]; do
+  # The budget diagnostic adds enough context to exceed the 1000-byte report
+  # cap here without making the fixture itself exceed Darwin's PATH_MAX.
+  while [ "${#deep}" -lt 850 ]; do
     deep="$deep/$seg"
   done
-  mkdir -p "$deep"
-  ln -s "$home/data/captain.md" "$deep/learnings.md"
+  mkdir -p "$deep" || fail "could not create the long-path fixture"
+  ln -s "$home/data/captain.md" "$deep/learnings.md" \
+    || fail "could not create the long-path memory symlink"
   out=$(FM_ROOT_OVERRIDE="$root" FM_HOME="$home" FM_DATA_OVERRIDE="$deep" FM_STARTUP_GROWTH_NOW=1000 \
     "$CHECK" check 2>/dev/null) || fail "capped check failed"
   assert_contains "$out" 'unsafe memory data/learnings.md' "the leading finding was lost"
