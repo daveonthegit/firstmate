@@ -1133,15 +1133,28 @@ EOF
 
 ## Done
 EOF
+  # Exercise inventory bookkeeping with a genuinely reachable local ship head.
+  # The HTTPS guard remains untouched, and the independent named-head check
+  # reads a real commit fetched from a separate synthetic project copy.
+  git -c init.defaultBranch=main init -q "$home/projects/alpha" \
+    || fail "could not initialize the terminal ship's project"
+  git -C "$home/projects/alpha" -c user.name=Fixture -c user.email=fixture@example.test \
+    commit -q --allow-empty -m 'Terminal ship fixture' \
+    || fail "could not commit the terminal ship's project"
+  git clone -q --local "$home/projects/alpha" "$home/projects/terminal" \
+    || fail "could not clone the terminal ship's isolated copy"
+  git -C "$home/projects/terminal" checkout -q -b fm/terminal-ship \
+    || fail "could not create the terminal ship's named branch"
   fm_write_meta "$home/state/terminal-ship.meta" \
     "window=firstmate:fm-terminal-ship" \
     "worktree=$home/projects/terminal" \
-    "project=alpha" \
+    "project=$home/projects/alpha" \
+    "branch=fm/terminal-ship" \
     "harness=claude" \
     "kind=ship" \
-    "mode=no-mistakes"
+    "mode=local-only"
   record_claude_idle "$home/state" terminal-ship
-  printf 'done: complete\n' > "$home/state/terminal-ship.status"
+  printf 'done: complete in branch fm/terminal-ship\n' > "$home/state/terminal-ship.status"
   out=$(PATH="$fakebin:$PATH" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)
   printf '%s' "$out" | jq -e '
     .valid == false
