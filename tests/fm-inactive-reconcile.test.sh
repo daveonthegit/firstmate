@@ -1067,6 +1067,53 @@ SH
 test_main_direct_terminal_presentation_receipt
 test_branch_ack_retires_inactive_outcome_receipt
 test_unpushed_ci_ready_done_is_not_published
+test_record_owned_completion_paths() {
+  local kind route gen
+  for route in main secondmate; do
+    for kind in missing '' unknown scout; do
+      make_world "record-kind-$route-${kind:-empty}"
+      if [ "$route" = secondmate ]; then bind_secondmate local; write_mate_meta; fi
+      write_child "$MATE" child 'done: local tests passing'
+      fm_write_meta "$MATE/state/child.meta" 'window=firstmate:fm-child' \
+        "worktree=$MATE/projects/child" "project=$MATE/projects/child" 'harness=claude' 'mode=no-mistakes'
+      [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$MATE/state/child.meta"
+      gen=$("$ROOT/bin/fm-busy-event.sh" arm "$MATE/state" child)
+      "$ROOT/bin/fm-busy-event.sh" apply "$MATE/state" child idle --gen "$gen" --source claude-hook --event stop
+      printf '#!/usr/bin/env bash\nexit 0\n' > "$WORLD/fakebin/no-mistakes"
+      printf '#!/usr/bin/env bash\nexec bash %q "$@"\n' "$ROOT/bin/fm-crew-state.sh" > "$WORLD/fakebin/fm-crew-state.sh"
+      chmod +x "$WORLD/fakebin/no-mistakes" "$WORLD/fakebin/fm-crew-state.sh"
+      age "$MATE/state/child.meta" "$MATE/state/child.status" "$MATE/state/child.turn-ended"
+      run_reconcile "$MATE" --startup || fail 'record-kind reconcile refused'
+      if [ "$kind" = scout ]; then
+        if [ "$route" = secondmate ]; then
+          [ "$(outcome_count "$MATE" reported)" = 1 ] || fail 'explicit scout ledger exemption lost'
+        else
+          [ "$(outcome_count "$MATE" pending)" = 1 ] || fail 'explicit scout inactive exemption lost'
+        fi
+      else
+        [ "$(outcome_count "$MATE" reported)" = 0 ] || fail 'local handoff received terminal receipt'
+        [ "$(outcome_count "$MATE" pending)" = 0 ] || fail 'local handoff queued terminal outcome'
+        assert_contains "$(cat "$MATE/state/child.status")" 'local tests passing' 'handoff stays observable'
+        printf 'done: PR https://example.test/o/r/pull/1\n' > "$MATE/state/child.status"
+        git -C "$MATE/projects/child" update-ref -d refs/remotes/origin/main
+        age "$MATE/state/child.status"
+        run_reconcile "$MATE" --startup || fail 'HTTPS-only reconcile refused'
+        [ "$(outcome_count "$MATE" reported)" = 0 ] || fail 'HTTPS-only terminal receipt'
+        [ "$(outcome_count "$MATE" pending)" = 0 ] || fail 'HTTPS-only terminal outcome'
+        git -C "$MATE/projects/child" update-ref refs/remotes/origin/main "$(git -C "$MATE/projects/child" rev-parse HEAD)"
+        run_reconcile "$MATE" --startup || fail 'published-head reconcile refused'
+        if [ "$route" = secondmate ]; then
+          [ "$(outcome_count "$MATE" reported)" = 1 ] || fail 'valid default-ship ledger proof lost'
+        else
+          [ "$(outcome_count "$MATE" pending)" = 1 ] || fail 'valid default-ship inactive proof lost'
+        fi
+      fi
+    done
+  done
+  pass 'ledger and inactive callers bind missing empty unknown kinds to record-owned ship proof'
+}
+
+test_record_owned_completion_paths
 test_delivered_ledger_done_skips_git_gate
 test_secondmate_handoff_is_nonterminal
 test_local_secondmate_delivers_terminal_ledger_line

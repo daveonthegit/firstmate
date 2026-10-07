@@ -691,8 +691,20 @@ fm_dod_named_head_reachable_outside_worktree() {  # <worktree> <project> <mode> 
 # output. <state> <id> <meta> supply pr=,
 # pr_head=, and the merge-notified marker; <meta> may be a captured copy
 # (bin/fm-fleet-snapshot.sh), so the marker is read from <state>.
-fm_dod_accept_ship_done() {  # <kind> <mode> <worktree> <project> <line> [<state> <id> <meta>]
-  local kind=$1 mode=$2 wt=$3 project=$4 line=$5 state=${6:-} id=${7:-} meta=${8:-} url sha gerrit
+fm_dod_accept_ship_done() {
+  local state=$1 id=$2 meta=$3 line=$4 kind mode wt project url sha gerrit
+  if [ ! -f "$meta" ]; then
+    printf '%s\n' "task record cannot be read to verify delivery"
+    return 1
+  fi
+  kind=$(fm_dod_meta_value "$meta" kind)
+  case "$kind" in
+    scout|secondmate) ;;
+    *) kind=ship ;;
+  esac
+  mode=$(fm_dod_meta_value "$meta" mode)
+  wt=$(fm_dod_meta_value "$meta" worktree)
+  project=$(fm_dod_meta_value "$meta" project)
   if [ "$kind" = ship ] && [ "$(status_line_verb "$line")" = done ]; then
     case "$mode" in
       no-mistakes|'')

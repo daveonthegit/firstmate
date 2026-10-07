@@ -5565,6 +5565,37 @@ test_no_mistakes_done_requires_pr() {
 }
 
 
+test_record_owned_completion_kind() {
+  reset_fakes
+  local d kind out
+  d=$(new_case record-owned-kind)
+  make_repo_on_branch "$d/wt" fm/record-owned-kind
+  git -C "$d/wt" update-ref -d refs/remotes/origin/main
+  make_fakebin "$d" >/dev/null
+  arm_idle_record "$d/state" record-owned-kind
+  for kind in missing '' unknown scout secondmate; do
+    fm_write_meta "$d/state/record-owned-kind.meta" 'window=fm:fm-record-owned-kind' "worktree=$d/wt" 'mode=no-mistakes' 'harness=claude'
+    [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$d/state/record-owned-kind.meta"
+    printf 'done: local tests passing\n' > "$d/state/record-owned-kind.status"
+    out=$(run_crew_state "$d" record-owned-kind)
+    case "$kind" in
+      scout|secondmate) assert_contains "$out" 'state: done' 'explicit record exemption' ;;
+      *)
+        assert_contains "$out" 'state: parked' 'missing empty unknown kind is ship'
+        assert_contains "$out" 'local tests passing' 'handoff remains observable'
+        printf 'done: PR https://github.com/o/r/pull/2\n' > "$d/state/record-owned-kind.status"
+        out=$(run_crew_state "$d" record-owned-kind)
+        assert_not_contains "$out" 'state: done' 'HTTPS alone remains nonterminal'
+        git -C "$d/wt" update-ref refs/remotes/origin/fm/record-owned-kind "$(git -C "$d/wt" rev-parse HEAD)"
+        out=$(run_crew_state "$d" record-owned-kind)
+        assert_contains "$out" 'state: done' 'record-default ship accepts published head'
+        git -C "$d/wt" update-ref -d refs/remotes/origin/fm/record-owned-kind ;;
+    esac
+  done
+  pass 'crew-state uses record-owned completion kind'
+}
+
+test_record_owned_completion_kind
 test_https_without_readiness_requires_named_head
 test_captured_axi_status_shapes
 test_captured_inventory_replay

@@ -422,9 +422,7 @@ report_child_ledger_locked() { # <id> <meta>
   fingerprint=$(sha256_text "$incarnation|$id|$state|ledger|$last")
   if [ "$state" = "done" ] && [ ! -f "$(record_path "$fingerprint" reported)" ] \
     && [ ! -f "$(record_path "$fingerprint" pending)" ] \
-    && ! fm_dod_accept_ship_done "$(meta_field "$meta" kind)" "$(meta_field "$meta" mode)" \
-      "$(meta_field "$meta" worktree)" "$(meta_field "$meta" project)" "$last" \
-      "$STATE" "$id" "$meta" >/dev/null; then
+    && ! fm_dod_accept_ship_done "$STATE" "$id" "$meta" "$last" >/dev/null; then
     return 0
   fi
   outcome_key="child-outcome-$id-$state-${fingerprint:0:8}"

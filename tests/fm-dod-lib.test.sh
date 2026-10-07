@@ -13,7 +13,13 @@ TMP_ROOT=$(fm_test_tmproot fm-dod-lib)
 fm_git_identity fmtest fmtest@example.invalid
 
 accept_done() {  # <kind> <mode> <worktree> <project> <line> [<state> <id> <meta>]
-  fm_dod_accept_ship_done "$@"
+  local state=${6:-$TMP_ROOT/record-state} id=${7:-task} meta=${8:-}
+  if [ -z "$meta" ]; then
+    mkdir -p "$state"
+    meta="$state/$id.meta"
+    fm_write_meta "$meta" "kind=$1" "mode=$2" "worktree=$3" "project=$4"
+  fi
+  fm_dod_accept_ship_done "$state" "$id" "$meta" "$5"
 }
 
 write_merge_marker() {  # <state> <id> <provider> <host> <path> <number>
@@ -461,6 +467,33 @@ test_https_delivery_always_requires_proof() {
   pass 'HTTPS delivery always requires independent proof'
 }
 
+test_record_owned_kind() {
+  local state meta kind hint reason rc
+  state="$TMP_ROOT/record-owned"
+  mkdir -p "$state"
+  meta="$state/task.meta"
+  for kind in missing '' unknown ship scout secondmate; do
+    fm_write_meta "$meta" 'mode=no-mistakes'
+    [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$meta"
+    for hint in '' scout secondmate other; do
+      rc=0
+      reason=$(fm_dod_accept_ship_done "$state" task "$meta" 'done: local tests passing' "$hint") || rc=$?
+      case "$kind" in
+        scout|secondmate) expect_code 0 "$rc" 'explicit record exemption' ;;
+        *)
+          expect_code 1 "$rc" 'non-exempt record handoff'
+          assert_contains "$reason" 'handoff' 'handoff stays observable but nonterminal'
+          rc=0
+          reason=$(fm_dod_accept_ship_done "$state" task "$meta" 'done: PR https://example.test/o/r/pull/1' "$hint") || rc=$?
+          expect_code 1 "$rc" 'HTTPS alone cannot prove delivery'
+          assert_contains "$reason" 'worktree missing' 'independent proof runs' ;;
+      esac
+    done
+  done
+  pass 'task record owns kind regardless of caller hints'
+}
+
+test_record_owned_kind
 test_https_delivery_always_requires_proof
 test_scout_done_is_not_gated
 test_unpushed_ship_done_is_refused

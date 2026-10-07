@@ -1821,7 +1821,7 @@ test_gerrit_ready_gate_reads_the_published_tree() {
   out=$(FM_TEST_GERRIT_REVISION=0123456789abcdef0123456789abcdef01234567 \
     FM_TEST_GERRIT_AXI_LOG="$dir/gerrit-axi.log" PATH="$dir/fakebin:$BASE_PATH" \
     bash -c '. "$1/bin/fm-timeout-lib.sh"; . "$1/bin/fm-dod-lib.sh"
-      fm_dod_accept_ship_done ship no-mistakes "$2" "$3" "$4" "$5" task-published "$6"' \
+      fm_dod_accept_ship_done "$5" task-published "$6" "$4"' \
     _ "$ROOT" "$dir/wt" "$dir/project" \
     "done: PR https://gerrit.example/c/group/apps/console/+/4201 published for review" \
     "$state" "$state/task-published.meta" 2>&1)
@@ -1929,9 +1929,9 @@ test_gerrit_nm_ready_gate_requires_recovered_custody() {
   set +e
   out=$(FM_TEST_GERRIT_REVISION=$unfixed PATH="$dir/fakebin:$BASE_PATH" \
     bash -c '. "$1/bin/fm-timeout-lib.sh"; . "$1/bin/fm-dod-lib.sh"
-      fm_dod_accept_ship_done ship no-mistakes "$2" "$3" "$4"' \
+      fm_dod_accept_ship_done "$5" task-unrecovered "$5/task-unrecovered.meta" "$4"' \
     _ "$ROOT" "$dir/wt" "$dir/project" \
-    "done: PR https://gerrit.example/r/c/group/apps/console/+/4201/1 published for review" 2>&1)
+    "done: PR https://gerrit.example/r/c/group/apps/console/+/4201/1 published for review" "$state" 2>&1)
   rc=$?
   set -e
   [ "$rc" -ne 0 ] || fail "the done gate accepted a published-for-review report naming no Gerrit change"
@@ -1956,8 +1956,8 @@ test_gerrit_nm_ready_gate_requires_recovered_custody() {
   out=$(FM_TEST_GERRIT_REVISION=$squash FM_TEST_NM_PIPELINE_HEAD=$fixed \
     FM_TEST_GERRIT_AXI_LOG="$dir/gerrit-axi.log" PATH="$dir/fakebin:$BASE_PATH" \
     bash -c '. "$1/bin/fm-timeout-lib.sh"; . "$1/bin/fm-dod-lib.sh"
-      fm_dod_accept_ship_done ship no-mistakes "$2" "$3" "$4"' \
-    _ "$ROOT" "$dir/wt" "$dir/project" "$line" 2>&1)
+      fm_dod_accept_ship_done "$5" task-unrecovered "$5/task-unrecovered.meta" "$4"' \
+    _ "$ROOT" "$dir/wt" "$dir/project" "$line" "$state" 2>&1)
   rc=$?
   set -e
   [ "$rc" -eq 0 ] || fail "the done gate refused a recovered, published copy: $out"
