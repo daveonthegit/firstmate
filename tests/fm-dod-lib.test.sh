@@ -426,6 +426,42 @@ EOF
   pass "promotion keeps a scout's recorded base branch and refuses local-only for it"
 }
 
+test_https_delivery_always_requires_proof() {
+  local repo wt line mode reason rc state meta sha
+  repo="$TMP_ROOT/https-repo"
+  wt="$TMP_ROOT/https-wt"
+  state="$TMP_ROOT/https-state"
+  mkdir -p "$state" "$TMP_ROOT/not-git"
+  meta="$state/ship.meta"
+  fm_git_worktree "$repo" "$wt" fm/https
+  git -C "$wt" commit -q --allow-empty -m 'unpublished delivery'
+  sha=$(git -C "$wt" rev-parse HEAD)
+  for mode in no-mistakes ''; do
+    for line in 'done: PR https://github.com/o/r/pull/1' \
+      'done: PR https://github.com/o/r/pull/1 checks green' \
+      'done: PR https://github.com/o/r/pull/1 published for review'; do
+      rc=0
+      reason=$(accept_done ship "$mode" "$wt" "$repo" "$line") || rc=$?
+      expect_code 1 "$rc" "$mode: HTTPS without published proof must fail: $reason"
+      rc=0
+      reason=$(accept_done ship "$mode" "$TMP_ROOT/missing" "$repo" "$line") || rc=$?
+      expect_code 1 "$rc" "$mode: missing Git copy must fail"
+      rc=0
+      reason=$(accept_done ship "$mode" "$TMP_ROOT/not-git" "$repo" "$line") || rc=$?
+      expect_code 1 "$rc" "$mode: non-Git copy must fail"
+    done
+  done
+  git -C "$wt" update-ref refs/remotes/origin/fm/https "$sha"
+  accept_done ship no-mistakes "$wt" "$repo" 'done: PR https://github.com/o/r/pull/1' \
+    || fail 'published named head without readiness prose must pass'
+  git -C "$wt" update-ref -d refs/remotes/origin/fm/https
+  printf 'pr=https://github.com/o/r/pull/1\npr_head=%s\n' "$sha" > "$meta"
+  accept_done ship no-mistakes "$wt" "$repo" 'done: PR https://github.com/o/r/pull/1' "$state" ship "$meta" \
+    || fail 'recorded forge delivery without readiness prose must pass'
+  pass 'HTTPS delivery always requires independent proof'
+}
+
+test_https_delivery_always_requires_proof
 test_scout_done_is_not_gated
 test_unpushed_ship_done_is_refused
 test_no_mistakes_prevalidation_done_is_not_gated

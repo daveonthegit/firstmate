@@ -2338,8 +2338,8 @@ EOF
   local out; out=$(run_crew_state "$d" feat-g)
   assert_not_contains "$out" "source: run-step" "another branch's run not misattributed"
   assert_contains "$out" "source: status-log" "no own run -> falls back to status-log"
-  assert_contains "$out" "state: blocked" "default no-mistakes handoff is nonterminal"
-  assert_contains "$out" "implementation handoff" "fallback preserves handoff visibility"
+  assert_contains "$out" "state: parked" "default no-mistakes handoff is nonterminal"
+  assert_contains "$out" "implemented, ready to validate" "fallback preserves handoff visibility"
   pass "another branch's run is ignored, falls back"
 }
 
@@ -5502,6 +5502,30 @@ test_captured_completed_history() {
 
 # A no-mistakes ship's local-only done event must surface without completing
 # the task. Other delivery modes and scouts keep their existing completion rule.
+test_https_without_readiness_requires_named_head() {
+  reset_fakes
+  local d out line
+  d=$(new_case https-proof)
+  make_repo_on_branch "$d/wt" fm/https-proof
+  git -C "$d/wt" commit -q --allow-empty -m 'unpublished head'
+  make_fakebin "$d" >/dev/null
+  fm_write_meta "$d/state/https-proof.meta" "window=fm:fm-https-proof" "worktree=$d/wt" "project=$d/wt" 'kind=ship' 'mode=no-mistakes' 'harness=claude'
+  arm_idle_record "$d/state" https-proof
+  for line in 'done: PR https://github.com/o/r/pull/2' \
+    'done: PR https://github.com/o/r/pull/2 checks green' \
+    'done: PR https://github.com/o/r/pull/2 published for review'; do
+    printf '%s\n' "$line" > "$d/state/https-proof.status"
+    out=$(run_crew_state "$d" https-proof)
+    assert_contains "$out" 'state: blocked' 'HTTPS alone cannot complete an unpublished head'
+    assert_not_contains "$out" 'state: done' 'readiness wording cannot bypass proof'
+  done
+  git -C "$d/wt" update-ref refs/remotes/origin/fm/https-proof "$(git -C "$d/wt" rev-parse HEAD)"
+  printf 'done: PR https://github.com/o/r/pull/2\n' > "$d/state/https-proof.status"
+  out=$(run_crew_state "$d" https-proof)
+  assert_contains "$out" 'state: done' 'published head completes without readiness prose'
+  pass 'crew-state delegates every HTTPS completion to delivery proof'
+}
+
 test_no_mistakes_done_requires_pr() {
   reset_fakes
   local d out mode kind line
@@ -5515,7 +5539,7 @@ test_no_mistakes_done_requires_pr() {
       for line in 'done: local tests passing' 'done: PR ready checks green' 'done: PR http://github.com/o/r/pull/2 checks green' 'done: PR https://github.com/o/r/pull/2 checks green'; do
         printf '%s\n' "$line" > "$d/state/premature-done.status"
         out=$(run_crew_state "$d" premature-done)
-        if [ "$mode" = no-mistakes ] && [ "$kind" = ship ] && [[ "$line" != *https://* ]]; then
+        if { [ "$mode" = no-mistakes ] || [ -z "$mode" ]; } && [ "$kind" = ship ] && [[ "$line" != *https://* ]]; then
           assert_contains "$out" 'state: parked' 'premature done is not completion'
           assert_contains "$out" 'source: status-log' 'missing run falls back to guarded log'
           status_is_captain_relevant "$line" || fail 'premature done must surface'
@@ -5541,6 +5565,7 @@ test_no_mistakes_done_requires_pr() {
 }
 
 
+test_https_without_readiness_requires_named_head
 test_captured_axi_status_shapes
 test_captured_inventory_replay
 test_captured_authority_transition

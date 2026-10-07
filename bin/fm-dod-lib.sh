@@ -547,17 +547,12 @@ fm_dod_note_reports_published_change() {  # <note>
 }
 
 # 0 when this ship done: is one the named-head gate must accept or refuse.
-# no-mistakes pre-validation done: is the pipeline handoff and is not gated.
 # Empty mode is treated as no-mistakes, the unregistered-project default.
 fm_dod_should_gate_ship_done() {  # <kind> <mode> <line>
-  local note
   [ "$1" = ship ] || return 1
   [ "$(status_line_verb "$3")" = "done" ] || return 1
-  note=$(status_line_note "$3")
   case "$2" in
-    direct-PR|local-only) return 0 ;;
-    no-mistakes|'')
-      fm_dod_note_reports_ci_ready "$note" || fm_dod_note_reports_published_change "$note" ;;
+    direct-PR|local-only|no-mistakes|'') return 0 ;;
     *) return 1 ;;
   esac
 }

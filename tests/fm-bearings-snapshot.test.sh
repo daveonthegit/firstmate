@@ -912,6 +912,8 @@ EOF
 
 ## Done
 EOF
+  fm_git_init_commit "$mate/projects/done"
+  git -C "$mate/projects/done" update-ref refs/remotes/origin/main "$(git -C "$mate/projects/done" rev-parse HEAD)"
   fm_write_meta "$mate/state/done.meta" \
     "window=firstmate:fm-done" "worktree=$mate/projects/done" "project=sample" \
     "harness=claude" "kind=ship" "mode=no-mistakes"

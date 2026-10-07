@@ -249,11 +249,11 @@ fi
 # not treated as finished-and-safe.
 emit_ship_status_done() {  # [extra-detail]
   local extra=${1:-} reason
-  if status_done_requires_validation "$LOG_LINE" "$(meta_value mode)" "$KIND"; then
-    emit parked status-log "$(status_line_note "$LOG_LINE")${extra:+${SEP}$extra}"
-  fi
   if reason=$(fm_dod_accept_ship_done "$KIND" "$(meta_value mode)" "$WT" "$(meta_value project)" "$LOG_LINE" "$STATE" "$ID" "$META"); then
     emit "done" status-log "$(status_line_note "$LOG_LINE")${extra:+${SEP}$extra}"
+  fi
+  if [ "$reason" = "implementation handoff awaits a marked HTTPS PR delivery" ]; then
+    emit parked status-log "$(status_line_note "$LOG_LINE")${extra:+${SEP}$extra}"
   fi
   emit blocked status-log "$reason"
 }
@@ -268,10 +268,13 @@ map_log_state() {  # <line>
     needs-decision) echo parked ;;
     blocked)        echo blocked ;;
     done)
-      if status_done_requires_validation "$1" "$(meta_value mode)" "$KIND"; then
+      local reason
+      if reason=$(fm_dod_accept_ship_done "$KIND" "$(meta_value mode)" "$WT" "$(meta_value project)" "$1" "$STATE" "$ID" "$META"); then
+        echo "done"
+      elif [ "$reason" = "implementation handoff awaits a marked HTTPS PR delivery" ]; then
         echo parked
       else
-        echo "done"
+        echo blocked
       fi ;;
     failed)         echo failed ;;
     *)              echo unknown ;;
@@ -651,7 +654,7 @@ EOF
 }
 log_reports_ci_ready() {
   [ "$LOG_VERB" = "done" ] || return 1
-  status_done_requires_validation "$LOG_LINE" "$(meta_value mode)" "$KIND" && return 1
+  fm_dod_accept_ship_done "$KIND" "$(meta_value mode)" "$WT" "$(meta_value project)" "$LOG_LINE" "$STATE" "$ID" "$META" >/dev/null || return 1
   fm_dod_note_reports_ci_ready "$(status_line_note "$LOG_LINE")"
 }
 

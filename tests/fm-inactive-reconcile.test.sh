@@ -227,14 +227,20 @@ test_branch_ack_retires_inactive_outcome_receipt() {
 # ledger pass reads the child's line before any PR is recorded for it, so the
 # gate tests the worker copy's HEAD.
 test_unpushed_ci_ready_done_is_not_published() {
-  make_world unpushed-ready; bind_secondmate local
-  write_child "$MATE" child 'done: PR https://example.test/owner/repo/pull/1 checks green, risk low'
-  git -C "$MATE/projects/child" commit -q --allow-empty -m 'only in the copy'
-  grep -v '^pr=\|^pr_head=' "$MATE/state/child.meta" > "$MATE/state/child.meta.tmp"
-  mv "$MATE/state/child.meta.tmp" "$MATE/state/child.meta"
-  FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
-  [ ! -s "$MAIN/state/mate.status" ] || fail "unpushed CI-ready done: was published upstream"
-  [ "$(outcome_count "$MATE" reported)" = 0 ] || fail "unpushed CI-ready done: left a delivery receipt"
+  local line n=0
+  for line in 'done: PR https://example.test/owner/repo/pull/1' \
+    'done: PR https://example.test/owner/repo/pull/1 checks green, risk low' \
+    'done: PR https://example.test/owner/repo/pull/1 published for review'; do
+    n=$((n + 1))
+    make_world "unpushed-ready-$n"; bind_secondmate local
+    write_child "$MATE" child "$line"
+    git -C "$MATE/projects/child" commit -q --allow-empty -m 'only in the copy'
+    grep -v '^pr=\|^pr_head=' "$MATE/state/child.meta" > "$MATE/state/child.meta.tmp"
+    mv "$MATE/state/child.meta.tmp" "$MATE/state/child.meta"
+    FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
+    [ ! -s "$MAIN/state/mate.status" ] || fail "unpushed done: was published upstream: $line"
+    [ "$(outcome_count "$MATE" reported)" = 0 ] || fail "unpushed done: left a delivery receipt: $line"
+  done
   pass "unpushed CI-ready ship done: is not published upstream"
 }
 
@@ -277,7 +283,7 @@ test_secondmate_handoff_is_nonterminal() {
     assert_not_contains "$(cat "$MAIN/state/mate.status")" 'child child done' "handoff published terminal completion"
     assert_contains "$(cat "$MATE/state/child.status")" "$line" "handoff lost its observable status"
   done
-  printf 'done: PR https://example.test/owner/repo/pull/1 checks green\n' >> "$MATE/state/child.status"
+  printf 'done: PR https://example.test/owner/repo/pull/1\n' >> "$MATE/state/child.status"
   FM_FAKE_CREW_STATE=parked run_reconcile "$MATE"
   [ "$(outcome_count "$MATE" reported)" = 1 ] || fail "HTTPS completion was not delivered"
   pass "secondmate keeps handoffs observable but nonterminal until HTTPS delivery"
