@@ -5595,6 +5595,57 @@ test_record_owned_completion_kind() {
   pass 'crew-state uses record-owned completion kind'
 }
 
+test_record_kind_current_run_precedence() {
+  reset_fakes
+  local d kind fixture expected out baseline branch=fm/kind-run
+  d=$(new_case kind-run)
+  make_repo_on_branch "$d/wt" "$branch"
+  git init --bare -q "$d/published.git"
+  git -C "$d/wt" remote add origin "$d/published.git"
+  git -C "$d/wt" push -q -u origin "$branch"
+  make_fakebin "$d" >/dev/null
+  arm_idle_record "$d/state" kind-run
+  printf 'done: PR https://github.com/o/r/pull/2\n' > "$d/state/kind-run.status"
+  for fixture in run_failed run_parked run_running run_fixing run_ci_monitoring; do
+    FM_FAKE_AXI_STATUS=$("$fixture" "$branch")
+    case "$fixture" in
+      run_failed) expected=failed ;;
+      run_parked) expected=parked ;;
+      *) expected=working ;;
+    esac
+    fm_write_meta "$d/state/kind-run.meta" 'window=fm:fm-kind-run' "worktree=$d/wt" "project=$d/wt" 'kind=ship' 'mode=no-mistakes' 'harness=claude'
+    baseline=$(run_crew_state "$d" kind-run)
+    assert_contains "$baseline" "state: $expected" "$fixture blocks terminal ship completion"
+    assert_contains "$baseline" 'source: run-step' 'matching current run owns state'
+    for kind in missing '' unknown ship; do
+      fm_write_meta "$d/state/kind-run.meta" 'window=fm:fm-kind-run' "worktree=$d/wt" "project=$d/wt" 'mode=no-mistakes' 'harness=claude'
+      [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$d/state/kind-run.meta"
+      out=$(run_crew_state "$d" kind-run)
+      [ "$out" = "$baseline" ] || fail "$kind/$fixture differs from explicit ship: $out"
+    done
+  done
+  for kind in missing '' unknown ship scout secondmate; do
+    fm_write_meta "$d/state/kind-run.meta" 'window=fm:fm-kind-run' "worktree=$d/wt" "project=$d/wt" 'mode=no-mistakes' 'harness=claude'
+    [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$d/state/kind-run.meta"
+    for fixture in stale-head unrelated-branch; do
+      case "$fixture" in
+        stale-head) FM_FAKE_AXI_STATUS=$(FM_FAKE_RUN_HEAD=0000000000000000000000000000000000000000 run_failed "$branch") ;;
+        unrelated-branch) FM_FAKE_AXI_STATUS=$(run_failed fm/unrelated) ;;
+      esac
+      out=$(run_crew_state "$d" kind-run)
+      assert_contains "$out" 'state: done' 'nonmatching run is not completion authority'
+    done
+    case "$kind" in
+      scout|secondmate)
+        FM_FAKE_AXI_STATUS=$(run_failed "$branch")
+        out=$(run_crew_state "$d" kind-run)
+        assert_contains "$out" 'state: done' 'explicit record kind is exempt from ship pipeline' ;;
+    esac
+  done
+  pass 'record-owned kind governs current-run eligibility and precedence'
+}
+
+test_record_kind_current_run_precedence
 test_record_owned_completion_kind
 test_https_without_readiness_requires_named_head
 test_captured_axi_status_shapes

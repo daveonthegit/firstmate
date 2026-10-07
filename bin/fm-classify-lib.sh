@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 # Shared wake classifier: the common source of truth for captain-relevant status
 # tests, declared-external-wait vocabulary, and the working/paused absorb
 # classification that makes no-verb signal and stale-pane wakes safe to absorb.
@@ -830,15 +832,7 @@ _fm_is_pending_reply_escalation() {  # <key> <note>
 }
 
 _fm_status_kind() {
-  local meta=${1%.status}.meta kind=${2:-} line
-  if [ -z "$kind" ]; then
-    [ -f "$meta" ] && [ -r "$meta" ] && [ ! -L "$meta" ] || { printf unknown; return 0; }
-    while IFS= read -r line || [ -n "$line" ]; do
-      case "$line" in kind=*) kind=${line#kind=} ;; esac
-    done < "$meta"
-    kind=${kind:-ship}
-  fi
-  case "$kind" in ship|scout|secondmate) printf '%s' "$kind" ;; *) printf unknown ;; esac
+  fm_task_kind "${1%.status}.meta"
 }
 
 _fm_decision_fold_line() {  # <open-set> <status-line> <resolve-verb> <held-verb> <kind>
@@ -2646,7 +2640,7 @@ crew_worktree_written_since() {  # <id> <state> <anchor-file>
   [ -f "$anchor" ] || return 1
   wt=$(grep '^worktree=' "$state/$id.meta" 2>/dev/null | tail -1 | cut -d= -f2- || true)
   [ -n "$wt" ] && [ -d "$wt" ] || return 1
-  kind=$(grep '^kind=' "$state/$id.meta" 2>/dev/null | tail -1 | cut -d= -f2- || true)
+  kind=$(fm_task_kind "$state/$id.meta")
   [ "$kind" != secondmate ] || return 1
   if [ -e "$wt/.fm-secondmate-home" ] || [ -L "$wt/.fm-secondmate-home" ]; then
     return 1
@@ -2727,7 +2721,7 @@ signal_crew_provably_working() {  # <file> ...
     [ -n "$task" ] || continue
     case "$base" in
       *.status)
-        if [ "$(grep '^kind=' "$dir/$task.meta" 2>/dev/null | tail -1 | cut -d= -f2-)" = secondmate ]; then
+        if [ "$(fm_task_kind "$dir/$task.meta")" = secondmate ]; then
           _fm_secondmate_status_new_lines_routine "$f" "$dir" || return 1
         fi
         ;;

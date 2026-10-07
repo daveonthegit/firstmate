@@ -163,6 +163,8 @@
 # deleted stops itself instead of running on as an orphan. That check is scoped
 # to this process alone and never signals another watcher.
 set -u
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -449,8 +451,7 @@ window_kind() {
   local w=$1 meta kind
   meta=$(fm_backend_meta_for_window "$w" "$STATE" 2>/dev/null || true)
   if [ -n "$meta" ]; then
-    kind=$(grep '^kind=' "$meta" | cut -d= -f2- || true)
-    [ -n "$kind" ] || kind=ship
+    kind=$(fm_task_kind "$meta")
     echo "$kind"
     return 0
   fi
@@ -698,7 +699,7 @@ signal_turnend_panes_churned() {  # <file> ...
     [ -e "$meta" ] || continue
     rec_task=${meta##*/}
     rec_task=${rec_task%.meta}
-    kind=$(fm_meta_get "$meta" kind)
+    kind=$(fm_task_kind "$meta")
     backend=$(fm_backend_of_meta "$meta")
     if [ "$backend" = orca ]; then
       terminal=$(fm_meta_get "$meta" terminal)
@@ -958,7 +959,7 @@ secondmate_wake_stall_tick() {
   # Endpoint metadata admits this queue-loop check; secondmate-liveness owns registered mates whose endpoint is missing or dead.
   for meta in "$STATE"/*.meta; do
     [ -e "$meta" ] || continue
-    kind=$(fm_meta_get "$meta" kind)
+    kind=$(fm_task_kind "$meta")
     [ "$kind" = secondmate ] || continue
     remote_host=$(fm_meta_get "$meta" remote_host)
     [ -z "$remote_host" ] || continue
@@ -1071,7 +1072,7 @@ secondmate_liveness_tick() {
   local bound_marker attempts notify_key reason queued err first_reason='' failed=0
   for meta in "$STATE"/*.meta; do
     [ -e "$meta" ] || continue
-    kind=$(fm_meta_get "$meta" kind 2>/dev/null || true)
+    kind=$(fm_task_kind "$meta")
     [ "$kind" = secondmate ] || continue
     id=${meta##*/}
     id=${id%.meta}
@@ -2858,7 +2859,7 @@ EOF
         fi
         reason="check: $c: $out"
         if [ "$is_pr_poll" -eq 1 ] && [ "$out" = merged ]; then
-          if [ "$(fm_meta_get "$STATE/$id.meta" kind)" = secondmate ]; then
+          if [ "$(fm_task_kind "$STATE/$id.meta")" = secondmate ]; then
             # A merge poll armed on a secondmate is residue: the mate is a
             # persistent worker, never landed work, and the merge it detected
             # belongs to a task in the mate's own home. Retire the poll with no

@@ -1,4 +1,6 @@
 # shellcheck shell=bash
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 # Shared fast-forward machinery for firstmate self-sync.
 # Usage: . bin/fm-ff-lib.sh   (after FM_ROOT and FM_HOME are set)
 #
@@ -351,7 +353,7 @@ live_secondmate_meta_records() {
   [ -d "$state" ] || return 0
   for meta in "$state"/*.meta; do
     [ -f "$meta" ] || continue
-    grep -q '^kind=secondmate$' "$meta" 2>/dev/null || continue
+    [ "$(fm_task_kind "$meta")" = secondmate ] || continue
     id=$(basename "$meta" .meta)
     home=$(grep '^home=' "$meta" 2>/dev/null | tail -1 | cut -d= -f2- || true)
     if [ -z "$home" ] && [ -n "$registry" ]; then

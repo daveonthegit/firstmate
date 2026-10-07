@@ -86,6 +86,8 @@
 # The scan reads only durable local state and fm-crew-state.sh; it never invokes
 # gh, gh-axi, curl, fm-pr-check.sh, fm-pr-poll.sh, or a state *.check.sh.
 set -u
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 export LC_ALL=C
 
 SCRIPT_DIR="$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd)"
@@ -330,7 +332,7 @@ meta_incarnation() { # <meta>
 # A scout never delivers a PR, so it never carries one.
 pr_for_task() { # <meta> [preferred-line]
   local meta=$1 preferred=${2:-} value
-  [ "$(meta_field "$meta" kind)" != scout ] || return 0
+  [ "$(fm_task_kind "$meta")" != scout ] || return 0
   value=$(meta_field "$meta" pr)
   if [ -z "$value" ] && [ -n "$preferred" ]; then
     value=$(printf '%s\n' "$preferred" \
@@ -468,11 +470,11 @@ ledger_pass() {
     [ -f "$meta" ] || continue
     id=$(basename "$meta" .meta)
     valid_id "$id" || continue
-    [ "$(meta_field "$meta" kind)" != secondmate ] || continue
+    [ "$(fm_task_kind "$meta")" != secondmate ] || continue
     lock=$(fm_meta_lock_path "$meta") || continue
     fm_lock_try_acquire "$lock" || continue
     if [ ! -f "$meta" ] || [ -L "$meta" ] \
-      || [ "$(meta_field "$meta" kind)" = secondmate ]; then
+      || [ "$(fm_task_kind "$meta")" = secondmate ]; then
       fm_lock_release "$lock"
       continue
     fi
@@ -489,14 +491,14 @@ report_child() { # <id>
   home_secondmate_id >/dev/null || { rc=$?; [ "$rc" -eq 1 ] && return 0; return 1; }
   meta="$STATE/$id.meta"
   [ -f "$meta" ] && [ ! -L "$meta" ] || return 0
-  [ "$(meta_field "$meta" kind)" != secondmate ] || return 0
+  [ "$(fm_task_kind "$meta")" != secondmate ] || return 0
   report_child_ledger_locked "$id" "$meta"
 }
 
 reconcile_direct_child_locked() { # <id> <meta> <secondmate-id-or-empty> <timeout>
   local id=$1 meta=$2 self=${3:-} timeout=$4 status turn last age state_line state pr incarnation fingerprint outcome_key payload kind state_rc=0
   [ -f "$meta" ] && [ ! -L "$meta" ] || return 0
-  kind=$(meta_field "$meta" kind)
+  kind=$(fm_task_kind "$meta")
   [ "$kind" = secondmate ] && return 0
   status="$STATE/$id.status"
   turn="$STATE/$id.turn-ended"

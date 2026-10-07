@@ -40,6 +40,8 @@
 # the refusal of a forge on local-only.
 # Usage: fm-promote.sh <task-id> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>]
 set -eu
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -183,7 +185,7 @@ if ! fm_backlog_record_present "$META" "task record" "$STATE"; then
   echo "error: task record for $ID is unsafe or missing ($FM_BACKLOG_TRANSITION_ERROR)" >&2
   exit 1
 fi
-grep -qx 'kind=scout' "$META" || { echo "error: task $ID is not a scout task (kind=scout not in meta)" >&2; exit 1; }
+[ "$(fm_task_kind "$META")" = scout ] || { echo "error: task $ID is not a scout task (kind=scout not in meta)" >&2; exit 1; }
 
 # Unlike the mode and yolo above, the forge is not a per-task decision: it is the
 # captain's project binding, so promotion takes it from the registry rather than
@@ -376,7 +378,7 @@ promote_resolve_primary_home() {
   [ "$parent" != "$child" ] || return 1
   parent_meta="$parent/state/$mate_id.meta"
   [ -f "$parent_meta" ] && [ ! -L "$parent_meta" ] || return 1
-  [ "$(fmx_meta_get "$parent_meta" kind)" = secondmate ] || return 1
+  [ "$(fm_task_kind "$parent_meta")" = secondmate ] || return 1
   meta_home=$(fmx_meta_get "$parent_meta" home)
   meta_home=$(CDPATH='' cd -- "$meta_home" 2>/dev/null && pwd -P) || return 1
   [ "$meta_home" = "$child" ] || return 1

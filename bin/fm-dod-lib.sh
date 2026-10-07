@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 # Single owner of a ship task's mode-specific "Definition of done" block and of
 # the named-head reachability gate that accepts a ship `done:` claim.
 # Sourced by bin/fm-brief.sh, which renders it into a generated ship brief, and by
@@ -697,11 +699,7 @@ fm_dod_accept_ship_done() {
     printf '%s\n' "task record cannot be read to verify delivery"
     return 1
   fi
-  kind=$(fm_dod_meta_value "$meta" kind)
-  case "$kind" in
-    scout|secondmate) ;;
-    *) kind=ship ;;
-  esac
+  kind=$(fm_task_kind "$meta")
   mode=$(fm_dod_meta_value "$meta" mode)
   wt=$(fm_dod_meta_value "$meta" worktree)
   project=$(fm_dod_meta_value "$meta" project)

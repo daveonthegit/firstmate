@@ -21,6 +21,8 @@
 # (bin/fm-project-capacity-lib.sh).
 # Usage: fm-pr-check.sh <task-id> <pr-url>
 set -eu
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -64,7 +66,7 @@ fi
 # to a task inside the mate's own home, which records and watches it there;
 # arming a merge watch here would queue the mate itself for teardown as landed
 # work once that pull request merges.
-KIND=$(grep '^kind=' "$META" | tail -1 | cut -d= -f2- || true)
+KIND=$(fm_task_kind "$META")
 if [ "$KIND" = secondmate ]; then
   echo "error: $ID is a secondmate, not a delivery lane - $URL was reported on its status channel but belongs to a task in the mate's own home, which arms its own merge watch" >&2
   exit 1

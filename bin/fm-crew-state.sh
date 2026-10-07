@@ -166,6 +166,8 @@
 # Read-only and side-effect free. Always exits 0 on a successful read regardless
 # of state; exit 2 only on a usage error (no id).
 set -u
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -225,10 +227,9 @@ meta_value() {  # <key>
 }
 
 WT=$(meta_value worktree)
-KIND=$(meta_value kind)
+KIND=$(fm_task_kind "$META")
 HARNESS=$(meta_value harness)
 REMOTE_HOST=$(meta_value remote_host)
-[ -n "$KIND" ] || KIND=ship
 
 # A torn-down (or never-created) worktree has no current state to read. A
 # remote secondmate's recorded worktree is a path on ITS host, so the local

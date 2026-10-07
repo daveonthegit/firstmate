@@ -523,6 +523,8 @@
 #   pane export happens on the remote host (bin/fm-remote-secondmate-control.sh).
 #   Local spawns never pass it and resolve their own carrier exactly as before.
 set -eu
+# shellcheck source=fm-task-kind.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -1069,7 +1071,7 @@ spawn_remote_secondmate() {
   meta="$STATE/$id.meta"
   if [ -e "$meta" ] || [ -L "$meta" ]; then
     if ! fm_backlog_record_present "$meta" "task record" "$STATE" ||
-      [ "$(fm_meta_get "$meta" kind)" != secondmate ] ||
+      [ "$(fm_task_kind "$meta")" != secondmate ] ||
       [ "$(fm_meta_get "$meta" remote_host)" != "$host" ] ||
       [ "$(fm_meta_get "$meta" remote_root)" != "$root" ] ||
       [ "$(fm_meta_get "$meta" home)" != "$home" ]; then
@@ -1644,7 +1646,7 @@ spawn_refuse_if_away_spend_cap() {
   live=0
   for meta in "$STATE"/*.meta; do
     [ -f "$meta" ] || continue
-    [ "$(grep '^kind=' "$meta" 2>/dev/null | tail -1 | cut -d= -f2-)" != secondmate ] || continue
+    [ "$(fm_task_kind "$meta")" != secondmate ] || continue
     live=$((live + 1))
   done
   if [ "$live" -ge "$cap" ]; then
@@ -1870,8 +1872,7 @@ if [ "$RELAUNCH" -eq 1 ]; then
       ;;
   esac
   RELAUNCH_PRIOR_HARNESS=$(fm_meta_get "$RELAUNCH_META" harness)
-  KIND=$(fm_meta_get "$RELAUNCH_META" kind)
-  [ -n "$KIND" ] || KIND=ship
+  KIND=$(fm_task_kind "$RELAUNCH_META")
   # A secondmate whose endpoint is gone already has ONE owner for that
   # recovery: the session-start liveness sweep respawns it with
   # `fm-spawn.sh <id> --secondmate`, which stands its home's own workspace back

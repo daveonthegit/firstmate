@@ -76,6 +76,7 @@ pass "plain note, list, and wake stay on the historical human path"
 isolated="$TMP_ROOT/isolated"
 mkdir -p "$isolated/bin"
 cp "$INBOX_BIN" "$isolated/bin/fm-inbox.sh"
+cp "$ROOT/bin/fm-task-kind.sh" "$isolated/bin/"
 chmod +x "$isolated/bin/fm-inbox.sh"
 home=$(make_home human-wake-fail)
 set +e
