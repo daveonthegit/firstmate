@@ -1551,9 +1551,10 @@ FM_SMTP_HOST=   # SMTP server hostname
 `FM_IMAP_PORT` (default 993), `FM_SMTP_PORT` (default 465), `FM_MAIL_TIMEOUT` (default 20 seconds), and `FM_MAIL_POLL_MAX_WAKES` (default 20, valid 1..200) are optional.
 The per-poll wake cap bounds the wakes of one `poll` run; header fetches scan a larger bounded window of new unseen uids plus already-surfaced retry-set uids, so a flood or large backlog still makes bounded progress every poll, keeping the durable wake queue bounded without ever dropping mail.
 
-**Unfetchable headers**
+**Mailbox failures and unfetchable headers**
 
-A message whose header cannot be fetched is surfaced with a degraded summary instead of being skipped, so it is never missed and cannot block later mail.
+Both `read` and `poll` refuse failed INBOX selection, failed UNSEEN search, or a malformed UID response before emitting message results; these mailbox refusals publish no mail wakes and do not advance mail state.
+For a validated UID, a message whose header cannot be fetched is surfaced by `poll` with a degraded summary instead of being skipped, so it is never missed and cannot block later mail.
 A later poll retries that fetch and, on success, surfaces the real sender and subject; a persistently unfetchable message stays degraded without repeating that wake.
 
 **Arm unattended polling**

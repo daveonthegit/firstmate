@@ -1090,8 +1090,7 @@ The credential must also be present before the session-provider daemon starts, s
 
 ### Settings placement
 
-Firstmate's hooks are NOT written into the worktree's `.gemini/settings.json`, because unlike Claude's `settings.local.json` that path is the project's own committed settings file.
-They go to a firstmate-owned `state/<id>.gemini-settings.json` reached through `GEMINI_CLI_SYSTEM_SETTINGS_PATH`.
+The [Gemini adapter reference](../../.agents/skills/harness-adapters/references/harness/gemini.md#worker-busy-state-and-turn-end) owns settings placement and tracked-project protection.
 Two measurements support that choice.
 Hooks from the system layer fired under `--skip-trust` in an untrusted folder, so the busy contract does not depend on the trust decision:
 
