@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 # Single owner of a ship task's mode-specific "Definition of done" block and of
 # the named-head reachability gate that accepts a ship `done:` claim.
 # Sourced by bin/fm-brief.sh, which renders it into a generated ship brief, and by
@@ -549,12 +547,17 @@ fm_dod_note_reports_published_change() {  # <note>
 }
 
 # 0 when this ship done: is one the named-head gate must accept or refuse.
+# no-mistakes pre-validation done: is the pipeline handoff and is not gated.
 # Empty mode is treated as no-mistakes, the unregistered-project default.
 fm_dod_should_gate_ship_done() {  # <kind> <mode> <line>
+  local note
   [ "$1" = ship ] || return 1
   [ "$(status_line_verb "$3")" = "done" ] || return 1
+  note=$(status_line_note "$3")
   case "$2" in
-    direct-PR|local-only|no-mistakes|'') return 0 ;;
+    direct-PR|local-only) return 0 ;;
+    no-mistakes|'')
+      fm_dod_note_reports_ci_ready "$note" || fm_dod_note_reports_published_change "$note" ;;
     *) return 1 ;;
   esac
 }
@@ -693,27 +696,8 @@ fm_dod_named_head_reachable_outside_worktree() {  # <worktree> <project> <mode> 
 # output. <state> <id> <meta> supply pr=,
 # pr_head=, and the merge-notified marker; <meta> may be a captured copy
 # (bin/fm-fleet-snapshot.sh), so the marker is read from <state>.
-fm_dod_accept_ship_done() {
-  local state=$1 id=$2 meta=$3 line=$4 kind mode wt project url sha gerrit
-  if [ ! -f "$meta" ]; then
-    printf '%s\n' "task record cannot be read to verify delivery"
-    return 1
-  fi
-  kind=$(fm_task_kind "$meta")
-  mode=$(fm_dod_meta_value "$meta" mode)
-  wt=$(fm_dod_meta_value "$meta" worktree)
-  project=$(fm_dod_meta_value "$meta" project)
-  if [ "$kind" = ship ] && [ "$(status_line_verb "$line")" = done ]; then
-    case "$mode" in
-      no-mistakes|'')
-        case "$(status_line_note "$line")" in
-          PR\ https://?*) ;;
-          *)
-            printf '%s\n' "implementation handoff awaits a marked HTTPS PR delivery"
-            return 1 ;;
-        esac ;;
-    esac
-  fi
+fm_dod_accept_ship_done() {  # <kind> <mode> <worktree> <project> <line> [<state> <id> <meta>]
+  local kind=$1 mode=$2 wt=$3 project=$4 line=$5 state=${6:-} id=${7:-} meta=${8:-} url sha gerrit
   fm_dod_should_gate_ship_done "$kind" "$mode" "$line" || return 0
   if url=$(fm_dod_pr_url_from_done_note "$(status_line_note "$line")") \
     && fm_dod_recorded_pr_on_forge "$state" "$id" "$meta" "$mode" "$url"; then

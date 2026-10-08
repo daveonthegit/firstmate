@@ -1,6 +1,4 @@
 # shellcheck shell=bash disable=SC2034
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 # fm-secondmate-restart-lib.sh - the shared contract for restarting a second
 # mate onto the current instruction surface and launch-time wiring. Source only.
 #
@@ -63,7 +61,7 @@ fm_secondmate_restart_capable() {  # <meta-file>
     FM_SECONDMATE_RESTART_REASON="no durable record for this second mate in this home"
     return 1
   fi
-  kind=$(fm_task_kind "$meta")
+  kind=$(fm_meta_get "$meta" kind)
   if [ "$kind" != secondmate ]; then
     FM_SECONDMATE_RESTART_REASON="the durable record is not a second mate's"
     return 1

@@ -285,7 +285,7 @@ family_for_basename() {
   case "$1" in
     fm-arm-pretool-check.test.sh|fm-ask-user-authority.test.sh|\
     fm-bearings-board.test.sh|\
-    fm-brief.test.sh|fm-vault.test.sh|fm-dod-lib.test.sh|fm-task-kind.test.sh|fm-vendor-auth-probe.test.sh|\
+    fm-brief.test.sh|fm-vault.test.sh|fm-dod-lib.test.sh|fm-vendor-auth-probe.test.sh|\
     fm-calm-pi-extension.test.sh|fm-cd-pretool-check.test.sh|\
     fm-classify-decision-key.test.sh|\
     fm-composer-ghost.test.sh|fm-composer-lib.test.sh|\
@@ -861,7 +861,6 @@ tests/fm-supervision-host-live-e2e.test.sh 75
 tests/fm-supervision-host.test.sh 789123
 tests/fm-tangle-guard.test.sh 8501
 tests/fm-task-delivery.test.sh 32789
-tests/fm-task-kind.test.sh 1000
 tests/fm-task-inbox.test.sh 31965
 tests/fm-tasks-axi.test.sh 2293
 tests/fm-teardown-endpoint-safety.test.sh 40851
@@ -1473,15 +1472,6 @@ families_for_changed_path() {
       printf '%s\n' backend-dispatch
       printf '%s\n' real-herdr-gated
       printf '%s\n' pure-contract-unit
-      ;;
-    bin/fm-task-kind*)
-      printf '%s\n' pure-contract-unit
-      printf '%s\n' watcher-wake-lock
-      printf '%s\n' secondmate
-      printf '%s\n' backend-dispatch
-      printf '%s\n' pr-forge
-      printf '%s\n' snapshot-bearings
-      printf '%s\n' session-bootstrap
       ;;
     bin/fm-watch*|bin/fm-wake*|bin/fm-inactive-reconcile.sh|\
     bin/fm-classify-lib.sh|bin/fm-daemon*|bin/fm-turnend-guard*|bin/fm-guard.sh)

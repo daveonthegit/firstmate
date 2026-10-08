@@ -78,8 +78,6 @@
 # input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens}, and
 # each token field is {total, unknown}.
 set -eu
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -116,7 +114,7 @@ META="$STATE/$ID.meta"
 meta_value() {  # <key>
   grep "^$1=" "$META" 2>/dev/null | tail -1 | cut -d= -f2- || true
 }
-[ "$(fm_task_kind "$META")" != secondmate ] || fail "$ID is a secondmate, not a task"
+[ "$(meta_value kind)" != secondmate ] || fail "$ID is a secondmate, not a task"
 command -v python3 >/dev/null 2>&1 || fail "python3 is required to read no-mistakes' state database"
 
 WT=$(meta_value worktree)

@@ -82,8 +82,7 @@ EOF
 }
 
 write_child() { # <home> <id> <status> [spawn-gen]
-  local home=$1 id=$2 status=$3 spawn_gen=${4:-s${BASHPID:-$$}.$RANDOM} sha mode=local-only
-  case "$status" in *'PR https://'*|'done: report written') mode=no-mistakes ;; esac
+  local home=$1 id=$2 status=$3 spawn_gen=${4:-s${BASHPID:-$$}.$RANDOM} sha
   mkdir -p "$home/projects/$id"
   git -C "$home/projects/$id" init -q
   git -C "$home/projects/$id" commit -q --allow-empty -m init
@@ -91,7 +90,7 @@ write_child() { # <home> <id> <status> [spawn-gen]
   git -C "$home/projects/$id" update-ref refs/remotes/origin/main "$sha"
   fm_write_meta "$home/state/$id.meta" \
     "window=firstmate:fm-$id" "worktree=$home/projects/$id" "project=$home/projects/$id" \
-    'harness=codex' 'kind=ship' "mode=$mode" 'yolo=off' \
+    'harness=codex' 'kind=ship' 'mode=no-mistakes' 'yolo=off' \
     "spawn_gen=$spawn_gen" 'pr=https://example.test/owner/repo/pull/1' \
     "pr_head=$sha"
   printf '%s\n' "$status" > "$home/state/$id.status"
@@ -227,20 +226,14 @@ test_branch_ack_retires_inactive_outcome_receipt() {
 # ledger pass reads the child's line before any PR is recorded for it, so the
 # gate tests the worker copy's HEAD.
 test_unpushed_ci_ready_done_is_not_published() {
-  local line n=0
-  for line in 'done: PR https://example.test/owner/repo/pull/1' \
-    'done: PR https://example.test/owner/repo/pull/1 checks green, risk low' \
-    'done: PR https://example.test/owner/repo/pull/1 published for review'; do
-    n=$((n + 1))
-    make_world "unpushed-ready-$n"; bind_secondmate local
-    write_child "$MATE" child "$line"
-    git -C "$MATE/projects/child" commit -q --allow-empty -m 'only in the copy'
-    grep -v '^pr=\|^pr_head=' "$MATE/state/child.meta" > "$MATE/state/child.meta.tmp"
-    mv "$MATE/state/child.meta.tmp" "$MATE/state/child.meta"
-    FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
-    [ ! -s "$MAIN/state/mate.status" ] || fail "unpushed done: was published upstream: $line"
-    [ "$(outcome_count "$MATE" reported)" = 0 ] || fail "unpushed done: left a delivery receipt: $line"
-  done
+  make_world unpushed-ready; bind_secondmate local
+  write_child "$MATE" child 'done: PR https://example.test/owner/repo/pull/1 checks green, risk low'
+  git -C "$MATE/projects/child" commit -q --allow-empty -m 'only in the copy'
+  grep -v '^pr=\|^pr_head=' "$MATE/state/child.meta" > "$MATE/state/child.meta.tmp"
+  mv "$MATE/state/child.meta.tmp" "$MATE/state/child.meta"
+  FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
+  [ ! -s "$MAIN/state/mate.status" ] || fail "unpushed CI-ready done: was published upstream"
+  [ "$(outcome_count "$MATE" reported)" = 0 ] || fail "unpushed CI-ready done: left a delivery receipt"
   pass "unpushed CI-ready ship done: is not published upstream"
 }
 
@@ -271,24 +264,6 @@ test_delivered_ledger_done_skips_git_gate() {
 # child's note, recorded PR, delivery mode, and merge posture, happens once,
 # and takes the outcome away from the inactive path so it is never reported
 # twice.
-test_secondmate_handoff_is_nonterminal() {
-  local line
-  make_world handoff; bind_secondmate local
-  write_mate_meta
-  for line in 'done: local tests passing' 'done: PR http://example.test/o/r/pull/1 checks green' 'done: PR ready checks green'; do
-    write_child "$MATE" child "$line"
-    printf 'mode=no-mistakes\n' >> "$MATE/state/child.meta"
-    FM_FAKE_CREW_STATE=parked run_reconcile "$MATE"
-    [ "$(outcome_count "$MATE" reported)" = 0 ] || fail "handoff received terminal delivery receipt"
-    assert_not_contains "$(cat "$MAIN/state/mate.status")" 'child child done' "handoff published terminal completion"
-    assert_contains "$(cat "$MATE/state/child.status")" "$line" "handoff lost its observable status"
-  done
-  printf 'done: PR https://example.test/owner/repo/pull/1\n' >> "$MATE/state/child.status"
-  FM_FAKE_CREW_STATE=parked run_reconcile "$MATE"
-  [ "$(outcome_count "$MATE" reported)" = 1 ] || fail "HTTPS completion was not delivered"
-  pass "secondmate keeps handoffs observable but nonterminal until HTTPS delivery"
-}
-
 test_local_secondmate_delivers_terminal_ledger_line() {
   local expected key
   make_world local; bind_secondmate local
@@ -431,7 +406,6 @@ test_secondmate_ledger_delivery_carries_report_and_failure() {
   local scout_key boom_key replaced_key
   make_world ledger-shapes; bind_secondmate local
   write_child "$MATE" scout 'done: report written'
-  printf 'kind=scout\n' >> "$MATE/state/scout.meta"
   mkdir -p "$MATE/data/scout"
   printf '# findings\n' > "$MATE/data/scout/report.md"
   write_child "$MATE" boom 'failed: build broke'
@@ -442,9 +416,9 @@ test_secondmate_ledger_delivery_carries_report_and_failure() {
   scout_key=$(reported_outcome_key "$MATE" scout 'done') || fail "scout receipt key missing"
   boom_key=$(reported_outcome_key "$MATE" boom failed) || fail "failed receipt key missing"
   replaced_key=$(reported_outcome_key "$MATE" replaced-pr 'done') || fail "replacement PR receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$scout_key]: child scout done: report written mode=no-mistakes yolo=off report=data/scout/report.md" \
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$scout_key]: child scout done: report written pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off report=data/scout/report.md" \
     || fail "scout delivery lost its report pointer: $(cat "$MAIN/state/mate.status")"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "failed [key=$boom_key]: child boom failed: build broke pr=https://example.test/owner/repo/pull/1 mode=local-only yolo=off" \
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "failed [key=$boom_key]: child boom failed: build broke pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
     || fail "failed line was not delivered under the failed verb: $(cat "$MAIN/state/mate.status")"
   sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$replaced_key]: child replaced-pr done: PR https://example.test/owner/repo/pull/22 pr=https://example.test/owner/repo/pull/22 mode=no-mistakes yolo=off" \
     || fail "ledger fallback did not prefer the terminal ready line PR: $(cat "$MAIN/state/mate.status")"
@@ -483,7 +457,7 @@ test_pr_field_requires_recorded_pr_or_ready_signal_line() {
   placeholder_key=$(reported_outcome_key "$MATE" placeholder 'done') \
     || fail "unsubstituted-stamp ready receipt key missing"
   scout_key=$(reported_outcome_key "$MATE" lookout 'done') || fail "scout receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$prose_key]: child prose done: cleanup finished mode=local-only yolo=off" \
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$prose_key]: child prose done: cleanup finished mode=no-mistakes yolo=off" \
     || fail "a PR mentioned only in prose was claimed as the delivery: $(cat "$MAIN/state/mate.status")"
   sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$ready_key]: child ready done: PR https://example.test/owner/repo/pull/44 checks green pr=https://example.test/owner/repo/pull/44 mode=no-mistakes yolo=off" \
     || fail "a ready-signal terminal line did not carry its PR: $(cat "$MAIN/state/mate.status")"
@@ -1067,55 +1041,7 @@ SH
 test_main_direct_terminal_presentation_receipt
 test_branch_ack_retires_inactive_outcome_receipt
 test_unpushed_ci_ready_done_is_not_published
-test_record_owned_completion_paths() {
-  local kind route gen
-  for route in main secondmate; do
-    for kind in missing '' unknown scout; do
-      make_world "record-kind-$route-${kind:-empty}"
-      if [ "$route" = secondmate ]; then bind_secondmate local; write_mate_meta; fi
-      write_child "$MATE" child 'done: local tests passing'
-      fm_write_meta "$MATE/state/child.meta" 'window=firstmate:fm-child' \
-        "worktree=$MATE/projects/child" "project=$MATE/projects/child" 'harness=claude' 'mode=no-mistakes'
-      [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$MATE/state/child.meta"
-      gen=$("$ROOT/bin/fm-busy-event.sh" arm "$MATE/state" child)
-      "$ROOT/bin/fm-busy-event.sh" apply "$MATE/state" child idle --gen "$gen" --source claude-hook --event stop
-      printf '#!/usr/bin/env bash\nexit 0\n' > "$WORLD/fakebin/no-mistakes"
-      printf '#!/usr/bin/env bash\nexec bash %q "$@"\n' "$ROOT/bin/fm-crew-state.sh" > "$WORLD/fakebin/fm-crew-state.sh"
-      chmod +x "$WORLD/fakebin/no-mistakes" "$WORLD/fakebin/fm-crew-state.sh"
-      age "$MATE/state/child.meta" "$MATE/state/child.status" "$MATE/state/child.turn-ended"
-      run_reconcile "$MATE" --startup || fail 'record-kind reconcile refused'
-      if [ "$kind" = scout ]; then
-        if [ "$route" = secondmate ]; then
-          [ "$(outcome_count "$MATE" reported)" = 1 ] || fail 'explicit scout ledger exemption lost'
-        else
-          [ "$(outcome_count "$MATE" pending)" = 1 ] || fail 'explicit scout inactive exemption lost'
-        fi
-      else
-        [ "$(outcome_count "$MATE" reported)" = 0 ] || fail 'local handoff received terminal receipt'
-        [ "$(outcome_count "$MATE" pending)" = 0 ] || fail 'local handoff queued terminal outcome'
-        assert_contains "$(cat "$MATE/state/child.status")" 'local tests passing' 'handoff stays observable'
-        printf 'done: PR https://example.test/o/r/pull/1\n' > "$MATE/state/child.status"
-        git -C "$MATE/projects/child" update-ref -d refs/remotes/origin/main
-        age "$MATE/state/child.status"
-        run_reconcile "$MATE" --startup || fail 'HTTPS-only reconcile refused'
-        [ "$(outcome_count "$MATE" reported)" = 0 ] || fail 'HTTPS-only terminal receipt'
-        [ "$(outcome_count "$MATE" pending)" = 0 ] || fail 'HTTPS-only terminal outcome'
-        git -C "$MATE/projects/child" update-ref refs/remotes/origin/main "$(git -C "$MATE/projects/child" rev-parse HEAD)"
-        run_reconcile "$MATE" --startup || fail 'published-head reconcile refused'
-        if [ "$route" = secondmate ]; then
-          [ "$(outcome_count "$MATE" reported)" = 1 ] || fail 'valid default-ship ledger proof lost'
-        else
-          [ "$(outcome_count "$MATE" pending)" = 1 ] || fail 'valid default-ship inactive proof lost'
-        fi
-      fi
-    done
-  done
-  pass 'ledger and inactive callers bind missing empty unknown kinds to record-owned ship proof'
-}
-
-test_record_owned_completion_paths
 test_delivered_ledger_done_skips_git_gate
-test_secondmate_handoff_is_nonterminal
 test_local_secondmate_delivers_terminal_ledger_line
 test_secondmate_multiline_terminal_outcome_is_delivered_once
 test_secondmate_unterminated_prose_reports_run_outcome

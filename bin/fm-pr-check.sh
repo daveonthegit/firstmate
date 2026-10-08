@@ -21,8 +21,6 @@
 # (bin/fm-project-capacity-lib.sh).
 # Usage: fm-pr-check.sh <task-id> <pr-url>
 set -eu
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -66,7 +64,7 @@ fi
 # to a task inside the mate's own home, which records and watches it there;
 # arming a merge watch here would queue the mate itself for teardown as landed
 # work once that pull request merges.
-KIND=$(fm_task_kind "$META")
+KIND=$(grep '^kind=' "$META" | tail -1 | cut -d= -f2- || true)
 if [ "$KIND" = secondmate ]; then
   echo "error: $ID is a secondmate, not a delivery lane - $URL was reported on its status channel but belongs to a task in the mate's own home, which arms its own merge watch" >&2
   exit 1
@@ -144,6 +142,7 @@ if [ "$PROVIDER" = github ] && [ -n "$WT" ] && [ -d "$WT" ] && command -v gh >/d
 fi
 
 MODE=$(grep '^mode=' "$META" | tail -1 | cut -d= -f2- || true)
+PROJECT=$(grep '^project=' "$META" | tail -1 | cut -d= -f2- || true)
 # The gate is asked about the ready report this task's worker was told to give;
 # on a Gerrit change both publishing modes report the same published line.
 case "$PROVIDER:$MODE" in
@@ -152,7 +151,7 @@ case "$PROVIDER:$MODE" in
   *) DONE_LINE="done: PR $URL" ;;
 esac
 if { [ -z "$PR_HEAD" ] || ! fm_dod_forge_head_is_named_head "$MODE"; } \
-  && ! GATE_REASON=$(fm_dod_accept_ship_done "$STATE" "$ID" "$META" "$DONE_LINE"); then
+  && ! GATE_REASON=$(fm_dod_accept_ship_done "${KIND:-ship}" "$MODE" "$WT" "$PROJECT" "$DONE_LINE" "$STATE" "$ID" "$META"); then
   echo "error: $GATE_REASON" >&2
   exit 1
 fi

@@ -301,8 +301,6 @@
 # before state/<id>.meta is removed, and is best effort: a failure warns and
 # never blocks cleanup.
 set -eu
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -430,7 +428,8 @@ TREEHOUSE_PROJECT_LOCK=
 TREEHOUSE_PROJECT_LOCK_HELD=0
 TREEHOUSE_SLOT_LOCK_REQUIRED=0
 if [ -f "$META" ] && [ ! -L "$META" ]; then
-  TEARDOWN_LOCK_KIND=$(fm_task_kind "$META")
+  TEARDOWN_LOCK_KIND=$(fm_meta_get "$META" kind)
+  [ -n "$TEARDOWN_LOCK_KIND" ] || TEARDOWN_LOCK_KIND=ship
   TEARDOWN_LOCK_BACKEND=$(fm_meta_get "$META" backend)
   [ -n "$TEARDOWN_LOCK_BACKEND" ] || TEARDOWN_LOCK_BACKEND=tmux
   TEARDOWN_LOCK_WT=$(fm_meta_get "$META" worktree)
@@ -523,7 +522,8 @@ fm_backlog_record_present "$META" "task record" "$STATE" || {
   echo "error: teardown refused after locking: $FM_BACKLOG_TRANSITION_ERROR" >&2
   exit 1
 }
-TEARDOWN_META_KIND=$(fm_task_kind "$META")
+TEARDOWN_META_KIND=$(fm_meta_get "$META" kind)
+[ -n "$TEARDOWN_META_KIND" ] || TEARDOWN_META_KIND=ship
 # Retiring a persistent secondmate is main's alone in both postures; the kind
 # is read under the metadata lock (role partition: bin/fm-lease-lib.sh).
 [ "$TEARDOWN_META_KIND" != secondmate ] || fm_lease_forbid_branch "secondmate retirement (fm-teardown)"
@@ -1013,7 +1013,7 @@ remote_secondmate_teardown() {
   local remote_host remote_root remote_home kind route_host route_root route_home out rc tmp
   remote_host=$(fm_meta_get "$META" remote_host)
   [ -n "$remote_host" ] || return 3
-  kind=$(fm_task_kind "$META")
+  kind=$(fm_meta_get "$META" kind)
   [ "$kind" = secondmate ] || { echo "REFUSED: remote placement metadata is valid only for a secondmate" >&2; return 1; }
   remote_root=$(fm_meta_get "$META" remote_root)
   remote_home=$(fm_meta_get "$META" home)
@@ -1221,7 +1221,7 @@ public_followup_resolve_primary_home() {
   [ "$parent" != "$child" ] || return 1
   parent_meta="$parent/state/$id.meta"
   [ -f "$parent_meta" ] && [ ! -L "$parent_meta" ] || return 1
-  [ "$(fm_task_kind "$parent_meta")" = secondmate ] || return 1
+  [ "$(fm_meta_get "$parent_meta" kind)" = secondmate ] || return 1
   meta_home=$(fm_meta_get "$parent_meta" home)
   meta_home=$(CDPATH='' cd -- "$meta_home" 2>/dev/null && pwd -P) || return 1
   [ "$meta_home" = "$child" ] || return 1
@@ -2797,7 +2797,7 @@ preflight_firstmate_home_process_event_tree() {
   if [ -d "$sub_state" ]; then
     for child_meta in "$sub_state"/*.meta; do
       [ -e "$child_meta" ] || continue
-      child_kind=$(fm_task_kind "$child_meta")
+      child_kind=$(meta_value "$child_meta" kind)
       [ "$child_kind" = secondmate ] || continue
       child_id=$(basename "$child_meta" .meta)
       child_wt=$(meta_value "$child_meta" worktree)
@@ -2852,7 +2852,8 @@ collect_descendant_task_locks() {
   [ "${#child_ids[@]}" -gt 0 ] || return 0
   while IFS= read -r child_id; do
     child_meta="$sub_state/$child_id.meta"
-    child_kind=$(fm_task_kind "$child_meta")
+    child_kind=$(meta_value "$child_meta" kind)
+    [ -n "$child_kind" ] || child_kind=ship
     child_home=
     if [ "$child_kind" = secondmate ]; then
       child_wt=$(meta_value "$child_meta" worktree)
@@ -2907,7 +2908,8 @@ preflight_descendant_task_locks() {
       echo "REFUSED: descendant task $task_id changed while forced teardown acquired its locks; forced teardown changed nothing" >&2
       return 1
     }
-    kind=$(fm_task_kind "$meta")
+    kind=$(meta_value "$meta" kind)
+    [ -n "$kind" ] || kind=ship
     [ "$kind" = "${DESCENDANT_TASK_KINDS[$i]}" ] || {
       echo "REFUSED: descendant task $task_id changed kind while forced teardown acquired its locks; forced teardown changed nothing" >&2
       return 1
@@ -2930,7 +2932,8 @@ preflight_descendant_treehouse_slots() {
     state=${DESCENDANT_TASK_STATES[$i]}
     task_id=${DESCENDANT_TASK_IDS[$i]}
     meta="$state/$task_id.meta"
-    kind=$(fm_task_kind "$meta")
+    kind=$(meta_value "$meta" kind)
+    [ -n "$kind" ] || kind=ship
     backend=$(fm_backend_of_meta "$meta")
     worktree=$(meta_value "$meta" worktree)
     project=$(meta_value "$meta" project)
@@ -2962,7 +2965,8 @@ preflight_descendant_treehouse_slots() {
     state=${DESCENDANT_TASK_STATES[$i]}
     task_id=${DESCENDANT_TASK_IDS[$i]}
     meta="$state/$task_id.meta"
-    kind=$(fm_task_kind "$meta")
+    kind=$(meta_value "$meta" kind)
+    [ -n "$kind" ] || kind=ship
     backend=$(fm_backend_of_meta "$meta")
     worktree=$(meta_value "$meta" worktree)
     project=$(meta_value "$meta" project)
@@ -2993,7 +2997,8 @@ validate_firstmate_home_children_removal() {
     fm_backend_validate_task_endpoint "$child_meta" "$child_id" || return 1
     validate_pr_poll_cleanup "$sub_state" "$child_id" || return 1
     child_wt=$(meta_value "$child_meta" worktree)
-    child_kind=$(fm_task_kind "$child_meta")
+    child_kind=$(meta_value "$child_meta" kind)
+    [ -n "$child_kind" ] || child_kind=ship
     child_backend=$(fm_backend_of_meta "$child_meta")
     teardown_require_backend_prerequisites "$child_backend" "$child_id" || return 1
     if [ "$child_kind" = secondmate ]; then
@@ -3136,7 +3141,8 @@ preflight_firstmate_home_herdr_children() {  # <home>
     if [ "$child_backend" = herdr ] && [ "$FM_BACKEND_VALIDATED_ENDPOINT_ACTION" = allowed ]; then
       teardown_herdr_preflight_target "$child_target" "$child_id" || return 1
     fi
-    child_kind=$(fm_task_kind "$child_meta")
+    child_kind=$(meta_value "$child_meta" kind)
+    [ -n "$child_kind" ] || child_kind=ship
     if [ "$child_kind" = secondmate ]; then
       child_wt=$(meta_value "$child_meta" worktree)
       child_home=$(meta_value "$child_meta" home)
@@ -3199,7 +3205,8 @@ cleanup_firstmate_home_children() {
     child_id=$(basename "$child_meta" .meta)
     child_wt=$(meta_value "$child_meta" worktree)
     child_proj=$(meta_value "$child_meta" project)
-    child_kind=$(fm_task_kind "$child_meta")
+    child_kind=$(meta_value "$child_meta" kind)
+    [ -n "$child_kind" ] || child_kind=ship
     child_backend=$(fm_backend_of_meta "$child_meta")
     if [ "$child_backend" = orca ]; then
       child_t=$(meta_value "$child_meta" terminal)

@@ -161,8 +161,6 @@
 #          version cannot be read, or it is below LAVISH_AXI_BOARD_MIN, printing
 #          nothing.
 set -u
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 TYPESAFE_API_KEY_PRIVATE=${TYPESAFE_API_KEY:-}
 export -n TYPESAFE_API_KEY_PRIVATE 2>/dev/null || true
@@ -395,7 +393,7 @@ secondmate_sync() {
     local meta id
     for meta in "$STATE"/*.meta; do
       [ -f "$meta" ] || continue
-      [ "$(fm_task_kind "$meta")" = secondmate ] || continue
+      grep -q '^kind=secondmate' "$meta" 2>/dev/null || continue
       id=$(basename "$meta" .meta)
       echo "SECONDMATE_SYNC: secondmate $id: skipped: primary default-branch commit cannot be resolved"
     done
@@ -480,7 +478,7 @@ secondmate_sync() {
       esac
       [ "$remote" -ne 1 ] || continue
       meta="$STATE/$id.meta"
-      [ -f "$meta" ] && [ "$(fm_task_kind "$meta")" = secondmate ] || {
+      [ -f "$meta" ] && [ "$(fm_meta_get "$meta" kind)" = secondmate ] || {
         echo "NUDGE_SECONDMATES: secondmate ${id:-unknown}: send failed: retry target has no live secondmate metadata"
         continue
       }
@@ -717,7 +715,7 @@ secondmate_liveness_sweep() {
   fi
   for meta in "$STATE"/*.meta; do
     [ -f "$meta" ] || continue
-    [ "$(fm_task_kind "$meta")" = secondmate ] || continue
+    grep -q '^kind=secondmate$' "$meta" 2>/dev/null || continue
     # Identity for the timing record is read here, in the loop, so the per-meta
     # body below keeps its single-exit-per-outcome shape.
     id=$(basename "$meta" .meta)
@@ -1293,7 +1291,7 @@ backlog_record_reconcile() {
       fm_lock_release "$meta_lock"
       return 2
     fi
-    if [ "$(fm_task_kind "$meta")" != secondmate ] \
+    if [ "$(fm_meta_get "$meta" kind)" != secondmate ] \
        && [ "$(fm_meta_get "$meta" cleanup_recovery)" != orca ]; then
       row=
       if fm_backlog_row_probe "$DATA" "$id"; then
@@ -1382,7 +1380,7 @@ if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ] && local_phase; then
           echo "error: bootstrap refused unsafe worker record ($FM_BACKLOG_TRANSITION_ERROR)" >&2
           exit 1
         fi
-        if [ "$(fm_task_kind "$BOOTSTRAP_BACKLOG_META")" != secondmate ] \
+        if [ "$(fm_meta_get "$BOOTSTRAP_BACKLOG_META" kind)" != secondmate ] \
            && [ "$(fm_meta_get "$BOOTSTRAP_BACKLOG_META" cleanup_recovery)" != orca ]; then
           BOOTSTRAP_BACKLOG_GATE_KIND=ship
           break

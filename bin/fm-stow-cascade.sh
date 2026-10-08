@@ -46,8 +46,6 @@
 # one home reported an exception and every home was still reported; 1 the
 # cascade input itself is unusable; 2 invalid use.
 set -u
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 usage() {
   sed -n '2,47{s/^# \{0,1\}//;p;}' "$0"
@@ -104,7 +102,7 @@ run_step() {
 meta_for() { # <id>
   local meta="$STATE/$1.meta"
   [ -f "$meta" ] && [ ! -L "$meta" ] || return 1
-  [ "$(fm_task_kind "$meta")" = secondmate ] || return 1
+  grep -q '^kind=secondmate$' "$meta" 2>/dev/null || return 1
   printf '%s\n' "$meta"
 }
 

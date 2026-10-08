@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 # fm-project-capacity-lib.sh - how many workers a project admits at once on this
 # machine, and whether a fresh worker spawn still fits.
 #
@@ -200,7 +198,7 @@ fm_project_capacity_occupants() {  # <project-lock> <project-dir> <first-state> 
         FM_PROJECT_CAPACITY_ERROR="task record $meta cannot be read"
         return 1
       }
-      kind=$(fm_task_kind "$meta")
+      kind=$(fm_meta_get "$meta" kind)
       [ "$kind" != secondmate ] || continue
       [ -z "$(fm_meta_get "$meta" pr)" ] || continue
       project=$(fm_meta_get "$meta" project)

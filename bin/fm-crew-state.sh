@@ -146,13 +146,8 @@
 #   4. No current run for this crew (pre-validation, uninitialized repository,
 #      proven historical head, or kind=scout): fall back to the recorded
 #      backend's pane busy state, then the resolved status declaration
-#      when its verb maps to a recognized run-state. A no-mistakes ship's done
-#      declaration without a marked `PR https://...` delivery is parked as its
-#      implementation handoff, not terminal. An HTTP-only URL does not qualify;
-#      scouts and other delivery modes are unaffected. Matching run-step results
-#      remain authoritative. A qualifying ship declaration then undergoes the
-#      independent fm-dod-lib.sh named-head and non-draft delivery checks.
-#      Decision-only events such as `resolved` never become current state or detail.
+#      when its verb maps to a recognized run-state. Decision-only events such as
+#      `resolved` never become current state or detail.
 #   5. Missing meta or torn-down worktree: report unknown · none. If no run is
 #      attributed to this crew, a dead endpoint also reports unknown · none rather
 #      than trusting a stale status log. On tmux and herdr, which own a
@@ -166,8 +161,6 @@
 # Read-only and side-effect free. Always exits 0 on a successful read regardless
 # of state; exit 2 only on a usage error (no id).
 set -u
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -227,9 +220,10 @@ meta_value() {  # <key>
 }
 
 WT=$(meta_value worktree)
-KIND=$(fm_task_kind "$META")
+KIND=$(meta_value kind)
 HARNESS=$(meta_value harness)
 REMOTE_HOST=$(meta_value remote_host)
+[ -n "$KIND" ] || KIND=ship
 
 # A torn-down (or never-created) worktree has no current state to read. A
 # remote secondmate's recorded worktree is a path on ITS host, so the local
@@ -250,11 +244,8 @@ fi
 # not treated as finished-and-safe.
 emit_ship_status_done() {  # [extra-detail]
   local extra=${1:-} reason
-  if reason=$(fm_dod_accept_ship_done "$STATE" "$ID" "$META" "$LOG_LINE"); then
+  if reason=$(fm_dod_accept_ship_done "$KIND" "$(meta_value mode)" "$WT" "$(meta_value project)" "$LOG_LINE" "$STATE" "$ID" "$META"); then
     emit "done" status-log "$(status_line_note "$LOG_LINE")${extra:+${SEP}$extra}"
-  fi
-  if [ "$reason" = "implementation handoff awaits a marked HTTPS PR delivery" ]; then
-    emit parked status-log "$(status_line_note "$LOG_LINE")${extra:+${SEP}$extra}"
   fi
   emit blocked status-log "$reason"
 }
@@ -268,15 +259,7 @@ map_log_state() {  # <line>
     working)        echo working ;;
     needs-decision) echo parked ;;
     blocked)        echo blocked ;;
-    done)
-      local reason
-      if reason=$(fm_dod_accept_ship_done "$STATE" "$ID" "$META" "$1"); then
-        echo "done"
-      elif [ "$reason" = "implementation handoff awaits a marked HTTPS PR delivery" ]; then
-        echo parked
-      else
-        echo blocked
-      fi ;;
+    done)           echo "done" ;;
     failed)         echo failed ;;
     *)              echo unknown ;;
   esac
@@ -655,7 +638,6 @@ EOF
 }
 log_reports_ci_ready() {
   [ "$LOG_VERB" = "done" ] || return 1
-  fm_dod_accept_ship_done "$STATE" "$ID" "$META" "$LOG_LINE" >/dev/null || return 1
   fm_dod_note_reports_ci_ready "$(status_line_note "$LOG_LINE")"
 }
 

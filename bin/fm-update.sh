@@ -64,8 +64,6 @@
 #
 # Usage: fm-update.sh [--help]
 set -eu
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -214,7 +212,7 @@ if [ -f "$SECONDMATES_MD" ]; then
             else
               echo "remote secondmate $id: updated on $SECONDMATE_REGISTRY_HOST ($remote_commit)"
             fi
-            if [ -f "$STATE/$id.meta" ] && [ "$(fm_task_kind "$STATE/$id.meta")" = secondmate ]; then
+            if [ -f "$STATE/$id.meta" ] && grep -qx 'kind=secondmate' "$STATE/$id.meta"; then
               claim_settled_secondmate "$id"
             fi
             ;;
@@ -222,7 +220,7 @@ if [ -f "$SECONDMATES_MD" ]; then
             echo "remote secondmate $id: already current on $SECONDMATE_REGISTRY_HOST (${remote_result#current: })"
             # Already on the target commit is a SUCCESSFUL update of that home,
             # so it earns the same restart as one that had to advance.
-            if [ -f "$STATE/$id.meta" ] && [ "$(fm_task_kind "$STATE/$id.meta")" = secondmate ]; then
+            if [ -f "$STATE/$id.meta" ] && grep -qx 'kind=secondmate' "$STATE/$id.meta"; then
               claim_settled_secondmate "$id"
             fi
             ;;

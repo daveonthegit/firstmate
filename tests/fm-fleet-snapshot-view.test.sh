@@ -1133,9 +1133,6 @@ EOF
 
 ## Done
 EOF
-  # Exercise inventory bookkeeping with a genuinely reachable local ship head.
-  # The HTTPS guard remains untouched, and the independent named-head check
-  # reads a real commit fetched from a separate synthetic project copy.
   git -c init.defaultBranch=main init -q "$home/projects/alpha" \
     || fail "could not initialize the terminal ship's project"
   git -C "$home/projects/alpha" -c user.name=Fixture -c user.email=fixture@example.test \

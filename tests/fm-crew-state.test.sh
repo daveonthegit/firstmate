@@ -2338,8 +2338,7 @@ EOF
   local out; out=$(run_crew_state "$d" feat-g)
   assert_not_contains "$out" "source: run-step" "another branch's run not misattributed"
   assert_contains "$out" "source: status-log" "no own run -> falls back to status-log"
-  assert_contains "$out" "state: parked" "default no-mistakes handoff is nonterminal"
-  assert_contains "$out" "implemented, ready to validate" "fallback preserves handoff visibility"
+  assert_contains "$out" "state: done" "falls back to the log verb"
   pass "another branch's run is ignored, falls back"
 }
 
@@ -2417,9 +2416,9 @@ test_no_mistakes_prevalidation_done_stays_done() {
   FM_FAKE_BUSY=0
   arm_idle_record "$d/state" preval
   out=$(run_crew_state "$d" preval)
-  assert_contains "$out" "state: parked" "no-mistakes pre-validation done: awaits validation"
+  assert_contains "$out" "state: done" "no-mistakes pre-validation done: remains done"
   assert_not_contains "$out" "state: blocked" "pre-validation done: must not be the named-head gate"
-  pass "no-mistakes pre-validation done: waits for an HTTPS PR before completion"
+  pass "no-mistakes pre-validation done: stays current-state done"
 }
 
 test_moved_remote_branch_without_named_head_is_blocked() {
@@ -2864,11 +2863,10 @@ test_single_owner_terminal_declaration_supersedes_stale_decision() {
   local d kind opener terminal out key expected
   d=$(new_case terminal-stale-decision)
   make_repo_on_branch "$d/wt" fm/task
-  git -C "$d/wt" update-ref refs/remotes/origin/main "$(git -C "$d/wt" rev-parse HEAD)"
   make_fakebin "$d" >/dev/null
   arm_idle_record "$d/state" task
   for kind in scout ship; do
-    fm_write_meta "$d/state/task.meta" "window=fm:fm-task" "worktree=$d/wt" "kind=$kind" "harness=claude" "mode=local-only"
+    fm_write_meta "$d/state/task.meta" "window=fm:fm-task" "worktree=$d/wt" "kind=$kind" "harness=claude"
     for opener in needs-decision blocked; do
       for terminal in 'done' failed; do
         printf '%s [key=choice]: an earlier decision\n%s: final outcome\nContinuation prose.\n\n' \
@@ -5500,154 +5498,6 @@ test_captured_completed_history() {
   pass 'captured completed status yields to synthetic subsequent development'
 }
 
-# A no-mistakes ship's local-only done event must surface without completing
-# the task. Other delivery modes and scouts keep their existing completion rule.
-test_https_without_readiness_requires_named_head() {
-  reset_fakes
-  local d out line
-  d=$(new_case https-proof)
-  make_repo_on_branch "$d/wt" fm/https-proof
-  git -C "$d/wt" commit -q --allow-empty -m 'unpublished head'
-  make_fakebin "$d" >/dev/null
-  fm_write_meta "$d/state/https-proof.meta" "window=fm:fm-https-proof" "worktree=$d/wt" "project=$d/wt" 'kind=ship' 'mode=no-mistakes' 'harness=claude'
-  arm_idle_record "$d/state" https-proof
-  for line in 'done: PR https://github.com/o/r/pull/2' \
-    'done: PR https://github.com/o/r/pull/2 checks green' \
-    'done: PR https://github.com/o/r/pull/2 published for review'; do
-    printf '%s\n' "$line" > "$d/state/https-proof.status"
-    out=$(run_crew_state "$d" https-proof)
-    assert_contains "$out" 'state: blocked' 'HTTPS alone cannot complete an unpublished head'
-    assert_not_contains "$out" 'state: done' 'readiness wording cannot bypass proof'
-  done
-  git -C "$d/wt" update-ref refs/remotes/origin/fm/https-proof "$(git -C "$d/wt" rev-parse HEAD)"
-  printf 'done: PR https://github.com/o/r/pull/2\n' > "$d/state/https-proof.status"
-  out=$(run_crew_state "$d" https-proof)
-  assert_contains "$out" 'state: done' 'published head completes without readiness prose'
-  pass 'crew-state delegates every HTTPS completion to delivery proof'
-}
-
-test_no_mistakes_done_requires_pr() {
-  reset_fakes
-  local d out mode kind line
-  d=$(new_case premature-done)
-  make_repo_on_branch "$d/wt" fm/premature-done
-  make_fakebin "$d" >/dev/null
-  arm_idle_record "$d/state" premature-done
-  for mode in no-mistakes direct-PR local-only ''; do
-    for kind in ship scout; do
-      fm_write_meta "$d/state/premature-done.meta" "window=fm:fm-premature-done" "worktree=$d/wt" "kind=$kind" "mode=$mode" "harness=claude"
-      for line in 'done: local tests passing' 'done: PR ready checks green' 'done: PR http://github.com/o/r/pull/2 checks green' 'done: PR https://github.com/o/r/pull/2 checks green'; do
-        printf '%s\n' "$line" > "$d/state/premature-done.status"
-        out=$(run_crew_state "$d" premature-done)
-        if { [ "$mode" = no-mistakes ] || [ -z "$mode" ]; } && [ "$kind" = ship ] && [[ "$line" != *https://* ]]; then
-          assert_contains "$out" 'state: parked' 'premature done is not completion'
-          assert_contains "$out" 'source: status-log' 'missing run falls back to guarded log'
-          status_is_captain_relevant "$line" || fail 'premature done must surface'
-          FM_CREW_STATE_BIN="$CREW_STATE" PATH="$d/fakebin:$PATH" FM_STATE_OVERRIDE="$d/state" crew_is_provably_working premature-done && fail 'premature done must not be absorbed'
-        else
-          assert_not_contains "$out" 'state: parked' 'valid PR or unaffected mode/kind reaches upstream named-head completion gate'
-        fi
-      done
-    done
-  done
-  fm_write_meta "$d/state/premature-done.meta" "window=fm:fm-premature-done" "worktree=$d/wt" 'kind=ship' 'mode=no-mistakes' 'harness=claude'
-  printf 'done: local tests passing\n' > "$d/state/premature-done.status"
-  FM_FAKE_AXI_STATUS="$(run_running fm/premature-done)"
-  out=$(run_crew_state "$d" premature-done)
-  assert_contains "$out" 'state: working' 'active matching run still takes precedence'
-  assert_contains "$out" 'source: run-step' 'run remains authoritative'
-  printf 'done: PR ready checks green\n' > "$d/state/premature-done.status"
-  FM_FAKE_AXI_STATUS="$(run_ci_monitoring fm/premature-done)"
-  out=$(run_crew_state "$d" premature-done)
-  assert_contains "$out" 'state: working' 'URL-free ready event cannot override CI monitoring'
-  assert_contains "$out" 'source: run-step' 'CI monitoring remains authoritative'
-  pass 'no-mistakes done without HTTPS PR is parked and surfaced'
-}
-
-
-test_record_owned_completion_kind() {
-  reset_fakes
-  local d kind out
-  d=$(new_case record-owned-kind)
-  make_repo_on_branch "$d/wt" fm/record-owned-kind
-  git -C "$d/wt" update-ref -d refs/remotes/origin/main
-  make_fakebin "$d" >/dev/null
-  arm_idle_record "$d/state" record-owned-kind
-  for kind in missing '' unknown scout secondmate; do
-    fm_write_meta "$d/state/record-owned-kind.meta" 'window=fm:fm-record-owned-kind' "worktree=$d/wt" 'mode=no-mistakes' 'harness=claude'
-    [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$d/state/record-owned-kind.meta"
-    printf 'done: local tests passing\n' > "$d/state/record-owned-kind.status"
-    out=$(run_crew_state "$d" record-owned-kind)
-    case "$kind" in
-      scout|secondmate) assert_contains "$out" 'state: done' 'explicit record exemption' ;;
-      *)
-        assert_contains "$out" 'state: parked' 'missing empty unknown kind is ship'
-        assert_contains "$out" 'local tests passing' 'handoff remains observable'
-        printf 'done: PR https://github.com/o/r/pull/2\n' > "$d/state/record-owned-kind.status"
-        out=$(run_crew_state "$d" record-owned-kind)
-        assert_not_contains "$out" 'state: done' 'HTTPS alone remains nonterminal'
-        git -C "$d/wt" update-ref refs/remotes/origin/fm/record-owned-kind "$(git -C "$d/wt" rev-parse HEAD)"
-        out=$(run_crew_state "$d" record-owned-kind)
-        assert_contains "$out" 'state: done' 'record-default ship accepts published head'
-        git -C "$d/wt" update-ref -d refs/remotes/origin/fm/record-owned-kind ;;
-    esac
-  done
-  pass 'crew-state uses record-owned completion kind'
-}
-
-test_record_kind_current_run_precedence() {
-  reset_fakes
-  local d kind fixture expected out baseline branch=fm/kind-run
-  d=$(new_case kind-run)
-  make_repo_on_branch "$d/wt" "$branch"
-  git init --bare -q "$d/published.git"
-  git -C "$d/wt" remote add origin "$d/published.git"
-  git -C "$d/wt" push -q -u origin "$branch"
-  make_fakebin "$d" >/dev/null
-  arm_idle_record "$d/state" kind-run
-  printf 'done: PR https://github.com/o/r/pull/2\n' > "$d/state/kind-run.status"
-  for fixture in run_failed run_parked run_running run_fixing run_ci_monitoring; do
-    FM_FAKE_AXI_STATUS=$("$fixture" "$branch")
-    case "$fixture" in
-      run_failed) expected=failed ;;
-      run_parked) expected=parked ;;
-      *) expected=working ;;
-    esac
-    fm_write_meta "$d/state/kind-run.meta" 'window=fm:fm-kind-run' "worktree=$d/wt" "project=$d/wt" 'kind=ship' 'mode=no-mistakes' 'harness=claude'
-    baseline=$(run_crew_state "$d" kind-run)
-    assert_contains "$baseline" "state: $expected" "$fixture blocks terminal ship completion"
-    assert_contains "$baseline" 'source: run-step' 'matching current run owns state'
-    for kind in missing '' unknown ship; do
-      fm_write_meta "$d/state/kind-run.meta" 'window=fm:fm-kind-run' "worktree=$d/wt" "project=$d/wt" 'mode=no-mistakes' 'harness=claude'
-      [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$d/state/kind-run.meta"
-      out=$(run_crew_state "$d" kind-run)
-      [ "$out" = "$baseline" ] || fail "$kind/$fixture differs from explicit ship: $out"
-    done
-  done
-  for kind in missing '' unknown ship scout secondmate; do
-    fm_write_meta "$d/state/kind-run.meta" 'window=fm:fm-kind-run' "worktree=$d/wt" "project=$d/wt" 'mode=no-mistakes' 'harness=claude'
-    [ "$kind" = missing ] || printf 'kind=%s\n' "$kind" >> "$d/state/kind-run.meta"
-    for fixture in stale-head unrelated-branch; do
-      case "$fixture" in
-        stale-head) FM_FAKE_AXI_STATUS=$(FM_FAKE_RUN_HEAD=0000000000000000000000000000000000000000 run_failed "$branch") ;;
-        unrelated-branch) FM_FAKE_AXI_STATUS=$(run_failed fm/unrelated) ;;
-      esac
-      out=$(run_crew_state "$d" kind-run)
-      assert_contains "$out" 'state: done' 'nonmatching run is not completion authority'
-    done
-    case "$kind" in
-      scout|secondmate)
-        FM_FAKE_AXI_STATUS=$(run_failed "$branch")
-        out=$(run_crew_state "$d" kind-run)
-        assert_contains "$out" 'state: done' 'explicit record kind is exempt from ship pipeline' ;;
-    esac
-  done
-  pass 'record-owned kind governs current-run eligibility and precedence'
-}
-
-test_record_kind_current_run_precedence
-test_record_owned_completion_kind
-test_https_without_readiness_requires_named_head
 test_captured_axi_status_shapes
 test_captured_inventory_replay
 test_captured_authority_transition
@@ -5838,5 +5688,3 @@ test_unverifiable_run_selection_reports_unknown
 test_legacy_conflicting_run_records_report_unknown
 
 echo "all fm-crew-state tests passed"
-
-test_no_mistakes_done_requires_pr

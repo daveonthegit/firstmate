@@ -102,8 +102,6 @@
 # reads, because the voice agent must be able to answer without record free text
 # ever reaching a model.
 set -euo pipefail
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 # A non-interactive `ssh host fm-inbox.sh ...` does NOT get a login shell, so it
 # does not get ~/.toolbox/bin on PATH. The AWS profile's credential_process is
@@ -1063,7 +1061,7 @@ cmd_status() {
     if [ "$any" -eq 0 ]; then printf '\n--- workers ---\n'; any=1; fi
     local id kind mode last
     id=$(basename "$m" .meta)
-    kind=$(fm_task_kind "$m")
+    kind=$(sed -n 's/^kind=//p' "$m" | head -1)
     mode=$(sed -n 's/^mode=//p' "$m" | head -1)
     last=""
     [ -f "$STATE/$id.status" ] && last=$(tail -1 "$STATE/$id.status" 2>/dev/null | cut -c1-100)

@@ -117,8 +117,6 @@
 # Compatibility: JSON is the primary machine-readable surface.
 # Human views must render this output instead of parsing state files again.
 set -u
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 JSON_TRANSPORT_DIR=
 cleanup_json_files() {
@@ -657,7 +655,7 @@ prefetch_task_observations() {  # <meta> <id>
   elif [ "$generation_current" = 1 ]; then
     crew_state_json "$id" "$meta" "$status_capture" > "$current_file" &
     current_pid=$!
-    kind=$(fm_task_kind "$meta")
+    kind=$(meta_value "$meta" kind)
     backend=$(fm_backend_of_meta "$meta")
     target=$(fm_backend_target_of_meta "$meta")
     if [ -n "$target" ]; then
@@ -756,7 +754,8 @@ task_json_lines() {
     index=$((index + 1))
     id=$(basename "$meta" .meta)
     original_meta="$STATE/$id.meta"
-    kind=$(fm_task_kind "$meta")
+    kind=$(meta_value "$meta" kind)
+    [ -n "$kind" ] || kind=ship
     harness=$(meta_value "$meta" harness)
     mode=$(meta_value "$meta" mode)
     yolo=$(meta_value "$meta" yolo)
@@ -1986,7 +1985,7 @@ contribution_tasks_json() {
     if fm_merge_authority_resolve "$FM_HOME" "$STATE" "$meta" "$id"; then
       merge_authority=$FM_MERGE_AUTHORITY
     fi
-    jq -n --arg id "$id" --arg kind "$(fm_task_kind "$meta")" \
+    jq -n --arg id "$id" --arg kind "$(meta_value "$meta" kind)" \
       --arg url "$(meta_value "$meta" pr)" --arg head "$(meta_value "$meta" pr_head)" \
       --arg merge_authority "$merge_authority" '{id:$id,kind:$kind,pr:{url:$url,head:$head},merge_authority:$merge_authority}'
   done | jq -s .

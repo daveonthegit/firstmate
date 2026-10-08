@@ -71,8 +71,6 @@
 # FM_VAULT_LOCK_WAIT_SECS bounds the lock wait (default 20);
 # FM_VAULT_GIT_TIMEOUT_SECS bounds each opt-in vault git step (default 60).
 set -u
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -604,7 +602,8 @@ write_journal() {
   [ -n "$title" ] || title=$id
   title=$(printf '%s' "$title" | redact)
 
-  kind=$(fm_task_kind "$META_FILE")
+  kind=$(meta_value kind); [ -n "$kind" ] || kind=$(show_field kind); [ -n "$kind" ] || kind=$(old_value kind); [ -n "$kind" ] || kind=ship
+  kind=$(slugify "$kind")
   mode=$(meta_value mode); [ -n "$mode" ] || mode=$(old_value mode)
   closed=$(show_field closed); [ -n "$closed" ] || closed=$(old_value closed); [ -n "$closed" ] || closed=$TODAY
   printf '%s' "$closed" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' || closed=$TODAY

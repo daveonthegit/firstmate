@@ -55,8 +55,6 @@
 # during an active away window while still rendering the catch-up posture as
 # content; this file owns the gate format both branches read.
 set -u
-# shellcheck source=fm-task-kind.sh
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-task-kind.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
@@ -524,7 +522,7 @@ scan_landed_awaiting_cleanup() {  # -> <task>\t<url> rows
     task=$(basename "$meta"); task=${task%.meta}
     # A secondmate is a persistent worker, never landed work: its teardown is
     # retirement, which is never an ordinary cleanup this section may offer.
-    [ "$(fm_task_kind "$meta")" = secondmate ] && continue
+    [ "$(grep '^kind=' "$meta" | tail -1 | cut -d= -f2- || true)" = secondmate ] && continue
     fm_pr_metadata_identity_parse "$meta" || continue
     fm_pr_poll_merge_already_notified "$STATE" "$task" \
       "$FM_PR_META_PROVIDER" "$FM_PR_META_HOST" "$FM_PR_META_PATH" "$FM_PR_META_NUMBER" \

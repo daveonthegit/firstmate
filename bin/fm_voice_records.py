@@ -379,9 +379,7 @@ def _workers(state_dir):
         verb, line = _last_event(state_dir, task_id)
         out.append({
             "id": task_id,
-            "kind": subprocess.check_output(
-                ["bash", os.path.join(os.path.dirname(__file__), "fm-task-kind.sh"),
-                 os.path.join(state_dir, name)], text=True).strip(),
+            "kind": meta.get("kind", ""),
             "mode": meta.get("mode", ""),
             "pr": meta.get("pr", ""),
             "verb": verb or "no events yet",
