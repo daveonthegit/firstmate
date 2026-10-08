@@ -16,6 +16,7 @@ set -u
 . "$ROOT/bin/fm-busy-lib.sh"
 
 TMP_ROOT=$(fm_test_tmproot fm-busy-adapter-wiring)
+fm_git_identity
 
 make_spawn_case() {  # <name> <harness> <id>
   local name=$1 harness=$2 id=$3 case_dir home proj wt fakebin
