@@ -65,10 +65,6 @@ omp is anchored to the exact `omp` identity for the same reason, so `ompd` and `
 AGY and Devin are anchored to the exact `agy` and `devin` identities for the same reason, so unrelated names containing either fragment remain ambiguous.
 Cursor is identified from its exact `cursor-agent` identity or versioned install tree in the foreground process path or structured argv[0]; a bare `node` or unrelated `agent` remains ambiguous.
 
-Cursor Agent is deliberately absent from the verified-name set: it runs through a generic `node` process name and cannot be attributed confidently from either name source.
-Such a pane is therefore reported as ambiguous rather than auto-healed, while an authoritatively missing window of that harness can be relaunched safely.
-This is the active tmux liveness limitation, and it is bounded by Cursor being a crewmate-and-scout-only harness that never backs a secondmate.
-
 The CI-enforced portable regression and opt-in real-harness drift guard follow the split owned by `.agents/skills/firstmate-coding-guidelines/SKILL.md`.
 Run the real-harness guard after any harness upgrade and before trusting refreshed evidence.
 
