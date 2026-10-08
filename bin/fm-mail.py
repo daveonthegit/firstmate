@@ -101,15 +101,30 @@ def body_preview(msg):
     return ''
 
 
+def unseen_uids(m):
+    typ, _ = m.select('INBOX')
+    if typ != 'OK':
+        raise ValueError('INBOX selection failed')
+    typ, data = m.uid('search', None, 'UNSEEN')
+    if typ != 'OK':
+        raise ValueError('UNSEEN search failed')
+    if not isinstance(data, list) or len(data) != 1 or not isinstance(data[0], bytes):
+        raise ValueError('invalid UNSEEN UID response')
+    if not re.fullmatch(rb'(?:[1-9][0-9]{0,9}(?: [1-9][0-9]{0,9})*)?', data[0]):
+        raise ValueError('invalid UNSEEN UID response')
+    ids = data[0].split()
+    if any(int(uid) > 4294967295 for uid in ids):
+        raise ValueError('invalid UNSEEN UID response')
+    return ids
+
+
 def cmd_read():
+    m = None
     try:
         m = connect_mailbox()
-        m.select('INBOX')
-        typ, data = m.uid('search', None, 'UNSEEN')
-        ids = (data[0] or b'').split()
+        ids = unseen_uids(m)
         if not ids:
             print('(no unseen mail)')
-            m.logout()
             return 0
         for i in ids[-READ_LIMIT:]:
             uid = i.decode() if isinstance(i, bytes) else str(i)
@@ -133,14 +148,16 @@ def cmd_read():
                 print('Body:', (first[:MAX_PREVIEW] if first else ''))
             else:
                 print('Body:', '(body unavailable)')
-        try:
-            m.logout()
-        except Exception:
-            pass
         return 0
     except Exception as e:
         print('fm-mail read error:', e)
         return 1
+    finally:
+        if m is not None:
+            try:
+                m.logout()
+            except Exception:
+                pass
 
 
 def cmd_send(to, subj, body):
@@ -281,14 +298,9 @@ def cmd_poll_list():
     m = None
     try:
         m = connect_mailbox()
-        m.select('INBOX')
+        unseen = [uid.decode('ascii') for uid in unseen_uids(m)]
         ur = m.untagged_responses.get('UIDVALIDITY')
         uidv = clean(ur[-1].decode()) if ur else ''
-        typ, data = m.uid('search', None, 'UNSEEN')
-        unseen = []
-        for x in (data[0] or b'').split():
-            uid = x.decode() if isinstance(x, bytes) else str(x)
-            unseen.append(uid)
         if uidv and uidv == stored_gen:
             # Same mailbox generation: skip uids this home already surfaced so
             # the fetch budget goes to genuinely new mail. Retry-set uids are

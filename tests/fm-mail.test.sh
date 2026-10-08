@@ -2600,6 +2600,137 @@ SH
   pass "fm-mail: bounded fetch makes progress through a large backlog without re-surfacing mail"
 }
 
+test_imap_selection_and_search_responses() {
+  local harness
+  harness="$TMP_ROOT/imap-responses.py"
+  cat > "$harness" <<'PYEOF'
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+root = Path(sys.argv[1])
+with tempfile.TemporaryDirectory(dir=sys.argv[2]) as tmp:
+    tmp = Path(tmp)
+    transport = tmp / 'transport'
+    transport.mkdir()
+    (transport / 'sitecustomize.py').write_text('''
+import imaplib
+import json
+import os
+from pathlib import Path
+case = json.loads(os.environ['MAIL_TEST_CASE'])
+class Mailbox:
+    untagged_responses = {'UIDVALIDITY': [b'200']}
+    def __init__(self, *args, **kwargs):
+        pass
+    def log(self, command):
+        with open(os.environ['MAIL_TEST_LOG'], 'a') as f:
+            f.write(command + '\\n')
+    def login(self, *args):
+        self.log('login')
+    def select(self, *args):
+        self.log('select')
+        return case['select'], [b'2']
+    def uid(self, command, *args):
+        self.log(command)
+        if command == 'search':
+            data = case['data']
+            if isinstance(data, list):
+                data = [x.encode('ascii') if isinstance(x, str) else x for x in data]
+            return case['search'], data
+        assert command == 'fetch'
+        assert args[1] in ('(BODY.PEEK[])', '(BODY.PEEK[HEADER])')
+        return 'OK', [(b'', b'From: alice@example.com\\r\\nSubject: Hello\\r\\n\\r\\nBody preview\\r\\n')]
+    def logout(self):
+        self.log('logout')
+imaplib.IMAP4_SSL = Mailbox
+''')
+    env = dict(os.environ, PYTHONPATH=str(transport), FM_MAIL_USER='test',
+               FM_MAIL_PASS='private-test-password', FM_IMAP_HOST='fake.invalid',
+               FM_IMAP_PORT='993', FM_SMTP_HOST='fake.invalid', FM_SMTP_PORT='465',
+               FM_MAIL_POLL_MAX_WAKES='1')
+    refusals = []
+    for status in ('NO', 'BAD'):
+        refusals.append(dict(select=status, search='OK', data=['8']))
+        refusals.append(dict(select='OK', search=status, data=['private-test-password denied']))
+    for data in (None, [], [None], ['8', '9'], '8', [8], ['8 bad'],
+                 ['0'], ['-1'], ['01'], ['4294967296'], ['8\r\nnot-a-uid'], ['8\r\n9'], ['8\t9']):
+        refusals.append(dict(select='OK', search='OK', data=data))
+    cases = [(case, False) for case in refusals] + [
+        (dict(select='OK', search='OK', data=['']), True),
+        (dict(select='OK', search='OK', data=['8 4294967295']), True),
+    ]
+    for index, (case, valid) in enumerate(cases):
+        for interface in ('read', 'poll', 'python-read', 'poll_list'):
+            home = tmp / f'{index}-{interface}'
+            state = home / 'state'
+            state.mkdir(parents=True)
+            if not valid:
+                for name, content in {
+                    '.mail-seen': 'uidvalidity=100\n7\n',
+                    '.mail-woken': '100\t7\tretry\n',
+                    '.mail-retry': '7\n', '.mail-retry-pos': '3\n',
+                    '.mail-turn': '1\n',
+                    '.wake-queue': 'preserved existing queue\n',
+                }.items():
+                    (state / name).write_text(content)
+            before = {p.name: p.read_bytes() for p in state.iterdir()}
+            log = home / 'calls'
+            run_env = dict(env, MAIL_TEST_CASE=json.dumps(case), MAIL_TEST_LOG=str(log),
+                           FM_HOME=str(home), FM_MAIL_CURSOR=str(state / '.mail-seen'),
+                           FM_MAIL_RETRY=str(state / '.mail-retry'),
+                           FM_MAIL_RETRY_POS=str(state / '.mail-retry-pos'),
+                           FM_MAIL_TURN=str(state / '.mail-turn'))
+            if interface in ('read', 'poll'):
+                command = ['bash', str(root / 'bin/fm-mail.sh'), interface]
+            else:
+                command = [sys.executable, str(root / 'bin/fm-mail.py'),
+                           'read' if interface == 'python-read' else interface]
+            result = subprocess.run(command, env=run_env, capture_output=True, text=True, timeout=15)
+            context = (case, interface, result.stdout, result.stderr)
+            assert result.returncode == (0 if valid else 1), context
+            assert 'private-test-password' not in result.stdout + result.stderr, context
+            calls = log.read_text().splitlines()
+            assert calls[-1] == 'logout', context
+            if not valid:
+                assert 'fetch' not in calls, context
+                if case['select'] != 'OK':
+                    assert 'search' not in calls, context
+                assert 'Uid:' not in result.stdout and 'uidvalidity\t' not in result.stdout, context
+                after = {p.name: p.read_bytes() for p in state.iterdir()}
+                assert before == after, (context, before, after)
+            elif not case['data'][0]:
+                assert 'fetch' not in calls, context
+                expected = '(no unseen mail)' if 'read' in interface else (
+                    'no new mail' if interface == 'poll' else 'uidvalidity\t200')
+                assert expected in result.stdout, context
+                assert not (state / '.wake-queue').exists(), context
+            else:
+                assert 'fetch' in calls, context
+                assert ('Hello' in result.stdout if interface != 'poll'
+                        else 'woke for 8' in result.stdout), context
+                if interface == 'poll':
+                    assert 'mail:200/8' in (state / '.wake-queue').read_text(), context
+                    assert (state / '.mail-seen').read_text() == 'uidvalidity=200\n8\n', context
+    baseline = os.environ.get('FM_MAIL_TEST_BASELINE')
+    if baseline:
+        case = dict(select='OK', search='NO', data=['denied private mailbox'])
+        baseline_env = dict(env, MAIL_TEST_CASE=json.dumps(case),
+                            MAIL_TEST_LOG=str(tmp / 'baseline-calls'))
+        result = subprocess.run([sys.executable, baseline, 'poll_list'], env=baseline_env,
+                                capture_output=True, text=True, timeout=15)
+        assert result.returncode == 0 and 'denied\t' in result.stdout, result
+        print('baseline reproduced: refused SEARCH published bogus UID rows')
+print('IMAP response matrix passed: 80 executable cases, no skips')
+PYEOF
+  python3 "$harness" "$ROOT" "$TMP_ROOT" || fail "IMAP response validation matrix"
+  pass "fm-mail: IMAP refusals preserve state; valid responses retain read and poll behavior"
+}
+
+test_imap_selection_and_search_responses
 test_missing_secret_fails_cleanly
 test_env_overrides_env_file
 test_status_without_network
