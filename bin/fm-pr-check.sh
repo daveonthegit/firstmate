@@ -103,6 +103,7 @@ fi
 # The draft state is read before anything is recorded or armed. Only a positive
 # draft reading refuses, because an unreadable one must not block arming.
 if [ "$PROVIDER" = github ] && [ "${FM_PR_CHECK_MERGE:-}" != 1 ] && command -v gh >/dev/null 2>&1 && command -v jq >/dev/null 2>&1; then
+  # shellcheck disable=SC2016 # The child shell expands $1 from the positional URL.
   DRAFT_JSON=$(fm_pr_github_exec "$PROJECT_PATH" bash -c \
     'gh pr view "$1" --json isDraft 2>/dev/null || true' _ "$URL") || exit 1
   if [ "$(fm_pr_json_draft_state "$DRAFT_JSON")" = true ]; then
