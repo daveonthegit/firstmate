@@ -20,17 +20,23 @@ TMP_ROOT=$(fm_test_tmproot fm-wake-tests)
 
 
 test_concurrent_append_and_drain() {
-  local dir state out1 out2 pids i pid count unique malformed sequence generation
+  local dir state out1 out2 pids worker i pid count unique malformed sequence generation
   dir=$(make_case concurrent)
   state="$dir/state"
   out1="$dir/drain-one.out"
   out2="$dir/drain-two.out"
   pids=
-  i=1
-  while [ "$i" -le 40 ]; do
-    append_wake "$state" signal "status-$i" "signal: $state/status-$i.status" &
+  # Keep two producers concurrent with the drain, rather than a 40-process
+  # burst whose scheduling can exhaust the unrelated presentation deadline.
+  for worker in 1 2; do
+    (
+      i=$worker
+      while [ "$i" -le 40 ]; do
+        append_wake "$state" signal "status-$i" "signal: $state/status-$i.status" || exit 1
+        i=$((i + 2))
+      done
+    ) &
     pids="$pids $!"
-    i=$((i + 1))
   done
   FM_STATE_OVERRIDE="$state" "$DRAIN" > "$out1" &
   pids="$pids $!"
