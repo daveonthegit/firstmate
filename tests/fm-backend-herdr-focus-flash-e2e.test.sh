@@ -235,36 +235,36 @@ C_RIGHT_NEIGHBOUR=$(printf '%s' "$C_ORDER" | tr ',' '\n' | grep -A1 -Fx "$C_DOOM
 C_SURVIVOR_ORDER=$(printf '%s' "$C_ORDER" | tr ',' '\n' | grep -v "^$C_DOOMED_WS\$" | paste -sd, -) \
   || fail 'could not capture the Part C survivor order'
 
-# One persistent background child of the pane's shell, started outside any
-# worktree so nothing reaps it, is enough to fail the proof on every sample.
-lab pane send-text "$C_DOOMED_PANE" 'cd / && sleep 3000 &' >/dev/null \
-  || fail 'could not send the Part C persistent-child command'
-lab pane send-keys "$C_DOOMED_PANE" enter >/dev/null \
-  || fail 'could not submit the Part C persistent-child command'
-C_SHELL_PID=
+# Run one persistent foreground child through Herdr's atomic command surface.
+# This avoids racing separate send-text/send-keys calls, and process-info gives
+# the same public observation the production idle-shell proof consumes.
+lab pane run "$C_DOOMED_PANE" 'cd / && sleep 3000' >/dev/null \
+  || fail 'could not start the Part C persistent-child command'
+C_CHILD_IDENTITY=
+C_PREVIOUS_CHILD_IDENTITY=
 C_CHILD_ATTEMPT=0
 C_CHILD_STABLE=0
 while [ "$C_CHILD_ATTEMPT" -lt 100 ]; do
-  C_SHELL_PID=$(lab pane process-info --pane "$C_DOOMED_PANE" 2>/dev/null \
-    | jq -r '.result.process_info.shell_pid // empty' 2>/dev/null) || C_SHELL_PID=
-  if [ -n "$C_SHELL_PID" ] && ps -axo ppid=,comm= | awk -v parent="$C_SHELL_PID" '
-    $1 == parent {
-      command = $2
-      sub(/^.*\//, "", command)
-      if (command == "sleep") found = 1
-    }
-    END { exit(found ? 0 : 1) }
-  '; then
+  C_CHILD_IDENTITY=$(lab pane process-info --pane "$C_DOOMED_PANE" 2>/dev/null \
+    | jq -er '
+      .result.process_info as $process
+      | $process.foreground_processes
+      | map(select(.pid != $process.shell_pid))
+      | select(length > 0)
+      | [$process.shell_pid, .[0].pid]
+      | @tsv
+    ' 2>/dev/null) || C_CHILD_IDENTITY=
+  if [ -n "$C_CHILD_IDENTITY" ] && [ "$C_CHILD_IDENTITY" = "$C_PREVIOUS_CHILD_IDENTITY" ]; then
     C_CHILD_STABLE=$((C_CHILD_STABLE + 1))
     [ "$C_CHILD_STABLE" -ge 2 ] && break
   else
     C_CHILD_STABLE=0
-    C_SHELL_PID=
   fi
+  C_PREVIOUS_CHILD_IDENTITY=$C_CHILD_IDENTITY
   sleep 0.1
   C_CHILD_ATTEMPT=$((C_CHILD_ATTEMPT + 1))
 done
-[ "$C_CHILD_STABLE" -ge 2 ] || fail 'the Part C doomed pane never acquired a stable persistent sleep child process'
+[ "$C_CHILD_STABLE" -ge 2 ] || fail 'the Part C doomed pane never reported a stable persistent child process'
 
 C_CALL_LOG="$TMP_ROOT/call-c.log"
 C_FOCUS_SAMPLES="$TMP_ROOT/focus-c.samples"
@@ -296,14 +296,23 @@ done
 # A short proof budget keeps the exhausted-proof path fast; the count below is
 # what proves the proof was exhausted rather than skipped.
 C_PROOF_POLLS=3
+# Observe the real focus synchronously after close, before production can restore
+# it. The background sampler alone can miss that short window on a busy runner.
+export -f lab focus_snapshot
 C_OUT=$(PATH="$FAKEBIN:$HERDR_ORIGINAL_PATH" FM_FLASH_CALL_LOG="$C_CALL_LOG" \
+  FM_FLASH_FOCUS_SAMPLES="$C_FOCUS_SAMPLES" \
   FM_BACKEND_HERDR_IDLE_SHELL_PROOF_POLLS="$C_PROOF_POLLS" bash -c '
   . "$1/bin/backends/herdr.sh"
   fm_backend_herdr_cli() {
     local session=$1
     shift
     printf "%s\n" "$*" >> "$FM_FLASH_CALL_LOG"
-    HERDR_SESSION="$session" herdr "$@" --session "$session"
+    HERDR_SESSION="$session" herdr "$@" --session "$session" || return $?
+    if [ "${1:-} ${2:-}" = "pane close" ]; then
+      local sample
+      sample=$(focus_snapshot) || return 1
+      printf "%s\n" "$sample" >> "$FM_FLASH_FOCUS_SAMPLES"
+    fi
   }
   fm_backend_herdr_projection_close_pane_focus_preserving "$2" "$3"
 ' _ "$ROOT" "$HERDR_LAB_SESSION" "$C_DOOMED_PANE" 2>&1)

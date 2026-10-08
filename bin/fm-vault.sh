@@ -443,9 +443,15 @@ DECISION_SKIP_REASON=
 write_decision() {
   local origin=$1 key=$2 dfile=${3:-} id text title decided project repo reason routed mode
   local existing rel origin_note origin_title report canonical status superseded out
-  id="$origin-decision-$key"
+  # New completion inventories name the held task itself; legacy inventories
+  # still name a decision key. Prefer the actual row, then the legacy identity.
+  id=$key
   DECISION_SKIP_REASON=
   load_show "$id"
+  if [ -z "$SHOW" ]; then
+    id="$origin-decision-$key"
+    load_show "$id"
+  fi
   text=
   if [ -n "$dfile" ]; then
     [ -f "$dfile" ] || fail "decision file $dfile does not exist"

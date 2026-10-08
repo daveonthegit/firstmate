@@ -516,7 +516,7 @@ SH
     printf 'exit 1\n'
   } > "$dir/fake-ssh"
   chmod +x "$dir/fake-ssh"
-  printf 'brief for %s\n' "$id" > "$home/data/$id/brief.md"
+  printf "# Task\n## Captain's intent\nVerify repository account selection for %s.\n\n## Firstmate spec\nExercise the configured GitHub account without changing global authentication.\n" "$id" > "$home/data/$id/brief.md"
   touch "$home/state/.last-watcher-beat"
   : > "$log"
   printf '%s|%s|%s|%s|%s|%s\n' "$dir" "$home" "$proj" "$wt" "$fakebin" "$log"

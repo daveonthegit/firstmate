@@ -6,9 +6,9 @@ Cursor is now a verified primary and secondmate harness as well, and its launch 
 The launch, profile, and task-local trust mechanics live in `bin/fm-spawn.sh`.
 The operational recovery facts live in `.agents/skills/harness-adapters/SKILL.md`.
 
-## Supported launch
+## Historical launch (2026-07-23)
 
-Firstmate invokes the explicit `agent` entry point and launches an interactive session with this shape:
+The crewmate-era probe invoked the explicit `agent` entry point and launched an interactive session with this shape:
 
 ```sh
 agent --force --trust --workspace "<isolated-task-directory>" --model "<mapped-model-id>" "<launch-brief>"
@@ -19,80 +19,31 @@ agent --force --trust --workspace "<isolated-task-directory>" --model "<mapped-m
 The adapter never edits `~/.cursor/cli-config.json` or any other global Cursor setting.
 A positional prompt starts the first turn and the TUI stays open for follow-ups.
 
-Cursor has no standalone effort flag.
-When no concrete model is selected - no model at all, or the `default` sentinel, which emits no `--model` flag for any harness - Firstmate maps its effort axis to the empirically listed Cursor Grok 4.6 models:
+The [Cursor adapter reference](../.agents/skills/harness-adapters/references/harness/cursor.md#operating-facts) owns current model validation and effort mapping; the dated catalog capture below is evidence, not a supported-model inventory.
 
-| Firstmate effort | Cursor model id |
-|---|---|
-| `low` | `cursor-grok-4.6-low` |
-| `medium` | `cursor-grok-4.6-medium` |
-| `high` | `cursor-grok-4.6-high` |
-| `xhigh` | `cursor-grok-4.6-xhigh` |
-| `max` | `cursor-grok-4.6-xhigh` |
+## Current supervision
 
-The Cursor Grok 4.6 catalog has no `max` entry, so `max` caps at that family's highest listed model instead of becoming an invented flag or model id.
-The mapping uses only non-fast ids: every 4.6 rung also has a `-fast` sibling, but a `-fast` variant is a separate latency and cost tradeoff and is only ever selected by asking for it explicitly.
-Any concrete requested model - inside or outside the Cursor Grok 4.6 family, including a `cursor-grok-4.5-*` id - always wins unchanged; effort never remaps it.
+The [Cursor adapter reference](../.agents/skills/harness-adapters/references/harness/cursor.md) owns current transcript busy-state, composer, delivery, and primary-hook behavior; the captures below predate those integrations.
 
-Whichever way the model id was chosen - an explicit `--model`, the `config/secondmate-harness` token, or the effort mapping above - `bin/fm-spawn.sh` checks it against the live `cursor-agent --list-models` catalog before launching and refuses the spawn if the catalog does not list it, naming which of those three origins produced the id so the fix is unambiguous.
-A drifted catalog therefore surfaces as a loud pre-launch refusal rather than a pane that dies on an unusable model.
+## Historical interrupt, exit, and resume (2026-07-23)
 
-## Supervision signals
-
-The busy-only ASCII hint is `ctrl+c to stop`.
-The TUI also renders `Working` and `Thinking N tokens`, but those words are less specific in captured transcript text.
-The idle composer uses the agent-only `→` glyph with `Add a follow-up` after a completed turn and `Plan, search, build anything` before the first turn.
-The shared composer classifier recognizes that glyph and both placeholders without weakening the rule that a bare shell prompt is never safe for injection.
-
-No Cursor per-turn hook is verified.
-Cursor therefore has no entry in `fm_busy_sources_for_harness`, `fm-spawn.sh` arms no busy record for a cursor task, and the classifier has no cursor rendered-tail arm (the only such arm is Grok's).
-On every backend except herdr, `fm_busy_classify` returns `unknown missing` for a cursor task and no generating Cursor pane is read as busy worker state.
-
-The one exception is herdr, and it is not Cursor-specific: with no record at all, `fm_busy_classify` consults herdr's harness-agnostic native agent state and reports `busy herdr-native` when herdr itself reads the pane as working.
-So a generating Cursor pane on the herdr backend can classify busy through herdr's own detection.
-That is not part of Cursor's verified evidence and nothing here depends on it; an idle or unreadable native answer falls through to `unknown missing`.
-This is where Cursor's posture differs from codex and standalone kimi, which short-circuit to `unknown` for every backend before that arm is reached.
-
-Wherever the verdict is `unknown`, a generating Cursor crewmate is not exempted as provably working: the watcher reaches its stale and escalation path on pane-hash stability alone.
-
-The rendered `ctrl+c to stop` hint still does real work, just not worker classification.
-It feeds the submit-acknowledgement and away-mode delivery guards in `bin/fm-tmux-lib.sh` and the herdr, cmux, and orca composer classifiers.
-
-## Interrupt, exit, and resume
-
-Cursor advertises `Ctrl+C` as the active-turn interrupt.
+That build advertised `Ctrl+C` as the active-turn interrupt.
 An automated PTY probe sent one `Ctrl+C` while token counts were increasing, but generation continued to completion.
-Recovery must therefore send at most one interrupt, re-read the pane, and let the turn settle before redirecting if it remains busy.
-Blindly repeating `Ctrl+C` is unsafe because an idle first press changes the TUI into the `Press Ctrl+C again to exit` state.
+In that build, an idle first press changed the TUI into the `Press Ctrl+C again to exit` state, so repeating `Ctrl+C` could exit rather than interrupt.
+The [Cursor adapter reference](../.agents/skills/harness-adapters/references/harness/cursor.md#operating-facts) owns current interrupt, exit, and relaunch guidance.
 
-A clean idle exit is a verified two-step sequence:
+The observed idle exit required two key presses:
 
 1. Send `Ctrl+C` once.
 2. Verify `Press Ctrl+C again to exit` is visible.
 3. Send `Ctrl+C` once more.
 
-The clean-exit banner prints `agent --resume=<chat-id>`.
-Recovery resumes in the preserved isolated task directory with `agent --force --trust --workspace <path> --resume=<chat-id>`.
-`agent --continue` is the documented fallback for the most recent workspace session.
+The clean-exit banner printed `agent --resume=<chat-id>`.
+The historical recovery command was `agent --force --trust --workspace <path> --resume=<chat-id>`, with `agent --continue` advertised for the most recent workspace session.
 
 ## Runtime backend review
 
-All supported runtime backend integration surfaces were reviewed before enabling the adapter.
-
-- tmux selects a harness-scoped busy signature through `fm_busy_lines_match` in `bin/fm-tmux-lib.sh`, where Cursor has its own `FM_TMUX_CURSOR_BUSY_REGEX_DEFAULT`, and it reads the composer through the structural box scan `fm_tmux_find_composer_box` with the cursor-row read only as a fallback.
-  Cursor's foreground command is the generic `node`, so process-level liveness remains conservatively `unknown`; the "tmux process identity" section below records the empirical process evidence, alongside the Cursor-only generic-interpreter gap in [`verification/runtime-backends.md`](verification/runtime-backends.md#tmux).
-  That gap is Cursor's alone: Pi and pi-signed are now exactly attributable through the `pi-launcher` foreground command.
-- Herdr prefers native registered-agent state when available and falls back to the shared busy regex and structural composer classifier when it is not.
-  Its bare composer set now includes `→` and the two Cursor placeholders, and its classifier short-circuits Cursor's on-row `ctrl+c to stop` busy hint to `empty` like the other backends, so the plain-capture composer fallback never re-sends Enter into a live turn.
-- Orca has no native semantic busy state and uses capture plus the shared regex.
-  Its structural composer classifier now accepts Cursor's bare `→` composer row specifically, short-circuits Cursor's on-row `ctrl+c to stop` busy hint to `empty` (a landed submit, no duplicate Enter), and retains bare-shell refusal - the generic `❯`/`›` glyphs are not accepted bare, so a `❯`-prompt dead shell stays `unknown`.
-- cmux has the same capture and structural-classifier posture as Orca and recognizes the Cursor composer shape under the same Cursor-only bare-glyph and busy-hint rules.
-- zellij has no separate composer-state API and retains its existing type-once, Enter-retry, screen-delta submit verification.
-  Cursor uses that generic path without changing zellij lifecycle behavior.
-
-Cursor is refused for secondmate launches.
-This avoids claiming primary session-start, turn-end, watcher, and process-liveness guarantees that have not been empirically verified.
-The existing primary harness integrations in `docs/sessionstart-nudge.md`, `docs/turnend-guard.md`, `docs/arm-pretool-check.md`, and `docs/supervision-protocols/` remain unchanged; those documents own that set.
+[`verification/runtime-backends.md`](verification/runtime-backends.md#cursor-agent-cli) owns current backend verification, including primary and secondmate support; the earlier process capture below does not describe the current attribution rule.
 
 ## Empirical verification
 
@@ -165,10 +116,10 @@ cursor-grok-4.5-medium - Cursor Grok 4.5 Medium
 cursor-grok-4.5-medium-fast - Cursor Grok 4.5 Medium Fast
 ```
 
-The 4.5 family remains listed and stays selectable as an explicit concrete model; 4.6 is what the effort axis maps onto, because it is the family that lists a distinct id per rung.
+The capture listed both the 4.5 family and a distinct non-fast 4.6 id per effort rung.
 The catalog also included model families whose effort is encoded in ids such as `-xhigh` and `-max`, plus parameterized model bracket overrides.
-Firstmate uses only the concrete non-fast Cursor Grok 4.6 entries above for its default mapping.
-Ids drift: re-run `cursor-agent --list-models` and refresh this section rather than trusting the sample above.
+The [Cursor adapter reference](../.agents/skills/harness-adapters/references/harness/cursor.md#operating-facts) owns selection from this catalog.
+Ids drift: re-run `cursor-agent --list-models` before relying on this dated sample.
 
 ### Interactive tmux supervision
 
@@ -224,8 +175,7 @@ The foreground argv began with:
 $HOME/.local/bin/agent --use-system-ca $HOME/.local/share/cursor-agent/versions/2026.07.20-8cc9c0b/index.js --force --trust --workspace ...
 ```
 
-That path-shaped argv is not stable enough to become process-liveness authority.
-The adapter preserves the existing conservative rule that a generic interpreter is `unknown`, never confidently dead.
+This capture established the generic `node` name's ambiguity; [current tmux attribution](tmux-backend.md#agent-liveness-probe) uses structural executable identity instead of treating this historical name as the complete evidence.
 
 ### Workspace trust and permissions
 
@@ -241,4 +191,4 @@ Do you trust the contents of this directory?
 
 `q` exited cleanly.
 `agent --help` documented `--force` and its `--yolo` alias as force-allowing commands unless denied.
-The shipped adapter uses `--force` explicitly and does not alter global approval configuration.
+The probed launch used `--force` explicitly without altering global approval configuration.

@@ -101,6 +101,25 @@ test_off_by_default_is_silent() {
   pass "fm-vault: absent or off config is a silent no-op; template always prints"
 }
 
+test_journal_reads_native_captain_hold_identity() {
+  local out rc note dec
+  new_case native-hold
+  seed_ship_task native-origin
+  mv "$HOME_DIR/fake-show/native-origin-decision-scope" "$HOME_DIR/fake-show/call-scope"
+  fm_write_meta "$HOME_DIR/state/native-origin.meta" kind=ship mode=no-mistakes \
+    harness=claude decision_keys=call-scope
+  out=$(vault journal native-origin 2>&1); rc=$?
+  expect_code 0 "$rc" "journal with a native held-task inventory"
+  note="$VAULT/Journal/Tasks/2026/2026-10-02-native-origin.md"
+  dec="$VAULT/Journal/Decisions/2026-10-01-call-scope.md"
+  assert_present "$dec" "native held-task decision uses its own identity"
+  assert_grep 'CSV only for now.' "$dec" "native held-task answer is archived"
+  assert_grep 'Journal/Decisions/2026-10-01-call-scope' "$note" "origin links native decision"
+  [ -z "$(find "$VAULT/Journal/Decisions" -name '*native-origin-decision-call-scope*')" ] \
+    || fail "native held-task identity was expanded as a legacy decision key"
+  pass "fm-vault: native held task identities and legacy decision keys both export"
+}
+
 test_journal_writes_linked_notes_from_records() {
   local out rc note dec
   new_case full
@@ -405,6 +424,7 @@ test_vault_git_is_opt_in() {
 
 test_off_by_default_is_silent
 test_journal_writes_linked_notes_from_records
+test_journal_reads_native_captain_hold_identity
 test_redaction
 test_idempotent_and_captain_text_survives
 test_missing_inputs_and_rerun_without_meta

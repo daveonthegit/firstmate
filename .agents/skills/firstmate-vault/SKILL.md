@@ -34,7 +34,7 @@ Keep one owner per fact:
 
 - **Task close.** Teardown runs `fm-vault.sh journal <id>` itself after a successful cleanup; do nothing extra.
   If it printed an `fm-vault:` line, report the concrete problem to the captain only when it repeats or needs their action (an unreachable vault path, a refused commit), then rerun `fm-vault.sh journal <id>` once it is fixed; a rerun without metadata keeps every value the earlier note recorded.
-- **Captain decisions.** A decision closed through `bin/fm-decision-hold.sh` reaches the vault with its origin task's journal export when the origin metadata lists its key.
+- **Captain decisions.** A decision closed through `bin/fm-captain-hold.sh` (or its legacy `fm-decision-hold.sh` shim) reaches the vault with its origin task's journal export when the origin metadata lists its key.
   For a decision that closed after its origin was already journaled, or one recorded only in a file, run `fm-vault.sh decision <origin> <key>` (with `--decision-file <path>` when the backlog hold does not hold the text).
 - **Domain knowledge.** When work under way teaches durable cross-project domain knowledge with no repo home, write or update one `Journal/Domain/<topic>.md` note with dated, sourced facts and links to the reports that hold the evidence, then tell the captain in one line that it was recorded.
 - **Never** write secrets, credentials, personal data, anything derived from private mail, revenue or partner commercial terms, or licensed material; the script redacts common shapes, but you are the first filter.
