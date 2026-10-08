@@ -1,0 +1,466 @@
+FM_TEST_BEGIN 2026-10-08T08:25:30Z tests/fm-pr-merge.test.sh family=pr-forge expected_gate_skip=none
+ok - fm-pr-merge reports exact queue retry flags after a zero-exit false success
+ok - fm-pr-merge omits merge-queue retry guidance for a closed GitHub PR
+ok - fm-pr-merge aggregates agreeing merge-queue rules
+ok - fm-pr-merge reports ambiguity for conflicting merge-queue rules
+ok - fm-pr-merge records pr= and pr_head= for a verified GitHub merge
+ok - fm-pr-merge records pr= before the forge call can land the merge
+ok - fm-pr-merge propagates a real merge failure without silently succeeding
+ok - fm-pr-merge refuses a GitHub merge call that leaves the PR open and unqueued
+ok - fm-pr-merge retries a bounded number of times when mergeable is UNKNOWN and merges once it resolves
+ok - fm-pr-merge reports mergeability still pending after its bounded UNKNOWN retry is spent
+ok - fm-pr-merge refuses on the UNKNOWN re-check when a check turned red between reads
+ok - fm-pr-merge refuses a genuine mergeable conflict immediately, without retrying
+ok - fm-pr-merge keeps PR bookkeeping when it cannot read a successful merge call's outcome
+ok - fm-pr-merge refuses with the forge's own output quoted apart from its verdict
+ok - fm-pr-merge quotes the forge output when it cannot read the outcome either
+ok - fm-pr-merge does not echo back queue flags the caller already used
+ok - fm-pr-merge still names retry flags when the caller used a different method
+ok - fm-pr-merge names the queue requirement even when its method is unrecognised
+ok - fm-pr-merge distinguishes unreadable branch rules from a base with no merge queue
+ok - fm-pr-merge reads a plan-gated 403 on branch rules as no merge queue, not unreadable
+ok - fm-pr-merge says nothing about a merge queue when the base branch has no queue rule
+ok - fm-pr-merge accepts only a proved merge from the gh-axi fallback
+ok - fm-pr-merge explains an armed auto-merge that landed nothing on a queue-less base
+ok - fm-pr-merge never reports auto-merge as armed when the merge command failed
+ok - fm-pr-merge claims no acceptance for a failed merge command carrying queue flags
+ok - fm-pr-merge falls back to the gh-axi view when gh's read fails
+ok - fm-pr-merge names a landed state hiding behind a failed GitHub merge command
+ok - fm-pr-merge refuses a GitHub merge when gh is missing, before recording
+ok - fm-pr-merge refuses a GitHub merge when gh is missing rather than merging blind
+ok - fm-pr-merge verifies a genuinely merged GitHub pull request
+ok - fm-pr-merge refuses to claim a merge when poll recording fails
+ok - fm-pr-merge accepts and accurately reports a GitHub merge-queue entry
+ok - fm-pr-merge explains how to retry with the required GitHub merge queue method
+ok - fm-pr-merge refuses branch deletion unless --attended-override is passed
+ok - fm-pr-merge refuses before merging when task meta is missing
+ok - fm-pr-merge refuses malformed PR URLs before calling gh-axi
+ok - fm-pr-merge refuses unsafe PR URL segments before recording state
+ok - fm-pr-merge refuses repo override args before recording state
+ok - fm-pr-merge refuses a bundled short-option repo override and refuses -d unless attended
+ok - fm-pr-merge does not add default --squash when the caller passes an explicit merge method
+ok - fm-pr-merge respects --method=<value> as an explicit merge method
+ok - fm-pr-merge parses a GitHub PR URL into gh-axi number and --repo arguments
+ok - fm-pr-merge refuses a caller --sha on GitHub because the head comes from the live read
+ok - fm-pr-merge merges a GitLab merge request through glab instead of refusing it
+ok - fm-pr-merge takes the GitLab instance from the URL rather than assuming one
+ok - fm-pr-merge imposes no merge method on GitLab, leaving the project's own one
+ok - fm-pr-merge refuses GitLab source-branch deletion unless --attended-override is passed
+ok - fm-pr-merge propagates a real glab merge failure without silently succeeding
+ok - fm-pr-merge refuses on each GitLab pre-merge condition independently
+ok - fm-pr-merge reports every failing GitLab condition, not only the first
+ok - fm-pr-merge reports a stale recorded head and verifies the live one
+ok - fm-pr-merge refuses an unreadable GitLab merge request state rather than merging blind
+ok - fm-pr-merge refuses a GitLab head commit it cannot validate
+ok - fm-pr-merge refuses before recording anything when glab or jq is absent
+ok - fm-pr-merge refuses a GitLab head override before recording state
+ok - a merge a secondmate home performs itself is reported upward exactly once
+ok - a locally routed secondmate home reports the landed PR into its parent's own channel
+ok - a landed GitLab merge request is reported upward on the same channel
+ok - a queued GitLab merge stays silent and leaves confirmation to the armed poll
+ok - a refused or failed merge reports no outcome
+ok - a GitLab merge refused before the forge call reports no outcome
+ok - a merge a main home performs itself leaves one durable wake naming the PR
+ok - a queued GitHub merge stays silent and leaves confirmation to the armed poll
+ok - distinct merged PRs for one task retain distinct captain-facing wakes
+ok - an uncommitted marker retry preserves at least one durable outcome
+ok - a secondmate home that cannot report upward says so instead of merging in silence
+ok - fm-pr-merge proceeds when the home carries no backlog at all
+ok - fm-pr-merge refuses when the backlog exists but cannot be read
+ok - fm-pr-merge refuses when its configured backend cannot be read
+ok - fm-pr-merge refuses when its user backend configuration cannot be read
+ok - fm-pr-merge refuses when its user backend configuration directory cannot be traversed
+ok - fm-pr-merge proceeds once when its user configuration directory and backlog are genuinely absent
+ok - fm-pr-merge honors a backend override over an unreadable user configuration
+ok - fm-pr-merge refuses red GitHub checks and waives only a named --allow-red check
+ok - fm-pr-merge refuses a draft pull request and one with no boolean draft state
+ok - fm-pr-merge merges when a failed check run was replaced by a passing re-run
+ok - fm-pr-merge never lets a check run supersede a legacy status context
+ok - fm-pr-merge still refuses when a check's current run failed after an earlier pass
+ok - fm-pr-merge uses start order when the old success finishes last
+ok - fm-pr-merge supersedes an old cancellation that finishes last
+ok - fm-pr-merge keeps a check red while its re-run is still in flight
+ok - fm-pr-merge never lets one check's pass clear another check's failure
+ok - fm-pr-merge clears a failure only on a proven later pass of the same check
+ok - fm-pr-merge keeps --allow-red scoped to its named check beside a superseded failure
+ok - fm-pr-merge rechecks away presence before an attended red merge
+ok - fm-pr-merge keeps a quiet-mode home's merges attended, the named red-check waiver included
+ok - fm-pr-merge accepts exactly one separately named red-check waiver
+ok - while the away-posture record exists any green merge lands under away authority, yolo or not, and attended merges stay untagged
+ok - under the away-posture record the branch merges a green task, is refused on a red check with or without --allow-red, and is refused at the partition while attended
+ok - a branch merge refuses under the lock when the away record is archived during preflight
+ok - away posture permits immediate merges but refuses every asynchronous path
+ok - away merge proceeds on a plan-gated 403 because that repository cannot have a merge queue
+ok - the away record does not bypass red checks, and a recorded pr= must match the URL
+ok - an unreadable away-posture record refuses the merge instead of skipping the record
+ok - no away-record archive or replacement lands between the authority read and the merge
+ok - a record made unreadable before the merge's own authority read refuses the merge
+ok - a merge that cannot lock the away record refuses instead of merging unlocked
+ok - fm-pr-merge refuses --allow-red on GitLab
+ok - fm-pr-merge refuses when a required check from branch protection or a ruleset never reported
+ok - fm-pr-merge merges when every required check reported and is green
+ok - fm-pr-merge reports a red check and an unreported required check together with every other failure
+ok - fm-pr-merge refuses when the required checks cannot be read, and tells a plan without rules apart
+ok - fm-pr-merge --allow-missing waives only its named unreported check
+ok - fm-pr-merge --allow-missing is single use, attended-only, and GitHub-only like --allow-red
+ok - fm-pr-merge enforces required producer identity and named waivers
+ok - fm-pr-merge matches an app-bound required commit status by name
+ok - fm-pr-merge reports known missing checks and all independent read errors
+FM_TEST_END 2026-10-08T08:29:58Z tests/fm-pr-merge.test.sh exit=0 duration_ms=268065 gate_skip=false
+FM_TEST_BEGIN 2026-10-08T08:29:58Z tests/fm-vault.test.sh family=pure-contract-unit expected_gate_skip=none
+ok - fm-vault: absent or off config is a silent no-op; template always prints
+ok - fm-vault: journal writes a linked task note, decision note, hub, month, and skill indexes
+ok - fm-vault: native held task identities and legacy decision keys both export
+ok - fm-vault: record text is redacted before it reaches the vault
+ok - fm-vault: reruns are byte-identical and keep captain-written text
+ok - fm-vault: missing inputs degrade gracefully and reruns never blank recorded values
+ok - fm-vault: narrative state distinguishes captured from incomplete
+ok - fm-vault: a captain-reviewed note is left alone
+ok - fm-vault: scout reports are indexed by path and never copied
+ok - fm-vault: decision records a dated note and skips unresolved holds with one line
+ok - fm-vault: writes are confined to the vault's Journal/ and bad input is refused
+ok - fm-vault: an unwritable vault fails with exactly one line
+ok - fm-vault: vault git is untouched by default; commit and push are opt-in and Journal-only
+FM_TEST_END 2026-10-08T08:30:11Z tests/fm-vault.test.sh exit=0 duration_ms=12913 gate_skip=false
+FM_TEST_BEGIN 2026-10-08T08:30:11Z tests/fm-pr-check-security.test.sh family=pr-forge expected_gate_skip=none
+FM_TEST_BEGIN 2026-10-08T08:30:11Z tests/fm-teardown.test.sh family=pr-forge expected_gate_skip=none
+ok - raw-byte parser accepts canonical URLs and rejects the complete adversarial matrix
+ok - GitLab merge requests are followed on any instance and never wake falsely
+ok - the Gerrit watch wakes only on an explicit merged status and never on submittability
+ok - Gerrit arming records no patch set revision and the merge path refuses to submit
+ok - Gerrit arming accepts a published HEAD only by the change's current patch set tree
+ok - a no-mistakes Gerrit ready report requires the pipeline's fixes recovered into the published copy
+ok - validated merged polls notify once and retire before the next watcher cycle
+ok - a repeat identical merged poll for an already-notified task is absorbed, never queued as a main-blocking row
+ok - a failed upward merge report keeps its poll armed for repair and retry
+ok - staged self-merge and poll interleavings are never silent
+ok - queued merges retain their away authority after captain return
+ok - poll distinguishes attended authorization from external landing
+ok - accepted merge authority refuses rebound task metadata
+ok - accepted merge authority persists under the lifecycle lock
+ok - teardown cannot race merged-poll authority consumption
+ok - poll retirement preserves a replacement authority record
+ok - a merge detected by the poll is reported upward from a secondmate home exactly once
+ok - a different merged PR for the same task gets its own first notification
+ok - a merged poll on a persistent secondmate retires silently: no outcome, marker, or wake, and every lifecycle artifact preserved
+ok - queue, receipt, and every fixed-path removal crash point recover without loss or repeated execution
+ok - open/red, closed-unmerged, malformed, and forge errors remain armed until an exact merged transition
+ok - replacement, nonterminal, tampered, and custom results receive no deletion authority
+ok - queue failure and untrusted receipts preserve canonical poll evidence
+ok - GitHub and GitLab exact merged results share one retirement path
+ok - PR and teardown entrypoints reject invalid arguments before every side effect
+ok - arming refuses drafts and reads records with the repository account without a shim
+ok - fm-pr-check refuses to record a PR or arm a merge watch on a secondmate record
+ok - fm-pr-check refuses to register a PR whose named head is only in the worker copy
+ok - fm-pr-check refuses a direct-PR registration while a later commit is only in the copy
+ok - valid direct and merge flows record exact metadata and reject multiline head metadata
+ok - rejected metacharacter bytes remain inert at generation and watcher time
+ok - static poll is silent except for one merged line and remains watcher-bounded
+ok - interrupted atomic preparation cleans private temporaries and publishes nothing
+ok - concurrent watchers observe only complete private poll publications
+ok - poll publication paths refuse symlinks and directories
+ok - live poll and custom-check artifacts require private single-link files
+ok - a poll armed before a volume renumber is re-recorded under the control lock and keeps detecting merges
+ok - a renumbered registration is never re-recorded around a tampered artifact: swapped-check altered-check swapped-sidecar altered-sidecar altered-template-hash wrong-mode hardlinked-check split-device (foreign-device not exercisable on Darwin), or a pending retirement
+ok - direct re-arm publication waits without replacing an armed poll
+ok - device re-record publication waits without rewriting its registration
+ok - post-rename poll validation faults revoke both names and allow a clean retry
+ok - bootstrap does not rewrite unauthenticated checks or emit retired migration diagnostics
+ok - watcher signals promptly stop custom checks and clean private state
+ok - returned custom check descendants are drained on installed and fallback timeout paths
+ok - teardown removes safe poll artifacts and refuses directory-shaped check files without traversal
+FM_TEST_END 2026-10-08T08:34:36Z tests/fm-pr-check-security.test.sh exit=0 duration_ms=264343 gate_skip=false
+ok - a missing teardown startup source refuses before cleanup
+ok - an unreadable teardown startup source refuses before cleanup
+ok - a missing adapter sibling refuses before cleanup
+ok - a forced descendant with a missing adapter sibling refuses before cleanup
+ok - a forced secondmate with a missing own adapter sibling refuses before child cleanup
+ok - present required sources still reach the ordinary teardown refusal
+ok - local-only worktree with HEAD on a fork remote is torn down and the home summary is refreshed
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 0s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ok - teardown closes its own backlog item before reporting success
+ok - teardown closes a landed Gerrit task with its change URL as a note and a GitHub task with --pr
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ok - teardown honors config/backlog-backend=manual and still finishes cleanly
+ok - local-only worktree with truly unpushed work is refused (safety preserved)
+ok - local-only worktree with work merged into local main is torn down (no regression)
+ok - no-mistakes worktree with HEAD on origin is torn down (no regression)
+ok - no-mistakes worktree with genuinely unlanded work is refused (safety preserved)
+ok - local-only worktree with unpushed work is torn down under --force (escape hatch)
+ok - fm-pr-check publishes the PR-ready line on a secondmate's parent channel once
+ok - a secondmate home's teardown delivers the child's final line or refuses until it can
+ok - teardown completes when an exact busy-state sidecar is already absent
+ok - herdr teardown removes pane-owned escalation dedupe state
+ok - herdr flat teardown refuses before returning the isolated copy under lock contention and the retry completes cleanly
+ok - herdr flat teardown never erases records when pane presence is unparseable
+ok - herdr flat teardown preflight refuses before every destructive change
+ok - forced secondmate teardown preflights every Herdr child before cleanup mutation
+ok - forced secondmate teardown holds every descendant lifecycle and metadata lock
+ok - forced secondmate teardown retains Herdr child identity until exact pane disappearance
+ok - forced teardown retains a nested secondmate home and its grandchild's Herdr identity when the grandchild close is unconfirmed
+ok - herdr projection teardown retires its journal only after confirming the exact recorded pane is gone
+ok - herdr projection teardown retains every record when post-close presence is unknown
+ok - herdr projection teardown surfaces failed focus restoration without turning confirmed cleanup into a hard failure
+ok - teardown retires the task's own watcher markers and orphaned presentation journal, leaving other tasks' markers alone
+ok - teardown retains a presentation journal bound to a pane other than the closed endpoint
+ok - teardown retires a v1 presentation journal once its token workspace is confirmed gone
+ok - teardown retains a v1 presentation journal while its token workspace is still present
+ok - teardown retains a v1 presentation journal when the workspace query is ambiguous
+ok - squash-merged + deleted-branch worktree (PR merged) is torn down (the fix)
+ok - squash-merged PR accepts a local HEAD that is an ancestor of the final PR head
+ok - teardown discovers a merged PR by branch name and tears down when no pr= was ever recorded
+ok - squash-merged PR accepts replayed unpushed local patches contained in the PR head
+ok - merged PR does not allow teardown after a later local commit
+ok - squash-merged task whose local branch followed the pipeline rebase is torn down
+ok - squash-merged same-path different content still refuses
+ok - squash-merged rebased local still refuses a genuinely unlanded follow-up commit
+ok - squash-merged stale local still refuses when the forge is unreachable
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-contributions: data directory unavailable
+contributions: observation not armed; coverage is unconfirmed
+WARNING: watcher still down (same stale episode; last beat: 2s ago, grace 300s) - full banner already printed this episode.
+fm-contributions: data directory unavailable
+contributions: observation not armed; coverage is unconfirmed
+ok - fm-pr-check does not refresh PR head after HEAD moves
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 0s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+fm-contributions: data directory unavailable
+contributions: observation not armed; coverage is unconfirmed
+ok - fm-pr-check records the remote PR head when the local worktree lags
+ok - worktree whose content already landed in the default branch is torn down (content fallback)
+ok - the content-landed fallback checks a task's recorded base branch, not the default branch
+ok - content fallback refreshes origin default before comparing trees
+ok - dirty worktree is refused even when its committed work has landed (dirty always wins)
+ok - untracked/no-mistakes: dirty refusal classifies leftovers and preserves work
+ok - untracked/local-only: dirty refusal classifies leftovers and preserves work
+ok - tracked/no-mistakes: dirty refusal classifies leftovers and preserves work
+ok - tracked/local-only: dirty refusal classifies leftovers and preserves work
+ok - mixed/no-mistakes: dirty refusal classifies leftovers and preserves work
+ok - mixed/local-only: dirty refusal classifies leftovers and preserves work
+ok - gh lookup error with content not in default refuses (fail-safe)
+ok - a record predating spawn_gen refuses teardown until --legacy-record is passed
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ok - a windowless leftover with no spawn_gen and no worktree tears down without --legacy-record
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ok - a windowless leftover with no spawn_gen also tears down when --legacy-record is passed
+ok - a windowless leftover still refuses while its worktree holds unlanded work
+ok - a windowless record with a spawn_gen, a non-tmux backend or endpoint identity, no backlog validation, or ambiguous, foreign, or malformed identity still refuses
+WARNING: watcher still down (same stale episode; last beat: 3s ago, grace 300s) - full banner already printed this episode.
+ok - a windowless leftover retries its retained legacy stamp without --legacy-record
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M4D8TTC1BKNHMZGCN7ASCH0F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ok - a landed legacy record with a dead endpoint tears down and logs its accepted incarnation
+ok - --legacy-record never relaxes the unlanded-work refusal
+ok - an endpoint that cannot be confidently read as dead refuses --legacy-record teardown
+ok - --legacy-record teardown rolls its stamp back when the close marker write fails
+ok - a legacy stamp a failed rollback left behind still faces the endpoint gate
+ok - a corrupt spawn_gen is never accepted as a legacy record
+ok - provably-stale worktree index.lock (old, no live holder) is cleared and teardown succeeds
+ok - live-held worktree index.lock is never removed and teardown refuses
+ok - lsof errors leave worktree index.lock in place and refuse teardown
+ok - stale lock cleanup rechecks and refuses dirty worktree before return
+ok - normal repo index.lock is resolved from the worktree and cleared when stale
+ok - index-lock mtime fault injection is PATH-based; skipped on Darwin where stat is /usr/bin/stat
+ok - transient index.lock cleared after first failed return is retried successfully without force-remove
+ok - persistent index.lock exhausts retries and refuses without force-removing the lock
+ok - empty retry wait overrides use the default without aborting teardown
+ok - fractional legacy retry wait remains supported without arithmetic
+ok - teardown records the task's pipeline spend before removing its branch and record
+ok - teardown skips all pipeline-spend recording when the home has not opted in
+ok - teardown records unavailable pipeline spend for an owned ship task whose copy is gone
+ok - a task's own parked no-mistakes run is aborted, not orphaned, before the worker is removed
+ok - a run that lands on passed-with-override after abort is still recognized as terminal
+ok - a run that lands on passed-with-skips after abort is still recognized as terminal
+ok - a parked run the pipeline advanced past the task copy is still concluded from the runs ledger, not orphaned
+ok - a ledger row for a different head never authorizes a parked-run abort
+ok - a malformed ledger row never authorizes a parked-run abort
+ok - an impossible ledger date never authorizes a parked-run abort
+ok - a terminal status with a stale gate never reaches ledger cleanup
+ok - an advanced head present locally aborts through the strict rule alone - the ledger fallback stays dormant
+ok - an unresolvable active row with no same-branch anchor is never concluded (conservative refusal)
+ok - an ancestor-only anchor never binds an advanced parked run to this task
+ok - a terminal unfetched-head row is stale history and never concludes a run
+ok - a terminal newest row anchored at this worktree's head never authorizes an abort
+ok - a resolvable diverged newer same-branch row makes every older row stale history; no run is concluded
+ok - consecutive unresolvable rows are ambiguous and never conclude a run
+ok - a ledger-proven continuation is still left alone while the run is autonomously active
+ok - teardown refuses before reap or removal when a task-owned run remains parked
+ok - a different run cannot confirm the targeted abort
+ok - empty post-abort status is not accepted as confirmation
+ok - the CLI's exact run-not-found signal confirms completion
+ok - a parked run on another branch is never aborted by this task's teardown (ownership is precise)
+ok - a task-owned autonomous running step is left alone rather than aborted
+ok - a leaked descendant process rooted under the task's worktree is reaped by teardown, not left surviving
+ok - a leaked descendant process rooted under the task's per-task tasktmp is reaped by teardown too
+ok - missing lsof falls back to reaping the tmux pane process group
+ok - an erroring lsof scan refuses teardown and preserves the task
+ok - a reused pid with a different start time is never force-killed
+ok - an exec change preserves birth identity and the process is reaped
+ok - a process spawned during grace is reaped on a later pass
+ok - persistent leaked processes refuse teardown after bounded retries
+ok - a process exiting during identity lookup does not block teardown
+ok - the run abort and the leaked-process reap both complete before the destructive worktree return
+ok - teardown exports the vault journal only when configured and never fails on it
+ok - teardown preserves tracked Claude settings and retires the private hook settings
+ok - a stale checkout's hook settings are removed as untracked
+ok - released Herdr endpoint with unpushed work is refused (landed-work safety unchanged)
+ok - released Herdr endpoint with a dirty worktree is refused (dirty check unchanged)
+ok - released Herdr endpoint with landed work is retired without any herdr command
+FM_TEST_END 2026-10-08T08:35:07Z tests/fm-teardown.test.sh exit=0 duration_ms=295889 gate_skip=false
+FM_TEST_BEGIN 2026-10-08T08:35:07Z tests/fm-teardown-endpoint-safety.test.sh family=backend-dispatch expected_gate_skip=none
+ok - fm-teardown: missing, empty, malformed, ambiguous, and task-mismatched endpoints refuse before every mutation or runtime call
+ok - fm-teardown: an unproven Herdr endpoint still refuses under --force and names the sanctioned repair
+ok - fm-teardown: an empty, duplicated, foreign, contradictory, or inconsistent release marker refuses
+ok - fm-teardown: an endpoint release marker on a non-Herdr record refuses before any mutation or runtime call
+ok - fm-teardown: a released Herdr record's presentation journal is removed without any herdr command
+ok - fm-teardown: a released Herdr record is retired and its recorded endpoint is never commanded
+not ok - reused endpoint fixture must classify as live
+FM_TEST_END 2026-10-08T08:35:16Z tests/fm-teardown-endpoint-safety.test.sh exit=1 duration_ms=9094 gate_skip=false
+FM_TEST_BEGIN 2026-10-08T08:35:16Z tests/fm-endpoint-rebind.test.sh family=backend-dispatch expected_gate_skip=none
+ok - fm-endpoint-rebind: a live pane the server binds to fm-<id> on a single-pane tab adopts the binding
+ok - fm-endpoint-rebind: an absent endpoint releases the record and issues no runtime command
+ok - fm-endpoint-rebind: a vanished workspace subsumes its panes and releases the record
+ok - fm-endpoint-rebind: a live pane refuses unless label, tab, workspace, and pane count all agree
+ok - fm-endpoint-rebind: an absent pane refuses while its workspace still shows a tab for the task
+ok - fm-endpoint-rebind: an unreachable server or unparseable answer refuses instead of guessing
+ok - fm-endpoint-rebind: a record that already carries a binding or release marker is never rewritten
+ok - fm-endpoint-rebind: non-Herdr backends and malformed Herdr records refuse without a runtime query
+ok - fm-endpoint-rebind: a record only the validator rejects refuses with the original untouched
+ok - fm-endpoint-rebind: the repaired record keeps the permissions it had
+ok - fm-endpoint-rebind: a record with no trailing newline is repaired into a well-formed record
+ok - fm-endpoint-rebind: --dry-run reports the outcome and writes nothing
+ok - fm-endpoint-rebind: no flag, argument, or environment variable can force an unproven repair
+FM_TEST_END 2026-10-08T08:35:23Z tests/fm-endpoint-rebind.test.sh exit=0 duration_ms=6610 gate_skip=false
+FM_TEST_BEGIN 2026-10-08T08:35:23Z tests/fm-gh-account.test.sh family=backend-dispatch expected_gate_skip=none
+ok - each account is selected from the repository it owns access to, not from global gh state
+ok - every github.com origin form resolves alike; other forges and originless checkouts select nothing
+ok - an all-numeric owner survives the ssh-port handling instead of silently selecting nothing
+ok - an unreadable 'gh auth status' refuses only where an account was needed, and its override works
+ok - a home logged in to another host only is left exactly as it was, whatever that host is called
+ok - gh absent, nobody logged in, and a single account all leave gh untouched
+ok - an undeterminable or ambiguous account is refused with its fix; unequal access resolves
+ok - config/gh-accounts decides an owner offline, and a bad line is reported not worked around
+ok - FM_GH_ACCOUNT overrides one run, none opts out, and an unknown login is refused
+ok - exec passes the credential to exactly one child, stands aside, or refuses to run
+ok - the evaluated snippet carries the right credential, or an unusable one that fails loudly
+ok - a spawned lane operates as the account its own repository needs, recorded and never switched globally
+ok - where a gh call enters the wrapper a lane exports nothing and keeps per-repository keying
+ok - an installed wrapper nothing resolves to still leaves the lane its own credential
+ok - a home with one logged-in account spawns exactly as it did before
+ok - a spawn with no determinable account stops at dispatch with the reason and its fix
+ok - the wrapper passes account, config, help, and other-host commands straight to gh
+ok - a call that already carries a credential is never re-pointed at another account
+ok - repository work runs as that repository's own account; nothing to choose leaves gh alone
+ok - an attached -R, an api endpoint path, and a flag-looking value are all keyed off the right repository
+ok - an undeterminable account is refused, and an unreachable helper refuses only when a wrong account is possible
+ok - installing is idempotent and reversible, and a foreign gh is never replaced or removed
+# all fm-gh-account tests passed
+FM_TEST_END 2026-10-08T08:35:56Z tests/fm-gh-account.test.sh exit=0 duration_ms=33211 gate_skip=false
+FM_TEST_BEGIN 2026-10-08T08:35:56Z tests/fm-contributions.test.sh family=snapshot-bearings expected_gate_skip=optional-binary
+ok - primary observer routes all PR and issue reads through configured account without a shim
+ok - account resolution and authentication failures persist errors without fallback or token leakage
+ok - only required-captain contributions are rows; other actors are counted
+ok - replaced-head verdict is stale and cannot create a captain requirement
+ok - unchecked ownership is disclosed and cannot prove silence
+ok - newest check with no verdict is distinct from passing and pending
+ok - new maintainer comment wakes once and stays pending until acknowledged
+ok - new maintainer review wakes once and stays pending until acknowledged
+ok - new maintainer inline wakes once and stays pending until acknowledged
+ok - ready-for-pr on a filed issue becomes a planning wake
+ok - a fresh open issue remains measured maintainer triage
+ok - an absent check lane remains missing across repeated observations
+ok - mixed freshness retains measured captain work and discloses the gap
+ok - malformed durable evidence cannot prove silence
+ok - a transient ready-for-pr label wakes and its exact acknowledgement survives replay
+ok - recorded judgment keeps its exact head and is stale immediately on a published replacement
+ok - verdict help and refusal name exactly the actors the command accepts
+ok - a current forge observation refreshes a verdict after a replacement
+ok - an unavailable current head leaves verdict freshness unknown
+ok - away yolo delivery is fleet work without granting merge authority
+actionable: PR https://github.com/o/r/pull/8 is registered but its ready line did not reach the parent channel (rc=3)
+ok - cross-home away yolo delivery is fleet work
+ok - retired ownership persists and unsupported forge remains visibly unmeasured
+ok - unsupported forge coverage is disclosed without inventing fleet work
+ok - held unsupported forge coverage remains unmeasured
+ok - shared contribution signal wakes once while retaining both acknowledgements
+ok - watcher keeps observer diagnostics separate from contribution wakes
+ok - expired child unsupported-forge coverage remains unmeasured
+ok - watcher surfaces one newly durable contribution signal without re-ringing it
+ok - parent consumes measured child coverage and refuses expired child silence
+ok - unreadable pending signals refuse an empty-inbox claim
+ok - record task identity is the directory dirname/basename named
+ok - snapshot and pending create nothing in a home without state
+ok - budget exhausted mid-observation (exhaust) keeps the prior record and stays silent
+ok - budget exhausted mid-observation (hang) keeps the prior record and stays silent
+ok - a genuine forge failure inside the budget still records the error and wakes
+ok - a URL owned by two tasks is observed once and every owner receives the result
+ok - a merged or closed contribution settles once, is not re-read, and never wakes again
+ok - a late owner inherits a terminal observation without a forge read or wake
+ok - a retry converges every owner whose saved row is not terminal, keeping its own acknowledgement state
+ok - an open PR linked from a done task keeps being observed
+ok - a later URL waits when fewer than fifteen seconds remain for its observation
+ok - eight 3-second PR reads complete fresh within one 20-second poll cycle
+ok - a read killed at the five-second bound is budget refusal and stays silent
+ok - rotation preserves timed-out records and refreshes every slow PR on successive cycles
+ok - the effective budget is cut down to the watcher per-check bound with margin
+ok - generated checks enforce configured and inherited budgets at runtime
+ok - a genuinely unavailable forge records an error and wakes once per failure episode
+ok - a late owner does not restart a shared forge failure episode
+ok - retire stops the unavailable check, leaves rotation and restores complete coverage
+ok - a late owner settled beside a retired final record stays unretired and known
+ok - retire is idempotent and refuses non-captain, unknown, malformed and signal-bearing pairs
+FM_TEST_END 2026-10-08T08:38:45Z tests/fm-contributions.test.sh exit=0 duration_ms=168184 gate_skip=false
+FM_TEST_SUMMARY total=8 failed=1 skipped_gate=0 duration_ms=794509
+FM_TEST_SUMMARY_FAMILY family=backend-dispatch count=3 duration_ms=48915 failed=1
+FM_TEST_SUMMARY_FAMILY family=pr-forge count=3 duration_ms=828297 failed=0
+FM_TEST_SUMMARY_FAMILY family=pure-contract-unit count=1 duration_ms=12913 failed=0
+FM_TEST_SUMMARY_FAMILY family=snapshot-bearings count=1 duration_ms=168184 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-teardown.test.sh duration_ms=295889
+FM_TEST_SLOWEST rank=2 script=tests/fm-pr-merge.test.sh duration_ms=268065
+FM_TEST_SLOWEST rank=3 script=tests/fm-pr-check-security.test.sh duration_ms=264343
+FM_TEST_SLOWEST rank=4 script=tests/fm-contributions.test.sh duration_ms=168184
+FM_TEST_SLOWEST rank=5 script=tests/fm-gh-account.test.sh duration_ms=33211
+FM_TEST_SLOWEST rank=6 script=tests/fm-vault.test.sh duration_ms=12913
+FM_TEST_SLOWEST rank=7 script=tests/fm-teardown-endpoint-safety.test.sh duration_ms=9094
+FM_TEST_SLOWEST rank=8 script=tests/fm-endpoint-rebind.test.sh duration_ms=6610
+fm-test-run: wrote timing artifact: .review-evidence/results.json

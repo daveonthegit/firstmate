@@ -244,6 +244,52 @@ test_released_endpoint_cleans_up_without_touching_the_runtime() {
   pass "fm-teardown: a released Herdr record is retired and its recorded endpoint is never commanded"
 }
 
+test_legacy_released_reused_endpoint_never_probes() {
+  local dir id=legacy-reused state rc
+  for state in released bound; do
+    dir=$(make_case "legacy-reused-$state")
+    printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done' > "$dir/home/data/backlog.md"
+    tasks-axi add "$id" 'legacy endpoint fixture' --kind scout --file "$dir/home/data/backlog.md" >/dev/null
+    tasks-axi start "$id" --file "$dir/home/data/backlog.md" >/dev/null
+    if [ "$state" = released ]; then
+      write_legacy_herdr_meta "$dir" "$id" "endpoint_released=$id"
+    else
+      write_legacy_herdr_meta "$dir" "$id" "endpoint_task_id=$id"
+    fi
+    cat > "$dir/fakebin/herdr" <<'SH'
+#!/usr/bin/env bash
+printf 'herdr %s\n' "$*" >> "$FM_RUNTIME_LOG"
+case "$*" in
+  *'pane get w1:p2'*) printf '{"result":{"pane":{"pane_id":"w1:p2"}}}\n' ;;
+  *'agent get w1:p2'*) printf '{"result":{"agent":{"agent_status":"working"}}}\n' ;;
+  *'pane process-info'*) printf '{"result":{"type":"pane_process_info","process_info":{"pane_id":"w1:p2","shell_pid":42,"foreground_processes":[{"pid":43,"name":"sleep","argv":["sleep","30"]}]}}}\n' ;;
+  *) exit 91 ;;
+esac
+SH
+    chmod +x "$dir/fakebin/herdr"
+    FM_RUNTIME_LOG="$dir/runtime.log" PATH="$dir/fakebin:$PATH" bash -c \
+      '. "$1/bin/fm-backend.sh"; test "$(fm_backend_agent_state herdr lab:w1:p2)" = alive' _ "$ROOT" \
+      || fail 'reused endpoint fixture must classify as live'
+    : > "$dir/runtime.log"
+    rc=0
+    FM_HOME="$dir/home" FM_ROOT_OVERRIDE="$ROOT" FM_RUNTIME_LOG="$dir/runtime.log" PATH="$dir/fakebin:$PATH" \
+      "$TEARDOWN" "$id" --legacy-record --force > "$dir/stdout" 2> "$dir/stderr" || rc=$?
+    if [ "$state" = released ]; then
+      expect_code 0 "$rc" 'released legacy record must ignore a reused live endpoint'
+      assert_absent "$dir/home/state/$id.meta" 'released legacy record was retained'
+      assert_no_grep '^herdr|^tmux' "$dir/runtime.log" 'released legacy record touched runtime endpoint'
+      assert_grep 'endpoint missing' "$dir/stdout" 'released legacy classification must be missing'
+    else
+      [ "$rc" -ne 0 ] || fail 'a bound live legacy worker was treated as missing'
+      assert_present "$dir/home/state/$id.meta" 'live legacy refusal removed metadata'
+      assert_present "$dir/worktree/sentinel" 'live legacy refusal changed worktree'
+      assert_grep "reads 'alive'" "$dir/stderr" 'bound worker must refuse based on live classification'
+      assert_no_grep 'interrupt|exit|close' "$dir/runtime.log" 'live legacy refusal controlled the worker'
+    fi
+  done
+  pass 'legacy released endpoints skip all runtime calls while genuinely bound live workers refuse'
+}
+
 test_control_lock_contention_refuses_before_mutation() {
   local dir id=locked-task lock holder i=0 rc
   dir=$(make_case control-lock)
@@ -1571,6 +1617,7 @@ test_malformed_release_markers_refuse
 test_release_marker_on_a_non_herdr_backend_refuses
 test_released_record_retires_its_presentation_journal
 test_released_endpoint_cleans_up_without_touching_the_runtime
+test_legacy_released_reused_endpoint_never_probes
 test_control_lock_contention_refuses_before_mutation
 test_non_pool_teardown_ignores_task_set_lock
 test_metadata_lock_serializes_destructive_cleanup

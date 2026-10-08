@@ -44,6 +44,76 @@ mutate_record() {
   mv "$1/update.json" "$1/data/$2/contributions.json"
 }
 
+account_forge_home() {
+  local home=$1
+  forge_home "$home"
+  printf 'o selected\n' > "$home/config/gh-accounts"
+  mv "$home/fakebin/gh" "$home/fakebin/forge-gh"
+  cat > "$home/fakebin/gh" <<'SH'
+#!/usr/bin/env bash
+set -eu
+case "$*" in
+  'auth status')
+    printf 'status\n' >> "$FORGE/auth.log"
+    printf 'github.com\n  Logged in to github.com account wrong\n  Logged in to github.com account selected\n' ;;
+  'auth token --user selected')
+    printf 'token:selected\n' >> "$FORGE/auth.log"
+    [ ! -e "$FORGE/auth-failure" ] || { printf 'private-selected-token\n' >&2; exit 1; }
+    printf 'private-selected-token\n' ;;
+  'auth token --user wrong') printf 'private-wrong-token\n' ;;
+  api*|'pr view '*)
+    if [ "${GH_TOKEN:-private-wrong-token}" != private-selected-token ] || [ -n "${GITHUB_TOKEN:-}${GH_ENTERPRISE_TOKEN:-}${GITHUB_ENTERPRISE_TOKEN:-}" ]; then
+      printf 'wrong %s\n' "$*" >> "$FORGE/identity.log"
+      printf 'private repository is not visible\n' >&2
+      exit 1
+    fi
+    printf 'selected %s\n' "$*" >> "$FORGE/identity.log"
+    exec "$(dirname "$0")/forge-gh" "$@" ;;
+  *) exit 1 ;;
+esac
+SH
+  chmod +x "$home/fakebin/gh"
+}
+
+test_account_routed_primary_observation() {
+  local home out
+  home=$(new_home routed-primary)
+  account_forge_home "$home"
+  printf -- '- [ ] filed - Private issue https://github.com/o/r/issues/9 (repo: sample) (kind: ship)\n' >> "$home/data/backlog.md"
+  with_home "$home" "$ROOT/bin/fm-contributions.sh" arm >/dev/null || fail 'could not arm primary contribution check'
+  out=$(GH_TOKEN=private-wrong-token GITHUB_TOKEN=private-wrong-token GH_ENTERPRISE_TOKEN=private-wrong-token \
+    with_home "$home" bash "$home/state/contributions.check.sh" 2>&1) || fail 'primary observation failed'
+  jq -e '.records[0].error == null and .records[0].observation.head != null' "$home/data/delivery/contributions.json" >/dev/null \
+    || fail "private PR observation was unavailable: $out"
+  jq -e '.records[0].error == null and .records[0].observation.state == "open"' "$home/data/filed/contributions.json" >/dev/null \
+    || fail 'private issue observation was unavailable'
+  [ "$(grep -c '^selected ' "$home/forge/identity.log")" = 11 ] || fail 'not every PR and issue read used the configured identity'
+  assert_no_grep '^wrong ' "$home/forge/identity.log" 'observer used globally active account'
+  [ "$(grep -c '^status$' "$home/forge/auth.log")" = 2 ] || fail 'account selection must occur once per observation'
+  [ "$(grep -c '^token:selected$' "$home/forge/auth.log")" = 2 ] || fail 'selected credential must be resolved once per observation'
+  assert_no_grep 'private-selected-token|private-wrong-token' <(printf '%s' "$out") 'primary check leaked a token'
+  pass 'primary observer routes all PR and issue reads through configured account without a shim'
+}
+
+test_observation_account_failures_do_not_fallback() {
+  local home mode out
+  for mode in resolution authentication; do
+    home=$(new_home "account-failure-$mode")
+    account_forge_home "$home"
+    if [ "$mode" = resolution ]; then
+      printf 'o unavailable\n' > "$home/config/gh-accounts"
+    else
+      : > "$home/forge/auth-failure"
+    fi
+    out=$(with_home "$home" "$ROOT/bin/fm-contributions.sh" poll 2>&1) || fail 'account failure should remain observable contribution evidence'
+    assert_contains "$out" 'observation unavailable' 'account failure disappeared from primary output'
+    jq -e '.records[0].error != null' "$home/data/delivery/contributions.json" >/dev/null || fail 'account failure did not persist error'
+    [ ! -e "$home/forge/identity.log" ] || fail 'account failure fell back to forge reads'
+    assert_no_grep 'private-selected-token|private-wrong-token' <(printf '%s' "$out"; jq . "$home/data/delivery/contributions.json") 'account failure leaked a token'
+  done
+  pass 'account resolution and authentication failures persist errors without fallback or token leakage'
+}
+
 test_actor_coverage() {
   local home out
   home=$(new_home actors)
@@ -119,6 +189,7 @@ forge_home() {
 #!/usr/bin/env bash
 set -eu
 case "$*" in
+  'auth status') exit 1 ;;
   'pr view '*headRefOid,reviewDecision*)
     jq -n --arg head "$(cat "$FORGE/head")" '{headRefOid:$head,reviewDecision:"APPROVED"}' ;;
   'pr view '*headRefOid*) cat "$FORGE/head" ;;
@@ -629,6 +700,7 @@ wrap_forge() { # home: log gh calls and apply per-call faults from $FORGE/fault
   cat > "$home/fakebin/gh" <<'SH'
 #!/usr/bin/env bash
 set -eu
+case "$*" in auth*) exec "$(dirname "$0")/gh-fixture" "$@" ;; esac
 printf '%s\n' "$*" >> "$FORGE/calls"
 fault=$(cat "$FORGE/fault" 2>/dev/null || true)
 case "$fault" in latency) sleep "${FORGE_LATENCY:-2}" ;; esac
@@ -1183,7 +1255,7 @@ test_retire_is_idempotent_and_refuses_unknown_pairs() {
 }
 
 failures=0
-for test_name in test_actor_coverage test_stale_verdict test_unchecked_is_not_silence test_newest_check_has_no_verdict test_comment_wake test_review_wake test_inline_wake test_ready_issue_wake test_fresh_issue_requires_maintainer test_missing_lane_remains_missing test_partial_freshness_keeps_measured_rows test_malformed_record_cannot_prove_silence test_issue_timeline_and_exact_ack test_verdict_retains_judged_head test_verdict_actor_values_are_discoverable test_observed_replacement_refreshes_verdict test_unobserved_head_leaves_verdict_unknown test_away_yolo_is_fleet_work test_away_yolo_cross_home_is_fleet_work test_retired_and_unsupported_coverage test_unsupported_forge_is_not_fleet_work test_held_unsupported_forge_is_not_captain_work test_shared_contribution_signal_wakes_once test_watcher_keeps_diagnostics_separate_from_contribution_wakes test_expired_child_unsupported_forge_stays_unmeasured test_watcher_surfaces_new_contribution_once test_home_summary_coverage test_unreadable_pending_is_not_empty test_record_task_identity_matches_dirname_basename test_read_only_views_create_no_state test_budget_refusal_between_calls test_budget_bounded_call_timeout test_genuine_failure_near_deadline_is_unavailable test_shared_url_observed_once test_terminal_contribution_settles test_late_owner_inherits_terminal_observation test_interrupted_multi_owner_poll_settles_every_owner test_done_task_open_pr_still_observed test_reservation_defers_later_url_when_fifteen_seconds_do_not_remain test_three_second_pr_reads_complete_fresh_in_one_cycle test_slow_read_deadline_kill_is_budget_refusal test_unmeasured_url_does_not_starve_the_tail test_budget_is_cut_down_to_the_watcher_check_bound test_arm_plumbs_a_configured_budget_into_the_check_shim test_unavailable_forge_records_error_and_wakes_once_per_episode test_late_owner_keeps_failure_episode_suppressed test_retire_ends_observation_of_a_gone_contribution test_late_owner_of_a_retired_final_contribution_is_not_retired test_retire_is_idempotent_and_refuses_unknown_pairs; do
+for test_name in test_account_routed_primary_observation test_observation_account_failures_do_not_fallback test_actor_coverage test_stale_verdict test_unchecked_is_not_silence test_newest_check_has_no_verdict test_comment_wake test_review_wake test_inline_wake test_ready_issue_wake test_fresh_issue_requires_maintainer test_missing_lane_remains_missing test_partial_freshness_keeps_measured_rows test_malformed_record_cannot_prove_silence test_issue_timeline_and_exact_ack test_verdict_retains_judged_head test_verdict_actor_values_are_discoverable test_observed_replacement_refreshes_verdict test_unobserved_head_leaves_verdict_unknown test_away_yolo_is_fleet_work test_away_yolo_cross_home_is_fleet_work test_retired_and_unsupported_coverage test_unsupported_forge_is_not_fleet_work test_held_unsupported_forge_is_not_captain_work test_shared_contribution_signal_wakes_once test_watcher_keeps_diagnostics_separate_from_contribution_wakes test_expired_child_unsupported_forge_stays_unmeasured test_watcher_surfaces_new_contribution_once test_home_summary_coverage test_unreadable_pending_is_not_empty test_record_task_identity_matches_dirname_basename test_read_only_views_create_no_state test_budget_refusal_between_calls test_budget_bounded_call_timeout test_genuine_failure_near_deadline_is_unavailable test_shared_url_observed_once test_terminal_contribution_settles test_late_owner_inherits_terminal_observation test_interrupted_multi_owner_poll_settles_every_owner test_done_task_open_pr_still_observed test_reservation_defers_later_url_when_fifteen_seconds_do_not_remain test_three_second_pr_reads_complete_fresh_in_one_cycle test_slow_read_deadline_kill_is_budget_refusal test_unmeasured_url_does_not_starve_the_tail test_budget_is_cut_down_to_the_watcher_check_bound test_arm_plumbs_a_configured_budget_into_the_check_shim test_unavailable_forge_records_error_and_wakes_once_per_episode test_late_owner_keeps_failure_episode_suppressed test_retire_ends_observation_of_a_gone_contribution test_late_owner_of_a_retired_final_contribution_is_not_retired test_retire_is_idempotent_and_refuses_unknown_pairs; do
   ( "$test_name" ) || failures=$((failures + 1))
 done
 [ "$failures" -eq 0 ] || fail "$failures contribution regressions"

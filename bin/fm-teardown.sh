@@ -1181,7 +1181,7 @@ BASE_BRANCH=$(grep '^base_branch=' "$META" | cut -d= -f2- || true)
 # passed, immediately before the close marker binds to it, so any refusal
 # leaves the record byte-identical.
 if [ "$TEARDOWN_LEGACY_PENDING" = 1 ]; then
-  if [ "$TEARDOWN_WINDOWLESS" = 1 ]; then
+  if [ "$TEARDOWN_WINDOWLESS" = 1 ] || [ "$ENDPOINT_ACTION" = forbidden ]; then
     TEARDOWN_LEGACY_ENDPOINT=missing
   else
     TEARDOWN_LEGACY_ENDPOINT=$(fm_backend_agent_state "$BACKEND" "$T")

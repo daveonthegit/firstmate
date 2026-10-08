@@ -220,8 +220,14 @@ forge() {
   # The budget, not the forge, refused this read.
   [ "$remaining" -gt 0 ] || { BUDGET_EXHAUSTED=1; : > "$TMP/budget-exhausted"; return 1; }
   [ "$remaining" -le 5 ] || remaining=5
-  fm_run_timed "$remaining" env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 \
-    gh "$@" 2> "$forge_err" || rc=$?
+  (
+    if [ -n "${observation_token:-}" ]; then
+      export GH_TOKEN="$observation_token"
+      unset GITHUB_TOKEN GH_ENTERPRISE_TOKEN GITHUB_ENTERPRISE_TOKEN
+    fi
+    fm_run_timed "$remaining" env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 \
+      "$@"
+  ) 2> "$forge_err" || rc=$?
   # A kill at the read bound or the deadline is budget refusal too; only the
   # forge's own nonzero exit is unavailable evidence.
   if [ "$rc" -eq 124 ]; then
@@ -245,31 +251,37 @@ wait_forges() { # background forge pids from one independent read wave
 }
 
 observe() { # canonical GitHub URL -> normalized JSON
-  local url=$1 part number kind endpoint head after label
+  local url=$1 part number kind endpoint head after label observation_token='' account_rc=0
   case "$url" in https://github.com/*) ;; *) return 1 ;; esac
   part=${url#https://github.com/}; number=${part##*/}; part=${part%/*}; kind=${part##*/}; part=${part%/*}
   case "$kind" in pull) endpoint="repos/$part/pulls/$number" ;; issues) endpoint="repos/$part/issues/$number" ;; *) return 1 ;; esac
   rm -f -- "$TMP/budget-exhausted" "$TMP/forge-unavailable"
   BUDGET_EXHAUSTED=0
-  forge api "$endpoint" > "$TMP/core.json" || return 1
+  observation_token=$(forge "$SCRIPT_DIR/fm-gh-account.sh" token --repo "$part") || account_rc=$?
+  case "$account_rc" in
+    0|3) rm -f -- "$TMP/forge-unavailable" ;;
+    124) BUDGET_EXHAUSTED=1; return 1 ;;
+    *) return 1 ;;
+  esac
+  forge gh api "$endpoint" > "$TMP/core.json" || return 1
   jq -e '(.state == "open" or .state == "closed") and (.user.login | type == "string")' "$TMP/core.json" >/dev/null || return 1
   if [ "$kind" = pull ]; then
     head=$(jq -er '.head.sha | select(test("^[a-fA-F0-9]{40}$"))' "$TMP/core.json") || return 1
-    FORGE_ERR="$TMP/comments.err" forge api "repos/$part/issues/$number/comments?per_page=100" --paginate --slurp > "$TMP/comments.json" &
+    FORGE_ERR="$TMP/comments.err" forge gh api "repos/$part/issues/$number/comments?per_page=100" --paginate --slurp > "$TMP/comments.json" &
     local comments_pid=$!
-    FORGE_ERR="$TMP/reviews.err" forge api "$endpoint/reviews?per_page=100" --paginate --slurp > "$TMP/reviews.json" &
+    FORGE_ERR="$TMP/reviews.err" forge gh api "$endpoint/reviews?per_page=100" --paginate --slurp > "$TMP/reviews.json" &
     local reviews_pid=$!
-    FORGE_ERR="$TMP/inline.err" forge api "$endpoint/comments?per_page=100" --paginate --slurp > "$TMP/inline.json" &
+    FORGE_ERR="$TMP/inline.err" forge gh api "$endpoint/comments?per_page=100" --paginate --slurp > "$TMP/inline.json" &
     local inline_pid=$!
-    FORGE_ERR="$TMP/checks.err" forge api "repos/$part/commits/$head/check-runs?filter=all&per_page=100" --paginate --slurp > "$TMP/checks.json" &
+    FORGE_ERR="$TMP/checks.err" forge gh api "repos/$part/commits/$head/check-runs?filter=all&per_page=100" --paginate --slurp > "$TMP/checks.json" &
     local checks_pid=$!
-    FORGE_ERR="$TMP/statuses.err" forge api "repos/$part/commits/$head/statuses?per_page=100" --paginate --slurp > "$TMP/statuses.json" &
+    FORGE_ERR="$TMP/statuses.err" forge gh api "repos/$part/commits/$head/statuses?per_page=100" --paginate --slurp > "$TMP/statuses.json" &
     local statuses_pid=$!
-    FORGE_ERR="$TMP/repo.err" forge api "repos/$part" > "$TMP/repo.json" &
+    FORGE_ERR="$TMP/repo.err" forge gh api "repos/$part" > "$TMP/repo.json" &
     local repo_pid=$!
     wait_forges "$comments_pid" "$reviews_pid" "$inline_pid" "$checks_pid" "$statuses_pid" "$repo_pid" || return 1
     jq -e 'type == "array" and all(.[]; type == "array")' "$TMP/comments.json" >/dev/null || return 1
-    forge pr view "$url" --json headRefOid,reviewDecision > "$TMP/after.json" || return 1
+    forge gh pr view "$url" --json headRefOid,reviewDecision > "$TMP/after.json" || return 1
     after=$(jq -er .headRefOid "$TMP/after.json")
     [ "$head" = "$after" ] || { printf 'head changed during observation\n' > "$TMP/forge.err"; return 1; }
     jq -n --slurpfile core "$TMP/core.json" --slurpfile comments "$TMP/comments.json" \
@@ -293,9 +305,9 @@ observe() { # canonical GitHub URL -> normalized JSON
                  author:.user.login,body:(.body // "" | .[:500])}))}' > "$TMP/observation.json" || return 1
   else
     label=${FM_CONTRIBUTIONS_READY_LABEL:-ready-for-pr}
-    FORGE_ERR="$TMP/comments.err" forge api "repos/$part/issues/$number/comments?per_page=100" --paginate --slurp > "$TMP/comments.json" &
+    FORGE_ERR="$TMP/comments.err" forge gh api "repos/$part/issues/$number/comments?per_page=100" --paginate --slurp > "$TMP/comments.json" &
     local comments_pid=$!
-    FORGE_ERR="$TMP/issue-events.err" forge api "repos/$part/issues/$number/events?per_page=100" --paginate --slurp > "$TMP/issue-events.json" &
+    FORGE_ERR="$TMP/issue-events.err" forge gh api "repos/$part/issues/$number/events?per_page=100" --paginate --slurp > "$TMP/issue-events.json" &
     local events_pid=$!
     wait_forges "$comments_pid" "$events_pid" || return 1
     jq -e 'type == "array" and all(.[]; type == "array")' "$TMP/comments.json" >/dev/null || return 1

@@ -1,0 +1,112 @@
+{
+  "families": [
+    {
+      "count": 3,
+      "duration_ms": 48915,
+      "failed": 1,
+      "name": "backend-dispatch"
+    },
+    {
+      "count": 3,
+      "duration_ms": 828297,
+      "failed": 0,
+      "name": "pr-forge"
+    },
+    {
+      "count": 1,
+      "duration_ms": 12913,
+      "failed": 0,
+      "name": "pure-contract-unit"
+    },
+    {
+      "count": 1,
+      "duration_ms": 168184,
+      "failed": 0,
+      "name": "snapshot-bearings"
+    }
+  ],
+  "finished_at": "2026-10-08T08:38:45Z",
+  "run_id": "fm-test-run-1791447930554-29241",
+  "scripts": [
+    {
+      "duration_ms": 268065,
+      "exit": 0,
+      "expected_gate_skip": "none",
+      "family": "pr-forge",
+      "gate_skip": false,
+      "gate_skip_reason": "",
+      "path": "tests/fm-pr-merge.test.sh"
+    },
+    {
+      "duration_ms": 12913,
+      "exit": 0,
+      "expected_gate_skip": "none",
+      "family": "pure-contract-unit",
+      "gate_skip": false,
+      "gate_skip_reason": "",
+      "path": "tests/fm-vault.test.sh"
+    },
+    {
+      "duration_ms": 264343,
+      "exit": 0,
+      "expected_gate_skip": "none",
+      "family": "pr-forge",
+      "gate_skip": false,
+      "gate_skip_reason": "",
+      "path": "tests/fm-pr-check-security.test.sh"
+    },
+    {
+      "duration_ms": 295889,
+      "exit": 0,
+      "expected_gate_skip": "none",
+      "family": "pr-forge",
+      "gate_skip": false,
+      "gate_skip_reason": "",
+      "path": "tests/fm-teardown.test.sh"
+    },
+    {
+      "duration_ms": 9094,
+      "exit": 1,
+      "expected_gate_skip": "none",
+      "family": "backend-dispatch",
+      "gate_skip": false,
+      "gate_skip_reason": "",
+      "path": "tests/fm-teardown-endpoint-safety.test.sh"
+    },
+    {
+      "duration_ms": 6610,
+      "exit": 0,
+      "expected_gate_skip": "none",
+      "family": "backend-dispatch",
+      "gate_skip": false,
+      "gate_skip_reason": "",
+      "path": "tests/fm-endpoint-rebind.test.sh"
+    },
+    {
+      "duration_ms": 33211,
+      "exit": 0,
+      "expected_gate_skip": "none",
+      "family": "backend-dispatch",
+      "gate_skip": false,
+      "gate_skip_reason": "",
+      "path": "tests/fm-gh-account.test.sh"
+    },
+    {
+      "duration_ms": 168184,
+      "exit": 0,
+      "expected_gate_skip": "optional-binary",
+      "family": "snapshot-bearings",
+      "gate_skip": false,
+      "gate_skip_reason": "",
+      "path": "tests/fm-contributions.test.sh"
+    }
+  ],
+  "selection": "scripts;jobs=4",
+  "started_at": "2026-10-08T08:25:30Z",
+  "summary": {
+    "duration_ms": 794509,
+    "failed": 1,
+    "skipped_gate": 0,
+    "total": 8
+  }
+}
