@@ -30,6 +30,10 @@ The [compliance workflow](.github/workflows/no-mistakes-required.yml) owns autho
    Follow the installed no-mistakes version's SKILL.md and live `axi` help for gate mechanics.
 7. Once the pipeline passes, it pushes the branch to your fork and opens the PR against the parent repo for you.
 
+If compliance fails after a pipeline CI repair because the attestation still names the pre-repair head, stop for an operator-approved coordinated update of the shared no-mistakes CLI and daemon before continuing through supported pipeline controls.
+The v1.46.0 producer floor guarantees structured attestation format, not CI-repair head rebinding in every older producer.
+Do not hand-edit the attestation, relax the verifier, add an author exemption, or start a second run to bypass the failure; an active step worker must return the blocker to its outer executor without upgrading or restarting shared tools.
+
 See the [no-mistakes quick start](https://kunchenguid.github.io/no-mistakes/start-here/quick-start/) for the full first-run walkthrough.
 
 ## Maintaining required checks
