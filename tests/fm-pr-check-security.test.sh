@@ -695,7 +695,7 @@ test_draft_pull_request_is_not_armed() {
     > "$dir/stdout" 2> "$dir/stderr" || fail "an unreadable draft state blocked arming"
   [ -f "$dir/home/state/task-a.check.sh" ] || fail "an unreadable draft state was not armed"
   FM_TEST_REPO_ACCOUNT=1 FM_TEST_GH_LOG="$dir/gh.log" PATH="$dir/fakebin:$BASE_PATH" \
-    fm_pr_github_read_record o r 9 || fail "record read did not select repository account"
+    fm_pr_github_read_record github.com o r 9 || fail "record read did not select repository account"
   [ "$FM_PR_RECORD_STATE" = MERGED ] || fail "authenticated record state missing"
   pass "arming refuses drafts and reads records with the repository account without a shim"
 }
