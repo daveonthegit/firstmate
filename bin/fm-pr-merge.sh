@@ -746,9 +746,10 @@ FIELDS
     if ! status_json=$(tea api --login "$FORGEJO_LOGIN" --repo "$PR_OWNER/$PR_REPO" \
         "/repos/{owner}/{repo}/commits/$live_head/status?limit=50&page=$page" 2>/dev/null) \
       || ! fields=$(printf '%s' "$status_json" | jq -r '
-          if type == "object" and ((.statuses // []) | type) == "array" then
-            "count=" + ((.statuses // []) | length | tostring),
-            "state=" + ((.state // "") | tostring)
+          if type == "object" and (.statuses | type) == "array"
+              and (.state | IN("", "success", "pending", "failure", "error", "warning")) then
+            "count=" + (.statuses | length | tostring),
+            "state=" + .state
           else
             error("status payload is not a combined status")
           end' 2>/dev/null); then
@@ -764,11 +765,14 @@ FIELDS
     done <<FIELDS
 $fields
 FIELDS
-    [ "$page_count" != 0 ] || break
+    if [ "$page_count" = 0 ] && [ -z "$page_state" ]; then
+      break
+    fi
     if [ "$page_state" != success ]; then
       ci_state=${page_state:-unreadable}
       break
     fi
+    [ "$page_count" != 0 ] || break
     ci_state=success
     page=$((page + 1))
     # A server that ignores the page parameter would repeat a non-empty page

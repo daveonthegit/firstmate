@@ -4708,8 +4708,9 @@ test_archived_answered_hold_still_satisfies_the_gate() {
 # resolve it the same way, or an answered call retention moved there reads as
 # absent and teardown is refused.
 test_archived_answer_in_a_user_configured_archive_satisfies_the_gate() {
-  local home axi_home archive id
-  home=$(make_home archived-answer-userconfig)
+  local home axi_home archive id scope=${1:-user} setting=${2:-'"data/relocated-done-archive.md"'}
+  local decoded=${3:-data/relocated-done-archive.md} name=${4:-default}
+  home=$(make_home "archived-answer-$scope-$name")
   axi_home="$home/axi-home"
   mkdir -p "$axi_home/.tasks-axi"
   # Root config sets no archive, so the location comes only from the user config.
@@ -4720,11 +4721,12 @@ backend = "markdown"
 path = "data/backlog.md"
 done_keep = 10
 EOF
-  cat > "$axi_home/.tasks-axi/config.toml" <<'EOF'
-[markdown]
-archive = "data/relocated-done-archive.md"
-EOF
-  archive="$home/data/relocated-done-archive.md"
+  if [ "$scope" = user ]; then
+    printf "[markdown]\narchive = '%s'\n" "$decoded" > "$axi_home/.tasks-axi/config.toml"
+  else
+    printf "archive = '%s'\n" "$decoded" >> "$home/.tasks.toml"
+  fi
+  archive="$home/$decoded"
   id=sample-userconfig-review
   mkdir -p "$home/data/$id"
   HOME="$axi_home" tasks_in "$home" add "$id" "Investigate the user-config sample" --kind scout --repo sample --start >/dev/null \
@@ -4752,6 +4754,12 @@ EOF
     fail "the archived call is still shown from the live backlog, so the fixture reproduces nothing"
   fi
 
+  if [ "$scope" = user ]; then
+    printf '[markdown]\narchive = %s\n' "$setting" > "$axi_home/.tasks-axi/config.toml"
+  else
+    printf 'backend = "markdown"\n[markdown]\npath = "data/backlog.md"\ndone_keep = 0\narchive = %s\n' \
+      "$setting" > "$home/.tasks.toml"
+  fi
   HOME="$axi_home" run_captain "$home" verify "$id" >/dev/null 2> "$home/userconfig-verify.err" \
     || fail "verify refused an answered call archived to the user-configured location: $(cat "$home/userconfig-verify.err")"
   HOME="$axi_home" run_captain "$home" complete "$id" sample-userconfig-call >/dev/null 2> "$home/userconfig-complete.err" \
@@ -4760,6 +4768,22 @@ EOF
     || fail "teardown refused a scout whose answered call was archived to the user-configured location: $(cat "$home/userconfig-teardown.err")"
   pass "an answered captain call archived to a user-configured location still satisfies the completion gate"
 }
+
+test_archive_settings_decode_toml_strings() {
+  test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
+    repo '"data/done # archive.md" # comment' 'data/done # archive.md' basic
+  test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
+    user "'data/done # archive.md' # comment" 'data/done # archive.md' literal
+  test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
+    repo '"data/done \u0023 \"archive\".md"' 'data/done # "archive".md' escaped
+  test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
+    user '"""data/done # archive.md"""' 'data/done # archive.md' multiline
+}
+
+if [ -n "${FM_TEST_ONLY:-}" ]; then
+  "$FM_TEST_ONLY"
+  exit $?
+fi
 
 test_hold_reason_round_trips_awkward_characters
 test_hold_origins_precede_backend_holds
@@ -4824,3 +4848,4 @@ test_captain_hold_mutations_address_the_beads_backend
 test_hold_creates_a_captain_row_when_beads_requires_due_without_custom_type
 test_archived_answered_hold_still_satisfies_the_gate
 test_archived_answer_in_a_user_configured_archive_satisfies_the_gate
+test_archive_settings_decode_toml_strings

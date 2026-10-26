@@ -2387,7 +2387,41 @@ test_forgejo_combined_status_reads_every_page() {
   expect_code 0 "$rc" "forgejo-status-page2-green: every green page should merge"
   assert_grep 'page=2' "$case_dir/tea.log" \
     "forgejo-status-page2-green: the second status page was never read"
-  pass "fm-pr-merge reads every Forgejo combined-status page before merging"
+  local payload page index=0 expected
+  while IFS= read -r payload; do
+    index=$((index + 1))
+    for page in 1 2; do
+      case_dir=$(make_forgejo_case "forgejo-status-invalid-$index-$page")
+      if [ "$page" = 1 ]; then
+        printf '%s\n' "$payload" > "$case_dir/tea-status.json"
+      else
+        printf '%s\n' "$payload" > "$case_dir/tea-status-page2.json"
+      fi
+      rc=0
+      run_pr_merge "$case_dir" task-x1 "$FJ_URL" \
+        > "$case_dir/stdout" 2> "$case_dir/stderr" || rc=$?
+      expect_code 1 "$rc" "invalid combined status $index on page $page must refuse"
+      expected=unreadable
+      case "$payload" in *'"failure"'*) expected=failure ;; esac
+      assert_grep "the combined commit status is \"$expected\", not success" "$case_dir/stderr" \
+        "invalid combined status $index on page $page did not report the refusal"
+      [ -z "$(tea_merge_line "$case_dir/tea.log")" ] \
+        || fail "invalid combined status $index on page $page reached the merge"
+    done
+  done <<'JSON'
+{"message":"Internal Server Error"}
+{"state":"success"}
+{"state":"success","statuses":null}
+{"state":"success","statuses":{}}
+{"statuses":[]}
+{"state":null,"statuses":[]}
+{"state":true,"statuses":[]}
+{"state":0,"statuses":[]}
+{"state":"unexpected","statuses":[]}
+{"state":"success\ncount=0\nstate=success","statuses":[{}]}
+{"state":"failure","statuses":[]}
+JSON
+  pass "fm-pr-merge reads and validates every Forgejo combined-status page before merging"
 }
 
 test_forgejo_stale_recorded_head_is_reported() {
@@ -2921,6 +2955,11 @@ test_secondmate_without_parent_binding_is_loud() {
     "unbound-secondmate: a secondmate home fell back to the main-home record"
   pass "a secondmate home that cannot report upward says so instead of merging in silence"
 }
+
+if [ -n "${FM_TEST_ONLY:-}" ]; then
+  "$FM_TEST_ONLY"
+  exit $?
+fi
 
 test_github_zero_exit_queue_required_refuses_with_exact_retry
 test_github_closed_unqueued_outcome_omits_retry_flags
