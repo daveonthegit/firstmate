@@ -1,0 +1,765 @@
++ set -u
+++ dirname tests/fm-captain-hold-lifecycle.test.sh
++ . tests/lib.sh
+++ '[' -n '' ']'
+++ FM_TEST_LIB_SOURCED=1
+++ umask 022
++++ dirname tests/lib.sh
+++ . tests/git-config-helpers.sh
++++ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
++++ GIT_CONFIG_GLOBAL=/dev/null
++++ GIT_CONFIG_NOSYSTEM=1
++++ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+++ export FM_GATE_REFUSE_BYPASS=1
+++ FM_GATE_REFUSE_BYPASS=1
+++ export FM_TEST_SEAM=1
+++ FM_TEST_SEAM=1
+++ unset FM_TASK_ID
+++ unset TASKS_AXI_FILE TASKS_AXI_BACKEND
+++ unset REX_SESSION REX_BLOCK
+++++ dirname tests/lib.sh
++++ cd tests/..
++++ pwd
+++ ROOT=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F
++++ fm_test_tmpdir
++++ local base=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp physical
++++ base=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
++++ '[' -n /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp ']'
++++ case "$base" in
+++++ CDPATH=
+++++ cd -- /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
+++++ pwd -P
++++ physical=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
++++ base=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
++++ '[' -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.git ']'
++++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
+++ FM_TEST_TMPDIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
+++ FM_TEST_CLEANUP_DIRS=()
++++ mktemp /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-cleanup.12132.XXXXXX
+++ FM_TEST_CLEANUP_REGISTRY=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-cleanup.12132.7OPPOg
++++ fm_test_pid_identity 12132
++++ local pid=12132
++++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
++++ bash -c '. "$1"; fm_pid_identity "$2"' _ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-wake-lib.sh 12132
+++ FM_TEST_OWNER_IDENTITY='Mon Oct 26 16:39:06 2026     bash -x tests/fm-captain-hold-lifecycle.test.sh'
++++ mktemp /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-procevent.12132.XXXXXX
+++ FM_TEST_PROCEVENT_REGISTRY=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-procevent.12132.ExPfDo
++++ mktemp /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-watcher.12132.XXXXXX
+++ FM_TEST_WATCHER_REGISTRY=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-watcher.12132.rkWL96
+++ FM_TEST_STUB_MAX_BLOCK_SECONDS=120
+++ export FM_TEST_STUB_MAX_BLOCK_SECONDS
+++ FM_TEST_SUITE_PID=12132
+++ export FM_TEST_SUITE_PID
+++ trap fm_test_cleanup EXIT
+++ trap 'fm_test_cleanup; exit 130' INT
+++ trap 'fm_test_cleanup; exit 143' TERM
+++ trap 'fm_test_cleanup; exit 129' HUP
+++ trap 'fm_test_cleanup; exit 131' QUIT
+++ FM_TEST_ORPHAN_MAX_AGE_SECONDS=3600
+++ '[' 0 '!=' 1 ']'
+++ fm_test_reap_orphans
+++ local marker dir mtime now owner_pid owner_identity current_identity
++++ date +%s
+++ now=1793032746
+++ for marker in "$FM_TEST_TMPDIR"/fm-*/.fm-test-fixture
+++ '[' -e '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-*/.fm-test-fixture' ']'
+++ continue
++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-timeout-lib.sh
+++ set -u
++ TEARDOWN=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-teardown.sh
++ BEARINGS=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-bearings-snapshot.sh
+++ fm_test_tmproot fm-captain-hold
+++ local prefix=fm-captain-hold root tmp_base
++++ fm_test_tmpdir
++++ local base=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp physical
++++ base=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
++++ '[' -n /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp ']'
++++ case "$base" in
+++++ CDPATH=
+++++ cd -- /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
+++++ pwd -P
++++ physical=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
++++ base=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
++++ '[' -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.git ']'
++++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
+++ tmp_base=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
+++ tmp_base=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp
++++ mktemp -d /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.XXXXXX
+++ root=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
++++ cd -P -- /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
++++ pwd -P
+++ root=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
+++ printf '%s\n%s\n' 12132 'Mon Oct 26 16:39:06 2026     bash -x tests/fm-captain-hold-lifecycle.test.sh'
+++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
+++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
++ TMP_ROOT=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
+++ command -v tasks-axi
++ TASKS_AXI_BIN=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ command -v jq
++ command -v tasks-axi
++ TASKS_AXI_BEADS_OK=0
++ bd --version
++ '[' -n test_archive_settings_preserve_quoted_hashes ']'
++ test_archive_settings_preserve_quoted_hashes
++ local scope
++ for scope in repo user
++ test_archived_answer_in_a_user_configured_archive_satisfies_the_gate repo '"data/done # archive.md" # comment' 'data/done # archive.md' basic
++ local home axi_home archive id scope=repo 'setting="data/done # archive.md" # comment'
++ local 'decoded=data/done # archive.md' name=basic python
+++ make_home archived-answer-repo-basic
+++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic fakebin
+++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/state /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/config /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/projects
+++ fm_test_tasks_toml /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/.tasks.toml
+++ cat
+++ cat
++++ fm_fakebin /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++++ local dir=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin
++++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin
++++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin
+++ fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin
+++ fm_fake_exit0 /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin tmux treehouse no-mistakes gh gh-axi
+++ local fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/tmux
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/gh-axi
+++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ axi_home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home/.tasks-axi
++ cat
++ '[' repo = user ']'
++ printf 'archive = %s\n' '"data/done # archive.md" # comment'
++ archive='/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data/done # archive.md'
++ id=sample-userconfig-review
++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data/sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic add sample-userconfig-review 'Investigate the user-config sample' --kind scout --repo sample --start
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ tasks-axi add sample-userconfig-review 'Investigate the user-config sample' --kind scout --repo sample --start
++ write_origin_meta /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic sample-userconfig-review
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic id=sample-userconfig-review kind=scout
++ fm_write_meta /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/state/sample-userconfig-review.meta window=firstmate:fm-sample-userconfig-review worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/projects/missing-sample-userconfig-review project=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/projects/sample harness=codex kind=scout mode=scout spawn_gen=fixture-sample-userconfig-review
++ local file=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/state/sample-userconfig-review.meta kv
++ shift
++ :
++ for kv in "$@"
++ printf '%s\n' window=firstmate:fm-sample-userconfig-review
++ for kv in "$@"
++ printf '%s\n' worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/projects/missing-sample-userconfig-review
++ for kv in "$@"
++ printf '%s\n' project=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/projects/sample
++ for kv in "$@"
++ printf '%s\n' harness=codex
++ for kv in "$@"
++ printf '%s\n' kind=scout
++ for kv in "$@"
++ printf '%s\n' mode=scout
++ for kv in "$@"
++ printf '%s\n' spawn_gen=fixture-sample-userconfig-review
++ printf 'done: report complete\n'
++ printf '# User-config sample review\n\nOne captain choice remains.\n'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic hold sample-userconfig-call --title 'Choose the relocated option' --reason 'captain relocated choice pending' --repo sample --origin sample-userconfig-review
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh hold sample-userconfig-call --title 'Choose the relocated option' --reason 'captain relocated choice pending' --repo sample --origin sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic complete sample-userconfig-review sample-userconfig-call
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete sample-userconfig-review sample-userconfig-call
++ printf 'Captain chose the relocated option.\n'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic answer sample-userconfig-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/userconfig-decision.txt
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh answer sample-userconfig-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/userconfig-decision.txt
++ perl -0pi -e 's/done_keep = 10/done_keep = 0/' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/.tasks.toml
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic add sample-userconfig-trigger 'Trigger Done retention' --kind ship --repo sample
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ tasks-axi add sample-userconfig-trigger 'Trigger Done retention' --kind ship --repo sample
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic done sample-userconfig-trigger
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic
++ tasks-axi done sample-userconfig-trigger
++ assert_present '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data/done # archive.md' 'Done retention did not write the user-configured archive'
++ '[' -e '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data/done # archive.md' ']'
++ assert_grep sample-userconfig-call '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data/done # archive.md' 'Done retention did not archive the answered call to the user-configured location'
++ grep -F -- sample-userconfig-call '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/data/done # archive.md'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic show sample-userconfig-call
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/python3
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/python3.14
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/python3.13
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/python3.12
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/fakebin/python3.11
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic verify sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic complete sample-userconfig-review sample-userconfig-call
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic/axi-home
++ run_teardown /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-basic sample-userconfig-review
++ pass 'an answered captain call archived to a user-configured location still satisfies the completion gate'
++ printf 'ok - %s\n' 'an answered captain call archived to a user-configured location still satisfies the completion gate'
+ok - an answered captain call archived to a user-configured location still satisfies the completion gate
++ test_archived_answer_in_a_user_configured_archive_satisfies_the_gate repo ''\''data/done # archive.md'\'' # comment' 'data/done # archive.md' literal
++ local home axi_home archive id scope=repo 'setting='\''data/done # archive.md'\'' # comment'
++ local 'decoded=data/done # archive.md' name=literal python
+++ make_home archived-answer-repo-literal
+++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal fakebin
+++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/state /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/config /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/projects
+++ fm_test_tasks_toml /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/.tasks.toml
+++ cat
+++ cat
++++ fm_fakebin /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++++ local dir=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin
++++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin
++++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin
+++ fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin
+++ fm_fake_exit0 /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin tmux treehouse no-mistakes gh gh-axi
+++ local fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/tmux
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/gh-axi
+++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ axi_home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home/.tasks-axi
++ cat
++ '[' repo = user ']'
++ printf 'archive = %s\n' ''\''data/done # archive.md'\'' # comment'
++ archive='/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data/done # archive.md'
++ id=sample-userconfig-review
++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data/sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal add sample-userconfig-review 'Investigate the user-config sample' --kind scout --repo sample --start
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ tasks-axi add sample-userconfig-review 'Investigate the user-config sample' --kind scout --repo sample --start
++ write_origin_meta /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal sample-userconfig-review
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal id=sample-userconfig-review kind=scout
++ fm_write_meta /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/state/sample-userconfig-review.meta window=firstmate:fm-sample-userconfig-review worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/projects/missing-sample-userconfig-review project=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/projects/sample harness=codex kind=scout mode=scout spawn_gen=fixture-sample-userconfig-review
++ local file=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/state/sample-userconfig-review.meta kv
++ shift
++ :
++ for kv in "$@"
++ printf '%s\n' window=firstmate:fm-sample-userconfig-review
++ for kv in "$@"
++ printf '%s\n' worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/projects/missing-sample-userconfig-review
++ for kv in "$@"
++ printf '%s\n' project=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/projects/sample
++ for kv in "$@"
++ printf '%s\n' harness=codex
++ for kv in "$@"
++ printf '%s\n' kind=scout
++ for kv in "$@"
++ printf '%s\n' mode=scout
++ for kv in "$@"
++ printf '%s\n' spawn_gen=fixture-sample-userconfig-review
++ printf 'done: report complete\n'
++ printf '# User-config sample review\n\nOne captain choice remains.\n'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal hold sample-userconfig-call --title 'Choose the relocated option' --reason 'captain relocated choice pending' --repo sample --origin sample-userconfig-review
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh hold sample-userconfig-call --title 'Choose the relocated option' --reason 'captain relocated choice pending' --repo sample --origin sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal complete sample-userconfig-review sample-userconfig-call
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete sample-userconfig-review sample-userconfig-call
++ printf 'Captain chose the relocated option.\n'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal answer sample-userconfig-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/userconfig-decision.txt
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh answer sample-userconfig-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/userconfig-decision.txt
++ perl -0pi -e 's/done_keep = 10/done_keep = 0/' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/.tasks.toml
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal add sample-userconfig-trigger 'Trigger Done retention' --kind ship --repo sample
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ tasks-axi add sample-userconfig-trigger 'Trigger Done retention' --kind ship --repo sample
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal done sample-userconfig-trigger
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal
++ tasks-axi done sample-userconfig-trigger
++ assert_present '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data/done # archive.md' 'Done retention did not write the user-configured archive'
++ '[' -e '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data/done # archive.md' ']'
++ assert_grep sample-userconfig-call '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data/done # archive.md' 'Done retention did not archive the answered call to the user-configured location'
++ grep -F -- sample-userconfig-call '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/data/done # archive.md'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal show sample-userconfig-call
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/python3
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/python3.14
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/python3.13
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/python3.12
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/fakebin/python3.11
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal verify sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal complete sample-userconfig-review sample-userconfig-call
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal/axi-home
++ run_teardown /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-repo-literal sample-userconfig-review
++ pass 'an answered captain call archived to a user-configured location still satisfies the completion gate'
++ printf 'ok - %s\n' 'an answered captain call archived to a user-configured location still satisfies the completion gate'
+ok - an answered captain call archived to a user-configured location still satisfies the completion gate
++ for scope in repo user
++ test_archived_answer_in_a_user_configured_archive_satisfies_the_gate user '"data/done # archive.md" # comment' 'data/done # archive.md' basic
++ local home axi_home archive id scope=user 'setting="data/done # archive.md" # comment'
++ local 'decoded=data/done # archive.md' name=basic python
+++ make_home archived-answer-user-basic
+++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic fakebin
+++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/state /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/config /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/projects
+++ fm_test_tasks_toml /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/.tasks.toml
+++ cat
+++ cat
++++ fm_fakebin /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++++ local dir=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin
++++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin
++++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin
+++ fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin
+++ fm_fake_exit0 /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin tmux treehouse no-mistakes gh gh-axi
+++ local fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/tmux
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/gh-axi
+++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ axi_home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home/.tasks-axi
++ cat
++ '[' user = user ']'
++ printf '[markdown]\narchive = %s\n' '"data/done # archive.md" # comment'
++ archive='/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data/done # archive.md'
++ id=sample-userconfig-review
++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data/sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic add sample-userconfig-review 'Investigate the user-config sample' --kind scout --repo sample --start
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ tasks-axi add sample-userconfig-review 'Investigate the user-config sample' --kind scout --repo sample --start
++ write_origin_meta /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic sample-userconfig-review
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic id=sample-userconfig-review kind=scout
++ fm_write_meta /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/state/sample-userconfig-review.meta window=firstmate:fm-sample-userconfig-review worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/projects/missing-sample-userconfig-review project=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/projects/sample harness=codex kind=scout mode=scout spawn_gen=fixture-sample-userconfig-review
++ local file=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/state/sample-userconfig-review.meta kv
++ shift
++ :
++ for kv in "$@"
++ printf '%s\n' window=firstmate:fm-sample-userconfig-review
++ for kv in "$@"
++ printf '%s\n' worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/projects/missing-sample-userconfig-review
++ for kv in "$@"
++ printf '%s\n' project=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/projects/sample
++ for kv in "$@"
++ printf '%s\n' harness=codex
++ for kv in "$@"
++ printf '%s\n' kind=scout
++ for kv in "$@"
++ printf '%s\n' mode=scout
++ for kv in "$@"
++ printf '%s\n' spawn_gen=fixture-sample-userconfig-review
++ printf 'done: report complete\n'
++ printf '# User-config sample review\n\nOne captain choice remains.\n'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic hold sample-userconfig-call --title 'Choose the relocated option' --reason 'captain relocated choice pending' --repo sample --origin sample-userconfig-review
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh hold sample-userconfig-call --title 'Choose the relocated option' --reason 'captain relocated choice pending' --repo sample --origin sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic complete sample-userconfig-review sample-userconfig-call
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete sample-userconfig-review sample-userconfig-call
++ printf 'Captain chose the relocated option.\n'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic answer sample-userconfig-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/userconfig-decision.txt
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh answer sample-userconfig-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/userconfig-decision.txt
++ perl -0pi -e 's/done_keep = 10/done_keep = 0/' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/.tasks.toml
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic add sample-userconfig-trigger 'Trigger Done retention' --kind ship --repo sample
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ tasks-axi add sample-userconfig-trigger 'Trigger Done retention' --kind ship --repo sample
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic done sample-userconfig-trigger
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic
++ tasks-axi done sample-userconfig-trigger
++ assert_present '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data/done # archive.md' 'Done retention did not write the user-configured archive'
++ '[' -e '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data/done # archive.md' ']'
++ assert_grep sample-userconfig-call '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data/done # archive.md' 'Done retention did not archive the answered call to the user-configured location'
++ grep -F -- sample-userconfig-call '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/data/done # archive.md'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic show sample-userconfig-call
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/python3
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/python3.14
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/python3.13
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/python3.12
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/fakebin/python3.11
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic verify sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic complete sample-userconfig-review sample-userconfig-call
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic/axi-home
++ run_teardown /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-basic sample-userconfig-review
++ pass 'an answered captain call archived to a user-configured location still satisfies the completion gate'
++ printf 'ok - %s\n' 'an answered captain call archived to a user-configured location still satisfies the completion gate'
+ok - an answered captain call archived to a user-configured location still satisfies the completion gate
++ test_archived_answer_in_a_user_configured_archive_satisfies_the_gate user ''\''data/done # archive.md'\'' # comment' 'data/done # archive.md' literal
++ local home axi_home archive id scope=user 'setting='\''data/done # archive.md'\'' # comment'
++ local 'decoded=data/done # archive.md' name=literal python
+++ make_home archived-answer-user-literal
+++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal fakebin
+++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/state /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/config /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/projects
+++ fm_test_tasks_toml /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/.tasks.toml
+++ cat
+++ cat
++++ fm_fakebin /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++++ local dir=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin
++++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin
++++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin
+++ fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin
+++ fm_fake_exit0 /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin tmux treehouse no-mistakes gh gh-axi
+++ local fakebin=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/tmux
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/gh-axi
+++ printf '%s\n' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ axi_home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home/.tasks-axi
++ cat
++ '[' user = user ']'
++ printf '[markdown]\narchive = %s\n' ''\''data/done # archive.md'\'' # comment'
++ archive='/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data/done # archive.md'
++ id=sample-userconfig-review
++ mkdir -p /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data/sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal add sample-userconfig-review 'Investigate the user-config sample' --kind scout --repo sample --start
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ tasks-axi add sample-userconfig-review 'Investigate the user-config sample' --kind scout --repo sample --start
++ write_origin_meta /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal sample-userconfig-review
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal id=sample-userconfig-review kind=scout
++ fm_write_meta /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/state/sample-userconfig-review.meta window=firstmate:fm-sample-userconfig-review worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/projects/missing-sample-userconfig-review project=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/projects/sample harness=codex kind=scout mode=scout spawn_gen=fixture-sample-userconfig-review
++ local file=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/state/sample-userconfig-review.meta kv
++ shift
++ :
++ for kv in "$@"
++ printf '%s\n' window=firstmate:fm-sample-userconfig-review
++ for kv in "$@"
++ printf '%s\n' worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/projects/missing-sample-userconfig-review
++ for kv in "$@"
++ printf '%s\n' project=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/projects/sample
++ for kv in "$@"
++ printf '%s\n' harness=codex
++ for kv in "$@"
++ printf '%s\n' kind=scout
++ for kv in "$@"
++ printf '%s\n' mode=scout
++ for kv in "$@"
++ printf '%s\n' spawn_gen=fixture-sample-userconfig-review
++ printf 'done: report complete\n'
++ printf '# User-config sample review\n\nOne captain choice remains.\n'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal hold sample-userconfig-call --title 'Choose the relocated option' --reason 'captain relocated choice pending' --repo sample --origin sample-userconfig-review
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh hold sample-userconfig-call --title 'Choose the relocated option' --reason 'captain relocated choice pending' --repo sample --origin sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal complete sample-userconfig-review sample-userconfig-call
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete sample-userconfig-review sample-userconfig-call
++ printf 'Captain chose the relocated option.\n'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal answer sample-userconfig-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/userconfig-decision.txt
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ shift
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ REAL_TASKS_AXI=/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ FM_STATE_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/state
++ FM_DATA_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data
++ FM_CONFIG_OVERRIDE=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/config
++ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh answer sample-userconfig-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/userconfig-decision.txt
++ perl -0pi -e 's/done_keep = 10/done_keep = 0/' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/.tasks.toml
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal add sample-userconfig-trigger 'Trigger Done retention' --kind ship --repo sample
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ tasks-axi add sample-userconfig-trigger 'Trigger Done retention' --kind ship --repo sample
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal done sample-userconfig-trigger
++ local home=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ shift
++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal
++ tasks-axi done sample-userconfig-trigger
++ assert_present '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data/done # archive.md' 'Done retention did not write the user-configured archive'
++ '[' -e '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data/done # archive.md' ']'
++ assert_grep sample-userconfig-call '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data/done # archive.md' 'Done retention did not archive the answered call to the user-configured location'
++ grep -F -- sample-userconfig-call '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/data/done # archive.md'
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ tasks_in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal show sample-userconfig-call
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/python3
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/python3.14
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/python3.13
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/python3.12
++ for python in python3 python3.14 python3.13 python3.12 python3.11
++ printf '#!/bin/sh\nexit 127\n'
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/fakebin/python3.11
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal verify sample-userconfig-review
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ run_captain /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal complete sample-userconfig-review sample-userconfig-call
++ HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal/axi-home
++ run_teardown /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/archived-answer-user-literal sample-userconfig-review
++ pass 'an answered captain call archived to a user-configured location still satisfies the completion gate'
++ printf 'ok - %s\n' 'an answered captain call archived to a user-configured location still satisfies the completion gate'
+ok - an answered captain call archived to a user-configured location still satisfies the completion gate
++ exit 0
++ fm_test_cleanup
++ local d
++ fm_test_reap_watchers
++ local state lock_home $'seen=\n'
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-watcher.12132.rkWL96 ']'
++ IFS=
++ read -r state
++ rm -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-watcher.12132.rkWL96
++ fm_test_reap_procevent_homes
++ local home claim_root $'seen=\n'
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-procevent.12132.ExPfDo ']'
++ IFS=$'\t'
++ read -r home claim_root
++ rm -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-procevent.12132.ExPfDo
++ for d in "${FM_TEST_CLEANUP_DIRS[@]:-}"
++ '[' -n '' ']'
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-cleanup.12132.7OPPOg ']'
++ IFS=
++ read -r d
++ '[' -n /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj ']'
++ fm_test_reap_root_processes /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
++ local root=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj chain pid pids signal i
++ '[' -n /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj ']'
++ '[' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj '!=' / ']'
++ chain=' '
++ pid=12132
++ '[' -n 12132 ']'
++ '[' 12132 -gt 1 ']'
++ chain=' 12132 '
+++ ps -o ppid= -p 12132
+++ tr -d '[:space:]'
++ pid=1312
++ '[' -n 1312 ']'
++ '[' 1312 -gt 1 ']'
++ chain=' 12132 1312 '
+++ ps -o ppid= -p 1312
+++ tr -d '[:space:]'
++ pid=76512
++ '[' -n 76512 ']'
++ '[' 76512 -gt 1 ']'
++ chain=' 12132 1312 76512 '
+++ ps -o ppid= -p 76512
+++ tr -d '[:space:]'
++ pid=804
++ '[' -n 804 ']'
++ '[' 804 -gt 1 ']'
++ chain=' 12132 1312 76512 804 '
+++ ps -o ppid= -p 804
+++ tr -d '[:space:]'
++ pid=1
++ '[' -n 1 ']'
++ '[' 1 -gt 1 ']'
++ for signal in TERM KILL
++ i=0
++ '[' 0 -lt 20 ']'
+++ ps -ww -eo pid=,args=
+++ FM_TEST_REAP_ROOT=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj/
+++ awk -v 'chain= 12132 1312 76512 804 ' 'index($0, ENVIRON["FM_TEST_REAP_ROOT"]) && index(chain, " " $1 " ") == 0 { print $1 }'
++ pids=
++ '[' -n '' ']'
++ return 0
++ fm_test_remove_tree /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
++ local dir=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
++ '[' -d /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj ']'
++ '[' '!' -L /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj ']'
++ find /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj -type d -exec chmod u+rwx '{}' +
++ rm -rf /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-captain-hold.hL1EEj
++ IFS=
++ read -r d
++ rm -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/.fm-test-cleanup.12132.7OPPOg

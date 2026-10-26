@@ -1,0 +1,1898 @@
++ set -u
++++ dirname tests/fm-backend-tmux-smoke.test.sh
+++ cd tests/..
+++ pwd
++ ROOT=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F
++ command -v tmux
+++ command -v tmux
++ REAL_TMUX=/opt/homebrew/bin/tmux
++ SOCKET=fm-backend-smoke-16150
++ SHIM_DIR=
++ trap cleanup_all EXIT
+++ mktemp -d /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.XXXXXX
++ SHIM_DIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.v9A3s0
++ cat
++ chmod +x /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.v9A3s0/tmux
++ PATH=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.v9A3s0:/Users/davidxiao/.pi/agent/bin:/Users/davidxiao/.ast/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:/Users/davidxiao/.local/bin:/Users/davidxiao/go/bin:/Users/davidxiao/.cargo/bin:/Users/davidxiao/bin:/opt/homebrew/sbin:/usr/local/sbin
++ export PATH
++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-backend.sh
+++ FM_BACKEND_SCRIPT=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-backend.sh
+++++ dirname /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-backend.sh
++++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin
++++ pwd
+++ FM_BACKEND_LIB_DIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin
+++ unset FM_BACKEND_SCRIPT
++++ cd /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/..
++++ pwd
+++ FM_BACKEND_DEFAULT_ROOT=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F
+++ FM_ROOT=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F
+++ FM_HOME=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F
+++ FM_BACKEND_CONFIG_DIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/config
+++ FM_BACKEND_KNOWN='tmux herdr zellij orca cmux paseo rex t3code tern'
+++ FM_BACKEND_SPAWN='tmux herdr zellij orca cmux paseo rex t3code tern'
+++ FM_BACKEND_CMUX_BUNDLE_ID=com.cmuxterm.app
+++ FM_BACKEND_VISIBLE_CAPTURE='tmux herdr zellij rex tern'
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z '' ']'
++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
+++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++++ _FM_TMUX_LIB_DIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin
++++ '[' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin '!=' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
+++++ FM_COMPOSER_UNICODE_SPACES=()
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0302\0205'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0302\0240'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0341\0232\0200'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0200'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0201'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0202'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0203'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0204'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0205'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0206'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0207'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0210'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0211'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0212'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0250'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0251'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0200\0257'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0342\0201\0237'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ for _fm_composer_space_octal in '\0302\0205' '\0302\0240' '\0341\0232\0200' '\0342\0200\0200' '\0342\0200\0201' '\0342\0200\0202' '\0342\0200\0203' '\0342\0200\0204' '\0342\0200\0205' '\0342\0200\0206' '\0342\0200\0207' '\0342\0200\0210' '\0342\0200\0211' '\0342\0200\0212' '\0342\0200\0250' '\0342\0200\0251' '\0342\0200\0257' '\0342\0201\0237' '\0343\0200\0200'
+++++ printf -v _fm_composer_space_utf8 %b '\0343\0200\0200'
+++++ FM_COMPOSER_UNICODE_SPACES+=("$_fm_composer_space_utf8")
+++++ unset -v _fm_composer_space_octal _fm_composer_space_utf8
+++++ FM_DELIVERY_BUSY_REGEX_DEFAULT='esc (to )?interrupt|Working(\.\.\.|…)|Ctrl\+c:cancel|ctrl\+c to stop|esc[[:space:]]+to[[:space:]]+cancel|esc twice to interrupt|^[[:space:]]*❭ Guide Devin while it works$'
+++++ FM_DELIVERY_CLAUDE_BUSY_REGEX_DEFAULT='esc to interrupt|…[[:space:]]+\([0-9]+[smh]'
+++++ FM_DELIVERY_DEVIN_BUSY_REGEX_DEFAULT='esc twice to interrupt|^[[:space:]]*❭ Guide Devin while it works$'
+++++ FM_DELIVERY_CORTEX_BUSY_REGEX_DEFAULT='\(esc to interrupt\)|Type to queue message\.\.\.|Type to queue next message'
+++++ FM_DELIVERY_COMMANDCODE_BUSY_REGEX_DEFAULT='esc to interrupt|•[[:space:]]+[0-9]+[smh]([[:space:]]+[0-9]+[smh])*[[:space:]]+•'
+++++ FM_DELIVERY_CODEX_BUSY_REGEX_DEFAULT='esc to interrupt'
+++++ FM_DELIVERY_OPENCODE_BUSY_REGEX_DEFAULT='esc interrupt'
+++++ FM_DELIVERY_PI_BUSY_REGEX_DEFAULT='Working\.\.\.'
+++++ FM_OMP_SPINNER_FRAMES_RE='(⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏|⣾|⣽|⣻|⢿|⡿|⣟|⣯|⣷)'
+++++ FM_DELIVERY_OMP_BUSY_REGEX_DEFAULT='Working…|^[[:space:]]*(⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏|⣾|⣽|⣻|⢿|⡿|⣟|⣯|⣷)[[:space:]]+[0-9]+[smh]'
+++++ FM_DELIVERY_GROK_BUSY_REGEX_DEFAULT='Ctrl\+c:cancel'
+++++ FM_DELIVERY_CURSOR_BUSY_REGEX_DEFAULT='ctrl\+c to stop'
+++++ FM_DELIVERY_AGY_BUSY_REGEX_DEFAULT='esc[[:space:]]+to[[:space:]]+cancel'
+++++ FM_DELIVERY_POLYTOKEN_BUSY_REGEX_DEFAULT='^[[:space:]]*Running for [0-9]+([.][0-9]+)?s'
+++++ FM_DELIVERY_KIMI_BUSY_REGEX_DEFAULT='^[[:space:]]*(🌑|🌒|🌓|🌔|🌕|🌖|🌗|🌘)[[:space:]]+·[[:space:]]+'
++++++ printf '%s\n' ❯ › ⟩ → ❭
+++++ FM_COMPOSER_AGENT_PROMPT_GLYPHS=$'❯\n›\n⟩\n→\n❭'
++++++ printf '%s\n' '>' '$' % '#'
+++++ FM_COMPOSER_SHELL_PROMPT_GLYPHS=$'>\n$\n%\n#'
+++++ FM_COMPOSER_IDLE_RE_DEFAULT='^Type a message\.\.\.$|^Ask anything(\.\.\.|…)|^Plan, search, build anything$|^Add a follow-up$|^Ask Devin to build features, fix bugs, or work on your code$|^Ask your question\.\.\.$|^Type your message\.\.\.$|^Type to queue message\.\.\.$'
+++++ FM_COMPOSER_LEFTBAR_FOOTER_RE_DEFAULT='^(Build|Plan)[[:space:]]+·[[:space:]]+'
+++++ FM_COMPOSER_MODE_HINT_RE_DEFAULT='^[[:space:]]*(⏵|⏸)'
+++++ FM_COMPOSER_OMP_STATUS_RE_DEFAULT='^[[:space:]]*(π|󰵗)[[:space:]]+·[[:space:]]|^[[:space:]]*(⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧|⠇|⠏|⣾|⣽|⣻|⢿|⡿|⣟|⣯|⣷)[[:space:]]+[0-9]+[smh]([[:space:]]|$)|[[:space:]]·[[:space:]].*[0-9]+(\.[0-9]+)?%/[0-9]+K'
+++++ FM_COMPOSER_PI_STATUS_RE_DEFAULT='^\$[0-9]+(\.[0-9]+)?([[:space:]]|$)'
+++++ FM_COMPOSER_CAPTURE_LINES=20
+++++ FM_COMPOSER_PI_MAX_LINES=8
+++++ FM_COMPOSER_GROK_TITLE_OVERHANG=3
++++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
+++++ FM_CURSOR_PROBE_TIMEOUT=10
++++ unset _FM_TMUX_LIB_DIR
+++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++++ _FM_SESSION_LOCK_LIB_DIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin
++++ '[' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin '!=' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
+++++ FM_CURSOR_PROBE_TIMEOUT=10
++++ unset _FM_SESSION_LOCK_LIB_DIR
++++ FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$|^omp$'
++++ FM_HARNESS_NAMES=(claude codex opencode grok kimi pi-signed pi omp)
++++ FM_HARNESS_IS_CLAUDE=0
++++ FM_WIN_PID_PREFIX=win:
++++ FM_WIN_HARNESS_PID_VARS=(CLAUDE_PID)
++++ FM_SESSION_LOCK_FOREIGN_OWNER_PID=
++++ FM_LOCK_INSPECT_STATE=unknown
++++ FM_LOCK_INSPECT_PID=
++++ FM_LOCK_INSPECT_LIVE_HARNESS=unknown
+++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++++ _FM_AGENT_PROCESS_LIB_DIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin
++++ '[' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin '!=' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
+++++ _FM_SESSION_LOCK_LIB_DIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin
+++++ '[' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin '!=' /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
+++++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++++++ FM_CURSOR_PROBE_TIMEOUT=10
+++++ unset _FM_SESSION_LOCK_LIB_DIR
+++++ FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$|^omp$'
+++++ FM_HARNESS_NAMES=(claude codex opencode grok kimi pi-signed pi omp)
+++++ FM_HARNESS_IS_CLAUDE=0
+++++ FM_WIN_PID_PREFIX=win:
+++++ FM_WIN_HARNESS_PID_VARS=(CLAUDE_PID)
+++++ FM_SESSION_LOCK_FOREIGN_OWNER_PID=
+++++ FM_LOCK_INSPECT_STATE=unknown
+++++ FM_LOCK_INSPECT_PID=
+++++ FM_LOCK_INSPECT_LIVE_HARNESS=unknown
++++ . /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++++ unset _FM_AGENT_PROCESS_LIB_DIR
++ _FM_BACKEND_TMUX_SOURCED=1
++ SESSION=smoke
++ WINDOW=fm-smoke1
++ TARGET=smoke:fm-smoke1
++ OTHER_SESSION=smoke-other
++ PREFIX_SESSION=smoke-prefix-live
++ tmux new-session -d -s smoke -x 200 -y 50
++ tmux new-session -d -s smoke-other -x 200 -y 50
++ tmux new-session -d -s smoke-prefix-live -n fm-smoke1 -x 200 -y 50
++ tmux new-session -d -s firstmate -n supervisor -x 200 -y 50
++ fm_backend_tmux_create_task smoke fm-smoke1 /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/home
++ local ses=smoke wname=fm-smoke1 proj_abs=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/home wid
++ grep -qx fm-smoke1
++ tmux list-windows -t smoke -F '#{window_name}'
+++ tmux new-window -dP -F '#{window_id}' -t smoke: -n fm-smoke1 -c /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/home
++ wid=@4
++ tmux set-window-option -t @4 automatic-rename off
++ tmux set-window-option -t @4 allow-rename off
++ printf '%s\n' @4
+@4
++ tmux list-windows -t smoke -F '#{window_name}'
++ grep -qx fm-smoke1
++ fm_backend_tmux_create_task smoke fm-smoke1 /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/home
++ pass 'real tmux: fm_backend_tmux_create_task creates a window and refuses a duplicate'
++ printf 'ok - %s\n' 'real tmux: fm_backend_tmux_create_task creates a window and refuses a duplicate'
+ok - real tmux: fm_backend_tmux_create_task creates a window and refuses a duplicate
++ SHELL_READY=false
+++ seq 1 100
++ for _ in $(seq 1 100)
++ tmux send-keys -t smoke:fm-smoke1 C-c
++ tmux send-keys -t smoke:fm-smoke1 -l 'printf '\''shell-%s\n'\'' ready'
++ tmux send-keys -t smoke:fm-smoke1 Enter
++ wait_for_capture_text smoke:fm-smoke1 shell-ready 10
++ local target=smoke:fm-smoke1 text=shell-ready samples=10 out i=0
++ '[' 0 -lt 10 ']'
+++ fm_backend_tmux_capture smoke:fm-smoke1 200
++ out=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:~ davidxiao$\nDavids-MBP:~ davidxiao$ printf \'shell-%s\\n\' ready\nshell-ready\nDavids-MBP:~ davidxiao$'
++ case "$out" in
++ return 0
++ SHELL_READY=true
++ break
++ '[' true = true ']'
++ tmux send-keys -t smoke:fm-smoke1 'cd /tmp && PS1='\''smoke$ '\'' && clear && printf '\''setup-%s\n'\'' ready' Enter
++ wait_for_capture_text smoke:fm-smoke1 setup-ready
++ local target=smoke:fm-smoke1 text=setup-ready samples=100 out i=0
++ '[' 0 -lt 100 ']'
+++ fm_backend_tmux_capture smoke:fm-smoke1 200
++ out=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:~ davidxiao$\nDavids-MBP:~ davidxiao$ printf \'shell-%s\\n\' ready\nshell-ready\nDavids-MBP:~ davidxiao$ cd /tmp && PS1=\'smoke$ \' && clear && printf \'setup-%s\\n\' ready\nsetup-ready\nsmoke$'
++ case "$out" in
++ return 0
++ fm_backend_tmux_send_text_line smoke:fm-smoke1 'printf '\''captain-on-deck-%s\n'\'' line'
++ tmux send-keys -t smoke:fm-smoke1 'printf '\''captain-on-deck-%s\n'\'' line' Enter
++ wait_for_capture_text smoke:fm-smoke1 captain-on-deck-line
++ local target=smoke:fm-smoke1 text=captain-on-deck-line samples=100 out i=0
++ '[' 0 -lt 100 ']'
+++ fm_backend_tmux_capture smoke:fm-smoke1 200
++ out=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:~ davidxiao$\nDavids-MBP:~ davidxiao$ printf \'shell-%s\\n\' ready\nshell-ready\nDavids-MBP:~ davidxiao$ cd /tmp && PS1=\'smoke$ \' && clear && printf \'setup-%s\\n\' ready\nsetup-ready\nsmoke$ printf \'captain-on-deck-%s\\n\' line\ncaptain-on-deck-line\nsmoke$'
++ case "$out" in
++ return 0
+++ fm_backend_tmux_capture smoke:fm-smoke1 20
+++ tmux capture-pane -p -t smoke:fm-smoke1 -S -20
++ out=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:~ davidxiao$\nDavids-MBP:~ davidxiao$ printf \'shell-%s\\n\' ready\nshell-ready\nDavids-MBP:~ davidxiao$ cd /tmp && PS1=\'smoke$ \' && clear && printf \'setup-%s\\n\' ready\nsetup-ready\nsmoke$ printf \'captain-on-deck-%s\\n\' line\ncaptain-on-deck-line\nsmoke$'
++ case "$out" in
++ :
++ pass 'real tmux: fm_backend_tmux_send_text_line sends literal text and submits with Enter'
++ printf 'ok - %s\n' 'real tmux: fm_backend_tmux_send_text_line sends literal text and submits with Enter'
+ok - real tmux: fm_backend_tmux_send_text_line sends literal text and submits with Enter
++ fm_backend_tmux_send_literal smoke:fm-smoke1 'printf '\''literal-then-key-%s\n'\'' captain'
++ tmux send-keys -t smoke:fm-smoke1 -l 'printf '\''literal-then-key-%s\n'\'' captain'
++ fm_backend_tmux_send_key smoke:fm-smoke1 Enter
++ fm_backend_tmux_target_exists smoke:fm-smoke1
++ local target=smoke:fm-smoke1 session selector windows base pane_index window_id
++ '[' -n smoke:fm-smoke1 ']'
++ case "$target" in
++ session=smoke
++ selector=fm-smoke1
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n fm-smoke1 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-smoke1'
+++ printf '%s\n' $'bash\nfm-smoke1'
+++ return 0
++ windows=$'bash\nfm-smoke1'
++ printf '%s\n' $'bash\nfm-smoke1'
++ grep -Fqx -- fm-smoke1
++ return 0
++ tmux send-keys -t smoke:fm-smoke1 Enter
++ wait_for_capture_text smoke:fm-smoke1 literal-then-key-captain
++ local target=smoke:fm-smoke1 text=literal-then-key-captain samples=100 out i=0
++ '[' 0 -lt 100 ']'
+++ fm_backend_tmux_capture smoke:fm-smoke1 200
++ out=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:~ davidxiao$\nDavids-MBP:~ davidxiao$ printf \'shell-%s\\n\' ready\nshell-ready\nDavids-MBP:~ davidxiao$ cd /tmp && PS1=\'smoke$ \' && clear && printf \'setup-%s\\n\' ready\nsetup-ready\nsmoke$ printf \'captain-on-deck-%s\\n\' line\ncaptain-on-deck-line\nsmoke$ printf \'literal-then-key-%s\\n\' captain\nliteral-then-key-captain\nsmoke$'
++ case "$out" in
++ return 0
+++ fm_backend_tmux_capture smoke:fm-smoke1 20
+++ tmux capture-pane -p -t smoke:fm-smoke1 -S -20
++ out=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:~ davidxiao$\nDavids-MBP:~ davidxiao$ printf \'shell-%s\\n\' ready\nshell-ready\nDavids-MBP:~ davidxiao$ cd /tmp && PS1=\'smoke$ \' && clear && printf \'setup-%s\\n\' ready\nsetup-ready\nsmoke$ printf \'captain-on-deck-%s\\n\' line\ncaptain-on-deck-line\nsmoke$ printf \'literal-then-key-%s\\n\' captain\nliteral-then-key-captain\nsmoke$'
++ case "$out" in
++ :
++ pass 'real tmux: fm_backend_tmux_send_literal + fm_backend_tmux_send_key Enter submit as two separate steps'
++ printf 'ok - %s\n' 'real tmux: fm_backend_tmux_send_literal + fm_backend_tmux_send_key Enter submit as two separate steps'
+ok - real tmux: fm_backend_tmux_send_literal + fm_backend_tmux_send_key Enter submit as two separate steps
++ fm_backend_tmux_send_text_line smoke:fm-smoke1 'for i in $(seq 1 80); do echo tag-line-$i; done'
++ tmux send-keys -t smoke:fm-smoke1 'for i in $(seq 1 80); do echo tag-line-$i; done' Enter
++ wait_for_capture_text smoke:fm-smoke1 tag-line-80
++ local target=smoke:fm-smoke1 text=tag-line-80 samples=100 out i=0
++ '[' 0 -lt 100 ']'
+++ fm_backend_tmux_capture smoke:fm-smoke1 200
++ out=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:~ davidxiao$\nDavids-MBP:~ davidxiao$ printf \'shell-%s\\n\' ready\nshell-ready\nDavids-MBP:~ davidxiao$ cd /tmp && PS1=\'smoke$ \' && clear && printf \'setup-%s\\n\' ready\nsetup-ready\nsmoke$ printf \'captain-on-deck-%s\\n\' line\ncaptain-on-deck-line\nsmoke$ printf \'literal-then-key-%s\\n\' captain\nliteral-then-key-captain\nsmoke$ for i in $(seq 1 80); do echo tag-line-$i; done\ntag-line-1\ntag-line-2\ntag-line-3\ntag-line-4\ntag-line-5\ntag-line-6\ntag-line-7\ntag-line-8\ntag-line-9\ntag-line-10\ntag-line-11\ntag-line-12\ntag-line-13\ntag-line-14\ntag-line-15\ntag-line-16\ntag-line-17\ntag-line-18\ntag-line-19\ntag-line-20\ntag-line-21\ntag-line-22\ntag-line-23\ntag-line-24\ntag-line-25\ntag-line-26\ntag-line-27\ntag-line-28\ntag-line-29\ntag-line-30\ntag-line-31\ntag-line-32\ntag-line-33\ntag-line-34\ntag-line-35\ntag-line-36\ntag-line-37\ntag-line-38\ntag-line-39\ntag-line-40\ntag-line-41\ntag-line-42\ntag-line-43\ntag-line-44\ntag-line-45\ntag-line-46\ntag-line-47\ntag-line-48\ntag-line-49\ntag-line-50\ntag-line-51\ntag-line-52\ntag-line-53\ntag-line-54\ntag-line-55\ntag-line-56\ntag-line-57\ntag-line-58\ntag-line-59\ntag-line-60\ntag-line-61\ntag-line-62\ntag-line-63\ntag-line-64\ntag-line-65\ntag-line-66\ntag-line-67\ntag-line-68\ntag-line-69\ntag-line-70\ntag-line-71\ntag-line-72\ntag-line-73\ntag-line-74\ntag-line-75\ntag-line-76\ntag-line-77\ntag-line-78\ntag-line-79\ntag-line-80\nsmoke$'
++ case "$out" in
++ return 0
+++ fm_backend_tmux_capture smoke:fm-smoke1 3
+++ tmux capture-pane -p -t smoke:fm-smoke1 -S -3
++ small=$'tag-line-29\ntag-line-30\ntag-line-31\ntag-line-32\ntag-line-33\ntag-line-34\ntag-line-35\ntag-line-36\ntag-line-37\ntag-line-38\ntag-line-39\ntag-line-40\ntag-line-41\ntag-line-42\ntag-line-43\ntag-line-44\ntag-line-45\ntag-line-46\ntag-line-47\ntag-line-48\ntag-line-49\ntag-line-50\ntag-line-51\ntag-line-52\ntag-line-53\ntag-line-54\ntag-line-55\ntag-line-56\ntag-line-57\ntag-line-58\ntag-line-59\ntag-line-60\ntag-line-61\ntag-line-62\ntag-line-63\ntag-line-64\ntag-line-65\ntag-line-66\ntag-line-67\ntag-line-68\ntag-line-69\ntag-line-70\ntag-line-71\ntag-line-72\ntag-line-73\ntag-line-74\ntag-line-75\ntag-line-76\ntag-line-77\ntag-line-78\ntag-line-79\ntag-line-80\nsmoke$'
++ case "$small" in
++ case "$small" in
++ :
+++ fm_backend_tmux_capture smoke:fm-smoke1 200
+++ tmux capture-pane -p -t smoke:fm-smoke1 -S -200
++ large=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:~ davidxiao$\nDavids-MBP:~ davidxiao$ printf \'shell-%s\\n\' ready\nshell-ready\nDavids-MBP:~ davidxiao$ cd /tmp && PS1=\'smoke$ \' && clear && printf \'setup-%s\\n\' ready\nsetup-ready\nsmoke$ printf \'captain-on-deck-%s\\n\' line\ncaptain-on-deck-line\nsmoke$ printf \'literal-then-key-%s\\n\' captain\nliteral-then-key-captain\nsmoke$ for i in $(seq 1 80); do echo tag-line-$i; done\ntag-line-1\ntag-line-2\ntag-line-3\ntag-line-4\ntag-line-5\ntag-line-6\ntag-line-7\ntag-line-8\ntag-line-9\ntag-line-10\ntag-line-11\ntag-line-12\ntag-line-13\ntag-line-14\ntag-line-15\ntag-line-16\ntag-line-17\ntag-line-18\ntag-line-19\ntag-line-20\ntag-line-21\ntag-line-22\ntag-line-23\ntag-line-24\ntag-line-25\ntag-line-26\ntag-line-27\ntag-line-28\ntag-line-29\ntag-line-30\ntag-line-31\ntag-line-32\ntag-line-33\ntag-line-34\ntag-line-35\ntag-line-36\ntag-line-37\ntag-line-38\ntag-line-39\ntag-line-40\ntag-line-41\ntag-line-42\ntag-line-43\ntag-line-44\ntag-line-45\ntag-line-46\ntag-line-47\ntag-line-48\ntag-line-49\ntag-line-50\ntag-line-51\ntag-line-52\ntag-line-53\ntag-line-54\ntag-line-55\ntag-line-56\ntag-line-57\ntag-line-58\ntag-line-59\ntag-line-60\ntag-line-61\ntag-line-62\ntag-line-63\ntag-line-64\ntag-line-65\ntag-line-66\ntag-line-67\ntag-line-68\ntag-line-69\ntag-line-70\ntag-line-71\ntag-line-72\ntag-line-73\ntag-line-74\ntag-line-75\ntag-line-76\ntag-line-77\ntag-line-78\ntag-line-79\ntag-line-80\nsmoke$'
++ case "$large" in
++ :
++ pass 'real tmux: fm_backend_tmux_capture'\''s -S -N bound trims old history for a small window and reaches it for a large one'
++ printf 'ok - %s\n' 'real tmux: fm_backend_tmux_capture'\''s -S -N bound trims old history for a small window and reaches it for a large one'
+ok - real tmux: fm_backend_tmux_capture's -S -N bound trims old history for a small window and reaches it for a large one
+++ fm_backend_tmux_resolve_bare_selector fm-smoke1
+++ local name=fm-smoke1
+++ tmux list-windows -a -F '#{session_name}:#{window_name}'
+++ grep -m1 ':fm-smoke1$'
++ resolved=smoke:fm-smoke1
++ '[' smoke:fm-smoke1 = smoke:fm-smoke1 ']'
++ pass 'real tmux: fm_backend_tmux_resolve_bare_selector (list-live) finds the created window by name'
++ printf 'ok - %s\n' 'real tmux: fm_backend_tmux_resolve_bare_selector (list-live) finds the created window by name'
+ok - real tmux: fm_backend_tmux_resolve_bare_selector (list-live) finds the created window by name
++ fm_backend_tmux_resolve_bare_selector no-such-window-xyz
++ pass 'real tmux: fm_backend_tmux_resolve_bare_selector fails for a window that does not exist'
++ printf 'ok - %s\n' 'real tmux: fm_backend_tmux_resolve_bare_selector fails for a window that does not exist'
+ok - real tmux: fm_backend_tmux_resolve_bare_selector fails for a window that does not exist
++ fm_backend_target_exists tmux smoke:fm-smoke1
++ local backend=tmux target=smoke:fm-smoke1 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke:fm-smoke1
++ local target=smoke:fm-smoke1 session selector windows base pane_index window_id
++ '[' -n smoke:fm-smoke1 ']'
++ case "$target" in
++ session=smoke
++ selector=fm-smoke1
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n fm-smoke1 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-smoke1'
+++ printf '%s\n' $'bash\nfm-smoke1'
+++ return 0
++ windows=$'bash\nfm-smoke1'
++ printf '%s\n' $'bash\nfm-smoke1'
++ grep -Fqx -- fm-smoke1
++ return 0
++ pass 'real tmux: fm_backend_target_exists finds an existing window'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists finds an existing window'
+ok - real tmux: fm_backend_target_exists finds an existing window
+++ tmux display-message -p -t smoke:fm-smoke1 '#{pane_id}'
++ LIVE_PANE=%4
++ fm_backend_target_exists tmux %4
++ local backend=tmux target=%4 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists %4
++ local target=%4 session selector windows base pane_index window_id
++ '[' -n %4 ']'
++ case "$target" in
++ tmux list-panes -a -F '#{pane_id}'
++ grep -Fqx -- %4
++ pass 'real tmux: fm_backend_target_exists finds an existing pane'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists finds an existing pane'
+ok - real tmux: fm_backend_target_exists finds an existing pane
+++ tmux display-message -p -t smoke:fm-smoke1 '#{window_id}'
++ LIVE_WINDOW_ID=@4
+++ tmux display-message -p -t smoke:fm-smoke1 '#{window_index}'
++ LIVE_WINDOW_INDEX=1
+++ tmux display-message -p -t smoke:fm-smoke1 '#{pane_index}'
++ LIVE_PANE_INDEX=0
++ for exact_target in "$LIVE_WINDOW_ID" "$SESSION:$LIVE_WINDOW_ID"
++ fm_backend_target_exists tmux @4
++ local backend=tmux target=@4 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists @4
++ local target=@4 session selector windows base pane_index window_id
++ '[' -n @4 ']'
++ case "$target" in
++ tmux list-windows -a -F '#{window_id}'
++ grep -Fqx -- @4
++ for exact_target in "$LIVE_WINDOW_ID" "$SESSION:$LIVE_WINDOW_ID"
++ fm_backend_target_exists tmux smoke:@4
++ local backend=tmux target=smoke:@4 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke:@4
++ local target=smoke:@4 session selector windows base pane_index window_id
++ '[' -n smoke:@4 ']'
++ case "$target" in
++ session=smoke
++ selector=@4
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n @4 ']'
++ case "$selector" in
++ fm_backend_tmux_window_id smoke @4
++ local session=smoke selector=@4 rows window_id window_index window_name
+++ LC_ALL=C
+++ tmux list-windows -t =smoke -F '#{window_id}|#{window_index}|#{window_name}'
++ rows=$'@0|0|bash\n@4|1|fm-smoke1'
++ IFS='|'
++ read -r window_id window_index window_name
++ case "$selector" in
++ '[' @0 = @4 ']'
++ continue
++ IFS='|'
++ read -r window_id window_index window_name
++ case "$selector" in
++ '[' @4 = @4 ']'
++ printf '%s\n' @4
++ return 0
++ return
++ pass 'real tmux: fm_backend_target_exists accepts bare and session-scoped window ids'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists accepts bare and session-scoped window ids'
+ok - real tmux: fm_backend_target_exists accepts bare and session-scoped window ids
++ for indexed_target in "$SESSION:$LIVE_WINDOW_INDEX" firstmate:0
++ fm_backend_target_exists tmux smoke:1
++ local backend=tmux target=smoke:1 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke:1
++ local target=smoke:1 session selector windows base pane_index window_id
++ '[' -n smoke:1 ']'
++ case "$target" in
++ session=smoke
++ selector=1
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n 1 ']'
++ case "$selector" in
++ fm_backend_tmux_window_id smoke 1
++ local session=smoke selector=1 rows window_id window_index window_name
+++ LC_ALL=C
+++ tmux list-windows -t =smoke -F '#{window_id}|#{window_index}|#{window_name}'
++ rows=$'@0|0|bash\n@4|1|fm-smoke1'
++ IFS='|'
++ read -r window_id window_index window_name
++ case "$selector" in
++ '[' 0 = 1 ']'
++ continue
++ IFS='|'
++ read -r window_id window_index window_name
++ case "$selector" in
++ '[' 1 = 1 ']'
++ printf '%s\n' @4
++ return 0
++ return
++ for indexed_target in "$SESSION:$LIVE_WINDOW_INDEX" firstmate:0
++ fm_backend_target_exists tmux firstmate:0
++ local backend=tmux target=firstmate:0 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists firstmate:0
++ local target=firstmate:0 session selector windows base pane_index window_id
++ '[' -n firstmate:0 ']'
++ case "$target" in
++ session=firstmate
++ selector=0
++ case "$session" in
++ case "$selector" in
++ '[' -n firstmate ']'
++ '[' -n 0 ']'
++ case "$selector" in
++ fm_backend_tmux_window_id firstmate 0
++ local session=firstmate selector=0 rows window_id window_index window_name
+++ LC_ALL=C
+++ tmux list-windows -t =firstmate -F '#{window_id}|#{window_index}|#{window_name}'
++ rows='@3|0|supervisor'
++ IFS='|'
++ read -r window_id window_index window_name
++ case "$selector" in
++ '[' 0 = 0 ']'
++ printf '%s\n' @3
++ return 0
++ return
++ pass 'real tmux: fm_backend_target_exists accepts window indexes including firstmate:0'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists accepts window indexes including firstmate:0'
+ok - real tmux: fm_backend_target_exists accepts window indexes including firstmate:0
++ fm_backend_target_exists tmux smoke:1.0
++ local backend=tmux target=smoke:1.0 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke:1.0
++ local target=smoke:1.0 session selector windows base pane_index window_id
++ '[' -n smoke:1.0 ']'
++ case "$target" in
++ session=smoke
++ selector=1.0
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n 1.0 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-smoke1'
+++ printf '%s\n' $'bash\nfm-smoke1'
+++ return 0
++ windows=$'bash\nfm-smoke1'
++ printf '%s\n' $'bash\nfm-smoke1'
++ grep -Fqx -- 1.0
++ case "$selector" in
++ base=1
++ pane_index=0
++ '[' -n 1 ']'
++ '[' -n 0 ']'
++ case "$base" in
++ case "$pane_index" in
+++ fm_backend_tmux_window_id smoke 1
+++ local session=smoke selector=1 rows window_id window_index window_name
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_id}|#{window_index}|#{window_name}'
+++ rows=$'@0|0|bash\n@4|1|fm-smoke1'
+++ IFS='|'
+++ read -r window_id window_index window_name
+++ case "$selector" in
+++ '[' 0 = 1 ']'
+++ continue
+++ IFS='|'
+++ read -r window_id window_index window_name
+++ case "$selector" in
+++ '[' 1 = 1 ']'
+++ printf '%s\n' @4
+++ return 0
++ window_id=@4
++ tmux list-panes -t @4 -F '#{pane_index}'
++ grep -Fqx -- 0
++ pass 'real tmux: fm_backend_target_exists accepts index.pane targets'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists accepts index.pane targets'
+ok - real tmux: fm_backend_target_exists accepts index.pane targets
++ for exact_target in "$SESSION" "=$SESSION:=$WINDOW"
++ fm_backend_target_exists tmux smoke
++ local backend=tmux target=smoke expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke
++ local target=smoke session selector windows base pane_index window_id
++ '[' -n smoke ']'
++ case "$target" in
++ session=smoke
++ case "$session" in
++ '[' -n smoke ']'
++ tmux has-session -t =smoke
++ for exact_target in "$SESSION" "=$SESSION:=$WINDOW"
++ fm_backend_target_exists tmux =smoke:=fm-smoke1
++ local backend=tmux target==smoke:=fm-smoke1 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists =smoke:=fm-smoke1
++ local target==smoke:=fm-smoke1 session selector windows base pane_index window_id
++ '[' -n =smoke:=fm-smoke1 ']'
++ case "$target" in
++ session==smoke
++ selector==fm-smoke1
++ case "$session" in
++ session=smoke
++ case "$selector" in
++ selector=fm-smoke1
++ '[' -n smoke ']'
++ '[' -n fm-smoke1 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-smoke1'
+++ printf '%s\n' $'bash\nfm-smoke1'
+++ return 0
++ windows=$'bash\nfm-smoke1'
++ printf '%s\n' $'bash\nfm-smoke1'
++ grep -Fqx -- fm-smoke1
++ return 0
++ pass 'real tmux: fm_backend_target_exists accepts a bare session and explicit exact markers'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists accepts a bare session and explicit exact markers'
+ok - real tmux: fm_backend_target_exists accepts a bare session and explicit exact markers
++ fm_backend_target_exists tmux smoke-prefix:fm-smoke1
++ local backend=tmux target=smoke-prefix:fm-smoke1 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke-prefix:fm-smoke1
++ local target=smoke-prefix:fm-smoke1 session selector windows base pane_index window_id
++ '[' -n smoke-prefix:fm-smoke1 ']'
++ case "$target" in
++ session=smoke-prefix
++ selector=fm-smoke1
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke-prefix ']'
++ '[' -n fm-smoke1 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke-prefix
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke-prefix -F '#{window_name}'
+++ windows='can'\''t find session: smoke-prefix'
+++ case "$windows" in
+++ return 2
++ windows=
++ return 1
++ pass 'real tmux: fm_backend_target_exists anchors the session name'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists anchors the session name'
+ok - real tmux: fm_backend_target_exists anchors the session name
++ for malformed_target in '' : "$SESSION:" ":$WINDOW" "$SESSION:$WINDOW:extra"
++ fm_backend_target_exists tmux ''
++ local backend=tmux target= expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists ''
++ local target= session selector windows base pane_index window_id
++ '[' -n '' ']'
++ return 1
++ for malformed_target in '' : "$SESSION:" ":$WINDOW" "$SESSION:$WINDOW:extra"
++ fm_backend_target_exists tmux :
++ local backend=tmux target=: expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists :
++ local target=: session selector windows base pane_index window_id
++ '[' -n : ']'
++ case "$target" in
++ session=
++ selector=
++ case "$session" in
++ case "$selector" in
++ '[' -n '' ']'
++ return 1
++ for malformed_target in '' : "$SESSION:" ":$WINDOW" "$SESSION:$WINDOW:extra"
++ fm_backend_target_exists tmux smoke:
++ local backend=tmux target=smoke: expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke:
++ local target=smoke: session selector windows base pane_index window_id
++ '[' -n smoke: ']'
++ case "$target" in
++ session=smoke
++ selector=
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n '' ']'
++ return 1
++ for malformed_target in '' : "$SESSION:" ":$WINDOW" "$SESSION:$WINDOW:extra"
++ fm_backend_target_exists tmux :fm-smoke1
++ local backend=tmux target=:fm-smoke1 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists :fm-smoke1
++ local target=:fm-smoke1 session selector windows base pane_index window_id
++ '[' -n :fm-smoke1 ']'
++ case "$target" in
++ session=
++ selector=fm-smoke1
++ case "$session" in
++ case "$selector" in
++ '[' -n '' ']'
++ return 1
++ for malformed_target in '' : "$SESSION:" ":$WINDOW" "$SESSION:$WINDOW:extra"
++ fm_backend_target_exists tmux smoke:fm-smoke1:extra
++ local backend=tmux target=smoke:fm-smoke1:extra expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke:fm-smoke1:extra
++ local target=smoke:fm-smoke1:extra session selector windows base pane_index window_id
++ '[' -n smoke:fm-smoke1:extra ']'
++ case "$target" in
++ return 1
++ pass 'real tmux: fm_backend_target_exists rejects malformed targets'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists rejects malformed targets'
+ok - real tmux: fm_backend_target_exists rejects malformed targets
++ tmux new-window -d -t smoke: -n fm-t10
++ tmux new-window -d -t smoke: -n fm-t1
++ tmux kill-window -t =smoke:=fm-t1
++ tmux send-keys -t smoke:fm-t10 'bash -c '\''printf "prefix-neighbor-ready\n"; read -r -n 1 key; printf "%s" "$key" > "/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.v9A3s0/key-capture"'\''' Enter
++ wait_for_capture_text smoke:fm-t10 prefix-neighbor-ready
++ local target=smoke:fm-t10 text=prefix-neighbor-ready samples=100 out i=0
++ '[' 0 -lt 100 ']'
+++ fm_backend_tmux_capture smoke:fm-t10 200
++ out=$'\nThe default interactive shell is now zsh.\nTo update your account to use zsh, please run `chsh -s /bin/zsh`.\nFor more details, please visit https://support.apple.com/kb/HT208050.\nDavids-MBP:01M5WE2JD6YYN138TMZ5DP8A2F davidxiao$ bash -c \'printf "prefix-neighbor-ready\\n"; read -r -n 1 key; printf "%s" "$key" > "/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN13\n8TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.v9A3s0/key-capture"\'\nprefix-neighbor-ready'
++ case "$out" in
++ return 0
++ fm_backend_tmux_send_key smoke:fm-t1 X
++ fm_backend_tmux_target_exists smoke:fm-t1
++ local target=smoke:fm-t1 session selector windows base pane_index window_id
++ '[' -n smoke:fm-t1 ']'
++ case "$target" in
++ session=smoke
++ selector=fm-t1
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n fm-t1 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-smoke1\nfm-t10'
+++ printf '%s\n' $'bash\nfm-smoke1\nfm-t10'
+++ return 0
++ windows=$'bash\nfm-smoke1\nfm-t10'
++ printf '%s\n' $'bash\nfm-smoke1\nfm-t10'
++ grep -Fqx -- fm-t1
++ case "$selector" in
++ return 1
++ return 1
++ sleep 0.1
++ '[' '!' -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.v9A3s0/key-capture ']'
++ pass 'real tmux: fm_backend_tmux_send_key withholds a key from a gone prefix target'
++ printf 'ok - %s\n' 'real tmux: fm_backend_tmux_send_key withholds a key from a gone prefix target'
+ok - real tmux: fm_backend_tmux_send_key withholds a key from a gone prefix target
++ tmux new-window -d -t smoke: -n fm-v1
+++ tmux new-window -d -P -F '#{window_id}' -t smoke: -n fm-v1.0
++ DOTTED_WINDOW_ID=@8
++ tmux kill-window -t @8
++ fm_backend_target_exists tmux smoke:fm-v1.0
++ local backend=tmux target=smoke:fm-v1.0 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke:fm-v1.0
++ local target=smoke:fm-v1.0 session selector windows base pane_index window_id
++ '[' -n smoke:fm-v1.0 ']'
++ case "$target" in
++ session=smoke
++ selector=fm-v1.0
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n fm-v1.0 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-smoke1\nfm-t10\nfm-v1'
+++ printf '%s\n' $'bash\nfm-smoke1\nfm-t10\nfm-v1'
+++ return 0
++ windows=$'bash\nfm-smoke1\nfm-t10\nfm-v1'
++ printf '%s\n' $'bash\nfm-smoke1\nfm-t10\nfm-v1'
++ grep -Fqx -- fm-v1.0
++ case "$selector" in
++ base=fm-v1
++ pane_index=0
++ '[' -n fm-v1 ']'
++ '[' -n 0 ']'
++ case "$base" in
++ return 1
++ fm_backend_tmux_send_key smoke:fm-v1.0 X
++ fm_backend_tmux_target_exists smoke:fm-v1.0
++ local target=smoke:fm-v1.0 session selector windows base pane_index window_id
++ '[' -n smoke:fm-v1.0 ']'
++ case "$target" in
++ session=smoke
++ selector=fm-v1.0
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n fm-v1.0 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-smoke1\nfm-t10\nfm-v1'
+++ printf '%s\n' $'bash\nfm-smoke1\nfm-t10\nfm-v1'
+++ return 0
++ windows=$'bash\nfm-smoke1\nfm-t10\nfm-v1'
++ printf '%s\n' $'bash\nfm-smoke1\nfm-t10\nfm-v1'
++ grep -Fqx -- fm-v1.0
++ case "$selector" in
++ base=fm-v1
++ pane_index=0
++ '[' -n fm-v1 ']'
++ '[' -n 0 ']'
++ case "$base" in
++ return 1
++ return 1
++ pass 'real tmux: a gone dotted window reads absent beside its undotted neighbor'
++ printf 'ok - %s\n' 'real tmux: a gone dotted window reads absent beside its undotted neighbor'
+ok - real tmux: a gone dotted window reads absent beside its undotted neighbor
++ fm_backend_tmux_kill smoke:fm-smoke1
++ local target=smoke:fm-smoke1 session window windows inventory_status
++ case "$target" in
++ session=smoke
++ window=fm-smoke1
++ case "$session:$window" in
++ tmux kill-window -t =smoke:=fm-smoke1
++ return 0
++ tmux list-windows -t smoke -F '#{window_name}'
++ grep -qx fm-smoke1
+++ fm_backend_agent_state tmux smoke:fm-smoke1
+++ local backend=tmux target=smoke:fm-smoke1
+++ fm_backend_source tmux
+++ local name=tmux adapter rel sibling
+++ fm_backend_validate tmux
+++ local name=tmux
+++ fm_backend_is_known tmux
+++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
+++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
+++ case "$name" in
+++ case " $list " in
+++ return 0
+++ return 0
+++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
+++ case "$name" in
+++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
+++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
+++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
+++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
+++ for rel in "$@"
+++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
+++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
+++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
+++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
+++ for rel in "$@"
+++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
+++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
+++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
+++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
+++ for rel in "$@"
+++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
+++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
+++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
+++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
+++ for rel in "$@"
+++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
+++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
+++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
+++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
+++ for rel in "$@"
+++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
+++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
+++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
+++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
+++ for rel in "$@"
+++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
+++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
+++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
+++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
+++ case "$name" in
+++ '[' -z 1 ']'
+++ case "$backend" in
+++ fm_backend_tmux_agent_state smoke:fm-smoke1
+++ local target=smoke:fm-smoke1 comm session window windows inventory_status
+++ local foreground argv0s name pid fg_seen=0 fg_shell=0 fg_other=0
+++ case "$target" in
+++ session=smoke
+++ window=fm-smoke1
++++ fm_backend_tmux_window_inventory smoke
++++ local windows
+++++ LC_ALL=C
+++++ tmux list-windows -t smoke -F '#{window_name}'
++++ windows=$'bash\nfm-t10\nfm-v1'
++++ printf '%s\n' $'bash\nfm-t10\nfm-v1'
++++ return 0
+++ windows=$'bash\nfm-t10\nfm-v1'
+++ inventory_status=0
+++ '[' 0 -ne 0 ']'
+++ printf '%s\n' $'bash\nfm-t10\nfm-v1'
+++ grep -Fqx fm-smoke1
+++ printf missing
+++ return 0
++ state=missing
++ '[' missing = missing ']'
++ fm_backend_target_exists tmux smoke:fm-smoke1
++ local backend=tmux target=smoke:fm-smoke1 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke:fm-smoke1
++ local target=smoke:fm-smoke1 session selector windows base pane_index window_id
++ '[' -n smoke:fm-smoke1 ']'
++ case "$target" in
++ session=smoke
++ selector=fm-smoke1
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke ']'
++ '[' -n fm-smoke1 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-t10\nfm-v1'
+++ printf '%s\n' $'bash\nfm-t10\nfm-v1'
+++ return 0
++ windows=$'bash\nfm-t10\nfm-v1'
++ printf '%s\n' $'bash\nfm-t10\nfm-v1'
++ grep -Fqx -- fm-smoke1
++ case "$selector" in
++ return 1
++ pass 'real tmux: fm_backend_target_exists rejects a killed window while another session stays alive'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists rejects a killed window while another session stays alive'
+ok - real tmux: fm_backend_target_exists rejects a killed window while another session stays alive
++ fm_backend_target_exists tmux smoke-missing:fm-smoke1
++ local backend=tmux target=smoke-missing:fm-smoke1 expected_label= session pane
++ case "$backend" in
++ fm_backend_source tmux
++ local name=tmux adapter rel sibling
++ fm_backend_validate tmux
++ local name=tmux
++ fm_backend_is_known tmux
++ fm_backend_list_contains 'tmux herdr zellij orca cmux paseo rex t3code tern' tmux
++ local 'list=tmux herdr zellij orca cmux paseo rex t3code tern' name=tmux
++ case "$name" in
++ case " $list " in
++ return 0
++ return 0
++ adapter=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ case "$name" in
++ set -- fm-tmux-lib.sh fm-composer-lib.sh fm-cursor-lib.sh fm-session-lock-lib.sh fm-agent-process-lib.sh fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/backends/tmux.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-tmux-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-composer-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-cursor-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-session-lock-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-agent-process-lib.sh ']'
++ for rel in "$@"
++ sibling=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ fm_backend_source_readable /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh
++ '[' -f /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ '[' -r /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-gemini-lib.sh ']'
++ case "$name" in
++ '[' -z 1 ']'
++ fm_backend_tmux_target_exists smoke-missing:fm-smoke1
++ local target=smoke-missing:fm-smoke1 session selector windows base pane_index window_id
++ '[' -n smoke-missing:fm-smoke1 ']'
++ case "$target" in
++ session=smoke-missing
++ selector=fm-smoke1
++ case "$session" in
++ case "$selector" in
++ '[' -n smoke-missing ']'
++ '[' -n fm-smoke1 ']'
++ case "$selector" in
+++ fm_backend_tmux_window_inventory =smoke-missing
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke-missing -F '#{window_name}'
+++ windows='can'\''t find session: smoke-missing'
+++ case "$windows" in
+++ return 2
++ windows=
++ return 1
++ tmux has-session -t smoke-other
++ pass 'real tmux: fm_backend_target_exists rejects a missing session while another session stays alive'
++ printf 'ok - %s\n' 'real tmux: fm_backend_target_exists rejects a missing session while another session stays alive'
+ok - real tmux: fm_backend_target_exists rejects a missing session while another session stays alive
++ fm_backend_tmux_kill smoke:fm-smoke1
++ local target=smoke:fm-smoke1 session window windows inventory_status
++ case "$target" in
++ session=smoke
++ window=fm-smoke1
++ case "$session:$window" in
++ tmux kill-window -t =smoke:=fm-smoke1
+++ fm_backend_tmux_window_inventory =smoke
+++ local windows
++++ LC_ALL=C
++++ tmux list-windows -t =smoke -F '#{window_name}'
+++ windows=$'bash\nfm-t10\nfm-v1'
+++ printf '%s\n' $'bash\nfm-t10\nfm-v1'
+++ return 0
++ windows=$'bash\nfm-t10\nfm-v1'
++ inventory_status=0
++ '[' 0 -eq 2 ']'
++ '[' 0 -ne 0 ']'
++ printf '%s\n' $'bash\nfm-t10\nfm-v1'
++ grep -qxF -- fm-smoke1
++ return 0
++ pass 'real tmux: kill removes the window and the readable session inventory authoritatively classifies it missing'
++ printf 'ok - %s\n' 'real tmux: kill removes the window and the readable session inventory authoritatively classifies it missing'
+ok - real tmux: kill removes the window and the readable session inventory authoritatively classifies it missing
+++ tmux display-message -p -t smoke '#{session_id}'
++ OWN_SID='$0'
++ OWN_SID=0
++ tmux new-session -d -s smoke-viewer -t smoke
++ tmux select-window -t smoke-viewer:0
+++ TMUX=/fake,0,0
+++ fm_backend_tmux_container_ensure
+++ '[' -n /fake,0,0 ']'
+++ fm_backend_tmux_own_session
+++ local sid=0 name=
+++ case "$sid" in
++++ tmux display-message -p -t '$0' '#S'
+++ name=smoke
+++ '[' -n smoke ']'
+++ printf '%s\n' smoke
++ got=smoke
++ '[' smoke = smoke ']'
++ pass 'real tmux: container_ensure names the pane'\''s own session, not a more recent grouped session'
++ printf 'ok - %s\n' 'real tmux: container_ensure names the pane'\''s own session, not a more recent grouped session'
+ok - real tmux: container_ensure names the pane's own session, not a more recent grouped session
+++ tmux display-message -p -t smoke-viewer '#{session_id}'
++ VIEWER_SID='$4'
++ VIEWER_SID=4
+++ tmux display-message -p -t smoke:0 '#{pane_id}'
++ OWN_PANE=%0
++ tmux kill-session -t smoke-viewer
+++ TMUX=/fake,0,4
+++ TMUX_PANE=%0
+++ fm_backend_tmux_container_ensure
+++ '[' -n /fake,0,4 ']'
+++ fm_backend_tmux_own_session
+++ local sid=4 name=
+++ case "$sid" in
++++ tmux display-message -p -t '$4' '#S'
+++ name=
+++ '[' -n '' ']'
+++ tmux display-message -p '#S'
++ got=smoke
++ '[' smoke = smoke ']'
++ pass 'real tmux: container_ensure falls back to the pane'\''s surviving session when the $TMUX session id is stale'
++ printf 'ok - %s\n' 'real tmux: container_ensure falls back to the pane'\''s surviving session when the $TMUX session id is stale'
+ok - real tmux: container_ensure falls back to the pane's surviving session when the $TMUX session id is stale
++ cleanup_all
++ /opt/homebrew/bin/tmux -L fm-backend-smoke-16150 kill-server
++ '[' -n /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.v9A3s0 ']'
++ rm -rf /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/tmp/fm-backend-smoke.v9A3s0
++ trap - EXIT

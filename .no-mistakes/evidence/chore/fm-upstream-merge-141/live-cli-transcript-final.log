@@ -1,0 +1,294 @@
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-lab-home.sh create /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo
+/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo
+exit: 0
+$ tasks-axi add lab-scout Investigate archived answers --kind scout --repo sample --start
+ok: added lab-scout (scout, repo sample) -> In flight
+task:
+  id: lab-scout
+  title: Investigate archived answers
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: sample
+  priority: "-"
+  created: 2026-10-26
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi done lab-scout --pr <url>` when it ships
+  - Run `tasks-axi block lab-scout --by <other>` to record a dependency
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh hold lab-call --title Choose an option --reason Captain decision needed --repo sample --origin lab-scout
+lab-call
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete lab-scout lab-call
+complete: lab-scout captain-call inventory reviewed (lab-call)
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh answer lab-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo/decision.txt
+answered: lab-call
+exit: 0
+$ tasks-axi add lab-trigger Trigger Done retention --kind ship --repo sample
+ok: added lab-trigger (ship, repo sample) -> Queued
+task:
+  id: lab-trigger
+  title: Trigger Done retention
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: sample
+  priority: "-"
+  created: 2026-10-26
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start lab-trigger` to move it to in flight
+  - Run `tasks-axi block lab-trigger --by <other>` to record a dependency
+exit: 0
+$ tasks-axi done lab-trigger
+ok: done lab-trigger -> Done; pruned 2
+help[1]:
+  - Run `tasks-axi ready` to dispatch work unblocked by this
+exit: 0
+$ tasks-axi show lab-call
+error: "Task \"lab-call\" not found in this backlog"
+code: NOT_FOUND
+help[1]: Run `tasks-axi list` to see existing tasks
+exit: 1
+ARCHIVE persisted contract:
+
+## Archived 2026-10-26
+- [x] lab-trigger - Trigger Done retention (repo: sample) (kind: ship) (done 2026-10-26)
+- [x] lab-call - Choose an option (repo: sample) (kind: captain) (done 2026-10-26) (hold: fm-hold-v1:Q2FwdGFpbiBkZWNpc2lvbiBuZWVkZWQ=) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: d8e9d66a89da24ebce667a11efb5c5f0a57a836b21f3ec6b09b1d5412e8b3ad4
+  Resolution mode: answered
+
+  Captain decision:
+  Captain chose option A.
+
+  Captain hold origin: lab-scout
+
+  Origin: lab-scout
+
+
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh verify lab-scout
+verified: lab-scout captain-call inventory
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete lab-scout lab-call
+complete: lab-scout captain-call inventory reviewed (lab-call)
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-teardown.sh lab-scout
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown lab-scout complete (window lab:fm-lab-scout, worktree /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo/projects/missing)
+Backlog: lab-scout is closed in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit: 0
+$ tasks-axi add lab-unanswered Investigate unanswered close --kind scout --repo sample --start
+ok: added lab-unanswered (scout, repo sample) -> In flight
+task:
+  id: lab-unanswered
+  title: Investigate unanswered close
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: sample
+  priority: "-"
+  created: 2026-10-26
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi done lab-unanswered --pr <url>` when it ships
+  - Run `tasks-axi block lab-unanswered --by <other>` to record a dependency
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh hold lab-unanswered-call --title Still needs an answer --reason No decision recorded --repo sample --origin lab-unanswered
+lab-unanswered-call
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete lab-unanswered lab-unanswered-call
+complete: lab-unanswered captain-call inventory reviewed (lab-unanswered-call)
+exit: 0
+$ tasks-axi done lab-unanswered-call
+ok: done lab-unanswered-call -> Done; pruned 1
+help[1]:
+  - Run `tasks-axi ready` to dispatch work unblocked by this
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh verify lab-unanswered
+fm-captain-hold: captain-held task lab-unanswered-call is neither held for the captain nor closed with a recorded captain answer
+exit: 1
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-teardown.sh lab-unanswered
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo
+REFUSED: task lab-unanswered has a missing, empty, or ambiguous worktree identity; preserving task state.
+exit: 1
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh verify lab-unanswered
+fm-captain-hold: no captain-held task lab-never-held and no migrated hold for it in this home's configured backlog (data directory /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo/data); the nearest legacy identity lab-unanswered-decision-lab-never-held also resolves to nothing
+exit: 1
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-lab-home.sh create /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/user
+/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/user
+exit: 0
+$ tasks-axi add lab-scout Investigate archived answers --kind scout --repo sample --start
+ok: added lab-scout (scout, repo sample) -> In flight
+task:
+  id: lab-scout
+  title: Investigate archived answers
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: sample
+  priority: "-"
+  created: 2026-10-26
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi done lab-scout --pr <url>` when it ships
+  - Run `tasks-axi block lab-scout --by <other>` to record a dependency
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh hold lab-call --title Choose an option --reason Captain decision needed --repo sample --origin lab-scout
+lab-call
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete lab-scout lab-call
+complete: lab-scout captain-call inventory reviewed (lab-call)
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh answer lab-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/user/decision.txt
+answered: lab-call
+exit: 0
+$ tasks-axi add lab-trigger Trigger Done retention --kind ship --repo sample
+ok: added lab-trigger (ship, repo sample) -> Queued
+task:
+  id: lab-trigger
+  title: Trigger Done retention
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: sample
+  priority: "-"
+  created: 2026-10-26
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start lab-trigger` to move it to in flight
+  - Run `tasks-axi block lab-trigger --by <other>` to record a dependency
+exit: 0
+$ tasks-axi done lab-trigger
+ok: done lab-trigger -> Done; pruned 2
+help[1]:
+  - Run `tasks-axi ready` to dispatch work unblocked by this
+exit: 0
+$ tasks-axi show lab-call
+error: "Task \"lab-call\" not found in this backlog"
+code: NOT_FOUND
+help[1]: Run `tasks-axi list` to see existing tasks
+exit: 1
+ARCHIVE persisted contract:
+
+## Archived 2026-10-26
+- [x] lab-trigger - Trigger Done retention (repo: sample) (kind: ship) (done 2026-10-26)
+- [x] lab-call - Choose an option (repo: sample) (kind: captain) (done 2026-10-26) (hold: fm-hold-v1:Q2FwdGFpbiBkZWNpc2lvbiBuZWVkZWQ=) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: d8e9d66a89da24ebce667a11efb5c5f0a57a836b21f3ec6b09b1d5412e8b3ad4
+  Resolution mode: answered
+
+  Captain decision:
+  Captain chose option A.
+
+  Captain hold origin: lab-scout
+
+  Origin: lab-scout
+
+
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh verify lab-scout
+verified: lab-scout captain-call inventory
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete lab-scout lab-call
+complete: lab-scout captain-call inventory reviewed (lab-call)
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-teardown.sh lab-scout
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/user
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.pi/extensions/fm-primary-turnend-guard.ts -e /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown lab-scout complete (window lab:fm-lab-scout, worktree /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/user/projects/missing)
+Backlog: lab-scout is closed in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/user/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-lab-home.sh create /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/export
+/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/export
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-record-export.sh sync
+
+exit: 0
+LIVE SNAPSHOT: 150 tasks / 300 byte-checked brief and report files, RLIMIT_NOFILE=64; private.txt excluded
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-record-export.sh archive-task task-000
+
+exit: 0
+COMMITTED MANIFEST:
+{
+  "schema": "firstmate-record-export-archive.v1",
+  "schema_version": 1,
+  "task": "task-000",
+  "spawn_gen": "live-generation",
+  "captured_at": "2026-10-26T16:45:02Z",
+  "complete": true,
+  "files": [
+    {
+      "source": "state/task-000.meta",
+      "archive": "meta",
+      "bytes": 37,
+      "sha256": "daf1a6713e4902ef7ce8f00568ef21d9752e720511a205a739e46f0ee870a671"
+    },
+    {
+      "source": "state/task-000.status",
+      "archive": "status",
+      "bytes": 22,
+      "sha256": "4a5473cdfb318d01be4e9146b6e375be7b9b07432ac7ddedd9dcd35f46d3aec7"
+    }
+  ]
+}
+
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-record-export.sh sync
+error: data/task-000/brief.md is not a regular non-symlink file
+exit: 1
+Prior live generation retained after rejected symlink.
+Disposable live homes removed.

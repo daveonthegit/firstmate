@@ -1,0 +1,103 @@
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-lab-home.sh create /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo
+/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo
+exit: 0
+$ tasks-axi add lab-scout Investigate archived answers --kind scout --repo sample --start
+ok: added lab-scout (scout, repo sample) -> In flight
+task:
+  id: lab-scout
+  title: Investigate archived answers
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: sample
+  priority: "-"
+  created: 2026-10-26
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi done lab-scout --pr <url>` when it ships
+  - Run `tasks-axi block lab-scout --by <other>` to record a dependency
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh hold lab-call --title Choose an option --reason Captain decision needed --repo sample --origin lab-scout
+lab-call
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete lab-scout lab-call
+complete: lab-scout captain-call inventory reviewed (lab-call)
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh answer lab-call --decision-file /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo/decision.txt
+answered: lab-call
+exit: 0
+$ tasks-axi add lab-trigger Trigger Done retention --kind ship --repo sample
+ok: added lab-trigger (ship, repo sample) -> Queued
+task:
+  id: lab-trigger
+  title: Trigger Done retention
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: sample
+  priority: "-"
+  created: 2026-10-26
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start lab-trigger` to move it to in flight
+  - Run `tasks-axi block lab-trigger --by <other>` to record a dependency
+exit: 0
+$ tasks-axi done lab-trigger
+ok: done lab-trigger -> Done; pruned 2
+help[1]:
+  - Run `tasks-axi ready` to dispatch work unblocked by this
+exit: 0
+$ tasks-axi show lab-call
+error: "Task \"lab-call\" not found in this backlog"
+code: NOT_FOUND
+help[1]: Run `tasks-axi list` to see existing tasks
+exit: 1
+ARCHIVE persisted contract:
+
+## Archived 2026-10-26
+- [x] lab-trigger - Trigger Done retention (repo: sample) (kind: ship) (done 2026-10-26)
+- [x] lab-call - Choose an option (repo: sample) (kind: captain) (done 2026-10-26) (hold: fm-hold-v1:Q2FwdGFpbiBkZWNpc2lvbiBuZWVkZWQ=) (hold-kind: captain)
+  Resolution recorded by fm-captain-hold.
+  Decision digest: d8e9d66a89da24ebce667a11efb5c5f0a57a836b21f3ec6b09b1d5412e8b3ad4
+  Resolution mode: answered
+
+  Captain decision:
+  Captain chose option A.
+
+  Captain hold origin: lab-scout
+
+  Origin: lab-scout
+
+
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh verify lab-scout
+verified: lab-scout captain-call inventory
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-captain-hold.sh complete lab-scout lab-call
+complete: lab-scout captain-call inventory reviewed (lab-call)
+exit: 0
+$ /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/bin/fm-teardown.sh lab-scout
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live/repo
+REFUSED: task lab-scout has a missing, empty, or ambiguous window endpoint; preserving task state.
+exit: 1
+Traceback (most recent call last):
+  File "/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live-check.py", line 55, in <module>
+    run([root/'bin/fm-teardown.sh','lab-scout'],home)
+  File "/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M5WE2JD6YYN138TMZ5DP8A2F/.test-phase/live-check.py", line 21, in run
+    assert (p.returncode == 0) if expected == 0 else (p.returncode != 0)
+AssertionError
