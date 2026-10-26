@@ -484,6 +484,18 @@ esac
 case "${1:-}" in
   send-keys) printf '%s\n' "$*" >> "${FM_FAKE_TMUX_LOG:?FM_FAKE_TMUX_LOG unset}"; exit 0 ;;
   display-message) printf 'firstmate\n'; exit 0 ;;
+  # Key sends first prove the task window exists in the session inventory, so
+  # the window a new-window call names is listed from then on.
+  new-window)
+    shift
+    while [ "$#" -gt 0 ]; do
+      [ "$1" != -n ] || printf '%s\n' "$2" >> "${FM_FAKE_TMUX_WINDOWS:?FM_FAKE_TMUX_WINDOWS unset}"
+      shift
+    done
+    printf '@1\n'
+    exit 0
+    ;;
+  list-windows) cat "${FM_FAKE_TMUX_WINDOWS:?FM_FAKE_TMUX_WINDOWS unset}" 2>/dev/null; exit 0 ;;
 esac
 exit 0
 SH
@@ -571,7 +583,7 @@ run_spawn() {  # <id> <accounts> <access>
     FM_STATE_OVERRIDE="$HOME_DIR/state" FM_DATA_OVERRIDE="$HOME_DIR/data" \
     FM_PROJECTS_OVERRIDE="$HOME_DIR/projects" FM_CONFIG_OVERRIDE="$HOME_DIR/config" \
     FM_SPAWN_NO_GUARD=1 FM_BACKEND=tmux TMUX="fake,1,0" \
-    FM_FAKE_PANE_PATH="$WT_DIR" FM_FAKE_TMUX_LOG="$SENT_LOG" \
+    FM_FAKE_PANE_PATH="$WT_DIR" FM_FAKE_TMUX_LOG="$SENT_LOG" FM_FAKE_TMUX_WINDOWS="$CASE_DIR/tmux-windows" \
     FM_FAKE_GH_ACCOUNTS="$accounts" FM_FAKE_GH_ACCESS="$access" FM_FAKE_GH_LOG="$LOG" \
     GIT_SSH_COMMAND="$CASE_DIR/fake-ssh" \
     PATH="${SPAWN_PATH_PREFIX:+$SPAWN_PATH_PREFIX:}$FAKEBIN:$PATH" \
