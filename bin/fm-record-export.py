@@ -17,6 +17,7 @@ import stat
 import sys
 import time
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Iterable
@@ -351,11 +352,28 @@ def open_export_root(root: str, home: str, protected: Iterable[tuple[str, str]])
 @dataclass
 class Source:
     relative: str
-    fd: int
     initial: os.stat_result
+    digest: tuple[int, str] | None = None
 
-    def close(self) -> None:
-        os.close(self.fd)
+
+@contextmanager
+def open_source(root_fd: int, relative: str, initial: os.stat_result):
+    parts = relative.split("/")[1:]
+    parent_fd = os.dup(root_fd)
+    fd = -1
+    try:
+        for part in parts[:-1]:
+            next_fd = open_directory_at(parent_fd, part, relative)
+            os.close(parent_fd)
+            parent_fd = next_fd
+        fd, info = open_regular_at(parent_fd, parts[-1], relative)
+        if stable_identity(info) != stable_identity(initial):
+            fail(f"record export source changed during capture: {relative}")
+        yield fd
+    finally:
+        if fd >= 0:
+            os.close(fd)
+        os.close(parent_fd)
 
 
 def add_source(sources: list[Source], parent_fd: int, name: str, relative: str, label: str) -> None:
@@ -363,7 +381,8 @@ def add_source(sources: list[Source], parent_fd: int, name: str, relative: str, 
         fd, info = open_regular_at(parent_fd, name, label)
     except FileNotFoundError:
         return
-    sources.append(Source(relative, fd, info))
+    os.close(fd)
+    sources.append(Source(relative, info))
 
 
 def collect_data_sources(data_fd: int) -> list[Source]:
@@ -457,7 +476,7 @@ def ensure_relative_directory(root_fd: int, parts: list[str]) -> int:
         raise
 
 
-def copy_source(source: Source, stage_fd: int) -> None:
+def copy_source(source: Source, stage_fd: int, source_fd: int) -> None:
     parts = source.relative.split("/")
     for part in parts:
         safe_component(part, "record export relative path")
@@ -471,27 +490,28 @@ def copy_source(source: Source, stage_fd: int) -> None:
             0o640,
             dir_fd=parent_fd,
         )
-        os.lseek(source.fd, 0, os.SEEK_SET)
+        os.lseek(source_fd, 0, os.SEEK_SET)
         while True:
-            chunk = os.read(source.fd, 1024 * 1024)
+            chunk = os.read(source_fd, 1024 * 1024)
             if not chunk:
                 break
             source_digest.update(chunk)
             write_all(destination_fd, chunk)
         os.fchmod(destination_fd, 0o640)
         os.fsync(destination_fd)
-        after = os.fstat(source.fd)
+        after = os.fstat(source_fd)
         if stable_identity(source.initial) != stable_identity(after):
             fail(f"record export source changed during live capture: {source.relative}")
-        os.lseek(source.fd, 0, os.SEEK_SET)
+        os.lseek(source_fd, 0, os.SEEK_SET)
         verify_digest = hashlib.sha256()
         while True:
-            chunk = os.read(source.fd, 1024 * 1024)
+            chunk = os.read(source_fd, 1024 * 1024)
             if not chunk:
                 break
             verify_digest.update(chunk)
         if source_digest.digest() != verify_digest.digest():
             fail(f"record export source changed during live capture: {source.relative}")
+        source.digest = (after.st_size, source_digest.hexdigest())
     finally:
         if destination_fd >= 0:
             os.close(destination_fd)
@@ -596,11 +616,7 @@ def digest_fd(fd: int) -> tuple[int, str]:
 class ArchiveSource:
     source_relative: str
     archive_relative: str
-    fd: int
     initial: os.stat_result
-
-    def close(self) -> None:
-        os.close(self.fd)
 
 
 def add_archive_source(
@@ -618,7 +634,8 @@ def add_archive_source(
         if required:
             fail(f"required record export archive source is missing: {source_relative}")
         return
-    sources.append(ArchiveSource(source_relative, archive_relative, fd, info))
+    os.close(fd)
+    sources.append(ArchiveSource(source_relative, archive_relative, info))
 
 
 def collect_archive_sources(state_fd: int, task: str) -> list[ArchiveSource]:
@@ -697,7 +714,7 @@ def metadata_spawn_generation(metadata_fd: int) -> str:
     return values[0]
 
 
-def copy_archive_source(source: ArchiveSource, stage_fd: int) -> dict[str, object]:
+def copy_archive_source(source: ArchiveSource, stage_fd: int, source_fd: int) -> dict[str, object]:
     parts = source.archive_relative.split("/")
     for part in parts:
         safe_component(part, "record export archive path")
@@ -712,9 +729,9 @@ def copy_archive_source(source: ArchiveSource, stage_fd: int) -> dict[str, objec
             0o640,
             dir_fd=parent_fd,
         )
-        os.lseek(source.fd, 0, os.SEEK_SET)
+        os.lseek(source_fd, 0, os.SEEK_SET)
         while True:
-            chunk = os.read(source.fd, 1024 * 1024)
+            chunk = os.read(source_fd, 1024 * 1024)
             if not chunk:
                 break
             size += len(chunk)
@@ -722,9 +739,9 @@ def copy_archive_source(source: ArchiveSource, stage_fd: int) -> dict[str, objec
             write_all(destination_fd, chunk)
         os.fchmod(destination_fd, 0o640)
         os.fsync(destination_fd)
-        if stable_identity(source.initial) != stable_identity(os.fstat(source.fd)):
+        if stable_identity(source.initial) != stable_identity(os.fstat(source_fd)):
             fail(f"record export source changed during archive capture: {source.source_relative}")
-        verify_size, verify_digest = digest_fd(source.fd)
+        verify_size, verify_digest = digest_fd(source_fd)
         if size != verify_size or digest.hexdigest() != verify_digest:
             fail(f"record export source changed during archive capture: {source.source_relative}")
         return {
@@ -842,37 +859,26 @@ def load_and_validate_manifest(generation_fd: int, task: str, spawn_gen: str) ->
 
 
 def validate_committed_against_sources(
-    entries: list[dict[str, object]], sources: list[ArchiveSource]
+    entries: list[dict[str, object]], sources: list[ArchiveSource], state_fd: int
 ) -> None:
     by_source = {entry["source"]: entry for entry in entries}
     for source in sources:
         entry = by_source.get(source.source_relative)
         if entry is None or entry["archive"] != source.archive_relative:
             fail("committed archive differs from current sources")
-        size, digest = digest_fd(source.fd)
+        with open_source(state_fd, source.source_relative, source.initial) as source_fd:
+            size, digest = digest_fd(source_fd)
         if entry["bytes"] != size or entry["sha256"] != digest:
             fail("committed archive differs from current sources")
 
 
 def revalidate_archive_sources(state_fd: int, task: str, sources: list[ArchiveSource], entries: list[dict[str, object]]) -> None:
     current = collect_archive_sources(state_fd, task)
-    try:
-        original_keys = [(item.source_relative, item.archive_relative) for item in sources]
-        current_keys = [(item.source_relative, item.archive_relative) for item in current]
-        if original_keys != current_keys:
-            fail("record export source set changed during archive capture")
-        entry_by_source = {entry["source"]: entry for entry in entries}
-        for original, reopened in zip(sources, current):
-            if fd_identity(original.fd) != fd_identity(reopened.fd) \
-                    or stable_identity(original.initial) != stable_identity(os.fstat(original.fd)):
-                fail("record export source changed during archive capture")
-            size, digest = digest_fd(original.fd)
-            entry = entry_by_source[original.source_relative]
-            if entry["bytes"] != size or entry["sha256"] != digest:
-                fail("record export source changed during archive capture")
-    finally:
-        for source in current:
-            source.close()
+    original_keys = [(item.source_relative, item.archive_relative, stable_identity(item.initial)) for item in sources]
+    current_keys = [(item.source_relative, item.archive_relative, stable_identity(item.initial)) for item in current]
+    if original_keys != current_keys:
+        fail("record export source set changed during archive capture")
+    validate_committed_against_sources(entries, sources, state_fd)
 
 
 def write_archive_manifest(
@@ -983,7 +989,8 @@ def archive_task(home: str, config: str, data: str, state: str, task: str) -> No
     sources: list[ArchiveSource] = []
     try:
         sources = collect_archive_sources(state_fd, task)
-        spawn_gen = metadata_spawn_generation(sources[0].fd)
+        with open_source(state_fd, sources[0].source_relative, sources[0].initial) as metadata_fd:
+            spawn_gen = metadata_spawn_generation(metadata_fd)
         root_fd = open_export_root(
             configured_root,
             home,
@@ -1008,7 +1015,7 @@ def archive_task(home: str, config: str, data: str, state: str, task: str) -> No
                     try:
                         if "manifest.v1.json" in os.listdir(existing_fd):
                             entries = load_and_validate_manifest(existing_fd, task, spawn_gen)
-                            validate_committed_against_sources(entries, sources)
+                            revalidate_archive_sources(state_fd, task, sources, entries)
                             prune_archives(archive_fd)
                             return
                         walk_generation_files(existing_fd)
@@ -1019,7 +1026,10 @@ def archive_task(home: str, config: str, data: str, state: str, task: str) -> No
                 os.mkdir(stage_name, 0o750, dir_fd=task_fd)
                 stage_fd = open_directory_at(task_fd, stage_name, "record export archive staging generation")
                 try:
-                    entries = [copy_archive_source(source, stage_fd) for source in sources]
+                    entries = []
+                    for source in sources:
+                        with open_source(state_fd, source.source_relative, source.initial) as source_fd:
+                            entries.append(copy_archive_source(source, stage_fd, source_fd))
                     write_archive_manifest(stage_fd, task, spawn_gen, entries)
                     current_task = os.stat(task, dir_fd=archive_fd, follow_symlinks=False)
                     if not stat.S_ISDIR(current_task.st_mode) \
@@ -1046,8 +1056,6 @@ def archive_task(home: str, config: str, data: str, state: str, task: str) -> No
         finally:
             os.close(archive_fd)
     finally:
-        for source in sources:
-            source.close()
         if root_fd >= 0:
             os.close(root_fd)
         os.close(state_fd)
@@ -1089,7 +1097,19 @@ def sync_records(home: str, config: str, data: str, state: str) -> None:
             stage_fd = open_directory_at(generations_fd, stage_name, "record export live staging generation")
             try:
                 for source in sources:
-                    copy_source(source, stage_fd)
+                    source_root = data_fd if source.relative.startswith("data/") else state_fd
+                    with open_source(source_root, source.relative, source.initial) as source_fd:
+                        copy_source(source, stage_fd, source_fd)
+                current = collect_data_sources(data_fd) + collect_state_sources(state_fd)
+                if [(s.relative, stable_identity(s.initial)) for s in sources] != [
+                    (s.relative, stable_identity(s.initial)) for s in current
+                ]:
+                    fail("record export source set changed during live capture")
+                for source in sources:
+                    source_root = data_fd if source.relative.startswith("data/") else state_fd
+                    with open_source(source_root, source.relative, source.initial) as source_fd:
+                        if digest_fd(source_fd) != source.digest:
+                            fail(f"record export source changed during live capture: {source.relative}")
                 os.fsync(stage_fd)
             except Exception:
                 os.close(stage_fd)
@@ -1137,8 +1157,6 @@ def sync_records(home: str, config: str, data: str, state: str) -> None:
         finally:
             os.close(generations_fd)
     finally:
-        for source in sources:
-            source.close()
         if root_fd >= 0:
             os.close(root_fd)
         os.close(state_fd)

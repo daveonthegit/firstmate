@@ -768,6 +768,8 @@ test_export_root_stays_cold_to_firstmate_readers() {
   pass "presentation, wake, classification, and snapshot readers leave the export root cold"
 }
 
+python3 "$ROOT/tests/fm-record-export-capture.test.py" || fail "record export capture regressions failed"
+
 test_sync_is_off_when_config_is_absent
 test_sync_copies_only_the_v1_allowlist
 test_sync_replaces_files_atomically

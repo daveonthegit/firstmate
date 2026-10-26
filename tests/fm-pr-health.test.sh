@@ -42,6 +42,17 @@ model() {
   cat "$FORGE/pr-$n.json"
 }
 case "$1 $2" in
+  'auth status')
+    [ -n "${FM_GH_ACCOUNT:-}" ] || exit 1
+    printf 'github.com\n  x Logged in to github.com account other (keyring)\n  x Logged in to github.com account selected (keyring)\n'
+    exit 0 ;;
+  'auth token') printf 'fixture-token-%s\n' "$4"; exit 0 ;;
+esac
+if [ "${FM_GH_ACCOUNT:-}" = selected ]; then
+  [ "${GH_TOKEN:-}" = fixture-token-selected ] || exit 1
+  printf 'selected %s\n' "$*" >> "$FORGE/selected.log"
+fi
+case "$1 $2" in
   'api graphql')
     n=
     for arg in "$@"; do case "$arg" in number=*) n=${arg#number=} ;; esac; done
@@ -202,6 +213,8 @@ test_conflict_once_per_latest_commit() {
 
 test_adopted_draft_red_required_check_after_pause_wakes_once() {
   local home wt
+  export FM_GH_ACCOUNT=selected
+  unset GH_TOKEN GITHUB_TOKEN
   home=$(new_home adopted-draft)
   wt="$home/copy"
   git init -q -b ART-9999-infer-tree-diameter "$wt"
@@ -225,6 +238,9 @@ test_adopted_draft_red_required_check_after_pause_wakes_once() {
     'a required check that newly fails at an already reported commit must wake once'
   set_pr "$home" 5 '.checks[1].conclusion = "FAILURE"'
   expect_silent "$home" 'a check already reported at this commit must not repeat when it fails again'
+  assert_grep 'selected api repos/o/r/pulls/5' "$home/forge/selected.log" 'REST reads must use the selected account'
+  assert_grep 'selected api graphql ' "$home/forge/selected.log" 'GraphQL reads must use the selected account'
+  assert_grep 'selected pr view 5 --json url' "$home/forge/selected.log" 'branch URL reads must use the selected account'
   pass 'each required check that fails on an adopted draft wakes once per latest commit'
 }
 

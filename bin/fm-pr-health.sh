@@ -111,12 +111,14 @@ save_health() { # json-file
   mv -f -- "$staged" "$HEALTH"
 }
 
-gh_read() { # deadline args... : one bounded forge read
-  local left=$(($1 - $(date +%s)))
-  shift
+gh_read() { # deadline repo args... : one bounded forge read
+  local left=$(($1 - $(date +%s))) repo=$2
+  shift 2
   [ "$left" -gt 0 ] || return 124
   [ "$left" -le 5 ] || left=5
-  fm_run_timed "$left" env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 gh "$@"
+  fm_run_timed "$left" env GH_HOST="$FM_PR_HOST" GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 \
+    bash -c '. "$1/fm-pr-lib.sh"; shift; repo=$1; shift; fm_pr_github_exec "$repo" gh "$@"' \
+    _ "$SCRIPT_DIR" "$repo" "$@"
 }
 
 PR_QUERY='query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){
@@ -163,9 +165,9 @@ read_pr() { # url deadline output-directory -> rest.json gql.json
   fm_pr_url_parse "$url" && [ "$FM_PR_PROVIDER" = github ] || return 1
   number=$FM_PR_NUMBER
   owner=${FM_PR_PATH%%/*}; repo=${FM_PR_PATH#*/}
-  gh_read "$deadline" api "repos/$owner/$repo/pulls/$number" > "$out/rest.json" 2>/dev/null &
+  gh_read "$deadline" "$owner/$repo" api "repos/$owner/$repo/pulls/$number" > "$out/rest.json" 2>/dev/null &
   local rest_pid=$!
-  gh_read "$deadline" api graphql --paginate --slurp -F "owner=$owner" -F "repo=$repo" -F "number=$number" \
+  gh_read "$deadline" "$owner/$repo" api graphql --paginate --slurp -F "owner=$owner" -F "repo=$repo" -F "number=$number" \
     -f "query=$PR_QUERY" > "$out/pages.json" 2>/dev/null &
   local gql_pid=$!
   wait "$rest_pid" || rest_rc=$?
@@ -194,7 +196,7 @@ lookup_branch_pr() { # worktree branch deadline -> url
   [ "$left" -le 5 ] || left=5
   number=$(fm_run_timed "$left" bash -c '. "$1/fm-pr-lib.sh"; fm_pr_number_from_branch "$2" "$3" open' \
     _ "$SCRIPT_DIR" "$wt" "$branch") || return 1
-  url=$(cd "$wt" && gh_read "$deadline" pr view "$number" --json url -q .url 2>/dev/null) || return 1
+  url=$(cd "$wt" && gh_read "$deadline" "$FM_PR_PATH" pr view "$number" --json url -q .url 2>/dev/null) || return 1
   printf '%s\n' "$url" | grep -Ex "$PR_URL_RE"
 }
 

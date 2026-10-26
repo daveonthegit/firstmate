@@ -1501,11 +1501,27 @@ test_codex_cleanup_without_journal_needs_no_python() {
   pass "fm-t3code-codex-env.sh cleanup: without an installed overlay it needs no Python and never refuses"
 }
 
+t3_account_fixture() {
+  mkdir -p "$1"
+  cat > "$1/gh" <<'SH'
+#!/usr/bin/env bash
+case "$1 $2" in
+  'auth status') printf 'github.com\n  x Logged in to github.com account other (keyring)\n  x Logged in to github.com account selected (keyring)\n' ;;
+  'auth token') printf 'fixture-token-%s\n' "$4" ;;
+  *) [ "${GH_TOKEN:-}" = fixture-token-selected ] && printf 'selected\n' ;;
+esac
+SH
+  chmod +x "$1/gh"
+}
+
 test_spawn_leases_slot_creates_thread_and_starts_launch_turn() {
   local proj wt data state id out fb thread
   id=$(t3_uid t3spawnz1)
   t3_task_id "$id"
   t3_case spawn
+  t3_account_fixture "$CASE_DIR/account-bin"
+  local PATH="$CASE_DIR/account-bin:$PATH" FM_GH_ACCOUNT=selected
+  export PATH FM_GH_ACCOUNT
   proj="$CASE_DIR/spawn-project"
   wt="$CASE_DIR/spawn-wt"
   data="$CASE_DIR/data"
@@ -1557,7 +1573,15 @@ test_spawn_leases_slot_creates_thread_and_starts_launch_turn() {
   [ "$(t3_json_field "$settings" 'd.env.GIT_CONFIG_COUNT')" = 1 ] || fail "T3 workers must select one Git config override"
   [ "$(t3_json_field "$settings" 'd.env.TRACEPARENT')" = undefined ] || fail "TRACEPARENT must be absent when trace context is off"
   [ "$(t3_json_field "$settings" 'd.env.COMPACT_ADVISER_DISABLE')" = 1 ] || fail "settings env must carry the compact-adviser kill switch every launch carries"
-  [ "$(t3_json_field "$settings" 'Object.keys(d.env).sort().join(" ")')" = "COMPACT_ADVISER_DISABLE FM_T3CODE_ENV_KEYS FM_TASK_ID FM_TASK_INBOX GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0 GOTMPDIR" ] || fail "a worker env block carries the task inbox and Git hook with the launch environment"
+  [ "$(t3_json_field "$settings" 'd.env.FM_GH_ACCOUNT')" = selected ] || fail "T3 must carry the selected login"
+  node - "$settings" "$wt" <<'JS' || fail "T3's generated Claude environment must select the account without storing a token"
+const fs = require('fs'), cp = require('child_process');
+const env = JSON.parse(fs.readFileSync(process.argv[2])).env;
+if (Object.values(env).some(v => String(v).includes('fixture-token-'))) process.exit(1);
+const result = cp.spawnSync('gh', ['pr', 'list', '--repo', 'o/r'], {cwd: process.argv[3], env: {...process.env, ...env, GH_TOKEN:'', GITHUB_TOKEN:''}, encoding:'utf8'});
+if (result.status !== 0 || result.stdout.trim() !== 'selected') process.exit(1);
+JS
+  case "$out" in *fixture-token-*) fail "launch output leaked a credential" ;; esac
   t3_excluded "$wt" .claude/settings.local.json || fail "the settings file must be git-excluded"
   assert_present "$wt/CLAUDE.local.md" "a claude worker gets the task-worker channel statement as CLAUDE.local.md"
   assert_grep "task worker launched by Firstmate" "$wt/CLAUDE.local.md" "CLAUDE.local.md must carry the channel statement"
@@ -1577,6 +1601,9 @@ test_spawn_codex_scout_writes_toml_env_with_traceparent() {
   id=$(t3_uid t3codexz1)
   t3_task_id "$id"
   t3_case spawn-codex
+  t3_account_fixture "$CASE_DIR/account-bin"
+  local PATH="$CASE_DIR/account-bin:$PATH" FM_GH_ACCOUNT=selected
+  export PATH FM_GH_ACCOUNT
   proj="$CASE_DIR/spawn-project"; wt="$CASE_DIR/spawn-wt"; data="$CASE_DIR/data"; state="$CASE_DIR/state"
   fm_git_worktree "$proj" "$wt" "fm/$id"
   mkdir -p "$data/$id" "$state" "$CASE_DIR/home/state"
@@ -1595,6 +1622,16 @@ test_spawn_codex_scout_writes_toml_env_with_traceparent() {
   expect_code 0 $? "a codex scout on t3code should spawn against the fake T3 server"$'\n'"$out"
   toml="$wt/.codex/config.toml"
   assert_present "$toml" "a codex worker gets .codex/config.toml in its worktree"
+  "$T3_PYTHON" - "$toml" "$wt" <<'PY' || fail "T3's generated Codex environment must select the account without storing a token"
+import os, subprocess, sys, tomllib
+with open(sys.argv[1], 'rb') as f:
+    env = tomllib.load(f)['shell_environment_policy']['set']
+assert env['FM_GH_ACCOUNT'] == 'selected'
+assert not any('fixture-token-' in v for v in env.values())
+result = subprocess.run(['gh', 'pr', 'list', '--repo', 'o/r'], cwd=sys.argv[2], env={**os.environ, **env, 'GH_TOKEN':'', 'GITHUB_TOKEN':''}, capture_output=True, text=True)
+assert result.returncode == 0 and result.stdout.strip() == 'selected', result.stderr
+PY
+  case "$out" in *fixture-token-*) fail "launch output leaked a credential" ;; esac
   [ "$(t3_toml_env "$toml" GOTMPDIR)" = "/tmp/fm-$id/gotmp" ] || fail "config.toml must set GOTMPDIR, got '$(cat "$toml")'"
   [ "$(t3_toml_env "$toml" FM_TASK_ID)" = "$id" ] || fail "a scout's config.toml must set FM_TASK_ID"
   [ "$(t3_toml_env "$toml" FM_TASK_INBOX)" = "$state/$id.inbox" ] || fail "a scout's config.toml must set FM_TASK_INBOX"
