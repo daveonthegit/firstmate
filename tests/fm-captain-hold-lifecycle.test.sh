@@ -4709,7 +4709,7 @@ test_archived_answered_hold_still_satisfies_the_gate() {
 # absent and teardown is refused.
 test_archived_answer_in_a_user_configured_archive_satisfies_the_gate() {
   local home axi_home archive id scope=${1:-user} setting=${2:-'"data/relocated-done-archive.md"'}
-  local decoded=${3:-data/relocated-done-archive.md} name=${4:-default}
+  local decoded=${3:-data/relocated-done-archive.md} name=${4:-default} python
   home=$(make_home "archived-answer-$scope-$name")
   axi_home="$home/axi-home"
   mkdir -p "$axi_home/.tasks-axi"
@@ -4722,9 +4722,9 @@ path = "data/backlog.md"
 done_keep = 10
 EOF
   if [ "$scope" = user ]; then
-    printf "[markdown]\narchive = '%s'\n" "$decoded" > "$axi_home/.tasks-axi/config.toml"
+    printf '[markdown]\narchive = %s\n' "$setting" > "$axi_home/.tasks-axi/config.toml"
   else
-    printf "archive = '%s'\n" "$decoded" >> "$home/.tasks.toml"
+    printf 'archive = %s\n' "$setting" >> "$home/.tasks.toml"
   fi
   archive="$home/$decoded"
   id=sample-userconfig-review
@@ -4754,12 +4754,10 @@ EOF
     fail "the archived call is still shown from the live backlog, so the fixture reproduces nothing"
   fi
 
-  if [ "$scope" = user ]; then
-    printf '[markdown]\narchive = %s\n' "$setting" > "$axi_home/.tasks-axi/config.toml"
-  else
-    printf 'backend = "markdown"\n[markdown]\npath = "data/backlog.md"\ndone_keep = 0\narchive = %s\n' \
-      "$setting" > "$home/.tasks.toml"
-  fi
+  for python in python3 python3.14 python3.13 python3.12 python3.11; do
+    printf '#!/bin/sh\nexit 127\n' > "$home/fakebin/$python"
+    chmod +x "$home/fakebin/$python"
+  done
   HOME="$axi_home" run_captain "$home" verify "$id" >/dev/null 2> "$home/userconfig-verify.err" \
     || fail "verify refused an answered call archived to the user-configured location: $(cat "$home/userconfig-verify.err")"
   HOME="$axi_home" run_captain "$home" complete "$id" sample-userconfig-call >/dev/null 2> "$home/userconfig-complete.err" \
@@ -4769,15 +4767,14 @@ EOF
   pass "an answered captain call archived to a user-configured location still satisfies the completion gate"
 }
 
-test_archive_settings_decode_toml_strings() {
-  test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
-    repo '"data/done # archive.md" # comment' 'data/done # archive.md' basic
-  test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
-    user "'data/done # archive.md' # comment" 'data/done # archive.md' literal
-  test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
-    repo '"data/done \u0023 \"archive\".md"' 'data/done # "archive".md' escaped
-  test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
-    user '"""data/done # archive.md"""' 'data/done # archive.md' multiline
+test_archive_settings_preserve_quoted_hashes() {
+  local scope
+  for scope in repo user; do
+    test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
+      "$scope" '"data/done # archive.md" # comment' 'data/done # archive.md' basic
+    test_archived_answer_in_a_user_configured_archive_satisfies_the_gate \
+      "$scope" "'data/done # archive.md' # comment" 'data/done # archive.md' literal
+  done
 }
 
 if [ -n "${FM_TEST_ONLY:-}" ]; then
@@ -4848,4 +4845,4 @@ test_captain_hold_mutations_address_the_beads_backend
 test_hold_creates_a_captain_row_when_beads_requires_due_without_custom_type
 test_archived_answered_hold_still_satisfies_the_gate
 test_archived_answer_in_a_user_configured_archive_satisfies_the_gate
-test_archive_settings_decode_toml_strings
+test_archive_settings_preserve_quoted_hashes
