@@ -1,0 +1,1 @@
+ok - fm-spawn.sh --backend t3code codex: warns once, and still launches, unless the Codex configuration trusts the launch directory's main checkout

@@ -1,0 +1,1 @@
+ok - fm-spawn.sh --backend t3code: leases the slot, launches the thread on it, records metadata, sends the launch brief

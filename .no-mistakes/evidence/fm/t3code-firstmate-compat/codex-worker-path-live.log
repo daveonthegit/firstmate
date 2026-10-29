@@ -1,0 +1,3 @@
+Codex command/exec /bin/sh -c 'command -v node' (server PATH=/usr/bin:/bin:/private/var/folders/_h/2yg5n_mx0zq1c9vgfg2462_80000gn/T/fm-backend-t3code-tests.MX0CsF/spawn-codex-tracked-compatible/codex-home/bootstrap): {"exitCode": 0, "stdout": "/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/node\n", "stderr": ""}
+ok - codex-cli 0.166.0: project config retained; shell FM_TASK_ID=t3codextrk20ce701348; node resolved via generated PATH despite stripped server toolchain PATH
+ok - fm-spawn.sh backend=t3code: compatible tracked Codex config launches, stays out of commits, and survives cleanup
