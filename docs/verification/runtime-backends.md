@@ -2741,7 +2741,7 @@ On the new server, `t3_thread_configure` called with only `threadId` returns the
 The rename handling was verified live on Linux x86_64 (kernel 6.8.0) with codex-cli 0.164.0, node v24.21.0, and treehouse v2.3.0.
 One server was the service-managed `t3 v0.1.3-nightly.20261026.3740`; the other was a loopback lab copy of `t3 v0.1.4-nightly.20261027.3770` with its own base directory and port, stopped afterwards.
 Each run used a scratch Firstmate home with `config/backend` `t3code` and a scratch project with a bare origin.
-The home carried this change plus an unrelated local fix to how the helper reads a model's effort options.
+The home also included the catalog option compatibility covered by `tests/fm-t3-mcp.test.sh`'s `test_resolve_selection_accepts_current_catalog_values` regression.
 
 ```sh
 bin/fm-t3-mcp.mjs status

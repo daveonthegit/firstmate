@@ -74,7 +74,7 @@ A task's `--model` must be a model that instance lists in T3's catalog.
 `--model default` uses the T3 project's default model only when its instance matches `config/t3code-instances`; otherwise it refuses and asks for an explicit `--model`.
 `--effort` rides as the driver's reasoning option, `effort` for claude and `reasoningEffort` for codex, and must be one of the values the catalog lists for that model.
 An effort replaces only that option: `--model default` keeps every other project default option, such as Codex's service tier or Claude's fast mode, while an explicit model sends only the effort.
-Every selected option is checked against the model's catalog descriptors.
+Every selected option is checked against the model's catalog descriptors, accepting both current values-array catalogs and earlier option-list catalogs.
 
 ### Capability gate
 
@@ -130,6 +130,10 @@ Teardown restores the original bytes and prior Git flag before returning the slo
 The tracked path requires Python 3.11 or newer for TOML parsing; the script uses the first of `python3`, `python3.14`, `python3.13`, `python3.12`, or `python3.11` on `PATH` that imports `tomllib`, and refuses before any mutation when none does.
 Codex's [configuration layers](https://learn.chatgpt.com/docs/config-file/config-basic#configuration-precedence) provide no separate per-directory fragment for a thread launched at the repository root, and T3 cannot select a different CLI override or profile per thread.
 Every kind receives `GOTMPDIR`, `COMPACT_ADVISER_DISABLE=1`, `FM_TASK_INBOX`, and `PATH`, plus `LAVISH_AXI_HOST` when `config/lavish-axi-host` is set; ship and scout workers also receive `FM_TASK_ID`; `TRACEPARENT` rides only when trace context is on, and only once its `traceparent=` line is recorded.
+T3 starts every agent with the T3 server's own environment, not a login shell's, and T3's background-service configuration cannot override `PATH`, so tools this home runs on, such as `gh-axi` and `lavish-axi` in an nvm node directory, can be missing from it.
+Spawn writes its own `PATH` into this environment, behind the [GitHub account](configuration.md#github-account-selection-configgh-accounts--fm_gh_account) shim directory when an account is selected.
+The value is only as complete as the spawning session's own `PATH` and, for Codex, requires the project trust described above.
+Codex runs each command through `/bin/zsh -lc` from that `PATH`, so login startup files can still prepend to it, but a startup file that rebuilds `PATH` from scratch, such as one that resets it when a marker variable is missing, hides the toolchain from every Codex worker; Claude's shell tool restores its own login-shell snapshot and is unaffected.
 A secondmate additionally receives the launch prefix every other backend types (`FM_ROOT_OVERRIDE`, `FM_STATE_OVERRIDE`, `FM_DATA_OVERRIDE`, `FM_PROJECTS_OVERRIDE`, and `FM_CONFIG_OVERRIDE` empty, `FM_PUBLIC_FOLLOWUP_PRIMARY_HOME`, `FM_HOME`, `FM_TRACE_CONTEXT`, `FM_SUPERVISION_MODEL`) plus `FM_SUPERVISOR_BACKEND=t3code` and its own thread id as `FM_SUPERVISOR_TARGET`, so its away daemon resolves its target exactly.
 A `claude` ship or scout worker also receives the task-worker channel statement that a pane launch appends to the system prompt, written as a `CLAUDE.local.md` in its worktree because T3 owns the system prompt; a secondmate does not, as on every backend.
 Without it a Claude worker can refuse the launch brief as prompt injection, which happened live.
@@ -174,10 +178,6 @@ A thread's capture stays byte-identical through a long tool call, so before repo
 That deferral is itself bounded by `FM_BUSY_TURN_MAX_SECS`, measured from the latest run boundary T3 records (completion, or start while the run is still active), so a hung run still reaches the possible-wedge alert, and a missing run timestamp never defers.
 `wedge_defer_t3code_running` in `bin/fm-watch.sh` owns that consult; all other classified words keep the ordinary escalation ladder, including its declared-wait, worktree-write, and dead-record checks.
 T3 launches Claude with the `user,project,local` setting sources, so the worktree `.claude/settings.local.json` busy hooks fire as on every other backend.
-T3 starts every agent with the T3 server's own environment, not a login shell's, and T3's background-service configuration cannot override `PATH`, so tools this home runs on, such as `gh-axi` and `lavish-axi` in an nvm node directory, can be missing from it.
-Spawn therefore writes its own `PATH` into the [per-directory harness environment](#per-directory-harness-environment), behind the [GitHub account](configuration.md#github-account-selection-configgh-accounts--fm_gh_account) shim directory when an account is selected, so a T3 worker resolves the same tools as the Firstmate that spawned it; `PATH` is part of the operational floor a [`config/launch-env-allowlist`](configuration.md#worker-launch-environment-configlaunch-env-allowlist) launch always keeps.
-The value is only as complete as the spawning session's own `PATH`.
-Codex runs each command through `/bin/zsh -lc` from that `PATH`, so login startup files can still prepend to it, but a startup file that rebuilds `PATH` from scratch, such as one that resets it when a marker variable is missing, hides the toolchain from every Codex worker; Claude's shell tool restores its own login-shell snapshot and is unaffected.
 A remote secondmate is unaffected by this backend: it always runs on the remote host's Herdr, and `--backend t3code` on one is refused.
 
 Cleanup keeps all shared Firstmate safety checks.

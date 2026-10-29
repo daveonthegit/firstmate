@@ -237,15 +237,23 @@ PYTHON
 t3_verify_live_codex_env() (  # <worktree> <task-id> <isolated-codex-home>
   fm_live_gate default-on FM_T3_CODEX_CONFIG_LIVE codex "$T3_PYTHON"
   "$T3_PYTHON" - "$1" "$2" "$3" <<'PYTHON'
-import json, os, pathlib, selectors, subprocess, sys
+import json, os, pathlib, selectors, shutil, subprocess, sys
 worktree, task, home = sys.argv[1:]
 home = pathlib.Path(home)
 home.mkdir()
 (home / "config.toml").write_text(f"[projects.{json.dumps(worktree)}]\ntrust_level = \"trusted\"\n")
-version = subprocess.check_output(["codex", "--version"], text=True).strip()
+codex = shutil.which("codex")
+node = shutil.which("node")
+version = subprocess.check_output([codex, "--version"], text=True).strip()
+# The npm Codex launcher needs node to boot, but this private link must not
+# satisfy the worker's expectation of the spawning session's node path.
+bootstrap = home / "bootstrap"
+bootstrap.mkdir()
+(bootstrap / "node").symlink_to(node)
+server_path = f"/usr/bin:/bin:{bootstrap}"
 with (home / "stderr.log").open("w") as errors:
-    server = subprocess.Popen(["codex", "app-server", "--stdio"], cwd=worktree,
-        env=dict(os.environ, CODEX_HOME=str(home)), stdin=subprocess.PIPE,
+    server = subprocess.Popen([codex, "app-server", "--stdio"], cwd=worktree,
+        env=dict(os.environ, CODEX_HOME=str(home), PATH=server_path), stdin=subprocess.PIPE,
         stdout=subprocess.PIPE, stderr=errors, text=True)
     try:
         def request(number, method, params):
@@ -267,7 +275,12 @@ with (home / "stderr.log").open("w") as errors:
             "command": ["/usr/bin/printenv", "FM_TASK_ID"], "timeoutMs": 10000,
             "sandboxPolicy": {"type": "dangerFullAccess"}})
         assert result == {"exitCode": 0, "stdout": task + "\n", "stderr": ""}, (version, result)
-        print(f"ok - {version}: project config retained; shell FM_TASK_ID={task}")
+        result = request(4, "command/exec", {"cwd": worktree,
+            "command": ["/bin/sh", "-c", "command -v node"], "timeoutMs": 10000,
+            "sandboxPolicy": {"type": "dangerFullAccess"}})
+        assert result == {"exitCode": 0, "stdout": node + "\n", "stderr": ""}, (version, result)
+        print(f"Codex command/exec /bin/sh -c 'command -v node' (server PATH={server_path}): {json.dumps(result)}")
+        print(f"ok - {version}: project config retained; shell FM_TASK_ID={task}; node resolved via generated PATH despite stripped server toolchain PATH")
     finally:
         server.terminate()
         server.wait(timeout=10)
