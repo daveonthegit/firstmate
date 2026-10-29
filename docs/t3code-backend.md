@@ -91,6 +91,16 @@ It then refuses unless `t3_environment_read` reports the environment id recorded
 A refusal names the missing tool or both environment ids, and spawn, control, and teardown stop before their first mutation.
 This gate replaces the HTTP dispatch probe and version floor of the pre-V2 transport, which T3 0.0.46 removed.
 
+### Trial run
+
+To try a home on T3 Code for one task while `config/backend` keeps its current value:
+
+1. Install T3 Code with `curl -fsSL https://t3.codes/install.sh | sh` for the `t3` CLI, or `brew install --cask t3-code` for the desktop app on macOS, and start the server as [Setup](#setup) shows.
+2. The captain runs the [sign-in](#sign-in), which writes `config/t3code-token`.
+3. Confirm the server passes the [capability gate](#capability-gate) with the token-free live guard in [Regression entry points](#regression-entry-points).
+4. Spawn one task with `FM_BACKEND=t3code` (or `--backend t3code`) and the `claude` or `codex` harness.
+5. To roll back, spawn without it; to retire T3, follow [Switching back to Herdr](#switching-back-to-herdr) and [Expiry and revocation](#expiry-and-revocation).
+
 ## Task shape and metadata
 
 Each ship or scout task has one Treehouse worktree, leased durably with `treehouse get --lease --lease-holder <id>`, and one T3 thread launched with the `existing_worktree` workspace strategy on that worktree.
@@ -107,7 +117,7 @@ Each harness reads its own configuration from the thread's working directory ins
 For `claude` that is an `env` block in the directory's `.claude/settings.local.json`, merged alongside the busy hooks a worker already carries there; for `codex` it is a `.codex/config.toml` holding a `[shell_environment_policy]` `set` table.
 Codex applies that file only in a project it [trusts](#setup); in an untrusted project a Codex thread runs without any of these values, so its Git hook entry, and with it the AI-trailer strip and a `forge=external` ship's push guard, does not apply; Firstmate warns at spawn when it cannot confirm that trust, but never grants it.
 The Claude `env` block keeps entries Firstmate did not write, such as a secondmate home's own, and lists the keys Firstmate wrote in `FM_T3CODE_ENV_KEYS` so a respawn replaces exactly those; a symlinked `.claude/settings.local.json` is refused.
-The thread's `GIT_CONFIG_*` entries are Firstmate's own `core.hooksPath` hook entry only: inherited `GIT_CONFIG_*` values and arbitrary inherited environment values are not copied to these files, because they can carry credentials.
+The thread's `GIT_CONFIG_*` entries are Firstmate's own `core.hooksPath` hook entry only: inherited `GIT_CONFIG_*` values and arbitrary inherited environment values other than `PATH` are not copied to these files, because they can carry credentials.
 [GitHub account selection](configuration.md#github-account-selection-configgh-accounts--fm_gh_account) owns the credential-free account routing added to this environment.
 That entry sets `GIT_CONFIG_COUNT=1` and index 0, so numbered `GIT_CONFIG_KEY_<n>`/`GIT_CONFIG_VALUE_<n>` entries in the T3 server's environment do not apply in the thread; with `config/keep-ai-trailers` no hook entry is written and they apply unchanged, except on a [`forge=external`](external-review-forge.md) ship, whose push guard always installs the hook entry.
 A T3 server whose agents need extra Git config, such as a `credential.helper`, supplies it through Git config files, which the hook entry leaves alone: for example the service user's global config, or `GIT_CONFIG_GLOBAL` in its service environment.
@@ -119,7 +129,7 @@ For a tracked `.codex/config.toml`, Firstmate preserves the project bytes and ap
 Teardown restores the original bytes and prior Git flag before returning the slot; unexpected file or index edits refuse cleanup and retain the journal for recovery.
 The tracked path requires Python 3.11 or newer for TOML parsing; the script uses the first of `python3`, `python3.14`, `python3.13`, `python3.12`, or `python3.11` on `PATH` that imports `tomllib`, and refuses before any mutation when none does.
 Codex's [configuration layers](https://learn.chatgpt.com/docs/config-file/config-basic#configuration-precedence) provide no separate per-directory fragment for a thread launched at the repository root, and T3 cannot select a different CLI override or profile per thread.
-Every kind receives `GOTMPDIR`, `COMPACT_ADVISER_DISABLE=1`, and `FM_TASK_INBOX`, plus `LAVISH_AXI_HOST` when `config/lavish-axi-host` is set; ship and scout workers also receive `FM_TASK_ID`; `TRACEPARENT` rides only when trace context is on, and only once its `traceparent=` line is recorded.
+Every kind receives `GOTMPDIR`, `COMPACT_ADVISER_DISABLE=1`, `FM_TASK_INBOX`, and `PATH`, plus `LAVISH_AXI_HOST` when `config/lavish-axi-host` is set; ship and scout workers also receive `FM_TASK_ID`; `TRACEPARENT` rides only when trace context is on, and only once its `traceparent=` line is recorded.
 A secondmate additionally receives the launch prefix every other backend types (`FM_ROOT_OVERRIDE`, `FM_STATE_OVERRIDE`, `FM_DATA_OVERRIDE`, `FM_PROJECTS_OVERRIDE`, and `FM_CONFIG_OVERRIDE` empty, `FM_PUBLIC_FOLLOWUP_PRIMARY_HOME`, `FM_HOME`, `FM_TRACE_CONTEXT`, `FM_SUPERVISION_MODEL`) plus `FM_SUPERVISOR_BACKEND=t3code` and its own thread id as `FM_SUPERVISOR_TARGET`, so its away daemon resolves its target exactly.
 A `claude` ship or scout worker also receives the task-worker channel statement that a pane launch appends to the system prompt, written as a `CLAUDE.local.md` in its worktree because T3 owns the system prompt; a secondmate does not, as on every backend.
 Without it a Claude worker can refuse the launch brief as prompt injection, which happened live.
@@ -164,8 +174,10 @@ A thread's capture stays byte-identical through a long tool call, so before repo
 That deferral is itself bounded by `FM_BUSY_TURN_MAX_SECS`, measured from the latest run boundary T3 records (completion, or start while the run is still active), so a hung run still reaches the possible-wedge alert, and a missing run timestamp never defers.
 `wedge_defer_t3code_running` in `bin/fm-watch.sh` owns that consult; all other classified words keep the ordinary escalation ladder, including its declared-wait, worktree-write, and dead-record checks.
 T3 launches Claude with the `user,project,local` setting sources, so the worktree `.claude/settings.local.json` busy hooks fire as on every other backend.
-T3 starts every agent with the T3 server's own environment, not a login shell's.
-Codex runs each command through `/bin/zsh -lc` in that environment, so the Firstmate toolchain must survive the login shell's startup files, and a startup file that rebuilds `PATH` when a marker variable is missing hides it from every Codex worker; Claude's shell tool restores its own login-shell snapshot and is unaffected.
+T3 starts every agent with the T3 server's own environment, not a login shell's, and T3's background-service configuration cannot override `PATH`, so tools this home runs on, such as `gh-axi` and `lavish-axi` in an nvm node directory, can be missing from it.
+Spawn therefore writes its own `PATH` into the [per-directory harness environment](#per-directory-harness-environment), behind the [GitHub account](configuration.md#github-account-selection-configgh-accounts--fm_gh_account) shim directory when an account is selected, so a T3 worker resolves the same tools as the Firstmate that spawned it; `PATH` is part of the operational floor a [`config/launch-env-allowlist`](configuration.md#worker-launch-environment-configlaunch-env-allowlist) launch always keeps.
+The value is only as complete as the spawning session's own `PATH`.
+Codex runs each command through `/bin/zsh -lc` from that `PATH`, so login startup files can still prepend to it, but a startup file that rebuilds `PATH` from scratch, such as one that resets it when a marker variable is missing, hides the toolchain from every Codex worker; Claude's shell tool restores its own login-shell snapshot and is unaffected.
 A remote secondmate is unaffected by this backend: it always runs on the remote host's Herdr, and `--backend t3code` on one is refused.
 
 Cleanup keeps all shared Firstmate safety checks.
