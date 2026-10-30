@@ -547,6 +547,46 @@ test_resolve_selection_uses_t3_catalog() {
   pass "fm-t3-mcp resolve-selection: driver, model, and options come from T3's catalog; an effort override keeps other options"
 }
 
+# A T3 build whose t3_thread_launch input schema lists `environment` carries a
+# per-thread environment; without it a pi selection, and any launch that sends
+# an environment, refuses before t3_thread_launch is requested.
+test_launch_environment_capability() {
+  local project call env
+  fresh_case launch-environment
+  mcp status
+  assert_equals false "$(field "$OUT" launchEnvironment)" "status reports a T3 without per-thread environment"
+  mcp project-ensure --root "$TMP_ROOT/proj"
+  project=$(field "$OUT" projectId)
+  mcp resolve-selection --harness pi --instance pi --model anthropic/claude-sonnet-5 --effort default --project "$project"
+  expect_code 4 "$RC" "pi is refused without a per-thread launch environment"
+  assert_equals environment_unsupported "$(field "$OUT" error.code)" "the refusal names the missing environment"
+  mcp launch --project "$project" --title fm-pi --model-selection '{"instanceId":"pi","model":"anthropic/claude-sonnet-5"}' --worktree "$WT" --environment '{"FM_TASK_ID":"t1"}'
+  expect_code 4 "$RC" "an environment launch is refused where T3 does not offer one"
+  assert_contains "$ERR" "no thread was launched" "the refusal says nothing was launched"
+  assert_equals "" "$(t3_fake_mutations | tr ' ' '\n' | grep -x t3_thread_launch)" "the refusal comes before t3_thread_launch"
+  t3_fake_set 'w.launchEnvironment = true'
+  mcp status
+  assert_equals true "$(field "$OUT" launchEnvironment)" "status reports the offered per-thread environment"
+  mcp resolve-selection --harness pi --instance pi --model anthropic/claude-sonnet-5 --effort medium --project "$project"
+  expect_code 0 "$RC" "pi resolves where T3 offers a per-thread environment: $ERR"
+  assert_equals '{"instanceId":"pi","model":"anthropic/claude-sonnet-5","options":[{"id":"thinking","value":"medium"}]}' "$(field "$OUT" selection)" "pi effort rides the thinking option"
+  env='{"FM_TASK_ID":"t1","PATH":"/a:/b"}'
+  mcp launch --project "$project" --title fm-pi --model-selection '{"instanceId":"pi","model":"anthropic/claude-sonnet-5"}' --worktree "$WT" --environment "$env"
+  expect_code 0 "$RC" "an environment launch succeeds: $ERR"
+  call=$(t3_fake_calls t3_thread_launch | tail -1)
+  assert_equals "$env" "$(field "$call" environment)" "the launch carries the environment verbatim"
+  mcp launch --project "$project" --title fm-claude --model-selection "$SEL" --worktree "$WT"
+  expect_code 0 "$RC" "a launch without an environment is unchanged: $ERR"
+  call=$(t3_fake_calls t3_thread_launch | tail -1)
+  assert_equals "" "$(field "$call" environment)" "a launch without --environment sends none"
+  for env in '[]' '"x"' '{"1BAD":"v"}' '{"A":1}' "{\"A\":\"$(head -c 8193 /dev/zero | tr '\0' x)\"}" \
+    "$(node -e 'const e = {}; for (let i = 0; i < 65; i++) e["V" + i] = ""; process.stdout.write(JSON.stringify(e))')"; do
+    mcp launch --project "$project" --title fm-bad --model-selection "$SEL" --worktree "$WT" --environment "$env"
+    expect_code 2 "$RC" "an environment T3 would refuse is invalid use: ${env:0:40}"
+  done
+  pass "fm-t3-mcp: the launch schema's environment property gates pi and --environment; values are checked against T3's limits before any launch"
+}
+
 # T3 Code v0.1.3 stable lists a model option's allowed values as a plain `values`
 # array with no `type`; a boolean option lists `[false, true]`. The default
 # fake catalog keeps the older `options: [{id}]` form so both stay covered.
@@ -932,6 +972,7 @@ test_send_lost_reply_is_unconfirmed_and_retry_is_one_delivery
 test_thread_for_root_pages_and_forks
 test_resolve_selection_uses_t3_catalog
 test_resolve_selection_accepts_current_catalog_values
+test_launch_environment_capability
 test_launch_reads_back_full_configuration
 test_requests_and_respond
 test_gate_accepts_either_tool_generation

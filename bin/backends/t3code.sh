@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # bin/backends/t3code.sh - the T3 Code orchestration-server adapter.
 #
-# T3 owns the agent session (it launches Claude or Codex itself) while
+# T3 owns the agent session (it launches Claude, Codex, or Pi itself) while
 # Treehouse still owns the task worktree. Firstmate drives the T3 server only
 # through its Orchestrator V2 `/mcp` endpoint, signed in as an OAuth
 # `mcp-client`; bin/fm-t3-mcp.mjs owns that transport, the credential, the
@@ -11,20 +11,22 @@
 #
 # Target string shape: the T3 thread id T3 assigned at launch.
 #
-# T3 sets environment variables per provider instance, never per thread, so
-# every fact firstmate would type into a pane before launch (GOTMPDIR,
+# Every fact firstmate would type into a pane before launch (GOTMPDIR,
 # COMPACT_ADVISER_DISABLE, FM_TASK_INBOX, the Git hook override, optional
 # LAVISH_AXI_HOST, FM_TASK_ID, TRACEPARENT,
-# and a secondmate's FM_* launch prefix) travels
-# instead as per-directory harness config that bin/fm-spawn.sh writes into the
-# launch directory before the first turn: `.claude/settings.local.json` `env`
-# for Claude, `.codex/config.toml` `[shell_environment_policy] set` for Codex.
+# and a secondmate's FM_* launch prefix) travels one of two ways. Claude and
+# Codex read it from per-directory harness config that bin/fm-spawn.sh writes
+# into the launch directory before the first turn: `.claude/settings.local.json`
+# `env` for Claude, `.codex/config.toml` `[shell_environment_policy] set` for
+# Codex. Pi has no such file, so a Pi thread carries it as the per-thread
+# environment of its t3_thread_launch, which only a T3 build that offers that
+# parameter accepts (bin/fm-t3-mcp.mjs owns the check).
 #
 # Config (gitignored config/ of the active home):
 #   t3code-token      the mcp-client credential the captain's
 #                     `bin/fm-t3-mcp.mjs login` writes, mode 0600
 #   t3code-instances  optional `harness=instanceId` lines (claude=claudeAgent,
-#                     codex=codex by default)
+#                     codex=codex, pi=pi by default)
 
 # T3 has no composer, but the shared submit dispatcher in bin/fm-backend.sh
 # prepares and reads the composer dialog sink around every adapter, so this
@@ -93,7 +95,8 @@ fm_backend_t3code_instance_id() {  # <harness>
   case "$harness" in
     claude) value=claudeAgent ;;
     codex) value=codex ;;
-    *) echo "error: backend=t3code supports only the claude and codex harnesses, not '$harness'" >&2; return 1 ;;
+    pi) value=pi ;;
+    *) echo "error: backend=t3code supports only the claude, codex, and pi harnesses, not '$harness'" >&2; return 1 ;;
   esac
   file="$(fm_backend_t3code_config_dir)/t3code-instances"
   if [ -f "$file" ]; then
@@ -124,17 +127,31 @@ process.stdout.write(JSON.stringify(d.selection));
 # fm_backend_t3code_thread_create: launch an idle thread at full access and
 # print the id T3 assigned. A worktree launches with the existing_worktree
 # strategy; an empty one launches at the project's own root, which is a
-# secondmate's home. The helper reads the binding back and archives a thread
+# secondmate's home. Any NAME=VALUE arguments (split at the first `=`) become
+# the thread's per-thread environment. The helper reads the binding back and archives a thread
 # T3 bound anywhere else. Exit 1 means the outcome is uncertain: a lost
 # reply can leave a thread behind whose id never came back, a failed binding
 # read-back leaves the binding unproven even after requesting archive, and a
 # mis-bound thread may not read back archived. In each case spawn keeps the
 # lease; the helper owns those failure verdicts.
-fm_backend_t3code_thread_create() {  # <project-id> <title> <branch> <worktree> <model-selection-json> -> thread id
-  local project_id=$1 title=$2 branch=$3 worktree=$4 selection=$5 out rc
+fm_backend_t3code_thread_create() {  # <project-id> <title> <branch> <worktree> <model-selection-json> [NAME=VALUE...] -> thread id
+  local project_id=$1 title=$2 branch=$3 worktree=$4 selection=$5 out rc environment
+  shift 5
   local -a args=(launch --project "$project_id" --title "$title" --model-selection "$selection")
   [ -z "$branch" ] || args+=(--branch "$branch")
   [ -z "$worktree" ] || args+=(--worktree "$worktree")
+  if [ "$#" -gt 0 ]; then
+    environment=$(node -e '
+const env = {};
+for (const pair of process.argv.slice(1)) {
+  const eq = pair.indexOf("=");
+  if (eq < 1) process.exit(1);
+  env[pair.slice(0, eq)] = pair.slice(eq + 1);
+}
+process.stdout.write(JSON.stringify(env));
+' "$@") || { echo "error: the T3 thread environment needs NAME=VALUE entries" >&2; return 2; }
+    args+=(--environment "$environment")
+  fi
   out=$(fm_backend_t3code_mcp "${args[@]}") && rc=0 || rc=$?
   [ "$rc" -eq 0 ] || return "$rc"
   printf '%s' "$out" | fm_backend_t3code_json_get threadId || return 1
@@ -577,8 +594,8 @@ fm_backend_t3code_resume_failed() {  # <thread-id>
 
 fm_backend_t3code_validate_harness() {  # <harness>
   case "$1" in
-    claude|codex) return 0 ;;
-    *) echo "error: backend=t3code runs only the claude and codex harnesses, not '$1'" >&2; return 1 ;;
+    claude|codex|pi) return 0 ;;
+    *) echo "error: backend=t3code runs only the claude, codex, and pi harnesses, not '$1'" >&2; return 1 ;;
   esac
 }
 

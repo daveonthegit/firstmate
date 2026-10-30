@@ -474,7 +474,7 @@ Paseo and tern stay explicit-only because their runtime markers leak into every 
 ### Accepted backends and secondmate limits
 
 Any value other than `tmux`, `herdr`, `zellij`, `orca`, `cmux`, `paseo`, `rex`, `t3code`, or `tern` is rejected until another adapter is implemented and verified.
-`fm-spawn.sh` accepts `tmux`, `herdr`, `zellij`, `orca`, `cmux`, `paseo`, `rex`, `t3code`, and `tern` for ship and scout tasks; `backend=orca`, `backend=cmux`, `backend=paseo`, and `backend=tern` all still refuse `--secondmate` until secondmate launch semantics are designed for each, while `backend=t3code` supports secondmates and runs only the `claude` and `codex` harnesses.
+`fm-spawn.sh` accepts `tmux`, `herdr`, `zellij`, `orca`, `cmux`, `paseo`, `rex`, `t3code`, and `tern` for ship and scout tasks; `backend=orca`, `backend=cmux`, `backend=paseo`, and `backend=tern` all still refuse `--secondmate` until secondmate launch semantics are designed for each, while [`t3code-backend.md`](t3code-backend.md#active-limits) owns T3's harness and secondmate limits.
 
 `codex-app` is not an accepted runtime backend yet; [`docs/codex-app-backend.md`](codex-app-backend.md) owns the Codex App boundary.
 
@@ -1300,7 +1300,7 @@ It does not apply to a secondmate's own agent, which neither reads nor refuses o
 
 | Runtime | With a non-empty list |
 | --- | --- |
-| `pi`, `pi-signed` | Hides listed tool names, MCP tools included, on every ship and scout spawn and relaunch. |
+| `pi`, `pi-signed` | Hides listed tool names, MCP tools included, on every ship and scout spawn and relaunch; a `pi` spawn on `backend=t3code` refuses instead, because T3 owns Pi's command line ([`t3code-backend.md`](t3code-backend.md#active-limits)). |
 | Every other runtime, and a raw launch command | The launch refuses with an error naming `config/crew-exclude-tools`, because that runtime has no verified way to hide tools. |
 
 A relaunch validates the list and the replacement runtime's support before stopping the running worker, so an exclusion-list refusal preserves the running agent.

@@ -38,6 +38,11 @@
 //   tool names instead of the earlier default), revoked (every /mcp call is 401),
 //   sse (SSE replies), expiresIn (seconds), bindWorktree, bindInstance,
 //   bindRuntimeMode, bindModel, bindOptions (override what a launch binds),
+//   launchEnvironment (t3_thread_launch's input schema lists `environment`,
+//   as a T3 build with per-thread environment does; "ref" nests it behind a
+//   top-level $ref; otherwise a launch that sends one is refused as invalid
+//   params), bindEnvironmentCount (override the environmentCount a launched
+//   thread reads back; a thread's environment values are never returned),
 //   archiveKeepsRun (archive never ends the run), interruptStuck or
 //   waitTimesOut (an interrupt never ends the run), queueAfterInterrupt
 //   (text a queued run starts with once an interrupt lands), failTools
@@ -93,7 +98,20 @@ const FAKE_PROVIDERS = [
       id, label: id, options: [select("reasoningEffort", ["low", "medium", "high", "xhigh"]), select("serviceTier", ["default", "priority"])],
     })),
   },
+  {
+    providerInstanceId: "pi", driverKind: "pi", displayName: "Pi", constraints: [],
+    models: [
+      { id: "anthropic/claude-sonnet-5", label: "anthropic/claude-sonnet-5", options: [select("thinking", ["off", "minimal", "low", "medium", "high"])] },
+      { id: "local/no-reasoning", label: "local/no-reasoning", options: [] },
+    ],
+  },
 ];
+const LAUNCH_ENVIRONMENT_PROPERTY = { type: "object", additionalProperties: { type: "string" } };
+function inputSchema(w, name) {
+  if (name !== "t3_thread_launch" || !w.launchEnvironment) return { type: "object" };
+  const schema = { type: "object", properties: { projectId: { type: "string" }, environment: LAUNCH_ENVIRONMENT_PROPERTY } };
+  return w.launchEnvironment === "ref" ? { $ref: "#/$defs/ThreadLaunchInput", $defs: { ThreadLaunchInput: schema } } : schema;
+}
 
 const caseDir = () => readFileSync(args["case-file"], "utf8").trim();
 const worldFile = () => path.join(caseDir(), "world.json");
@@ -134,7 +152,7 @@ const now = () => new Date().toISOString();
 const pendingRequests = (t) => (t.runtimeRequests ?? []).filter((r) => r.status === "pending");
 
 function detail(t) {
-  const { items, runs, runtimeRequests, modelSelection, ...rest } = t;
+  const { items, runs, runtimeRequests, modelSelection, environment, ...rest } = t;
   if (runtimeRequests) rest.pendingRequestCount = pendingRequests(t).length;
   return rest;
 }
@@ -217,6 +235,9 @@ async function callTool(w, name, a) {
       return [ok(p), true];
     }
     case "t3_thread_launch": {
+      if (a.environment !== undefined && !w.launchEnvironment) {
+        return [err("invalid_params", "Invalid parameters for tool 't3_thread_launch': Unexpected key at [\"environment\"]"), false];
+      }
       const ws = a.workspaceStrategy ?? {};
       const id = `mcp:${randomUUID()}`;
       const sel = a.modelSelection ?? {};
@@ -232,6 +253,10 @@ async function callTool(w, name, a) {
         branch: ws.branch ?? null, worktreePath: w.bindWorktree ?? (ws.type === "existing_worktree" ? ws.worktreePath : null),
         parentThreadId: null, relationshipToParent: null, pendingRequestCount: 0, archived: false, items: [], runs: [],
       };
+      if (a.environment !== undefined) {
+        n.environment = a.environment;
+        n.environmentCount = w.bindEnvironmentCount ?? Object.keys(a.environment).length;
+      }
       threads[id] = n;
       if (a.message) startRun(n, a.message);
       return [ok({ threadId: id, projectId: n.projectId, runId: n.activeRunId, status: n.status }), true];
@@ -384,7 +409,7 @@ async function mcp(req, res) {
     res.writeHead(202);
     return res.end();
   } else if (msg.method === "tools/list") {
-    result = { tools: offeredTools(w).map((name) => ({ name, inputSchema: { type: "object" } })) };
+    result = { tools: offeredTools(w).map((name) => ({ name, inputSchema: inputSchema(w, name) })) };
   } else if (msg.method === "tools/call" && !offeredTools(w).includes(msg.params.name)) {
     result = err("unknown_tool", `Tool ${msg.params.name} not found`);
   } else if (msg.method === "tools/call") {
