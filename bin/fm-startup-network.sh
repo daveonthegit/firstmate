@@ -224,7 +224,7 @@ worker_alive() {
 phase_label() {  # <phases>
   case "$1" in
     probe) printf 'GitHub authentication' ;;
-    probe,sweeps) printf 'GitHub authentication, the T3 supervisor keep-alive pin, dead-secondmate relaunch, secondmate convergence, pending handoff delivery, project clone refresh with its drift reporting, and inactive terminal-outcome reconciliation' ;;
+    probe,sweeps) printf 'GitHub authentication, dead-secondmate relaunch, secondmate convergence, pending handoff delivery, project clone refresh with its drift reporting, the T3 supervisor keep-alive pin, and inactive terminal-outcome reconciliation' ;;
     *) printf 'the deferred network checks' ;;
   esac
 }
