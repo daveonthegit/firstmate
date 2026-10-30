@@ -21,7 +21,8 @@
 //     ~/.t3/userdata/server-runtime.json.
 //   fm-t3-mcp.mjs status
 //     Credential expiry, the capability gate, whether t3_thread_launch offers
-//     a per-thread environment (launchEnvironment), and whether a loopback
+//     a per-thread environment (launchEnvironment), whether the server offers
+//     the t3_thread_session stop (sessionStop), and whether a loopback
 //     server's own process runs with telemetry off (telemetry: off|on|unknown;
 //     anything but off adds a stderr warning). Changes nothing.
 //   fm-t3-mcp.mjs project-ensure --root <abs-path> [--title <title>]
@@ -101,6 +102,21 @@
 //     when that run reads terminal, not-running when there was no active run,
 //     and unconfirmed otherwise (timeout, or a wait that answered for a
 //     different run). T3 ends the run asynchronously after the request.
+//   fm-t3-mcp.mjs session-stop --thread <id> --client-request-id <id> [--timeout-ms <n>]
+//     t3_thread_session action stop: T3 stops the thread as its Stop button
+//     does and detaches every live provider session, keeping the thread and
+//     its conversation (the next message starts a new session). A T3 that
+//     does not offer the tool (upstream T3 lists no t3_thread_session)
+//     refuses with exit 4, code session_stop_unsupported, before anything is
+//     sent. T3 replays the original result for a reused client request id
+//     within the auth session that sent it, without stopping a session opened
+//     since, so only a retry of an unproven stop reuses the id. Success reads
+//     the thread back until it has no active run, and reports
+//     stoppedProviderSessionIds (empty: no session was live). A typed T3
+//     refusal (3) or a refused credential (4) proves nothing was stopped;
+//     a lost reply, T3's catch-all orchestration_error, or a read-back that
+//     still shows an active run within the timeout (default 10000 ms) exits
+//     7 (stop_unconfirmed), and only a retry with the same id is safe.
 //   fm-t3-mcp.mjs requests --thread <id>
 //     The thread's pending runtime requests: questions (each user-input
 //     request id with its questions, from T3's pending-request list/read) and
@@ -145,7 +161,8 @@
 // recorded at sign-in, so a different T3 on the same origin is never driven
 // with this credential. It also records whether t3_thread_launch's input
 // schema lists an `environment` property, the only sign a T3 build carries a
-// per-thread environment to the agent it launches.
+// per-thread environment to the agent it launches, and whether the server
+// lists the optional SESSION_STOP_TOOL.
 //
 // FM_T3CODE_ARCHIVE_TIMEOUT_MS, a positive integer, replaces the 15000 ms bound
 // on the read-back that proves an archive (launch's cleanup archive, and
@@ -161,7 +178,8 @@
 // (no credential, expired credential, revoked credential, environment
 // mismatch, capability gate, or a launch binding mismatch whose thread read
 // back archived); 5 and 6 as thread-for-root says; 7 a
-// mutation whose request went out but whose outcome is unproven (send); 8 a launch
+// mutation whose request went out but whose outcome is unproven (send,
+// session-stop); 8 a launch
 // that failed before t3_thread_launch was requested (launch). A failure prints {"ok":false,"error":{...}} on stdout and one line on stderr.
 // A credential within EXPIRY_WARN_DAYS of expiry adds a stderr warning on
 // every verb and a `credentialWarning` field on status.
@@ -206,6 +224,9 @@ export const TOOL_FAMILIES = {
   },
 };
 const ENVIRONMENT_TOOL = "t3_environment_read";
+// Optional: a T3 build that stops a thread's agent session (the captain's
+// fork) lists it; upstream T3 does not, and every other verb still works.
+const SESSION_STOP_TOOL = "t3_thread_session";
 const EXPIRY_WARN_DAYS = 5;
 const DAY_MS = 86_400_000;
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -571,9 +592,11 @@ export async function gate(session, cred) {
       { environmentId, expected: cred.environment_id },
     );
   }
+  const sessionStop = names.has(SESSION_STOP_TOOL);
   session.toolFamilies = families;
   session.launchEnvironment = launchEnvironment;
-  return { serverVersion: version, environmentId, serverVersionReported: envRead?.serverVersion ?? null, tools: [...names].sort(), toolFamilies: families, launchEnvironment };
+  session.sessionStop = sessionStop;
+  return { serverVersion: version, environmentId, serverVersionReported: envRead?.serverVersion ?? null, tools: [...names].sort(), toolFamilies: families, launchEnvironment, sessionStop };
 }
 
 // A harness that needs the per-thread environment refuses on a T3 whose
@@ -741,6 +764,7 @@ async function status(flags) {
     serverVersion: g.serverVersion,
     recordedServerVersion: cred.server_version ?? null,
     launchEnvironment: g.launchEnvironment,
+    sessionStop: g.sessionStop,
     telemetry,
     ...(cred.warning ? { credentialWarning: cred.warning } : {}),
   };
@@ -1146,6 +1170,62 @@ async function interrupt(flags) {
   return { ...base, waitedRunId: waited?.runId ?? null, status: waited?.status ?? null, timedOut: waited?.timedOut === true, cancel: done ? "confirmed" : "unconfirmed" };
 }
 
+// session-stop: the agent-session stop that `fm-control exit` needs. T3
+// interrupts the run and detaches the sessions in one command, so the proof
+// is T3's own list of detached sessions plus a read-back with no active run.
+async function sessionStop(flags) {
+  const threadId = need(flags, "thread");
+  const clientRequestId = need(flags, "client-request-id");
+  const timeoutMs = positiveInt(flags, "timeout-ms", 10_000, 600_000);
+  let session, g;
+  try {
+    ({ session, gate: g } = await verifiedSession(flags));
+  } catch (err) {
+    // As for send, exit 3 means T3 refused this stop, not the gate's reads.
+    if (err instanceof Refusal && err.exit === 3) throw new Refusal(err.code, err.message, 1, err.extra);
+    throw err;
+  }
+  if (!session.sessionStop) {
+    throw new Refusal(
+      "session_stop_unsupported",
+      `T3 ${g.serverVersion ?? "(unknown version)"} at ${session.origin} does not offer ${SESSION_STOP_TOOL}, so it cannot stop a thread's agent session; run a T3 build that lists it (docs/t3code-backend.md)`,
+      4,
+      { serverVersion: g.serverVersion },
+    );
+  }
+  const unconfirmed = (why) =>
+    new Refusal(
+      "stop_unconfirmed",
+      `the outcome of ${SESSION_STOP_TOOL} stop on thread ${threadId} is unproven (${why}); T3 may have stopped it, so retry only with client request id ${clientRequestId}`,
+      7,
+      { threadId, clientRequestId },
+    );
+  let out;
+  try {
+    out = await session.call(SESSION_STOP_TOOL, { threadId, action: "stop", reason: "Firstmate fm-control exit", clientRequestId });
+  } catch (err) {
+    if (err instanceof Refusal && (err.exit === 3 || err.exit === 4) && err.code !== UNPROVEN_TOOL_ERROR) throw err;
+    throw unconfirmed(err.message);
+  }
+  const stopped = out?.stoppedProviderSessionIds;
+  if (!Array.isArray(stopped)) throw unconfirmed("T3 returned no stoppedProviderSessionIds");
+  const deadline = Date.now() + timeoutMs;
+  let t = {};
+  for (;;) {
+    try {
+      t = threadOf(await session.call("t3_thread_read", { threadId, limit: 1, runLimit: 1 }));
+    } catch (err) {
+      throw unconfirmed(`the read-back failed: ${err.message}`);
+    }
+    if ((t.activeRunId ?? null) === null) {
+      return { ok: true, threadId, clientRequestId, stoppedProviderSessionIds: stopped, activeRunId: null, status: t.status ?? null };
+    }
+    if (Date.now() >= deadline) break;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  throw unconfirmed(`run ${t.activeRunId} was still active after ${timeoutMs} ms`);
+}
+
 function threadOf(out) {
   return out?.thread ?? out ?? {};
 }
@@ -1336,6 +1416,7 @@ const VERBS = {
   capture,
   wait,
   interrupt,
+  "session-stop": sessionStop,
   requests,
   respond,
   watch,

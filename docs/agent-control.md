@@ -33,7 +33,7 @@ A recorded `harness=` is not always an exact adapter name: a task launched from 
 | Verb | Effect | Postcondition |
 | --- | --- | --- |
 | `interrupt` | Deliver the harness's verified interrupt sequence while leaving the agent running. | Delivery succeeds while the endpoint still exists and the agent is still alive where the backend can classify that; cancellation is confirmed only from an adapter-owned acknowledgement and otherwise reports `cancel=unconfirmed`. |
-| `exit` | Stop the agent, preserving the endpoint, the worktree, and every uncommitted change. | The backend's recovery-grade classifier reports the agent gone. Already-stopped is idempotent success. An endpoint reading `missing` (or, on Rex, `unreadable`) goes through the same [absence proof](#reclaiming-a-task-whose-endpoint-is-gone) the reclaim uses before anything is claimed about it, and only Herdr and Rex can supply one (T3 Code refuses `exit` before reading anything): proven gone reports `endpoint-gone` (the agent went with it, and the endpoint this verb normally preserves did not survive), a pane that turns out to be there and idle is the ordinary `already-stopped`, one whose agent is back takes the ordinary interrupt-then-exit path. A tmux `missing` always refuses rather than claim a stop it cannot see. |
+| `exit` | Stop the agent, preserving the endpoint, the worktree, and every uncommitted change. | The backend's recovery-grade classifier reports the agent gone, except that [T3 Code proves session detachment](t3code-backend.md#current-lifecycle-and-safety) independently of its thread-state classifier. Already-stopped is idempotent success. An endpoint reading `missing` (or, on Rex, `unreadable`) goes through the same [absence proof](#reclaiming-a-task-whose-endpoint-is-gone) the reclaim uses before anything is claimed about it, and only Herdr, Rex, and T3 Code can supply one: proven gone reports `endpoint-gone` (the agent went with it, and the endpoint this verb normally preserves did not survive), a pane that turns out to be there and idle is the ordinary `already-stopped`, one whose agent is back takes the ordinary interrupt-then-exit path. A tmux `missing` always refuses rather than claim a stop it cannot see. |
 | `relaunch` | Replace the running agent with a new one in the same worktree - and the same endpoint whenever that endpoint still exists - on the exact recorded adapter or an explicitly chosen harness, model, and effort. | The new agent is alive on the endpoint the task's record now names, and that record names the harness that is actually running. |
 
 An exit that delivers lifecycle input but cannot prove the agent stopped fails with `exit=unconfirmed`, reports the observed agent state and any interrupt cancellation claim, and never claims that nothing changed.
@@ -56,7 +56,7 @@ For a typed exit, `exit` reads the composer's state before typing the exit comma
 `exit` also refuses, naming the dialog as `blocked on a prompt`, when the screen shows a recognised dialog that a further Enter would answer, whether the dialog was open before the exit command was typed or the submitting Enter opened it; it sends no Escape and chooses no option, so closing the dialog is left to the operator.
 A stopped agent whose pane still shows the dialog text is not refused.
 [`fm_composer_blocking_dialog`](../bin/fm-composer-lib.sh) owns the recognised set, which today is only Claude's background-task exit picker; [its verification record](verification/runtime-backends.md#claude-background-task-exit-picker) lists the dialogs that are not covered.
-T3 Code has no composer and its `/mcp` tools offer no session stop, so `exit` refuses there before sending anything ([`t3code-backend.md`](t3code-backend.md#current-lifecycle-and-safety)).
+For T3 Code's composer-free exit and capability gate, see [its lifecycle contract](t3code-backend.md#current-lifecycle-and-safety).
 
 **Teardown and discard are not verbs and will not become verbs.**
 `exit` stops an agent and preserves everything else.
@@ -125,7 +125,7 @@ An unreachable endpoint can still hold the live agent a rebind would duplicate, 
 - **tmux cannot.** `list-windows -a` describes only the tmux server the *current process* addresses (its `TMUX_TMPDIR`/socket), and a task record carries no socket identity for its endpoint.
   A different but running server would answer "not anywhere" about a window it was never able to see, so a server-wide read cannot tell a destroyed window from one on a server this process cannot address.
   There is no read available that closes that gap, so tmux always refuses - for a renamed session, a moved window, a foreign socket, and a dead server alike.
-- **T3 Code refuses `exit` before this proof.** Its [native status table](t3code-backend.md#restart-and-liveness-behavior) owns absence and unreadability, including an archived thread whose active run is still draining.
+- **T3 Code can prove it.** Its [native status table](t3code-backend.md#restart-and-liveness-behavior) owns absence and unreadability.
   T3 Code still cannot reclaim the task because a thread keeps its conversation, so no fresh agent can replace it and `relaunch` refuses before this proof can authorize a replacement.
 
 Every transient or self-contradicting read stays `unreadable` or `ambiguous` and still refuses, so a momentary backend failure can never be mistaken for absence.
@@ -184,7 +184,6 @@ The worktree and the task's records are unaffected either way.
   T3 Code has no composer, so Escape and Ctrl+C are both a turn interrupt and Ctrl+U is refused.
 - `exit` and `relaunch` require a backend with a recovery-grade agent-state classifier - tmux, herdr, rex, and t3code - because without one the "the agent stopped" postcondition cannot be proven.
   zellij, orca, cmux, and paseo are refused rather than reported as successful blind.
-- On t3code, `exit` refuses before anything is sent: a T3 thread has no composer for a typed exit command, and T3's `/mcp` tools offer no session stop.
 - `relaunch` additionally requires a backend that can host a replacement agent - tmux, herdr, and rex.
   t3code is refused before anything is stopped: a T3 thread keeps its conversation, so a new turn or a provider change on it continues the same agent rather than launching a fresh one.
 - An ambiguous or unreadable endpoint state refuses.
@@ -218,4 +217,4 @@ The empirical basis for each adapter's value is the `harness-adapters` skill's v
 - `tests/fm-control-relaunch.test.sh` - the relaunch transaction: identity preservation, harness switching, the progress note, checkpoint refusals, rollback after a failed launch, and the endpoint-absence proof both verbs share - the Herdr reclaim of a destroyed endpoint, and tmux refusing one it cannot prove absent.
 - `tests/fm-control-herdr-smoke.test.sh` - the second state-verified backend against the real herdr binary, on an isolated throwaway lab session.
 - `tests/fm-backend-rex.test.sh` and `tests/fm-backend-rex-smoke.test.sh` - the Rex classifier and absence proof against a stateful fake CLI and a private test server; [`docs/verification/runtime-backends.md`](verification/runtime-backends.md#rex) records the live `interrupt`, `exit`, endpoint-gone, and reclaim runs.
-- `tests/fm-backend-t3code.test.sh` - the t3code exit and relaunch refusals and the native interrupt against a fake T3 server.
+- `tests/fm-backend-t3code.test.sh` - the t3code session-stop exit, its lost-reply retry and its refusal without a session stop, the relaunch refusal, and the native interrupt against a fake T3 server.

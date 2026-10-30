@@ -26,7 +26,11 @@
 //     {action}. The fake serves both generations; tools/list offers the
 //     earlier one by default and CURRENT_TOOLS when the world sets toolset
 //     "current", and a tools/call for a tool tools/list does not offer is
-//     refused, as T3 refuses it.
+//     refused, as T3 refuses it;
+//   - t3_thread_session stop (the captain's T3 fork; upstream T3 lacks it)
+//     ends the active run asynchronously, detaches every live provider
+//     session (a run opens one when none is live), and replays its recorded
+//     result for a reused clientRequestId.
 //
 // Usage: t3-fake-server.mjs --case-file <file> --port-file <file> [--parent-pid <pid>]
 // <case-file> holds the path of the current case directory. Every request
@@ -43,7 +47,9 @@
 //   top-level $ref; otherwise a launch that sends one is refused as invalid
 //   params), bindEnvironmentCount (override the environmentCount a launched
 //   thread reads back; a thread's environment values are never returned),
-//   archiveKeepsRun (archive never ends the run), interruptStuck or
+//   archiveKeepsRun (archive never ends the run), sessionStop (tools/list
+//   also offers t3_thread_session), stopKeepsRun (a session stop never ends
+//   the run), interruptStuck or
 //   waitTimesOut (an interrupt never ends the run), queueAfterInterrupt
 //   (text a queued run starts with once an interrupt lands), failTools
 //   ({name: {code, message}}), dropTools ({name: count}: close the connection
@@ -81,7 +87,7 @@ const ALL_TOOLS = [
 ];
 const CURRENT_TOOLS = ALL_TOOLS.filter((n) => n !== "t3_thread_configuration" && !n.startsWith("t3_pending_request_"))
   .concat(["t3_pending_request"]);
-const offeredTools = (w) => w.tools ?? (w.toolset === "current" ? CURRENT_TOOLS : ALL_TOOLS);
+const offeredTools = (w) => w.tools ?? (w.toolset === "current" ? CURRENT_TOOLS : ALL_TOOLS).concat(w.sessionStop ? ["t3_thread_session"] : []);
 const ACTIVE = new Set(["preparing", "queued", "starting", "running", "waiting"]);
 const TERMINAL = new Set(["completed", "failed", "cancelled", "interrupted", "rolled_back"]);
 const select = (id, values) => ({ id, label: id, type: "select", options: values.map((v) => ({ id: v, label: v })) });
@@ -152,7 +158,7 @@ const now = () => new Date().toISOString();
 const pendingRequests = (t) => (t.runtimeRequests ?? []).filter((r) => r.status === "pending");
 
 function detail(t) {
-  const { items, runs, runtimeRequests, modelSelection, environment, ...rest } = t;
+  const { items, runs, runtimeRequests, modelSelection, environment, providerSessions, ...rest } = t;
   if (runtimeRequests) rest.pendingRequestCount = pendingRequests(t).length;
   return rest;
 }
@@ -176,6 +182,7 @@ function startRun(t, text) {
   t.activeRunId = runId;
   t.status = "running";
   t.latestRunId = runId;
+  if (!(t.providerSessions ?? []).length) t.providerSessions = [`psess:${randomUUID()}`];
   t.items = t.items ?? [];
   t.items.push({ type: "user_message", status: "completed", text });
   return runId;
@@ -197,6 +204,7 @@ function settle(w) {
       if (!run.stopRequested || !ACTIVE.has(run.status)) continue;
       if (run.stopRequested === "interrupt" && (w.interruptStuck || w.waitTimesOut)) continue;
       if (run.stopRequested === "archive" && w.archiveKeepsRun) continue;
+      if (run.stopRequested === "stop" && w.stopKeepsRun) continue;
       endRun(t, run, "interrupted");
       changed = true;
       if (run.queueAfterInterrupt) startRun(t, run.queueAfterInterrupt);
@@ -338,6 +346,19 @@ async function callTool(w, name, a) {
         }
       }
       return [ok({ threadId: t.threadId, action: a.action }), true];
+    }
+    case "t3_thread_session": {
+      if (!t) return [notFound(a.threadId), false];
+      if (a.action !== "stop") return [err("invalid_params", `unknown action ${a.action}`), false];
+      w.requestIds = w.requestIds ?? {};
+      const key = `session|${a.threadId}|${a.clientRequestId}`;
+      if (a.clientRequestId && w.requestIds[key]) return [ok(w.requestIds[key]), false];
+      const run = latestActiveRun(t);
+      if (run) run.stopRequested = "stop";
+      const out = { threadId: t.threadId, stoppedProviderSessionIds: t.providerSessions ?? [] };
+      t.providerSessions = [];
+      if (a.clientRequestId) w.requestIds[key] = out;
+      return [ok(out), true];
     }
     case "t3_pending_request":
       if (!["list", "read", "respond"].includes(a.action)) return [err("invalid_action", `unknown action ${a.action}`), false];

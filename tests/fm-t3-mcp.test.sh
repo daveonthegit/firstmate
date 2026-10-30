@@ -493,6 +493,56 @@ test_send_lost_reply_is_unconfirmed_and_retry_is_one_delivery() {
   pass "fm-t3-mcp send: a reply lost after commit exits 7, and the same-id retry lands as one delivery"
 }
 
+# The session stop is optional: upstream T3 lacks t3_thread_session, so the
+# verb refuses there before any call, while the fork's tool stops the run and
+# the session, replays a reused id, and treats a lost reply as unproven.
+test_session_stop_capability_replay_and_lost_reply() {
+  local thread msg
+  fresh_case session-stop-upstream
+  thread=$(new_thread)
+  mcp status
+  expect_code 0 "$RC" "status works on upstream T3: $ERR"
+  assert_equals false "$(field "$OUT" sessionStop)" "status reports an upstream T3 without the session stop"
+  mcp session-stop --thread "$thread" --client-request-id stop-up
+  expect_code 4 "$RC" "upstream T3 refuses the session stop locally"
+  assert_equals session_stop_unsupported "$(field "$OUT" error.code)" "the refusal names the missing tool"
+  assert_contains "$ERR" "does not offer t3_thread_session" "the refusal says what the server lacks"
+  [ -z "$(t3_fake_calls t3_thread_session)" ] || fail "a refused stop must send nothing"
+
+  fresh_case session-stop-fork '{"sessionStop":true}'
+  thread=$(new_thread)
+  mcp status
+  assert_equals true "$(field "$OUT" sessionStop)" "status reports the fork's session stop"
+  msg="$TMP_ROOT/msg"
+  printf 'work' > "$msg"
+  mcp send --thread "$thread" --message-file "$msg" --client-request-id send-1
+  expect_code 0 "$RC" "the turn starts: $ERR"
+  t3_fake_set 'w.dropReplyTools = { t3_thread_session: 1 }'
+  mcp session-stop --thread "$thread" --client-request-id stop-1
+  expect_code 7 "$RC" "a lost stop reply is unproven (exit 7)"
+  assert_equals stop_unconfirmed "$(field "$OUT" error.code)" "the lost reply is named as an unconfirmed stop"
+  assert_contains "$ERR" "retry only with client request id stop-1" "the refusal names the only safe retry"
+  mcp session-stop --thread "$thread" --client-request-id stop-1
+  expect_code 0 "$RC" "the same-id retry succeeds: $ERR"
+  assert_equals 1 "$(field "$OUT" stoppedProviderSessionIds.length)" "the replay reports the session the first request detached"
+  assert_equals "" "$(field "$OUT" activeRunId)" "the read-back proves no active run"
+  mcp state --thread "$thread"
+  assert_equals false "$(field "$OUT" archived)" "a session stop keeps the thread"
+  mcp session-stop --thread "$thread" --client-request-id stop-2
+  expect_code 0 "$RC" "a new stop with nothing live still succeeds: $ERR"
+  assert_equals 0 "$(field "$OUT" stoppedProviderSessionIds.length)" "a new request finds no live session"
+
+  mcp send --thread "$thread" --message-file "$msg" --client-request-id send-2
+  t3_fake_set 'w.stopKeepsRun = true'
+  mcp session-stop --thread "$thread" --client-request-id stop-3 --timeout-ms 300
+  expect_code 7 "$RC" "a run still active after the stop is unproven"
+  assert_contains "$ERR" "still active" "the unproven stop names the active run"
+  t3_fake_set 'w.stopKeepsRun = false; w.failTools = { t3_thread_session: { code: "thread_not_found", message: "gone" } }'
+  mcp session-stop --thread "$thread" --client-request-id stop-4
+  expect_code 3 "$RC" "T3's own refusal stays a proven typed failure"
+  pass "fm-t3-mcp session-stop: refused on upstream T3, replayed by id on the fork, and unproven on a lost reply or a live run"
+}
+
 # Away-mode discovery must read every page and treat a fork as an ordinary
 # conversation while excluding a delegated subagent.
 test_thread_for_root_pages_and_forks() {
@@ -969,6 +1019,7 @@ test_telemetry_reported
 test_read_limit_matches_t3_cap
 test_interrupt_confirms_only_the_interrupted_run
 test_send_lost_reply_is_unconfirmed_and_retry_is_one_delivery
+test_session_stop_capability_replay_and_lost_reply
 test_thread_for_root_pages_and_forks
 test_resolve_selection_uses_t3_catalog
 test_resolve_selection_accepts_current_catalog_values

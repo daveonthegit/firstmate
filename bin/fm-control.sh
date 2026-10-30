@@ -45,7 +45,8 @@
 #              is merely unreachable from this seat. Herdr proves absence by
 #              reading the session the record names; REX proves it because its
 #              never-reused ids answer a structured not-found from the server
-#              the record names.
+#              the record names; T3 Code proves it because its `missing` is
+#              the verified server's own answer.
 #              Proven gone reports `endpoint-gone` rather than
 #              `already-stopped`, because the endpoint this verb normally
 #              preserves did not survive; a pane that turns out to be there and
@@ -55,9 +56,13 @@
 #              endpoint, so this verb cannot tell a destroyed window from one on
 #              a tmux server it cannot address, and it will not claim a stop it
 #              cannot see.
-#              Refused on t3code before anything is sent: T3's `/mcp` tools
-#              have no session stop (bin/fm-control-lib.sh
-#              fm_control_backend_exit_supported); interrupt ends its turn.
+#              On t3code there is no composer: exit is T3's session stop
+#              (bin/backends/t3code.sh fm_backend_t3code_session_stop), which
+#              ends the run and the agent session and keeps the thread, and
+#              the postcondition is T3's detach result, a read-back with no
+#              active run, and the thread still present. A T3 that offers no
+#              session stop (upstream T3) is refused before anything is sent;
+#              interrupt ends its turn there.
 #   relaunch   Transactionally replace the running agent with a new one, in the
 #              SAME worktree - and the same endpoint whenever that endpoint
 #              still exists - on the same or a newly chosen
@@ -693,18 +698,38 @@ retire_busy_incarnation() {
   fi
 }
 
+# T3 has no composer to type an exit command into. Its session stop ends the
+# run and detaches the agent session in one command, and a stopped thread
+# still reads alive because it takes the next message, so the proof is the
+# backend's (T3's detach result and a read-back with no active run) plus the
+# thread surviving. The backend owns the retry-safe request id.
+exit_t3code_session() {
+  local result rc=0
+  result=$(fm_backend_t3code_session_stop "$T") || rc=$?
+  case "$rc" in
+    0) ;;
+    5) die "task $ID runs on a T3 server that offers no session stop (t3_thread_session), so 'exit' cannot stop its agent; 'interrupt' ends the running turn and teardown archives the thread" ;;
+    7) die "exit-delivered $ID exit=unconfirmed; T3 may have stopped the agent session, so retry 'exit', which reuses the same stop request" ;;
+    *) die "the session stop was not delivered to task $ID on $BACKEND" ;;
+  esac
+  fm_backend_target_exists "$BACKEND" "$T" "$LABEL" \
+    || die "task $ID's T3 thread disappeared while stopping its session; exit preserves the thread, so no further control action is safe"
+  retire_busy_incarnation
+  printf '%s' "$result"
+}
+
 # do_exit: stop the running agent, preserving endpoint and worktree. Prints
 # `already-stopped`, `endpoint-gone`, or `stopped`.
 do_exit() {
   local state cmd hazard verdict composer_state cancel absence interrupt_result=not-needed dialog
   require_state_verified_backend exit
-  fm_control_backend_exit_supported "$BACKEND" \
-    || die "task $ID runs on the $BACKEND backend, whose T3 Orchestrator V2 tools have no session stop, so 'exit' cannot stop its agent; 'interrupt' ends the running turn and teardown archives the thread"
   state=$(agent_state)
   case "$state" in
     dead)
-      printf 'already-stopped'
-      return 0
+      if [ "$BACKEND" != t3code ]; then
+        printf 'already-stopped'
+        return 0
+      fi
       ;;
     alive) ;;
     *)
@@ -731,8 +756,10 @@ do_exit() {
           # no agent - a herdr pane whose session server was merely stopped is
           # the common case. Nothing is gone, so this is the ordinary
           # already-stopped outcome.
-          printf 'already-stopped'
-          return 0
+          if [ "$BACKEND" != t3code ]; then
+            printf 'already-stopped'
+            return 0
+          fi
           ;;
         alive)
           # The agent came back with its endpoint. Fall through to the ordinary
@@ -744,6 +771,10 @@ do_exit() {
       esac
       ;;
   esac
+  if [ "$BACKEND" = t3code ]; then
+    exit_t3code_session
+    return $?
+  fi
   # A busy agent is interrupted first before the exit command is submitted.
   case "$(busy_verdict)" in
     busy*)
