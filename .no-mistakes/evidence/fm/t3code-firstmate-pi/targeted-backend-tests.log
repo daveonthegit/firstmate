@@ -1,0 +1,25 @@
+
+### FM_TEST_ONLY=test_pi_selection_needs_launch_environment bash tests/fm-backend-t3code.test.sh
+warning: T3 telemetry at http://127.0.0.1:49946 is on; run the server that hosts Firstmate workers with T3CODE_TELEMETRY_ENABLED=false (docs/t3code-backend.md)
+ok - fm_backend_t3code_model_selection pi: refuses without T3's per-thread launch environment, else resolves on the Pi driver with thinking as its effort
+
+### FM_TEST_ONLY=test_thread_create_carries_environment bash tests/fm-backend-t3code.test.sh
+ok - fm_backend_t3code_thread_create: NAME=VALUE pairs ride t3_thread_launch's environment, refused before launch where T3 does not offer it
+
+### FM_TEST_ONLY=test_spawn_pi_worker_launches_with_environment bash tests/fm-backend-t3code.test.sh
+ok - fm-spawn.sh --backend t3code pi: the task environment rides t3_thread_launch, launched after the Git hook exists and recorded as the task's thread
+
+### FM_TEST_ONLY=test_spawn_pi_refuses_without_launch_environment bash tests/fm-backend-t3code.test.sh
+ok - fm-spawn.sh --backend t3code pi: refuses before any lease or launch when T3 cannot carry the task environment
+
+### FM_TEST_ONLY=test_spawn_pi_deferred_launch_gate_failure_returns_lease bash tests/fm-backend-t3code.test.sh
+ok - fm-spawn.sh --backend t3code pi: a gate failure at the deferred launch returns the lease with no thread
+
+### FM_TEST_ONLY=test_spawn_pi_secondmate_refused bash tests/fm-backend-t3code.test.sh
+ok - fm-spawn.sh --backend t3code --secondmate pi: refused before any mutation, since its supervisor target cannot ride the launch
+
+### FM_TEST_ONLY=test_refused_launch_turn_archives_thread_and_returns_lease bash tests/fm-backend-t3code.test.sh
+ok - fm-spawn.sh --backend t3code: a refused launch turn archives the thread, removes its environment files, then returns the lease
+
+### FM_TEST_ONLY=test_harness_admission_and_typing_refusals bash tests/fm-backend-t3code.test.sh
+ok - T3 harness admission refuses every non-T3 adapter and launch-time typing refuses without a thread read

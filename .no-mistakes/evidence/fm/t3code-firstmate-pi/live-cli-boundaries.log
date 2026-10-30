@@ -1,0 +1,40 @@
+## Available prerequisites (PATH only)
+/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/node
+/Users/davidxiao/.nvm/versions/node/v24.16.0/bin/pi
+/Users/davidxiao/.local/bin/treehouse
+t3: absent from PATH
+
+## Read-only live T3 guard
+skip: live: no T3 credential at /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M655WV0WBTE72YJA5WN5AV7B/config/t3code-token
+
+## Unsupported harness CLI refusals, without server access
+$ node bin/fm-t3-mcp.mjs resolve-selection --harness cursor --instance unused --model default --effort default
+{"ok":false,"error":{"code":"harness_unsupported","message":"backend=t3code supports only the claude, codex, and pi harnesses, not 'cursor'"}}
+fm-t3-mcp: backend=t3code supports only the claude, codex, and pi harnesses, not 'cursor'
+exit=4
+$ node bin/fm-t3-mcp.mjs resolve-selection --harness agy --instance unused --model default --effort default
+{"ok":false,"error":{"code":"harness_unsupported","message":"backend=t3code supports only the claude, codex, and pi harnesses, not 'agy'"}}
+fm-t3-mcp: backend=t3code supports only the claude, codex, and pi harnesses, not 'agy'
+exit=4
+$ node bin/fm-t3-mcp.mjs resolve-selection --harness opencode --instance unused --model default --effort default
+{"ok":false,"error":{"code":"harness_unsupported","message":"backend=t3code supports only the claude, codex, and pi harnesses, not 'opencode'"}}
+fm-t3-mcp: backend=t3code supports only the claude, codex, and pi harnesses, not 'opencode'
+exit=4
+$ node bin/fm-t3-mcp.mjs resolve-selection --harness pi-signed --instance unused --model default --effort default
+{"ok":false,"error":{"code":"harness_unsupported","message":"backend=t3code supports only the claude, codex, and pi harnesses, not 'pi-signed'"}}
+fm-t3-mcp: backend=t3code supports only the claude, codex, and pi harnesses, not 'pi-signed'
+exit=4
+
+## Invalid launch environment is refused before credentials or network
+$ node bin/fm-t3-mcp.mjs launch --project disposable --title validation --model-selection <pi-selection> --environment {"BAD NAME":"x"}
+{"ok":false,"error":{"code":"usage","message":"--environment name 'BAD NAME' is not a variable name T3 accepts"}}
+fm-t3-mcp: --environment name 'BAD NAME' is not a variable name T3 accepts
+exit=2
+$ node bin/fm-t3-mcp.mjs launch --project disposable --title validation --model-selection <pi-selection> --environment {"FM_TASK_ID":42}
+{"ok":false,"error":{"code":"usage","message":"--environment FM_TASK_ID must be a string"}}
+fm-t3-mcp: --environment FM_TASK_ID must be a string
+exit=2
+$ node bin/fm-t3-mcp.mjs launch --project disposable --title validation --model-selection <pi-selection> --environment []
+{"ok":false,"error":{"code":"usage","message":"--environment must be a JSON object"}}
+fm-t3-mcp: --environment must be a JSON object
+exit=2
