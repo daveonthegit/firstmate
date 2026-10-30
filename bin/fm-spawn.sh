@@ -5852,9 +5852,9 @@ if [ "$KIND" != secondmate ]; then
   esac
 fi
 # spawn_t3code_env_install <harness> NAME=VALUE... - the t3code channel for the
-# exports a pane shell would receive before launch. T3 sets environment per
-# provider instance, never per thread, but each harness reads its own
-# per-directory config from the thread's cwd ($WT): Claude's
+# exports a pane shell would receive before launch for Claude and Codex.
+# These harnesses read per-directory config from the thread's cwd ($WT),
+# rather than Pi's per-thread launch environment: Claude's
 # .claude/settings.local.json `env` block (merged into the file so the busy
 # hooks written above and a secondmate home's own env entries survive;
 # FM_T3CODE_ENV_KEYS names the keys Firstmate wrote, which a respawn replaces
