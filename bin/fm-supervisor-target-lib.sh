@@ -91,6 +91,24 @@ discover_supervisor_t3code_thread() {
   fm_backend_t3code_thread_for_home "${FM_HOME:-.}"
 }
 
+fm_capture_t3_supervisor_thread() {
+  local backend
+  FM_T3_SUPERVISOR_THREAD=
+  export FM_T3_SUPERVISOR_THREAD
+  if [ -n "${FM_SUPERVISOR_BACKEND:-}" ]; then
+    backend=$FM_SUPERVISOR_BACKEND
+  elif [ -n "${TMUX_PANE:-}" ] || { [ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID:-}" ]; } || fm_supervisor_in_rex; then
+    return 0
+  else
+    backend=$(fm_backend_explicit_name)
+  fi
+  [ "$backend" = t3code ] || return 0
+  if ! FM_T3_SUPERVISOR_THREAD=$(discover_supervisor_target) || [ -z "$FM_T3_SUPERVISOR_THREAD" ]; then
+    FM_T3_SUPERVISOR_THREAD=
+    printf 'T3_KEEP_ALIVE: could not resolve the T3 supervisor thread; it is not pinned and T3 will end its agent session after 30 idle minutes\n'
+  fi
+}
+
 # discover_supervisor_backend: resolve the supervisor endpoint's BACKEND, independent
 # of the target string so an explicit FM_SUPERVISOR_TARGET override still knows
 # which primitives (tmux, herdr, rex, or t3code) to dispatch through. Priority mirrors

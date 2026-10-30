@@ -2682,10 +2682,10 @@ FM_CONFIG_OVERRIDE=<home>/config bin/fm-test-run.sh tests/fm-backend-t3code-live
 ```
 
 ```text
-ok - t3code live transport: T3 0.1.0 environment <id> passes the gate (telemetry=off)
+ok - t3code live transport: T3 0.1.5+fork.2 environment <id> passes the gate (telemetry=on, pi launch environment=true, supervisor keep-alive=true)
 ```
 
-That result is from the 2026-10-17 stable 0.1.0 lab run; refresh it with the command above after signing in.
+That result is from 2026-10-30 against the captain's fork, service `t3@0.1.5+fork.2`; refresh it with the command above after signing in.
 
 ### Portable regression coverage
 
@@ -2697,8 +2697,10 @@ tests/fm-daemon.test.sh
 ```
 
 The fake models the T3 protocol facts that hide defects when simplified: cursor paging, the read cap of 100, a wait on the exact run or else the latest by ordinal, an interrupt and an archive whose run ends asynchronously, a send committed before a reply that can be lost, and a pending-request count that includes approvals the question tools cannot see.
-`tests/fm-t3-mcp.test.sh` drives the helper against `tests/t3-fake-server.mjs`: the PKCE sign-in, origin defaults, every gate and credential refusal, real-path project matching, catalog-resolved selection, the per-thread launch environment's schema gate, limits, and pass-through, launch binding and configuration read-back with their uncertain and refused outcomes, send idempotency and the unconfirmed verdict for a lost reply, a JSON-RPC server error, T3's catch-all `orchestration_error`, or a tool error without a code (each of which also leaves a launch uncertain), capture and its 500-line bound, exact-run interrupt claims, the optional session stop with its replayed and unconfirmed outcomes, pending questions and the per-approval signature, the bounded event wait and its re-armed slices, session close, the proven archive, and paged supervisor lookup.
+`tests/fm-t3-mcp.test.sh` drives the helper against `tests/t3-fake-server.mjs`: the PKCE sign-in, origin defaults, every gate and credential refusal, real-path project matching, catalog-resolved selection, the per-thread launch environment's schema gate, limits, and pass-through, launch binding and configuration read-back with their uncertain and refused outcomes, send idempotency and the unconfirmed verdict for a lost reply, a JSON-RPC server error, T3's catch-all `orchestration_error`, or a tool error without a code (each of which also leaves a launch uncertain), capture and its 500-line bound, exact-run interrupt claims, the optional session stop with its replayed and unconfirmed outcomes, the optional keep-alive pin with its update-result proof and worker-thread refusal, pending questions and the per-approval signature, the bounded event wait and its re-armed slices, session close, the proven archive, and paged supervisor lookup.
 `tests/fm-backend-t3code.test.sh` drives the adapter, spawn, control, watcher, away daemon, and teardown against the same fake: model selection, the status table, kill ordering, per-directory environment and the Codex trust warning, the Claude pull-request-tool version boundary, worker and secondmate spawn, a Pi worker's deferred launch with its task environment and its refusals without that environment, as a secondmate, or with tool exclusions, the secondmate credential link, launch-setting refusals, abort, including a secondmate home's environment removal, slot freshening before launch, isolation-rejected, dirty-slot, and uncertain-launch lease retention, tracked Codex configuration and tracked `CLAUDE.local.md` preservation, the session-stop exit with its lost-reply retry and its refusal without the tool, the relaunch refusal, lost-reply resends through `fm-send.sh`, the push escalation of pending questions, including under a fractional poll interval, and `bin/fm-t3-answer.sh`, failed-run secondmate resume, the secondmate home shutdown barrier for pooled, standalone, and nested homes and its `lsof` refusal before any archive, the wedge and dead-agent paths, and stale-alert retention and re-arming under unknown busy state.
+It also covers the session-start supervisor keep-alive: only the supervisor thread is pinned, only when locked, never from a tmux pane, and a T3 without the pin is a warning rather than a startup failure.
+The captured-identity regression ends the primary's first turn before deferred bootstrap runs, verifies that the captured thread is still pinned, and checks that discovery without an active primary warns instead of silently skipping.
 `tests/fm-backend-t3code.test.sh` also covers the refusal to replace a T3 secondmate whose thread cannot be proven closed, and `tests/fm-secondmate-liveness.test.sh` pins the unchanged best-effort close on tmux.
 `tests/fm-daemon.test.sh` covers discovery precedence and native busy state.
 
@@ -2743,6 +2745,30 @@ Paths are in the T3 Code repository at that commit.
 - Upstream T3 `main` and `v0.1.5` have no `environment` parameter on `t3_thread_launch`, so a `pi` spawn refuses there.
 
 The [live transport guard](#live-transport-guard) reports whether the signed-in server's `t3_thread_launch` lists `environment`; refresh this record with a live Pi scout once the server runs such a build.
+
+### Supervisor keep-alive
+
+On 2026-10-30, against the captain's fork as the launchd service `t3@0.1.5+fork.2` on macOS, a scratch Firstmate home (`config/backend` `t3code`, a copy of the credential, and a registered no-op custom check so supervision stayed armed) hosted one `claude-haiku-5-5` primary thread at the home root.
+That primary only appended one line per turn to a log.
+
+```sh
+bin/fm-t3-mcp.mjs status
+bin/fm-t3-mcp.mjs launch --project <home project> --title fm-pin-primary --model-selection <haiku, effort low> --message-file <first message>
+bin/fm-t3-mcp.mjs state --thread <thread>   # once a minute for 35 minutes
+echo "blocked [at=<epoch>]: keep-alive probe" >> <home>/state/pinprobe.status
+bin/fm-t3-mcp.mjs archive --thread <thread>
+```
+
+| Check | Result |
+| --- | --- |
+| `status` | `"keepAlive":true` beside `"sessionStop":true` and `"launchEnvironment":true` |
+| Session-start pin | The hook's deferred stage printed `BOOTSTRAP_INFO: pinned T3 supervisor thread <thread> against idle release`, its `t3-keep-alive` phase took 325 ms, and it finished 1.7 s into the stage, while the first turn was still running |
+| Idle past T3's 30-minute release | The first turn ended at 19:34:46Z; at 20:10:13Z the same `claude` process (up 35:47) was alive and `turnAt` was unchanged, so no turn ran in between |
+| Wake while pinned | The probe at 20:11:21Z started run 2 at 20:11:57Z in that same `claude` process, which logged the watcher wake |
+| Cleanup | `archive` read back `closed:true`; the `claude` process and the home's watcher ended |
+
+No `/mcp` read reports the pin: `t3_thread_read`, `t3_thread_list`, and `t3_thread_configure` on that build return no `keepAlive`, so only the `t3_thread_update` result proves it.
+Before the pin existed, the same scenario on `t3@0.1.5+fork.1` lost the `claude` process exactly 30 minutes after the last turn, and a later event queued without waking it.
 
 ### Tool names in 0.1.3 and later
 

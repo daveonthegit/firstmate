@@ -131,9 +131,8 @@ So `bin/fm-session-start.sh` bounds itself rather than betting on an unbounded p
 
 ### Network work stays off the blocking path
 
-The digest makes no external-network call at all.
-Every network call it owes runs off the blocking path, in the separately bounded deferred stage owned by `bin/fm-startup-network.sh`.
-So an unreachable host can no longer consume this budget.
+The [`bin/fm-session-start.sh` header](../bin/fm-session-start.sh) owns network sequencing, including the blocking identity capture needed for a [T3 supervisor](t3code-backend.md#supervisor-keep-alive).
+The separately bounded deferred stage is owned by `bin/fm-startup-network.sh`.
 
 ### Digest timeout
 
