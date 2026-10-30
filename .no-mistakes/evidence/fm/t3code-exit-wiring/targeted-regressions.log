@@ -1,0 +1,24 @@
+fm-afk-launch: away-posture record archived at /private/var/folders/_h/2yg5n_mx0zq1c9vgfg2462_80000gn/T/fm-backend-t3code-tests.Dxlvt3/restart-unknown-completed/home/state/afk-contracts/1793385111.afk-contract
+fm-afk-launch: away mode stopped; no daemon terminal was running, .afk cleared, and the posture record archived
+fm-afk-launch: away-posture record archived at /private/var/folders/_h/2yg5n_mx0zq1c9vgfg2462_80000gn/T/fm-backend-t3code-tests.Dxlvt3/restart-unknown-failed/home/state/afk-contracts/1793385114.afk-contract
+fm-afk-launch: away mode stopped; no daemon terminal was running, .afk cleared, and the posture record archived
+ok - native restart re-arms discarded T3 stale warnings exactly once and preserves delivered suppression
+ok - away housekeeping preserves unknown stale rechecks and reports possible wedges until work resumes
+ok - away daemon on T3: a stall reported while unknown is not reported again once T3 reads idle
+ok - T3 stale watcher: harness=codex status=failed turn=fresh -> dead
+ok - t3code: a failed thread read reports unknown busy state, submits no away-mode injection, and keeps stale rechecks uncertain
+ok - T3 stale lookup honors paused and captain-held declarations
+ok - T3 stale watcher: harness=codex status=running turn=fresh -> absorb
+ok - T3 stale watcher: harness=claude status=running turn=fresh -> absorb
+ok - T3 stale watcher: harness=codex status=waiting turn=fresh -> absorb
+ok - T3 stale watcher: harness=codex status=starting turn=fresh -> surface
+ok - T3 stale watcher: harness=codex status=completed turn=fresh -> surface
+ok - T3 stale watcher: harness=codex status=failed turn=fresh -> dead
+ok - T3 stale watcher: harness=codex status=running turn=hung -> surface
+ok - T3 stale watcher: harness=pi status=waiting turn=fresh -> absorb
+ok - T3 stale watcher: harness=pi status=completed turn=fresh -> surface
+ok - fm-control.sh backend=t3code: exit refuses before any call on a T3 without a session stop; interrupt ends the turn natively
+ok - fm-control.sh exit backend=t3code: the fork's session stop ends the turn and session, keeps the thread, and a repeat is already-stopped
+ok - fm-control.sh exit backend=t3code: a failed run still detaches its session and keeps its thread
+ok - fm-control.sh exit backend=t3code: a lost stop reply is unconfirmed, and the retry replays the same request
+ok - fm-spawn.sh --backend t3code claude: --effort default launches with the driver's default effort

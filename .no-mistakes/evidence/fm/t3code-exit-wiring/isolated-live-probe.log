@@ -1,0 +1,19 @@
+Isolated T3 v0.1.5+fork.1; telemetry disabled; disposable base directory.
+Connection failed: fetch failed
+{"ok":false,"error":{"code":"no_credential","message":"no T3 credential at /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-tmp/live-lab/config/t3code-token; the captain signs in with: bin/fm-t3-mcp.mjs login --access full-access"}}
+fm-t3-mcp: no T3 credential at /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-tmp/live-lab/config/t3code-token; the captain signs in with: bin/fm-t3-mcp.mjs login --access full-access
+FM_TEST_BEGIN 2026-10-30T18:19:29Z tests/fm-backend-t3code-live-e2e.test.sh family=live-harness-optin expected_gate_skip=live-capability
+skip: live: no T3 credential at /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-tmp/live-lab/config/t3code-token
+fm-test-run: gate skip: tests/fm-backend-t3code-live-e2e.test.sh: live: no T3 credential at /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-tmp/live-lab/config/t3code-token
+FM_TEST_END 2026-10-30T18:19:30Z tests/fm-backend-t3code-live-e2e.test.sh exit=0 duration_ms=485 gate_skip=true
+FM_TEST_SUMMARY total=1 failed=0 skipped_gate=1 duration_ms=1179
+FM_TEST_SUMMARY_FAMILY family=live-harness-optin count=1 duration_ms=485 failed=0
+FM_TEST_SLOWEST rank=1 script=tests/fm-backend-t3code-live-e2e.test.sh duration_ms=485
+
+Retry: waited up to 60 seconds for the disposable T3 server.
+POST /mcp without a credential: HTTP 503
+
+
+Final readiness probe (allowing initial HTTP 503 startup responses):
+POST /mcp without a credential: HTTP 401
+{"error":"invalid_mcp_credential","message":"A valid T3 Code MCP credential is required."}

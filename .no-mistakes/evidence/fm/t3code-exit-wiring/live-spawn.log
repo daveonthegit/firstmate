@@ -1,0 +1,7 @@
+scaffolded: /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-t3-live/home/data/t3live/brief.md (ship, mode=local-only; replace {TASK} and {FIRSTMATE_SPEC})
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-t3-live/home
+warning: T3 telemetry at http://127.0.0.1:3773 is on; run the server that hosts Firstmate workers with T3CODE_TELEMETRY_ENABLED=false (docs/t3code-backend.md)
+notice: t3live ships mode=local-only while the standing posture for scratch is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+🌳 Setting up worktree...
+🌳 Leased worktree at /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-t3-live/pool/.treehouse/scratch-6fe312/1/scratch. Run 'treehouse return /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-t3-live/pool/.treehouse/scratch-6fe312/1/scratch' to release it.
+spawned t3live harness=claude kind=ship mode=local-only yolo=off window=fm-t3live worktree=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M66ZNA1QRVRECT5YDWR807M9/.test-t3-live/pool/.treehouse/scratch-6fe312/1/scratch
