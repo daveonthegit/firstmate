@@ -531,6 +531,66 @@ w.threads = {
   pass "fm_backend_t3code_thread_for_home: zero, one, ambiguous, and unreachable"
 }
 
+# Session start's deferred bootstrap stage pins the thread this firstmate runs
+# in, and only that thread, against T3's 30-minute idle release.
+test_bootstrap_pins_only_the_supervisor_thread() {
+  local out rc fb
+  t3_case keep-alive running
+  fb="$CASE_DIR/bin"
+  mkdir -p "$fb" "$CASE_DIR/state" "$CASE_DIR/data"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$fb/gh"
+  chmod +x "$fb/gh"
+  printf 't3code\n' > "$CONFIG/backend"
+  FM_T3_REPO="$REPO" t3_world_set '
+w.keepAlive = true;
+const base = w.threads["thread-live"];
+w.threads = {
+  "t-captain": { ...base, threadId: "t-captain" },
+  "t-worker": { ...base, threadId: "t-worker", worktreePath: process.env.FM_T3_REPO + "/wt" },
+  "t-mate": { ...base, threadId: "t-mate", projectId: "proj-2", status: "completed", activeRunId: null },
+};'
+  boot() {  # [VAR=value...] -> OUT, RC
+    OUT=$(env -u TMUX -u TMUX_PANE -u HERDR_ENV -u HERDR_PANE_ID -u TERM_PROGRAM -u FM_BACKEND \
+      -u FM_SUPERVISOR_BACKEND -u FM_SUPERVISOR_TARGET PATH="$fb:$PATH" FM_HOME="$REPO" \
+      FM_CONFIG_OVERRIDE="$CONFIG" FM_STATE_OVERRIDE="$CASE_DIR/state" FM_DATA_OVERRIDE="$CASE_DIR/data" \
+      FM_PROJECTS_OVERRIDE="$CASE_DIR/projects" FM_BOOTSTRAP_NETWORK=only "$@" "$ROOT/bin/fm-bootstrap.sh" 2>&1)
+    RC=$?
+  }
+  boot
+  expect_code 0 "$RC" "bootstrap must finish: $OUT"
+  assert_contains "$OUT" "BOOTSTRAP_INFO: pinned T3 supervisor thread t-captain against idle release" "the supervisor thread must be pinned"
+  assert_equals '{"threadId":"t-captain","action":"keep_alive","keepAlive":true}' "$(t3_fake_calls t3_thread_update)" \
+    "only the supervisor thread may be pinned, never the worker running beside it"
+  : > "$LOG"
+  boot
+  assert_not_contains "$OUT" "T3" "an already pinned supervisor must stay silent: $OUT"
+  [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "an already pinned supervisor must get no second update"
+
+  : > "$LOG"
+  boot FM_BOOTSTRAP_DETECT_ONLY=1
+  [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "a read-only session must not pin"
+  boot TMUX_PANE=%1
+  [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "a supervisor in a tmux pane must not pin a T3 thread"
+  assert_not_contains "$OUT" "T3" "a tmux supervisor must stay silent: $OUT"
+
+  # A secondmate carries its own thread in its launch environment.
+  boot FM_SUPERVISOR_BACKEND=t3code FM_SUPERVISOR_TARGET=t-mate
+  assert_contains "$OUT" "pinned T3 supervisor thread t-mate" "a T3 secondmate must pin its own thread"
+  boot FM_SUPERVISOR_BACKEND=t3code FM_SUPERVISOR_TARGET=t-worker
+  assert_contains "$OUT" "T3_KEEP_ALIVE: supervisor thread t-worker is not pinned" "a worker thread named as the supervisor must be refused"
+  [ "$(t3_fake_calls t3_thread_update | grep -c t-worker)" = 0 ] || fail "a worker thread must never be pinned"
+
+  # Upstream T3: t3_thread_update without keepAlive.
+  t3_world_set 'w.keepAlive = false; w.threadUpdate = true; for (const t of Object.values(w.threads)) delete t.keepAlive;'
+  : > "$LOG"
+  boot
+  expect_code 0 "$RC" "a T3 without the pin must not fail startup: $OUT"
+  assert_contains "$OUT" "T3_KEEP_ALIVE: supervisor thread t-captain is not pinned (" "the missing pin must be reported"
+  assert_contains "$OUT" "after 30 idle minutes" "the warning must name the consequence"
+  [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "a T3 without the pin must be sent nothing"
+  pass "bootstrap: pins only the T3 supervisor thread, once, when locked, and warns without failing on a T3 without the pin"
+}
+
 test_explicit_t3_selection_and_precedence() {
   local out
   t3_case autodetect running
@@ -3057,6 +3117,7 @@ test_thread_create_and_turn_start_payloads
 test_thread_create_carries_environment
 test_thread_create_uncertain_and_refused_outcomes
 test_thread_for_home_zero_one_and_ambiguous
+test_bootstrap_pins_only_the_supervisor_thread
 test_explicit_t3_selection_and_precedence
 test_capture_renders_activity_and_status
 test_send_key_mapping

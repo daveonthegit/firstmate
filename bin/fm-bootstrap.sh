@@ -23,6 +23,8 @@
 #                 "BOOTSTRAP_INFO: nudged fm-<id> with '<message>'",
 #                 "SECONDMATE_LIVENESS: secondmate <id>: skipped: <reason>|respawn failed after <cause>: <reason>",
 #                 "SECONDMATE_HANDOFF: secondmate <id>: pending delivery: <n> item(s)",
+#                 "T3_KEEP_ALIVE: supervisor thread <id> is not pinned (<reason>); ...",
+#                 "BOOTSTRAP_INFO: pinned T3 supervisor thread <id> against idle release",
 #                 "FMX: X mode on ..." or "FMX: X mode off ...".
 #          When a RUNNING secondmate home is fast-forwarded, its target is
 #          firstmate's own current default-branch commit. A local worktree uses
@@ -107,10 +109,16 @@
 #          The `code-root <file>` variant is a detect-only local check that runs
 #          even in a read-only session; detect_code_root_backlog_fork owns what
 #          it reports.
-#          Set FM_BOOTSTRAP_DETECT_ONLY=1 to skip the six MUTATING sweeps
+#          When this firstmate runs in a T3 Code thread (the supervisor thread
+#          bin/fm-supervisor-target-lib.sh resolves), t3code_supervisor_keep_alive
+#          pins that thread, and never a worker thread, against T3's 30-minute
+#          idle release; a T3 without the pin, or a pin that fails, prints a
+#          T3_KEEP_ALIVE line, and a home whose supervisor is not a T3 thread
+#          makes no T3 call.
+#          Set FM_BOOTSTRAP_DETECT_ONLY=1 to skip the seven MUTATING sweeps
 #          (backlog_record_reconcile, secondmate_sync,
 #          secondmate_liveness_sweep, secondmate_handoff_resume, x_mode_setup,
-#          fleet_sync) while still
+#          fleet_sync, t3code_supervisor_keep_alive) while still
 #          printing every read-only detect line
 #          above; the TANGLE line switches to advisory-only wording with no
 #          checkout command. Used by
@@ -118,7 +126,7 @@
 #          the fleet lock, so a second concurrent session never race-mutates
 #          secondmate homes, pending handoff outboxes and receiver wakes,
 #          X-mode artifacts, project clones, or repair instructions.
-#          Unset/0 (the default) runs all six sweeps - this flag is purely
+#          Unset/0 (the default) runs all seven sweeps - this flag is purely
 #          additive.
 #          Set FM_BOOTSTRAP_NETWORK to split this run by whether a step talks to
 #          the network, so a session start can print its digest from local reads
@@ -128,7 +136,8 @@
 #                 must never silently skip a safety sweep.
 #            skip - every LOCAL step, and none of the network ones. Skips
 #                 `gh auth status`, secondmate_liveness_sweep, secondmate_sync,
-#                 secondmate_handoff_resume, and fleet_sync.
+#                 secondmate_handoff_resume, fleet_sync, and
+#                 t3code_supervisor_keep_alive.
 #            only - ONLY those network steps and nothing else. No tool detection,
 #                 no version floors, no tangle check, no backlog
 #                 reconciliation, no x_mode_setup: those already ran on the
@@ -207,6 +216,8 @@ DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 . "$SCRIPT_DIR/fm-x-lib.sh"
 # shellcheck source=bin/fm-backend.sh disable=SC1091
 . "$SCRIPT_DIR/fm-backend.sh"
+# shellcheck source=bin/fm-supervisor-target-lib.sh disable=SC1091
+. "$SCRIPT_DIR/fm-supervisor-target-lib.sh"
 # shellcheck source=bin/fm-remote-readiness-lib.sh disable=SC1091
 . "$SCRIPT_DIR/fm-remote-readiness-lib.sh"
 # shellcheck source=bin/fm-timeout-lib.sh disable=SC1091
@@ -848,6 +859,37 @@ secondmate_liveness_one() {  # <meta> <id>
 secondmate_handoff_resume() {
   [ -d "$DATA/handoff" ] || return 0
   "$SCRIPT_DIR/fm-backlog-handoff.sh" --resume-pending >/dev/null 2>&1 || true
+}
+
+# t3code_supervisor_keep_alive: T3 releases an idle agent session after 30
+# minutes, and a firstmate whose session is gone no longer wakes on events, so
+# the supervisor thread is pinned (docs/t3code-backend.md#supervisor-keep-alive).
+# bin/fm-supervisor-target-lib.sh decides which thread that is; a supervisor
+# on any other backend is silent. bin/fm-t3-mcp.mjs keep-alive owns the
+# capability check, the worker-thread refusal, and the proof.
+t3code_supervisor_keep_alive() {
+  local backend thread out rc reason
+  backend=$(discover_supervisor_backend 2>/dev/null) || return 0
+  [ "$backend" = t3code ] || return 0
+  thread=$(discover_supervisor_target 2>/dev/null) || return 0
+  if fm_backend_source t3code >/dev/null 2>&1; then
+    out=$(fm_backend_t3code_mcp keep-alive --thread "$thread" 2>/dev/null) && rc=0 || rc=$?
+  else
+    out=''
+    rc=1
+  fi
+  if [ "$rc" -eq 0 ]; then
+    case "$out" in *'"changed":true'*) echo "BOOTSTRAP_INFO: pinned T3 supervisor thread $thread against idle release" ;; esac
+    return 0
+  fi
+  reason=$(printf '%s' "$out" | node -e '
+let d;
+try { d = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { process.exit(1); }
+const m = d?.error?.message;
+if (typeof m !== "string" || !m) process.exit(1);
+process.stdout.write(m);
+' 2>/dev/null) || reason="the keep-alive call failed with exit $rc"
+  echo "T3_KEEP_ALIVE: supervisor thread $thread is not pinned ($reason); T3 will end its agent session after 30 idle minutes, and supervision then stops until the thread gets a message"
 }
 
 secondmate_handoff_detect() {
@@ -1693,6 +1735,13 @@ if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ]; then
     fi
   fi
   if network_phase; then
+    # First among the sweeps: the supervisor thread is found by its active run,
+    # which the session's first turn may end at any moment.
+    if network_sweep_authorized 'T3 supervisor keep-alive pin'; then
+      __fm_timing_stamp=$(fm_timing_now_ms)
+      t3code_supervisor_keep_alive
+      fm_timing_record phase t3-keep-alive "$__fm_timing_stamp"
+    fi
     if network_sweep_authorized 'dead-secondmate relaunch'; then
       __fm_timing_stamp=$(fm_timing_now_ms)
       secondmate_liveness_sweep

@@ -91,6 +91,7 @@ When T3 lists both, pending questions use the merged `t3_pending_request`, but t
 
 It then refuses unless `t3_environment_read` reports the environment id recorded at sign-in, so a different T3 server behind the same address is never driven with this credential.
 The gate also records whether `t3_thread_launch`'s input schema lists an `environment` property, which `status` reports as `launchEnvironment`; only [pi](#pi-workers) depends on it.
+Likewise it records whether `t3_thread_update`'s input schema lists `keepAlive`, which `status` reports as `keepAlive`; only the [supervisor keep-alive](#supervisor-keep-alive) depends on it.
 A refusal names the missing tool or both environment ids, and spawn, control, and teardown stop before their first mutation.
 This gate replaces the HTTP dispatch probe and version floor of the pre-V2 transport, which T3 0.0.46 removed.
 
@@ -242,6 +243,21 @@ That turn tells the secondmate to re-read its `AGENTS.md` and config first, and 
 A secondmate thread that reads missing is closed again through the idempotent archive before a replacement thread is launched, and when that close cannot be proven the thread and its record stay as recorded and nothing is spawned; other backends keep their existing best-effort close ([`bin/fm-secondmate-liveness-lib.sh`](../bin/fm-secondmate-liveness-lib.sh)).
 Teardown still requires a proven archive before returning the worktree.
 
+## Supervisor keep-alive
+
+T3 releases an idle agent session after 30 minutes, and a firstmate whose session is gone stops waking on events until its thread gets a message.
+So when a firstmate primary or secondmate runs in a T3 thread, its locked session start pins that thread with `t3_thread_update` action `keep_alive`, and idle never ends that thread's agent session.
+The pin is the first sweep of the deferred startup stage (`t3code_supervisor_keep_alive` in [`bin/fm-bootstrap.sh`](../bin/fm-bootstrap.sh)), and it pins only the supervisor thread that [supervisor discovery](configuration.md#away-mode-supervisor-backend-fm_supervisor_backend--fm_supervisor_target) resolves: a secondmate's own thread from its launch environment, or a primary's thread by the cwd match.
+A home whose supervisor runs in a tmux, Herdr, or Rex pane makes no T3 call, and a worker thread is never pinned, because `bin/fm-t3-mcp.mjs keep-alive` refuses any thread with a worktree of its own.
+An already pinned thread is left alone, and a new pin prints one `BOOTSTRAP_INFO` line.
+T3 keeps the pin on the thread, so a later session in the same thread is pinned too; stop, archive, and `fm-control.sh exit` still end the session.
+The cost is one resident agent process per pinned thread.
+
+Only a T3 build whose `t3_thread_update` takes `keepAlive`, such as the captain's fork, offers the pin.
+On upstream T3 the session start prints a `T3_KEEP_ALIVE` warning and continues, and that supervisor goes quiet after 30 idle minutes.
+Any other failed pin prints the same warning with its reason; after the cause is fixed, `bin/fm-startup-network.sh run --locked 1` from the supervisor's own turn retries it.
+The cwd match finds a primary's thread only while its run is active, which is why the pin runs before the other deferred sweeps; a primary whose first turn ends before the stage reaches the pin stays unpinned, with no warning, until its next session start.
+
 ## Push events and polling fallback
 
 T3 accepts an `mcp-client` session only on `/mcp`, so its WebSocket event stream is not available to this credential.
@@ -318,6 +334,7 @@ If a task's thread no longer reads back, release the task by hand:
 - A tracked `.codex/config.toml` that already defines `[shell_environment_policy]` is refused by file and table name before a slot is leased.
 - While a tracked Codex overlay is installed, do not edit that file or clear its `skip-worktree` flag; configuration changes require cleanup first.
 - Shell typing and Ctrl-U are unsupported; runtime Escape and Ctrl-C still interrupt the turn.
+- A firstmate supervisor in a T3 thread stays resident only on a T3 that offers the [keep-alive pin](#supervisor-keep-alive); on upstream T3 its session ends after 30 idle minutes and supervision stops until the thread gets a message.
 - A Codex supervisor has no away mode on this backend because it has no tracked background tool for `start-native`, and T3 has no terminal for `start` to create.
 - T3 checkpoints each turn as hidden refs under `refs/t3/orchestration-v2/checkpoints/` in the project clone; they are never pushed and do not affect the landed-work test.
 

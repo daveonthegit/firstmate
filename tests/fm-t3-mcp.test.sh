@@ -543,6 +543,50 @@ test_session_stop_capability_replay_and_lost_reply() {
   pass "fm-t3-mcp session-stop: refused on upstream T3, replayed by id on the fork, and unproven on a lost reply or a live run"
 }
 
+# The keep-alive pin is the fork's t3_thread_update keepAlive; upstream T3
+# lists t3_thread_update for titles only, so only the schema proves the pin.
+test_keep_alive_capability_idempotence_and_worker_refusal() {
+  local project supervisor worker
+  fresh_case keep-alive-upstream '{"threadUpdate":true}'
+  mcp project-ensure --root "$TMP_ROOT/proj"
+  project=$(field "$OUT" projectId)
+  mcp launch --project "$project" --title fm-home --model-selection "$SEL"
+  supervisor=$(field "$OUT" threadId)
+  mcp status
+  expect_code 0 "$RC" "status works on upstream T3: $ERR"
+  assert_equals false "$(field "$OUT" keepAlive)" "status reports an upstream t3_thread_update without keepAlive"
+  mcp keep-alive --thread "$supervisor"
+  expect_code 4 "$RC" "upstream T3 refuses the pin locally"
+  assert_equals keep_alive_unsupported "$(field "$OUT" error.code)" "the refusal names the missing capability"
+  assert_contains "$ERR" "30-minute idle release" "the refusal says what the missing pin costs"
+  [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "a refused pin must send nothing"
+
+  fresh_case keep-alive-fork '{"keepAlive":true}'
+  mcp project-ensure --root "$TMP_ROOT/proj"
+  project=$(field "$OUT" projectId)
+  mcp launch --project "$project" --title fm-home --model-selection "$SEL"
+  supervisor=$(field "$OUT" threadId)
+  worker=$(new_thread)
+  mcp status
+  assert_equals true "$(field "$OUT" keepAlive)" "status reports the fork's keep-alive pin"
+  mcp keep-alive --thread "$supervisor"
+  expect_code 0 "$RC" "the fork pins a supervisor thread: $ERR"
+  assert_equals true "$(field "$OUT" changed)" "the first pin changes the thread"
+  assert_equals '{"threadId":"'"$supervisor"'","action":"keep_alive","keepAlive":true}' "$(t3_fake_calls t3_thread_update)" \
+    "the pin is one keep_alive update naming the thread"
+  mcp read --thread "$supervisor"
+  assert_equals true "$(field "$OUT" thread.keepAlive)" "the thread reads back pinned"
+  mcp keep-alive --thread "$supervisor"
+  expect_code 0 "$RC" "pinning a pinned thread succeeds: $ERR"
+  assert_equals false "$(field "$OUT" changed)" "an already pinned thread is left alone"
+  assert_equals 1 "$(t3_fake_calls t3_thread_update | grep -c .)" "an already pinned thread gets no second update"
+  mcp keep-alive --thread "$worker"
+  expect_code 4 "$RC" "a worker thread is never pinned"
+  assert_equals keep_alive_worker_thread "$(field "$OUT" error.code)" "the refusal names the worker thread"
+  assert_equals 1 "$(t3_fake_calls t3_thread_update | grep -c .)" "a refused worker pin sends nothing"
+  pass "fm-t3-mcp keep-alive: refused on upstream T3, pins a supervisor thread once on the fork, and never pins a worker"
+}
+
 # Away-mode discovery must read every page and treat a fork as an ordinary
 # conversation while excluding a delegated subagent.
 test_thread_for_root_pages_and_forks() {
@@ -1020,6 +1064,7 @@ test_read_limit_matches_t3_cap
 test_interrupt_confirms_only_the_interrupted_run
 test_send_lost_reply_is_unconfirmed_and_retry_is_one_delivery
 test_session_stop_capability_replay_and_lost_reply
+test_keep_alive_capability_idempotence_and_worker_refusal
 test_thread_for_root_pages_and_forks
 test_resolve_selection_uses_t3_catalog
 test_resolve_selection_accepts_current_catalog_values

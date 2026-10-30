@@ -30,7 +30,10 @@
 //   - t3_thread_session stop (the captain's T3 fork; upstream T3 lacks it)
 //     ends the active run asynchronously, detaches every live provider
 //     session (a run opens one when none is live), and replays its recorded
-//     result for a reused clientRequestId.
+//     result for a reused clientRequestId;
+//   - t3_thread_update renames a thread on upstream T3, and the captain's
+//     fork adds action keep_alive with a boolean keepAlive to its input
+//     schema, which the thread then reads back as keepAlive.
 //
 // Usage: t3-fake-server.mjs --case-file <file> --port-file <file> [--parent-pid <pid>]
 // <case-file> holds the path of the current case directory. Every request
@@ -49,7 +52,10 @@
 //   thread reads back; a thread's environment values are never returned),
 //   archiveKeepsRun (archive never ends the run), sessionStop (tools/list
 //   also offers t3_thread_session), stopKeepsRun (a session stop never ends
-//   the run), interruptStuck or
+//   the run), threadUpdate (tools/list also offers t3_thread_update without
+//   keepAlive, as upstream T3 does; a keep_alive call is refused as invalid
+//   params), keepAlive (tools/list offers t3_thread_update with keepAlive, as
+//   the fork does), interruptStuck or
 //   waitTimesOut (an interrupt never ends the run), queueAfterInterrupt
 //   (text a queued run starts with once an interrupt lands), failTools
 //   ({name: {code, message}}), dropTools ({name: count}: close the connection
@@ -87,7 +93,8 @@ const ALL_TOOLS = [
 ];
 const CURRENT_TOOLS = ALL_TOOLS.filter((n) => n !== "t3_thread_configuration" && !n.startsWith("t3_pending_request_"))
   .concat(["t3_pending_request"]);
-const offeredTools = (w) => w.tools ?? (w.toolset === "current" ? CURRENT_TOOLS : ALL_TOOLS).concat(w.sessionStop ? ["t3_thread_session"] : []);
+const offeredTools = (w) => w.tools ?? (w.toolset === "current" ? CURRENT_TOOLS : ALL_TOOLS)
+  .concat(w.sessionStop ? ["t3_thread_session"] : [], w.threadUpdate || w.keepAlive ? ["t3_thread_update"] : []);
 const ACTIVE = new Set(["preparing", "queued", "starting", "running", "waiting"]);
 const TERMINAL = new Set(["completed", "failed", "cancelled", "interrupted", "rolled_back"]);
 const select = (id, values) => ({ id, label: id, type: "select", options: values.map((v) => ({ id: v, label: v })) });
@@ -114,6 +121,11 @@ const FAKE_PROVIDERS = [
 ];
 const LAUNCH_ENVIRONMENT_PROPERTY = { type: "object", additionalProperties: { type: "string" } };
 function inputSchema(w, name) {
+  if (name === "t3_thread_update") {
+    const properties = { threadId: { type: "string" }, action: { type: "string" }, title: { type: "string" } };
+    if (w.keepAlive) properties.keepAlive = { type: "boolean" };
+    return { type: "object", properties, required: ["action"] };
+  }
   if (name !== "t3_thread_launch" || !w.launchEnvironment) return { type: "object" };
   const schema = { type: "object", properties: { projectId: { type: "string" }, environment: LAUNCH_ENVIRONMENT_PROPERTY } };
   return w.launchEnvironment === "ref" ? { $ref: "#/$defs/ThreadLaunchInput", $defs: { ThreadLaunchInput: schema } } : schema;
@@ -346,6 +358,18 @@ async function callTool(w, name, a) {
         }
       }
       return [ok({ threadId: t.threadId, action: a.action }), true];
+    }
+    case "t3_thread_update": {
+      if (!t) return [notFound(a.threadId), false];
+      if (a.action === "keep_alive") {
+        if (!w.keepAlive || typeof a.keepAlive !== "boolean") {
+          return [err("invalid_params", "Invalid parameters for tool 't3_thread_update': keep_alive requires keepAlive"), false];
+        }
+        t.keepAlive = a.keepAlive;
+      } else if (a.action === "rename") {
+        t.title = a.title;
+      } else return [err("invalid_params", `unknown action ${a.action}`), false];
+      return [ok({ threadId: t.threadId, action: a.action, title: t.title, keepAlive: t.keepAlive === true }), true];
     }
     case "t3_thread_session": {
       if (!t) return [notFound(a.threadId), false];
