@@ -6753,7 +6753,9 @@ else
   fi
 fi
 
-[ "$BACKEND" != t3code ] || [ "$HARNESS" != pi ] || spawn_t3code_launch_pi
+if [ "$BACKEND" = t3code ] && [ "$HARNESS" = pi ]; then
+  spawn_t3code_launch_pi
+fi
 META_WINDOW=$T
 [ "$BACKEND" = orca ] && META_WINDOW=$W
 [ "$BACKEND" = t3code ] && META_WINDOW=$W
