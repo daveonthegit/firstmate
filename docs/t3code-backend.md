@@ -74,7 +74,7 @@ The file is part of the primary's inherited local material, so every secondmate 
 A task's `--model` must be a model that instance lists in T3's catalog.
 `--model default` uses the T3 project's default model only when its instance matches `config/t3code-instances`; otherwise it refuses and asks for an explicit `--model`.
 `--effort` rides as the driver's reasoning option, `effort` for claude, `reasoningEffort` for codex, and `thinking` for pi, and must be one of the values the catalog lists for that model; a Pi model without reasoning lists no `thinking` option, so only `--effort default` passes for it.
-`fm-spawn.sh --effort default` is the same as omitting `--effort`: the driver keeps its own default reasoning option.
+An explicit `--effort default` leaves the selected model's reasoning option unchanged, without inheriting a secondmate effort pin; with an explicit model the driver keeps its default, while `--model default` preserves the project's options.
 An effort replaces only that option: `--model default` keeps every other project default option, such as Codex's service tier or Claude's fast mode, while an explicit model sends only the effort.
 Every selected option is checked against the model's catalog descriptors, accepting both current values-array catalogs and earlier option-list catalogs.
 
@@ -186,7 +186,7 @@ T3 stops its latest active run asynchronously and names it, so the `cancel=` ver
 T3 ends the running turn and detaches the agent session in one command and keeps the thread and its conversation, so no interrupt or typed exit command comes first, and the next message starts a new session.
 A stopped thread still reads alive in the status table because it takes that next message, so the proof is T3's detach result, a read-back with no active run, and the thread still present: `stopped` when T3 detached a live session, `already-stopped` when none was live.
 A failed run does not prove session detachment, so readable failed threads go through the same session stop.
-One exit request keeps one client request id with no expiry until its outcome is proven, so even a delayed retry after a lost reply replays T3's original result without stopping a newly opened session; a proven outcome drops the id, because T3 replays a reused id without stopping a session opened since.
+One exit request keeps one client request id with no expiry until its outcome is proven, so even a delayed retry after a lost reply under the same sign-in replays T3's original result without stopping a newly opened session; a proven outcome drops the id, because T3 replays a reused id without stopping a session opened since.
 An unproven stop reports `exit=unconfirmed`, and the next `exit` is that retry.
 On a T3 that does not list the tool, such as upstream T3, `exit` is refused before anything is sent; `interrupt` ends the turn there and teardown archives the thread.
 `relaunch` is refused before anything is stopped: a T3 thread keeps its conversation, so a new turn continues the same agent, and a provider or model change through `t3_thread_configure` is a context handoff on that same thread rather than the fresh agent a relaunch promises.
@@ -310,10 +310,11 @@ If a task's thread no longer reads back, release the task by hand:
   Unless `config/keep-ai-trailers` is present, the per-worktree environment selects Firstmate's Git commit hook to strip known AI trailers, including on T3 workers.
 - T3 also owns the Codex provider command, so Firstmate cannot apply the pane-backed worker's hook-disable or turn-end notify options.
   Firstmate's pane-backed hook-trust workaround therefore does not apply; supervision uses T3's [thread status table](#restart-and-liveness-behavior).
-- `fm-control.sh exit` needs a T3 build that offers `t3_thread_session`, so upstream T3 refuses it, and `relaunch` is refused because a thread keeps its conversation, so no fresh agent can replace it.
+- For `exit` availability and the `relaunch` refusal, see [Current lifecycle and safety](#current-lifecycle-and-safety).
 - The WebSocket event stream is not available to an `mcp-client` credential; the [run wait](#push-events-and-polling-fallback) stands in for it.
 - A permission approval cannot be answered through `/mcp`; it waits for T3 Code itself.
-- Request-id deduplication holds within one T3 auth session only: every sign-in starts a new session, so resending an unconfirmed send, or retrying a frozen away-mode digest, after the captain signs in again can deliver it twice; verify such a message in T3 Code first.
+- Request-id deduplication holds within one T3 auth session only: every sign-in starts a new session, so resending an unconfirmed send or retrying a frozen away-mode digest after the captain signs in again can deliver it twice; verify such a message in T3 Code first.
+  Likewise, retrying an unconfirmed `exit` after a fresh sign-in can stop a newly opened session rather than replay the original stop; inspect the thread and reconcile its session state before retrying.
 - A tracked `.codex/config.toml` that already defines `[shell_environment_policy]` is refused by file and table name before a slot is leased.
 - While a tracked Codex overlay is installed, do not edit that file or clear its `skip-worktree` flag; configuration changes require cleanup first.
 - Shell typing and Ctrl-U are unsupported; runtime Escape and Ctrl-C still interrupt the turn.
