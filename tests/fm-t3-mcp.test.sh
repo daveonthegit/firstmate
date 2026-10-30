@@ -547,6 +547,49 @@ test_resolve_selection_uses_t3_catalog() {
   pass "fm-t3-mcp resolve-selection: driver, model, and options come from T3's catalog; an effort override keeps other options"
 }
 
+# T3 Code v0.1.3 stable lists a model option's allowed values as a plain `values`
+# array with no `type`; a boolean option lists `[false, true]`. The default
+# fake catalog keeps the older `options: [{id}]` form so both stay covered.
+test_resolve_selection_accepts_current_catalog_values() {
+  local project
+  fresh_case resolve-selection-values
+  mcp project-ensure --root "$TMP_ROOT/proj"
+  project=$(field "$OUT" projectId)
+  t3_fake_set 'w.providers = [
+    { providerInstanceId: "codex", driverKind: "codex", constraints: [], models: [
+      { id: "gpt-6-luna", options: [{ id: "reasoningEffort", values: ["low", "medium", "high", "xhigh"], default: "medium" }, { id: "serviceTier", values: ["default", "priority"], default: "default" }] }] },
+    { providerInstanceId: "claudeAgent", driverKind: "claudeAgent", constraints: [], models: [
+      { id: "claude-opus-5-5", label: "Claude Opus 5.5", options: [{ id: "effort", values: ["low", "medium", "high", "xhigh", "max"], default: "medium" }, { id: "fastMode", values: [false, true] }] }] }]'
+  mcp resolve-selection --harness codex --instance codex --model gpt-6-luna --effort high --project "$project"
+  expect_code 0 "$RC" "an effort listed in a values-array catalog is accepted: $ERR"
+  assert_equals '{"instanceId":"codex","model":"gpt-6-luna","options":[{"id":"reasoningEffort","value":"high"}]}' \
+    "$(field "$OUT" selection)" "the accepted effort is bound as the reasoning option"
+  mcp resolve-selection --harness codex --instance codex --model gpt-6-luna --effort medium --project "$project"
+  expect_code 0 "$RC" "the catalog's own default effort is accepted: $ERR"
+  assert_equals '{"instanceId":"codex","model":"gpt-6-luna","options":[{"id":"reasoningEffort","value":"medium"}]}' \
+    "$(field "$OUT" selection)" "the default effort is bound as the reasoning option"
+  mcp resolve-selection --harness codex --instance codex --model gpt-6-luna --effort max --project "$project"
+  expect_code 4 "$RC" "an effort missing from a values-array catalog is refused"
+  assert_equals effort_unsupported "$(field "$OUT" error.code)" "the refusal names the unsupported effort"
+  assert_contains "$ERR" "low, medium, high, xhigh" "the refusal lists the values array"
+  FM_T3_ID="$project" t3_fake_set 'w.projects.find((p) => p.id === process.env.FM_T3_ID).defaultModelSelection = { instanceId: "claudeAgent", model: "claude-opus-5-5", options: [{ id: "fastMode", value: true }] }'
+  mcp resolve-selection --harness claude --instance claudeAgent --model default --effort xhigh --project "$project"
+  expect_code 0 "$RC" "a boolean option listed as values [false, true] is accepted: $ERR"
+  assert_equals '{"instanceId":"claudeAgent","model":"claude-opus-5-5","options":[{"id":"fastMode","value":true},{"id":"effort","value":"xhigh"}]}' \
+    "$(field "$OUT" selection)" "the default's boolean option and the effort override are both kept"
+  FM_T3_ID="$project" t3_fake_set 'w.projects.find((p) => p.id === process.env.FM_T3_ID).defaultModelSelection.options = [{ id: "fastMode", value: false }]'
+  mcp resolve-selection --harness claude --instance claudeAgent --model default --effort high --project "$project"
+  expect_code 0 "$RC" "a false boolean option listed as values [false, true] is accepted: $ERR"
+  assert_equals '{"instanceId":"claudeAgent","model":"claude-opus-5-5","options":[{"id":"fastMode","value":false},{"id":"effort","value":"high"}]}' \
+    "$(field "$OUT" selection)" "the default's fastMode=false is kept and the effort is added"
+  FM_T3_ID="$project" t3_fake_set 'w.projects.find((p) => p.id === process.env.FM_T3_ID).defaultModelSelection.options = [{ id: "fastMode", value: "yes" }]'
+  mcp resolve-selection --harness claude --instance claudeAgent --model default --effort default --project "$project"
+  expect_code 4 "$RC" "a boolean option value outside its values array is refused"
+  assert_equals option_unsupported "$(field "$OUT" error.code)" "the refusal names the unsupported option"
+  assert_contains "$ERR" "false, true" "the refusal lists the boolean values array"
+  pass "fm-t3-mcp resolve-selection: a catalog that lists option values as a values array is read like the older options list"
+}
+
 test_launch_reads_back_full_configuration() {
   local project sel='{"instanceId":"codex","model":"gpt-5.6-sol","options":[{"id":"reasoningEffort","value":"high"},{"id":"serviceTier","value":"priority"}]}'
   fresh_case launch-config
@@ -563,7 +606,7 @@ test_launch_reads_back_full_configuration() {
   t3_fake_set 'delete w.bindOptions; w.bindModel = "gpt-6-luna"'
   mcp launch --project "$project" --title model --model-selection "$sel" --worktree "$WT"
   expect_code 4 "$RC" "a launch on another model is refused"
-  pass "fm-t3-mcp launch: t3_thread_configuration must read back the instance, model, and every requested option"
+  pass "fm-t3-mcp launch: the configuration read-back must show the instance, model, and every requested option"
 }
 
 test_requests_and_respond() {
@@ -799,6 +842,74 @@ test_capture_clamps_lines_and_closes_session() {
   pass "fm-t3-mcp capture: --lines above 500 reads the last 500, and the verb ends its MCP session"
 }
 
+test_gate_accepts_either_tool_generation() {
+  fresh_case generations '{"toolset":"current"}'
+  mcp status
+  expect_code 0 "$RC" "a T3 offering only the 0.1.3 tool names passes the gate: $ERR"
+  t3_fake_set 'w.tools = ["t3_thread_launch","t3_thread_send","t3_thread_read","t3_thread_wait","t3_thread_interrupt","t3_thread_organize","t3_thread_list","t3_project_list","t3_project_create","t3_pending_request","orchestrator_capabilities","t3_environment_read"]'
+  mcp status
+  expect_code 4 "$RC" "a server with neither configuration tool must be refused"
+  assert_contains "$ERR" "t3_thread_configure (or t3_thread_configuration)" "the refusal names both generations of the missing capability"
+  t3_fake_set 'w.tools = ["t3_thread_launch","t3_thread_send","t3_thread_read","t3_thread_wait","t3_thread_interrupt","t3_thread_organize","t3_thread_list","t3_thread_configure","t3_project_list","t3_project_create","t3_pending_request_list","t3_pending_request_read","orchestrator_capabilities","t3_environment_read"]'
+  mcp status
+  expect_code 4 "$RC" "an incomplete earlier pending-request family must be refused"
+  assert_contains "$ERR" "t3_pending_request (or t3_pending_request_list, t3_pending_request_read, t3_pending_request_respond)" "the refusal names both pending-request generations"
+  pass "fm-t3-mcp gate: each merged capability is met by the T3 0.1.3 tool or the complete earlier family"
+}
+
+test_current_tool_names_drive_launch_and_requests() {
+  local project sel='{"instanceId":"codex","model":"gpt-5.6-sol","options":[{"id":"reasoningEffort","value":"high"}]}'
+  fresh_case current-tools '{"toolset":"current"}'
+  mcp project-ensure --root "$TMP_ROOT/proj"
+  project=$(field "$OUT" projectId)
+  : > "$T3_FAKE_LOG"
+  mcp launch --project "$project" --title current --model-selection "$sel" --worktree "$WT"
+  expect_code 0 "$RC" "a launch reads its binding back through t3_thread_configure: $ERR"
+  assert_equals 1 "$(t3_fake_calls t3_thread_configure | grep -c threadId)" "the binding is read once through t3_thread_configure"
+  assert_not_contains "$(t3_fake_calls t3_thread_configure)" modelSelection "the configuration read never sends a modelSelection"
+  t3_fake_set 'w.bindModel = "gpt-6-luna"'
+  mcp launch --project "$project" --title model --model-selection "$sel" --worktree "$WT"
+  expect_code 4 "$RC" "a launch on another model is still refused under the 0.1.3 names"
+  t3_fake_set 'delete w.bindModel; w.threads = { "thread-q": { threadId: "thread-q", projectId: "p", status: "running", activeRunId: "run-q", archived: false, worktreePath: null, items: [],
+    runs: [{ runId: "run-q", ordinal: 1, status: "running" }],
+    runtimeRequests: [
+      { id: "req-question", kind: "user_input", status: "pending", questions: [{ id: "q1", header: "Pick", question: "Which?", options: [{ label: "a", description: "A" }] }] },
+      { id: "req-approval", kind: "approval", status: "pending" } ] } }'
+  mcp requests --thread thread-q
+  expect_code 0 "$RC" "requests through t3_pending_request: $ERR"
+  assert_equals req-question "$(field "$OUT" questions.0.requestId)" "the question is listed through action list"
+  assert_equals Which? "$(field "$OUT" questions.0.questions.0.question)" "the question is read through action read"
+  assert_equals 1 "$(field "$OUT" approvals)" "the approval is still counted"
+  printf '{"q1":"a"}' > "$TMP_ROOT/answers"
+  mcp respond --thread thread-q --request req-question --answers-file "$TMP_ROOT/answers"
+  expect_code 0 "$RC" "respond through t3_pending_request: $ERR"
+  assert_equals '{"q1":"a"}' "$(field "$(t3_fake_calls t3_pending_request | grep '"action":"respond"')" answers)" "the answers reach t3_pending_request action respond"
+  pass "fm-t3-mcp current tools: launch read-back and pending requests use t3_thread_configure and t3_pending_request"
+}
+
+test_both_generations_pick_the_working_tools() {
+  local project sel='{"instanceId":"codex","model":"gpt-5.6-sol","options":[{"id":"reasoningEffort","value":"high"}]}'
+  fresh_case both-tools
+  # Earlier T3 lists t3_thread_configure beside t3_thread_configuration but
+  # refuses it without modelSelection, so the dedicated read must win.
+  t3_fake_set 'w.tools = ["t3_thread_launch","t3_thread_send","t3_thread_read","t3_thread_wait","t3_thread_interrupt","t3_thread_organize","t3_thread_list","t3_thread_configuration","t3_thread_configure","t3_project_list","t3_project_create","t3_pending_request_list","t3_pending_request_read","t3_pending_request_respond","t3_pending_request","orchestrator_capabilities","t3_environment_read"]'
+  mcp project-ensure --root "$TMP_ROOT/proj"
+  project=$(field "$OUT" projectId)
+  : > "$T3_FAKE_LOG"
+  mcp launch --project "$project" --title both --model-selection "$sel" --worktree "$WT"
+  expect_code 0 "$RC" "launch on a T3 that lists both configuration tools: $ERR"
+  assert_equals 1 "$(t3_fake_calls t3_thread_configuration | grep -c threadId)" "the dedicated configuration read is used when offered"
+  assert_equals "" "$(t3_fake_calls t3_thread_configure)" "t3_thread_configure is never called where it only writes"
+  t3_fake_set 'w.threads["thread-q"] = { threadId: "thread-q", projectId: "p", status: "running", activeRunId: "run-q", archived: false, worktreePath: null, items: [],
+    runs: [{ runId: "run-q", ordinal: 1, status: "running" }],
+    runtimeRequests: [{ id: "req-question", kind: "user_input", status: "pending", questions: [{ id: "q1", header: "Pick", question: "Which?", options: [] }] }] }'
+  mcp requests --thread thread-q
+  expect_code 0 "$RC" "requests with both pending-request generations offered: $ERR"
+  assert_contains "$(t3_fake_calls t3_pending_request)" '"action":"list"' "the merged pending-request tool is preferred when offered"
+  assert_equals "" "$(t3_fake_calls t3_pending_request_list)" "the earlier list tool is not called"
+  pass "fm-t3-mcp gate: with both generations offered, the configuration read stays on the dedicated tool and pending requests use the merged tool"
+}
+
 t3_fake_start "$TMP_ROOT/server"
 test_login_writes_private_credential_and_never_prints_token
 test_login_origin_defaults
@@ -820,8 +931,12 @@ test_interrupt_confirms_only_the_interrupted_run
 test_send_lost_reply_is_unconfirmed_and_retry_is_one_delivery
 test_thread_for_root_pages_and_forks
 test_resolve_selection_uses_t3_catalog
+test_resolve_selection_accepts_current_catalog_values
 test_launch_reads_back_full_configuration
 test_requests_and_respond
+test_gate_accepts_either_tool_generation
+test_current_tool_names_drive_launch_and_requests
+test_both_generations_pick_the_working_tools
 test_watch_is_event_driven_and_bounded
 test_watch_reports_failed_waits_not_timeout
 test_helper_runs_through_symlinked_path

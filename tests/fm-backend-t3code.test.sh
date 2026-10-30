@@ -237,15 +237,23 @@ PYTHON
 t3_verify_live_codex_env() (  # <worktree> <task-id> <isolated-codex-home>
   fm_live_gate default-on FM_T3_CODEX_CONFIG_LIVE codex "$T3_PYTHON"
   "$T3_PYTHON" - "$1" "$2" "$3" <<'PYTHON'
-import json, os, pathlib, selectors, subprocess, sys
+import json, os, pathlib, selectors, shutil, subprocess, sys
 worktree, task, home = sys.argv[1:]
 home = pathlib.Path(home)
 home.mkdir()
 (home / "config.toml").write_text(f"[projects.{json.dumps(worktree)}]\ntrust_level = \"trusted\"\n")
-version = subprocess.check_output(["codex", "--version"], text=True).strip()
+codex = shutil.which("codex")
+node = shutil.which("node")
+version = subprocess.check_output([codex, "--version"], text=True).strip()
+# The npm Codex launcher needs node to boot, but this private link must not
+# satisfy the worker's expectation of the spawning session's node path.
+bootstrap = home / "bootstrap"
+bootstrap.mkdir()
+(bootstrap / "node").symlink_to(node)
+server_path = f"/usr/bin:/bin:{bootstrap}"
 with (home / "stderr.log").open("w") as errors:
-    server = subprocess.Popen(["codex", "app-server", "--stdio"], cwd=worktree,
-        env=dict(os.environ, CODEX_HOME=str(home)), stdin=subprocess.PIPE,
+    server = subprocess.Popen([codex, "app-server", "--stdio"], cwd=worktree,
+        env=dict(os.environ, CODEX_HOME=str(home), PATH=server_path), stdin=subprocess.PIPE,
         stdout=subprocess.PIPE, stderr=errors, text=True)
     try:
         def request(number, method, params):
@@ -267,7 +275,12 @@ with (home / "stderr.log").open("w") as errors:
             "command": ["/usr/bin/printenv", "FM_TASK_ID"], "timeoutMs": 10000,
             "sandboxPolicy": {"type": "dangerFullAccess"}})
         assert result == {"exitCode": 0, "stdout": task + "\n", "stderr": ""}, (version, result)
-        print(f"ok - {version}: project config retained; shell FM_TASK_ID={task}")
+        result = request(4, "command/exec", {"cwd": worktree,
+            "command": ["/bin/sh", "-c", "command -v node"], "timeoutMs": 10000,
+            "sandboxPolicy": {"type": "dangerFullAccess"}})
+        assert result == {"exitCode": 0, "stdout": node + "\n", "stderr": ""}, (version, result)
+        print(f"Codex command/exec /bin/sh -c 'command -v node' (server PATH={server_path}): {json.dumps(result)}")
+        print(f"ok - {version}: project config retained; shell FM_TASK_ID={task}; node resolved via generated PATH despite stripped server toolchain PATH")
     finally:
         server.terminate()
         server.wait(timeout=10)
@@ -1574,6 +1587,8 @@ test_spawn_leases_slot_creates_thread_and_starts_launch_turn() {
   [ "$(t3_json_field "$settings" 'd.env.TRACEPARENT')" = undefined ] || fail "TRACEPARENT must be absent when trace context is off"
   [ "$(t3_json_field "$settings" 'd.env.COMPACT_ADVISER_DISABLE')" = 1 ] || fail "settings env must carry the compact-adviser kill switch every launch carries"
   [ "$(t3_json_field "$settings" 'd.env.FM_GH_ACCOUNT')" = selected ] || fail "T3 must carry the selected login"
+  [ "$(t3_json_field "$settings" 'd.env.PATH')" = "/tmp/fm-$id/gh-bin:$fb:$PATH" ] \
+    || fail "settings env must carry the spawn's PATH behind the account shim, got '$(t3_json_field "$settings" 'd.env.PATH')'"
   node - "$settings" "$wt" <<'JS' || fail "T3's generated Claude environment must select the account without storing a token"
 const fs = require('fs'), cp = require('child_process');
 const env = JSON.parse(fs.readFileSync(process.argv[2])).env;
@@ -1674,6 +1689,8 @@ test_spawn_codex_warns_unless_codex_trusts_the_project() {
       FM_PROJECTS_OVERRIDE="$CASE_DIR/unused-projects" FM_SPAWN_NO_GUARD=1 \
       "$ROOT/bin/fm-spawn.sh" "$id" "$proj" codex --scout --model gpt-5.6-sol --backend t3code 2>&1 ); rc=$?
     expect_code 0 "$rc" "a codex t3code spawn with Codex trust '$trust' must still launch"$'\n'"$out"
+    [ "$(t3_toml_env "$wt/.codex/config.toml" PATH)" = "$fb:$PATH" ] \
+      || fail "trust '$trust': with no account pinned, config.toml must set the spawn's own PATH, got '$(t3_toml_env "$wt/.codex/config.toml" PATH)'"
     [ "$(t3_dispatch_types)" = "t3_thread_launch t3_thread_send" ] || fail "trust '$trust': spawn must launch then send the brief, got '$(t3_dispatch_types)'"
     if [ "$trust" = project ]; then
       case "$out" in *"$warning"*) fail "a project the Codex configuration trusts must not warn, got '$out'" ;; esac
@@ -1747,6 +1764,7 @@ FM_TASK_INBOX=$CASE_DIR/home/state/$id.inbox
 GIT_CONFIG_COUNT=1
 GIT_CONFIG_KEY_0=core.hooksPath
 GIT_CONFIG_VALUE_0=$CASE_DIR/home/state/$id.git-hooks
+PATH=$PATH
 EOF
   [ "$($read FM_TASK_ID)" = undefined ] || fail "$label: a secondmate is not a task worker and must not carry FM_TASK_ID"
   [ "$($read TRACEPARENT)" = undefined ] || fail "$label: TRACEPARENT must be absent when trace context is off"
@@ -1789,11 +1807,11 @@ test_spawn_secondmate_runs_thread_in_home_with_env() {
   settings="$home/.claude/settings.local.json"
   assert_present "$settings" "a claude secondmate home gets .claude/settings.local.json"
   [ "$(t3_json_field "$settings" 'd.hooks')" = undefined ] || fail "a secondmate home carries no busy hooks"
-  [ "$(t3_json_field "$settings" 'd.env.FM_T3CODE_ENV_KEYS.split(",").length')" = 17 ] || fail "the env block should carry GOTMPDIR plus the secondmate environment, got $(t3_json_field "$settings" 'Object.keys(d.env)')"
+  [ "$(t3_json_field "$settings" 'd.env.FM_T3CODE_ENV_KEYS.split(",").length')" = 18 ] || fail "the env block should carry GOTMPDIR plus the secondmate environment, got $(t3_json_field "$settings" 'Object.keys(d.env)')"
   [ "$(t3_json_field "$settings" 'd.env.CAPTAIN_VAR')" = keep ] || fail "the home's own env entries must survive the T3 environment install"
   [ "$(t3_json_field "$settings" 'd.permissions.allow[0]')" = 'Bash(ls:*)' ] || fail "the home's own settings must survive the T3 environment install"
   [ "$(t3_json_field "$settings" 'd.env.LAVISH_AXI_HOST')" = undefined ] || fail "a key an earlier spawn wrote and this one does not must not linger"
-  [ "$(t3_json_field "$settings" 'Object.keys(d.env).length')" = 19 ] || fail "the env block should hold the home's entry, the 17 Firstmate keys, and their list, got $(t3_json_field "$settings" 'Object.keys(d.env)')"
+  [ "$(t3_json_field "$settings" 'Object.keys(d.env).length')" = 20 ] || fail "the env block should hold the home's entry, the 18 Firstmate keys, and their list, got $(t3_json_field "$settings" 'Object.keys(d.env)')"
   [ "$(t3_json_field "$settings" 'd.env.GOTMPDIR')" = "/tmp/fm-$id/gotmp" ] || fail "settings env must carry GOTMPDIR"
   read_settings() { t3_json_field "$settings" "d.env[\"$1\"]"; }
   assert_t3_secondmate_env read_settings "claude secondmate settings env" "$home" "$thread" autoarm "$id"

@@ -7185,17 +7185,22 @@ if [ "$BACKEND" = t3code ]; then
   # (spawn_t3code_env_install). TRACEPARENT is delivered only once its meta
   # record exists, the same delivered-implies-recorded invariant the pane path
   # keeps by unsetting it when the record fails.
+  # T3 starts the agent with its server's environment, whose PATH can lack the
+  # toolchain this home runs on (an nvm node bin, for one), so the thread gets
+  # this spawn's PATH, the same PATH the launch-env-allowlist floor keeps.
   T3CODE_ENV=("GOTMPDIR=$TASK_TMP/gotmp" COMPACT_ADVISER_DISABLE=1 "FM_TASK_INBOX=$STATE_REAL/$ID.inbox")
+  t3code_path=$PATH
   if [ -n "$GH_ACCOUNT" ]; then
     T3CODE_ENV+=("FM_GH_ACCOUNT=$GH_ACCOUNT")
     FM_GH_SHIM_ALLOW_LINKED_WORKTREE=1 "$FM_ROOT/bin/fm-install-gh-shim.sh" --target "$TASK_TMP/gh-bin" >/dev/null || {
       echo "error: could not install the T3 GitHub account channel" >&2
       exit 1
     }
-    T3CODE_ENV+=("PATH=$TASK_TMP/gh-bin:$PATH")
+    t3code_path="$TASK_TMP/gh-bin:$PATH"
   elif [ "${FM_GH_ACCOUNT:-}" = none ]; then
     T3CODE_ENV+=(FM_GH_ACCOUNT=none)
   fi
+  T3CODE_ENV+=("PATH=$t3code_path")
   if [ "$GIT_HOOKS_INSTALLED" = 1 ]; then
     T3CODE_ENV+=(GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath "GIT_CONFIG_VALUE_0=$GIT_HOOKS_DIR")
   fi
