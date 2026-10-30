@@ -131,7 +131,7 @@ Untracked files and directories whose names begin with `scratchpad` are also git
 
 - `bin/fm-session-start.sh`'s header is the single owner of session-start ordering, composed commands, digest contents, and the digest's startup mechanism.
 
-- `bin/fm-startup-network.sh`'s header owns the deferred startup stage that keeps every external-network call and the potentially slow inactive-outcome scan off that digest's blocking path, including its state files and the safety argument for running them later.
+- `bin/fm-startup-network.sh`'s header owns the deferred startup stage, including its state files and the safety argument for running its checks later.
 
 - `docs/sessionstart-nudge.md` owns the native session-open adapter tiers that run or nudge the digest command, and the source routing between them.
 

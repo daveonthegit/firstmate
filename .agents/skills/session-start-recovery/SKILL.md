@@ -8,7 +8,7 @@ metadata:
 
 # Session-start recovery
 
-The digest itself makes no external-network call and never waits for one.
+Session-start network sequencing, including the blocking T3 identity capture, is owned by the [`bin/fm-session-start.sh` header](../../../bin/fm-session-start.sh).
 Every network check a session start owes - GitHub auth, the T3 supervisor keep-alive pin, secondmate recovery, secondmate convergence, pending handoff delivery, and project clone refresh - runs off the digest's blocking path in a bounded worker owned by `bin/fm-startup-network.sh` and is reported in the digest's own `NETWORK CHECKS` section.
 The locked startup inactive-outcome scan joins that worker so a slow local current-state read cannot block the digest; its findings use the ordinary durable wake queue.
 

@@ -1737,8 +1737,8 @@ if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" != 1 ]; then
     fi
   fi
   if network_phase; then
-    # First among the sweeps: the supervisor thread is found by its active run,
-    # which the session's first turn may end at any moment.
+    # Use startup's captured identity even after its turn ends. Standalone
+    # bootstrap instead resolves the identity while its caller is active.
     if network_sweep_authorized 'T3 supervisor keep-alive pin'; then
       __fm_timing_stamp=$(fm_timing_now_ms)
       t3code_supervisor_keep_alive

@@ -247,7 +247,9 @@ Teardown still requires a proven archive before returning the worktree.
 
 T3 releases an idle agent session after 30 minutes, and a firstmate whose session is gone stops waking on events until its thread gets a message.
 So when a firstmate primary or secondmate runs in a T3 thread, its locked session start pins that thread with `t3_thread_update` action `keep_alive`, and idle never ends that thread's agent session.
-Session start captures the supervisor identity while its caller's turn is active, before launching the deferred startup stage. The pin is the first sweep of that stage (`t3code_supervisor_keep_alive` in [`bin/fm-bootstrap.sh`](../bin/fm-bootstrap.sh)), using the captured identity even if the turn has since ended. It pins only the supervisor thread that [supervisor discovery](configuration.md#away-mode-supervisor-backend-fm_supervisor_backend--fm_supervisor_target) resolves: a secondmate's own thread from its launch environment, or a primary's thread by the cwd match.
+Session start captures the supervisor identity while its caller's turn is active, before launching the deferred startup stage.
+For a primary discovered by cwd, that capture requires a blocking T3 read; the pin itself remains deferred and uses the captured identity even if the turn has since ended.
+It pins only the supervisor thread that [supervisor discovery](configuration.md#away-mode-supervisor-backend-fm_supervisor_backend--fm_supervisor_target) resolves: a secondmate's own thread from its launch environment, or a primary's thread by the cwd match.
 A home whose supervisor runs in a tmux, Herdr, or Rex pane makes no T3 call, and a worker thread is never pinned, because `bin/fm-t3-mcp.mjs keep-alive` refuses any thread with a worktree of its own.
 Pinning again is harmless and no `/mcp` read reports the pin, so every locked session start sends it and prints one `BOOTSTRAP_INFO` line; the proof is T3's own update result.
 T3 keeps the pin on the thread, so a later session in the same thread is pinned too; stop, archive, and `fm-control.sh exit` still end the session.
@@ -256,7 +258,8 @@ The cost is one resident agent process per pinned thread.
 Only a T3 build whose `t3_thread_update` takes `keepAlive`, such as the captain's fork, offers the pin.
 On upstream T3 the session start prints a `T3_KEEP_ALIVE` warning and continues, and that supervisor goes quiet after 30 idle minutes.
 Any other failed pin prints the same warning with its reason; after the cause is fixed, `bin/fm-startup-network.sh run --locked 1` from the supervisor's own turn retries it.
-The cwd match finds a primary's thread only while its run is active; startup captures it once on the blocking path, leaving the pin call deferred. Discovery failures print a `T3_KEEP_ALIVE` warning rather than silently skipping the pin.
+Discovery failures also print a `T3_KEEP_ALIVE` warning rather than silently skipping the pin.
+Do not rely on unattended T3 supervision until the pin succeeds.
 
 ## Push events and polling fallback
 
@@ -334,7 +337,7 @@ If a task's thread no longer reads back, release the task by hand:
 - A tracked `.codex/config.toml` that already defines `[shell_environment_policy]` is refused by file and table name before a slot is leased.
 - While a tracked Codex overlay is installed, do not edit that file or clear its `skip-worktree` flag; configuration changes require cleanup first.
 - Shell typing and Ctrl-U are unsupported; runtime Escape and Ctrl-C still interrupt the turn.
-- A firstmate supervisor in a T3 thread stays resident only on a T3 that offers the [keep-alive pin](#supervisor-keep-alive); on upstream T3 its session ends after 30 idle minutes and supervision stops until the thread gets a message.
+- T3-hosted supervision requires the [supervisor keep-alive](#supervisor-keep-alive).
 - A Codex supervisor has no away mode on this backend because it has no tracked background tool for `start-native`, and T3 has no terminal for `start` to create.
 - T3 checkpoints each turn as hidden refs under `refs/t3/orchestration-v2/checkpoints/` in the project clone; they are never pushed and do not affect the landed-work test.
 

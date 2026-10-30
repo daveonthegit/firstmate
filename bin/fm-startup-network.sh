@@ -9,9 +9,10 @@
 # those calls is individually bounded, so one unreachable host could consume the
 # whole FM_SESSION_START_TIMEOUT budget and truncate the digest outright, turning
 # a slow network into a startup that never printed the work queue at all.
-# This script runs exactly that work OFF the blocking path: the digest is
-# composed from bounded local reads while these checks run concurrently in a
-# detached worker, and their result is reported back inline when it finishes in
+# This script runs that work and the T3 supervisor pin OFF the blocking path;
+# bin/fm-session-start.sh owns the earlier blocking T3 identity capture.
+# These checks run concurrently with the digest in a detached worker, and their
+# result is reported back inline when it finishes in
 # time, or as a durable wake when it does not. The locked startup's bounded
 # inactive-outcome scan also runs here because its local current-state reads can
 # be just as slow; that scan publishes its own findings to the durable wake queue.
@@ -24,7 +25,9 @@
 #   - The work is idempotent detection. A run whose report is lost (killed
 #     worker, truncated digest, crashed session) loses no finding: the next run
 #     re-derives the same inactive terminal child, dead secondmate, stuck clone,
-#     or undelivered handoff. There is no once-only signal to miss.
+#     or undelivered handoff. The T3 pin is also repeatable, but needs the
+#     supervisor identity captured by session start before its turn ends;
+#     without a captured identity, a manual retry must run from an active turn.
 #   - Results are durable and always surface. Network sweep output lands in
 #     state/.startup-network.report and reaches the agent either inline in the
 #     digest or, when it finishes too late for the digest to inline it, as a
