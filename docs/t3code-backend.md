@@ -249,7 +249,7 @@ T3 releases an idle agent session after 30 minutes, and a firstmate whose sessio
 So when a firstmate primary or secondmate runs in a T3 thread, its locked session start pins that thread with `t3_thread_update` action `keep_alive`, and idle never ends that thread's agent session.
 The pin is the first sweep of the deferred startup stage (`t3code_supervisor_keep_alive` in [`bin/fm-bootstrap.sh`](../bin/fm-bootstrap.sh)), and it pins only the supervisor thread that [supervisor discovery](configuration.md#away-mode-supervisor-backend-fm_supervisor_backend--fm_supervisor_target) resolves: a secondmate's own thread from its launch environment, or a primary's thread by the cwd match.
 A home whose supervisor runs in a tmux, Herdr, or Rex pane makes no T3 call, and a worker thread is never pinned, because `bin/fm-t3-mcp.mjs keep-alive` refuses any thread with a worktree of its own.
-An already pinned thread is left alone, and a new pin prints one `BOOTSTRAP_INFO` line.
+Pinning again is harmless and no `/mcp` read reports the pin, so every locked session start sends it and prints one `BOOTSTRAP_INFO` line; the proof is T3's own update result.
 T3 keeps the pin on the thread, so a later session in the same thread is pinned too; stop, archive, and `fm-control.sh exit` still end the session.
 The cost is one resident agent process per pinned thread.
 

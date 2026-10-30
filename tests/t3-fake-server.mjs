@@ -33,7 +33,8 @@
 //     result for a reused clientRequestId;
 //   - t3_thread_update renames a thread on upstream T3, and the captain's
 //     fork adds action keep_alive with a boolean keepAlive to its input
-//     schema, which the thread then reads back as keepAlive.
+//     schema and reports the pin only in that update's result: no /mcp read
+//     returns it.
 //
 // Usage: t3-fake-server.mjs --case-file <file> --port-file <file> [--parent-pid <pid>]
 // <case-file> holds the path of the current case directory. Every request
@@ -170,7 +171,7 @@ const now = () => new Date().toISOString();
 const pendingRequests = (t) => (t.runtimeRequests ?? []).filter((r) => r.status === "pending");
 
 function detail(t) {
-  const { items, runs, runtimeRequests, modelSelection, environment, providerSessions, ...rest } = t;
+  const { items, runs, runtimeRequests, modelSelection, environment, providerSessions, keepAlive, ...rest } = t;
   if (runtimeRequests) rest.pendingRequestCount = pendingRequests(t).length;
   return rest;
 }

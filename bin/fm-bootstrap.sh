@@ -879,7 +879,7 @@ t3code_supervisor_keep_alive() {
     rc=1
   fi
   if [ "$rc" -eq 0 ]; then
-    case "$out" in *'"changed":true'*) echo "BOOTSTRAP_INFO: pinned T3 supervisor thread $thread against idle release" ;; esac
+    echo "BOOTSTRAP_INFO: pinned T3 supervisor thread $thread against idle release"
     return 0
   fi
   reason=$(printf '%s' "$out" | node -e '

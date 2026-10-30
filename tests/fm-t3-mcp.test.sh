@@ -571,20 +571,21 @@ test_keep_alive_capability_idempotence_and_worker_refusal() {
   assert_equals true "$(field "$OUT" keepAlive)" "status reports the fork's keep-alive pin"
   mcp keep-alive --thread "$supervisor"
   expect_code 0 "$RC" "the fork pins a supervisor thread: $ERR"
-  assert_equals true "$(field "$OUT" changed)" "the first pin changes the thread"
+  assert_equals true "$(field "$OUT" keepAlive)" "T3's update result proves the pin"
   assert_equals '{"threadId":"'"$supervisor"'","action":"keep_alive","keepAlive":true}' "$(t3_fake_calls t3_thread_update)" \
     "the pin is one keep_alive update naming the thread"
-  mcp read --thread "$supervisor"
-  assert_equals true "$(field "$OUT" thread.keepAlive)" "the thread reads back pinned"
   mcp keep-alive --thread "$supervisor"
   expect_code 0 "$RC" "pinning a pinned thread succeeds: $ERR"
-  assert_equals false "$(field "$OUT" changed)" "an already pinned thread is left alone"
-  assert_equals 1 "$(t3_fake_calls t3_thread_update | grep -c .)" "an already pinned thread gets no second update"
+  t3_fake_set 'w.failTools = { t3_thread_update: { code: "orchestration_error", message: "boom" } }'
+  mcp keep-alive --thread "$supervisor"
+  expect_code 3 "$RC" "a T3 failure of the update is not a pin"
+  t3_fake_set 'w.failTools = {}'
+  : > "$T3_FAKE_LOG"
   mcp keep-alive --thread "$worker"
   expect_code 4 "$RC" "a worker thread is never pinned"
   assert_equals keep_alive_worker_thread "$(field "$OUT" error.code)" "the refusal names the worker thread"
-  assert_equals 1 "$(t3_fake_calls t3_thread_update | grep -c .)" "a refused worker pin sends nothing"
-  pass "fm-t3-mcp keep-alive: refused on upstream T3, pins a supervisor thread once on the fork, and never pins a worker"
+  [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "a refused worker pin must send nothing"
+  pass "fm-t3-mcp keep-alive: refused on upstream T3, proven by T3's update result on the fork, repeatable, and never pins a worker"
 }
 
 # Away-mode discovery must read every page and treat a fork as an ordinary

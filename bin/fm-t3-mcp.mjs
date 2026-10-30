@@ -124,9 +124,9 @@
 //     t3_thread_update offers no keepAlive and refuses with exit 4, code
 //     keep_alive_unsupported, before anything is sent). Only a supervisor
 //     thread is pinned: a thread with a worktree of its own is a worker and
-//     refuses with exit 4, code keep_alive_worker_thread. A thread that
-//     already reads keepAlive:true is left alone (changed:false); otherwise
-//     the pin is proven by T3's own update result reading keepAlive:true.
+//     refuses with exit 4, code keep_alive_worker_thread. Setting the pin
+//     again is harmless, and no /mcp read reports it, so every call sends it;
+//     T3's own update result reading keepAlive:true is the proof.
 //   fm-t3-mcp.mjs requests --thread <id>
 //     The thread's pending runtime requests: questions (each user-input
 //     request id with its questions, from T3's pending-request list/read) and
@@ -1261,12 +1261,11 @@ async function keepAlive(flags) {
   if ((t.worktreePath ?? null) !== null) {
     throw new Refusal("keep_alive_worker_thread", `thread ${threadId} works in ${t.worktreePath}, so it is a worker, not a supervisor thread; refusing to pin it`, 4, { threadId });
   }
-  if (t.keepAlive === true) return { ok: true, threadId, keepAlive: true, changed: false };
   const out = await session.call(UPDATE_TOOL, { threadId, action: "keep_alive", keepAlive: true });
   if (out?.keepAlive !== true) {
     throw new Refusal("keep_alive_unproven", `T3 ${UPDATE_TOOL} on thread ${threadId} did not return keepAlive:true`, 1, { threadId });
   }
-  return { ok: true, threadId, keepAlive: true, changed: true };
+  return { ok: true, threadId, keepAlive: true };
 }
 
 function threadOf(out) {

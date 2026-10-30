@@ -563,8 +563,8 @@ w.threads = {
     "only the supervisor thread may be pinned, never the worker running beside it"
   : > "$LOG"
   boot
-  assert_not_contains "$OUT" "T3" "an already pinned supervisor must stay silent: $OUT"
-  [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "an already pinned supervisor must get no second update"
+  assert_contains "$OUT" "pinned T3 supervisor thread t-captain" "a later session start pins again, harmlessly: $OUT"
+  assert_not_contains "$OUT" "T3_KEEP_ALIVE" "a repeated pin is not a warning: $OUT"
 
   : > "$LOG"
   boot FM_BOOTSTRAP_DETECT_ONLY=1
@@ -588,7 +588,7 @@ w.threads = {
   assert_contains "$OUT" "T3_KEEP_ALIVE: supervisor thread t-captain is not pinned (" "the missing pin must be reported"
   assert_contains "$OUT" "after 30 idle minutes" "the warning must name the consequence"
   [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "a T3 without the pin must be sent nothing"
-  pass "bootstrap: pins only the T3 supervisor thread, once, when locked, and warns without failing on a T3 without the pin"
+  pass "bootstrap: pins only the T3 supervisor thread, when locked, and warns without failing on a T3 without the pin"
 }
 
 test_explicit_t3_selection_and_precedence() {
