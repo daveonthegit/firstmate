@@ -1333,6 +1333,26 @@ test_control_exit_stops_the_session() {
   pass "fm-control.sh exit backend=t3code: the fork's session stop ends the turn and session, keeps the thread, and a repeat is already-stopped"
 }
 
+test_control_exit_failed_run_stops_the_session() {
+  local id out rc thread=mcp:1e5f6a7b-8c9d-4e0f-9a1b-456789abcdef
+  id=$(t3_uid t3exitfailed1)
+  make_t3_control_task control-exit-failed "$id" "$thread" failed
+  FM_T3_THREAD="$thread" t3_world_set 'w.sessionStop = true; w.threads[process.env.FM_T3_THREAD].providerSessions = ["psess:failed"]'
+  assert_equals dead "$(t3_run 'fm_backend_agent_state t3code "$1"' "$thread")" "a failed run reads dead even with an attached session"
+  out=$(run_t3_control "$id" exit); rc=$?
+  expect_code 0 "$rc" "exit must stop a failed thread's attached session"$'\n'"$out"
+  assert_contains "$out" "stopped $id harness=claude" "exit must report actual session detachment"
+  assert_equals t3_thread_session "$(t3_dispatch_types)" "a failed run must reach the native session stop"
+  FM_T3_THREAD="$thread" node -e 'const w = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); if (w.threads[process.env.FM_T3_THREAD].providerSessions.length !== 0) process.exit(1)' "$T3_FAKE_WORLD" \
+    || fail "exit left the failed thread's provider session attached"
+  assert_present "$CTRL_STATE/$id.meta" "exit preserves the failed task record"
+  out=$(run_t3_control "$id" exit); rc=$?
+  expect_code 0 "$rc" "a repeat exit on the failed thread should succeed"$'\n'"$out"
+  assert_contains "$out" "already-stopped $id" "the repeat must prove no session remains"
+  assert_equals 0 "$(t3_stop_records)" "proven failed-thread stops retain no request id"
+  pass "fm-control.sh exit backend=t3code: a failed run still detaches its session and keeps its thread"
+}
+
 # A stop whose reply is lost may have landed: exit reports it unconfirmed and
 # keeps the request id, so the retry replays T3's original result rather than
 # stopping anything new.
@@ -1345,11 +1365,15 @@ test_control_exit_lost_stop_reply_retries_the_same_request() {
   expect_code 1 "$rc" "a lost stop reply must not report success"$'\n'"$out"
   assert_contains "$out" "exit=unconfirmed" "the lost reply must be reported unconfirmed"
   assert_equals 1 "$(t3_stop_records)" "an unproven stop keeps its request id"
+  touch -t 202001010000 "$CTRL_STATE"/t3code-stops/*
+  FM_T3_THREAD="$thread" t3_world_set 'w.threads[process.env.FM_T3_THREAD].providerSessions = ["psess:new"]'
   out=$(run_t3_control "$id" exit); rc=$?
   expect_code 0 "$rc" "the retry should succeed"$'\n'"$out"
   assert_contains "$out" "stopped $id" "the replayed result reports the session the first request stopped"
   ids=$(t3_fake_calls t3_thread_session | node -e 'process.stdout.write(String(new Set(require("fs").readFileSync(0, "utf8").trim().split("\n").map((l) => JSON.parse(l).clientRequestId)).size))')
-  assert_equals 1 "$ids" "the retry must reuse the first request id"
+  assert_equals 1 "$ids" "the delayed retry must reuse the first request id"
+  FM_T3_THREAD="$thread" node -e 'const w = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); const sessions = w.threads[process.env.FM_T3_THREAD].providerSessions; if (sessions.length !== 1 || sessions[0] !== "psess:new") process.exit(1)' "$T3_FAKE_WORLD" \
+    || fail "the delayed retry stopped the newly opened session"
   assert_equals 0 "$(t3_stop_records)" "the proven retry clears the retained id"
   pass "fm-control.sh exit backend=t3code: a lost stop reply is unconfirmed, and the retry replays the same request"
 }
@@ -3057,6 +3081,7 @@ test_busy_classify_trusts_native_idle_and_busy
 test_control_lib_tables
 test_control_exit_refused_before_any_call
 test_control_exit_stops_the_session
+test_control_exit_failed_run_stops_the_session
 test_control_exit_lost_stop_reply_retries_the_same_request
 test_control_relaunch_refused_before_any_dispatch
 test_spawn_leases_slot_creates_thread_and_starts_launch_turn

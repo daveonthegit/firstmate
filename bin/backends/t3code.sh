@@ -386,8 +386,8 @@ fm_backend_t3code_native_interrupt() {  # <thread-id>
 # across retries, recorded under state/t3code-stops keyed by thread until an
 # outcome is proven, so a retry after a lost reply replays T3's original
 # result. The record is never kept past a proven outcome, because T3 replays a
-# reused id without stopping a session opened since; one older than an hour
-# starts a new request. As for a send, a held id ends only on a proven stop
+# reused id without stopping a session opened since. As for a send, a held id
+# has no expiry and ends only on a proven stop
 # or T3's typed refusal; any other failure leaves it unproven and reads 7.
 fm_backend_t3code_session_stop() {  # <thread-id>
   local thread=$1 dir record id out rc=0 held=0
@@ -397,7 +397,7 @@ fm_backend_t3code_session_stop() {  # <thread-id>
 process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(0)).digest("hex"));
 ') || return 1
   record=$dir/$record
-  if [ -n "$(find "$record" -mmin -60 2>/dev/null)" ] && id=$(cat "$record" 2>/dev/null) && [ -n "$id" ]; then
+  if id=$(cat "$record" 2>/dev/null) && [ -n "$id" ]; then
     held=1
   else
     id=$(printf 'fm-stop-%s-%s-%s' "$(date +%s)" "${BASHPID:-$$}" "$RANDOM")

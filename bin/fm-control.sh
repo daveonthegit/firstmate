@@ -726,8 +726,10 @@ do_exit() {
   state=$(agent_state)
   case "$state" in
     dead)
-      printf 'already-stopped'
-      return 0
+      if [ "$BACKEND" != t3code ]; then
+        printf 'already-stopped'
+        return 0
+      fi
       ;;
     alive) ;;
     *)
@@ -754,8 +756,10 @@ do_exit() {
           # no agent - a herdr pane whose session server was merely stopped is
           # the common case. Nothing is gone, so this is the ordinary
           # already-stopped outcome.
-          printf 'already-stopped'
-          return 0
+          if [ "$BACKEND" != t3code ]; then
+            printf 'already-stopped'
+            return 0
+          fi
           ;;
         alive)
           # The agent came back with its endpoint. Fall through to the ordinary

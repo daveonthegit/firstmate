@@ -185,7 +185,8 @@ T3 stops its latest active run asynchronously and names it, so the `cancel=` ver
 `exit` is a `t3_thread_session` stop on a T3 build that lists that tool, such as the captain's fork; `fm-t3-mcp.mjs status` reports it as `sessionStop`.
 T3 ends the running turn and detaches the agent session in one command and keeps the thread and its conversation, so no interrupt or typed exit command comes first, and the next message starts a new session.
 A stopped thread still reads alive in the status table because it takes that next message, so the proof is T3's detach result, a read-back with no active run, and the thread still present: `stopped` when T3 detached a live session, `already-stopped` when none was live.
-One exit request keeps one client request id until its outcome is proven, so a retry after a lost reply replays T3's original result; a proven outcome drops the id, because T3 replays a reused id without stopping a session opened since.
+A failed run does not prove session detachment, so readable failed threads go through the same session stop.
+One exit request keeps one client request id with no expiry until its outcome is proven, so even a delayed retry after a lost reply replays T3's original result without stopping a newly opened session; a proven outcome drops the id, because T3 replays a reused id without stopping a session opened since.
 An unproven stop reports `exit=unconfirmed`, and the next `exit` is that retry.
 On a T3 that does not list the tool, such as upstream T3, `exit` is refused before anything is sent; `interrupt` ends the turn there and teardown archives the thread.
 `relaunch` is refused before anything is stopped: a T3 thread keeps its conversation, so a new turn continues the same agent, and a provider or model change through `t3_thread_configure` is a context handoff on that same thread rather than the fresh agent a relaunch promises.
