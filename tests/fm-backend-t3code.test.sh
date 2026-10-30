@@ -1251,11 +1251,9 @@ SH
 test_control_lib_tables() {
   bash -c '. "$0/bin/fm-control-lib.sh"; fm_control_backend_supports_key t3code Escape && fm_control_backend_supports_key t3code Enter && fm_control_backend_supports_key t3code C-c && ! fm_control_backend_supports_key t3code C-u && fm_control_backend_state_verified t3code' "$ROOT" \
     || fail "control-lib must accept Enter/Escape/C-c, refuse C-u, and treat t3code as state-verified"
-  bash -c '. "$0/bin/fm-control-lib.sh"; ! fm_control_backend_exit_supported t3code && fm_control_backend_exit_supported tmux && fm_control_backend_exit_supported herdr' "$ROOT" \
-    || fail "control-lib must refuse exit on t3code, and only on t3code"
   bash -c '. "$0/bin/fm-control-lib.sh"; fm_control_backend_relaunch_supported tmux && fm_control_backend_relaunch_supported herdr && ! fm_control_backend_relaunch_supported t3code' "$ROOT" \
     || fail "control-lib must keep replacement launches on tmux and herdr and refuse them on t3code"
-  pass "fm-control-lib: t3code key set, state-verified, no-exit, and no-replacement membership"
+  pass "fm-control-lib: t3code key set, state-verified, and no-replacement membership"
 }
 
 # A recorded t3code scout for the control plane: the fake thread in the given
@@ -1288,7 +1286,7 @@ test_control_exit_refused_before_any_call() {
   make_t3_control_task control-exit "$id" "$thread" running
   out=$(run_t3_control "$id" exit); rc=$?
   expect_code 1 "$rc" "exit on a t3code task must refuse"$'\n'"$out"
-  assert_contains "$out" "no session stop" "the refusal must name the missing session stop"
+  assert_contains "$out" "offers no session stop (t3_thread_session)" "the refusal must name the missing session stop"
   assert_contains "$out" "'interrupt' ends the running turn" "the refusal must name the verb that works"
   [ -z "$(t3_dispatch_types)" ] || fail "a refused exit must send nothing to T3, not even an interrupt, got '$(t3_dispatch_types)'"
   assert_present "$CTRL_STATE/$id.meta" "a refused exit preserves the task record"
@@ -1299,7 +1297,61 @@ test_control_exit_refused_before_any_call() {
   assert_contains "$out" "cancel=confirmed" "T3's own confirmation of the run's end must reach the interrupt verdict"
   [ "$(t3_run 'fm_backend_busy_state t3code "$1"' "$thread"):$(t3_run 'fm_backend_agent_state t3code "$1"' "$thread")" = idle:alive ] \
     || fail "an interrupted thread is idle and alive"
-  pass "fm-control.sh backend=t3code: exit refuses before any call (V2 has no session stop); interrupt ends the turn natively"
+  pass "fm-control.sh backend=t3code: exit refuses before any call on a T3 without a session stop; interrupt ends the turn natively"
+}
+
+t3_stop_records() {  # -> the number of retained session-stop request ids
+  find "$CTRL_STATE/t3code-stops" -type f 2>/dev/null | wc -l | tr -d ' '
+}
+
+# On a T3 that offers t3_thread_session (the captain's fork), exit stops the
+# running turn and the agent session in one call, keeps the thread, and needs
+# no interrupt or typed exit command. A second exit is a new request that
+# finds nothing live.
+test_control_exit_stops_the_session() {
+  local id out rc thread=mcp:9c3d4e5f-6a7b-4c8d-9e0f-23456789abcd first second
+  id=$(t3_uid t3exitstop1)
+  make_t3_control_task control-exit-stop "$id" "$thread" running
+  FM_T3_THREAD="$thread" t3_world_set 'w.sessionStop = true; w.threads[process.env.FM_T3_THREAD].providerSessions = ["psess:1"]'
+  out=$(run_t3_control "$id" exit); rc=$?
+  expect_code 0 "$rc" "exit on a T3 with a session stop should succeed"$'\n'"$out"
+  assert_contains "$out" "stopped $id harness=claude backend=t3code endpoint=$thread" "exit must report the stopped agent and its kept endpoint"
+  [ "$(t3_dispatch_types)" = t3_thread_session ] || fail "exit must be one session stop, with no interrupt or typed command, got '$(t3_dispatch_types)'"
+  first=$(t3_fake_calls t3_thread_session)
+  [ "$(printf '%s' "$first" | node -e 'const a = JSON.parse(require("fs").readFileSync(0, "utf8")); process.stdout.write(a.threadId + "|" + a.action)')" = "$thread|stop" ] \
+    || fail "the stop must name the task's thread and action stop, got '$first'"
+  [ "$(t3_run 'fm_backend_busy_state t3code "$1"' "$thread"):$(t3_run 'fm_backend_agent_state t3code "$1"' "$thread")" = idle:alive ] \
+    || fail "a stopped thread is idle and kept, ready for its next message"
+  assert_equals 0 "$(t3_stop_records)" "a proven stop retains no request id"
+  assert_present "$CTRL_STATE/$id.meta" "exit preserves the task record"
+  out=$(run_t3_control "$id" exit); rc=$?
+  expect_code 0 "$rc" "a second exit should succeed"$'\n'"$out"
+  assert_contains "$out" "already-stopped $id" "a second exit finds no live session"
+  second=$(t3_fake_calls t3_thread_session | tail -n 1)
+  [ "$(printf '%s\n%s' "$first" "$second" | node -e 'const [a, b] = require("fs").readFileSync(0, "utf8").split("\n").map((l) => JSON.parse(l).clientRequestId); process.stdout.write(String(a !== b && a.startsWith("fm-stop-")))')" = true ] \
+    || fail "a new exit after a proven stop must send a new request id, got '$first' then '$second'"
+  pass "fm-control.sh exit backend=t3code: the fork's session stop ends the turn and session, keeps the thread, and a repeat is already-stopped"
+}
+
+# A stop whose reply is lost may have landed: exit reports it unconfirmed and
+# keeps the request id, so the retry replays T3's original result rather than
+# stopping anything new.
+test_control_exit_lost_stop_reply_retries_the_same_request() {
+  local id out rc thread=mcp:0d4e5f6a-7b8c-4d9e-8f0a-3456789abcde ids
+  id=$(t3_uid t3exitlost1)
+  make_t3_control_task control-exit-lost "$id" "$thread" running
+  FM_T3_THREAD="$thread" t3_world_set 'w.sessionStop = true; w.threads[process.env.FM_T3_THREAD].providerSessions = ["psess:1"]; w.dropReplyTools = { t3_thread_session: 1 }'
+  out=$(run_t3_control "$id" exit); rc=$?
+  expect_code 1 "$rc" "a lost stop reply must not report success"$'\n'"$out"
+  assert_contains "$out" "exit=unconfirmed" "the lost reply must be reported unconfirmed"
+  assert_equals 1 "$(t3_stop_records)" "an unproven stop keeps its request id"
+  out=$(run_t3_control "$id" exit); rc=$?
+  expect_code 0 "$rc" "the retry should succeed"$'\n'"$out"
+  assert_contains "$out" "stopped $id" "the replayed result reports the session the first request stopped"
+  ids=$(t3_fake_calls t3_thread_session | node -e 'process.stdout.write(String(new Set(require("fs").readFileSync(0, "utf8").trim().split("\n").map((l) => JSON.parse(l).clientRequestId)).size))')
+  assert_equals 1 "$ids" "the retry must reuse the first request id"
+  assert_equals 0 "$(t3_stop_records)" "the proven retry clears the retained id"
+  pass "fm-control.sh exit backend=t3code: a lost stop reply is unconfirmed, and the retry replays the same request"
 }
 
 test_control_relaunch_refused_before_any_dispatch() {
@@ -1976,6 +2028,22 @@ t3_pi_path() {
   printf '#!/usr/bin/env bash\necho "usage: pi [options]"\n' > "$bin/pi"
   chmod +x "$bin/pi"
   PATH="$bin:$PATH" "$@"
+}
+
+# An explicit --effort default is the driver's own default, as an omitted
+# --effort and the helper's resolve-selection read it.
+test_spawn_effort_default_keeps_driver_default() {
+  local id out rc launch
+  id=$(t3_uid t3effdefz1)
+  t3_case spawn-effort-default
+  t3_worker_setup "$id"
+  out=$(t3_worker_spawn "$id" claude --model claude-sonnet-5 --effort default); rc=$?
+  expect_code 0 "$rc" "a t3code claude spawn with --effort default should succeed"$'\n'"$out"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"claudeAgent","model":"claude-sonnet-5"}' ] \
+    || fail "--effort default must keep the driver's default options, got '$(t3_request "$launch" 'r.arguments.modelSelection')'"
+  assert_grep "effort=default" "$CASE_DIR/state/$id.meta" "meta must record the default effort"
+  pass "fm-spawn.sh --backend t3code claude: --effort default launches with the driver's default effort"
 }
 
 # A pi worker has no per-directory environment file, so its whole task
@@ -2988,6 +3056,8 @@ test_harness_admission_and_typing_refusals
 test_busy_classify_trusts_native_idle_and_busy
 test_control_lib_tables
 test_control_exit_refused_before_any_call
+test_control_exit_stops_the_session
+test_control_exit_lost_stop_reply_retries_the_same_request
 test_control_relaunch_refused_before_any_dispatch
 test_spawn_leases_slot_creates_thread_and_starts_launch_turn
 test_claude_pr_tool_clause_version_boundary
@@ -3016,6 +3086,7 @@ test_spawn_refuses_launch_settings_t3_cannot_honor codex-permission-mode restric
 test_spawn_codex_accepts_bypass_approval_mode
 test_spawn_refuses_launch_settings_t3_cannot_honor launch-env-allowlist HOME "config/launch-env-allowlist"
 test_spawn_refuses_launch_settings_t3_cannot_honor crew-exclude-tools bash "config/crew-exclude-tools" pi
+test_spawn_effort_default_keeps_driver_default
 test_spawn_pi_worker_launches_with_environment
 test_spawn_pi_refuses_without_launch_environment
 test_spawn_pi_deferred_launch_gate_failure_returns_lease

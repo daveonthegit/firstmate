@@ -101,7 +101,9 @@
 #   --model <name> and --effort <low|medium|high|xhigh|max|ultra> are concrete profile
 #   axes chosen by firstmate at intake. They are only threaded into harnesses whose
 #   installed CLIs were verified to support that axis; unsupported axes are omitted
-#   from that harness's launch rather than guessed. Cursor has no effort flag;
+#   from that harness's launch rather than guessed. An explicit `--effort default`
+#   is the same as omitting it, except that no secondmate pin replaces it.
+#   Cursor has no effort flag;
 #   without a concrete model its effort selects the catalog-validated Grok 4.6
 #   ladder, with xhigh/max capped at -xhigh and explicit model ids unchanged.
 #   Ultra is the explicit
@@ -1130,10 +1132,14 @@ if [ "$TRACEPARENT_SET" -eq 1 ]; then
     exit 1
   }
 fi
+# An explicit `default` is the harness's own default, exactly as an omitted
+# --effort, as bin/fm-control.sh relaunch and bin/fm-t3-mcp.mjs
+# resolve-selection read it; it still counts as set, so no pin replaces it.
 case "$EFFORT" in
+default) EFFORT= ;;
 '' | low | medium | high | xhigh | max | ultra) ;;
 *)
-  echo "error: --effort must be one of low, medium, high, xhigh, max, ultra" >&2
+  echo "error: --effort must be one of default, low, medium, high, xhigh, max, ultra" >&2
   exit 1
   ;;
 esac

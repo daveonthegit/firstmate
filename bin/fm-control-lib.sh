@@ -378,18 +378,6 @@ fm_control_remove_claude_project_settings() {  # <worktree>
   [ -n "$tracked" ] || rm -f "$1/.claude/settings.local.json"
 }
 
-# Whether <backend> can stop an agent for `exit`. T3 Code cannot: it has no
-# composer for the harness exit command, and its Orchestrator V2 `/mcp` tools
-# offer no session stop, only a turn interrupt that leaves the thread idle and
-# alive, so no stop could be proven and `exit` refuses before anything is
-# sent (docs/t3code-backend.md "Active limits").
-fm_control_backend_exit_supported() {  # <backend>
-  case "${1-}" in
-    t3code) return 1 ;;
-  esac
-  return 0
-}
-
 # Whether <backend> can launch a REPLACEMENT agent into an existing task's
 # endpoint. A T3 thread keeps its conversation: a new turn continues the same
 # agent with its transcript, and a provider or model change through
@@ -461,8 +449,8 @@ fm_control_absence_recheck_applies() {  # <backend> <raw-state>
 #     then answers with authority - is that one.
 #   t3code has a native absence verdict: `missing` means archived or not found
 #     on the verified server, while an unreachable server reads `unreadable`.
-#     The proof re-reads the thread, but exit and relaunch refuse before it:
-#     V2 has no session stop and a thread cannot host a replacement.
+#     The proof re-reads the thread. Relaunch refuses before it, because a
+#     thread cannot host a replacement.
 #   tmux CANNOT. `list-windows -a` describes only the server the CURRENT
 #     process addresses (its TMUX_TMPDIR/socket), and a task's record does not
 #     carry the endpoint's socket identity - so a different but running server

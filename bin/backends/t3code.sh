@@ -7,7 +7,8 @@
 # `mcp-client`; bin/fm-t3-mcp.mjs owns that transport, the credential, the
 # `tools/list` capability gate, and the environment-id check, and every
 # primitive here is one call to it. There is no terminal: nothing is typed, a
-# steer is a t3_thread_send, and Escape/Ctrl-C are a t3_thread_interrupt.
+# steer is a t3_thread_send, Escape/Ctrl-C are a t3_thread_interrupt, and an
+# exit is a t3_thread_session stop on a T3 build that offers one.
 #
 # Target string shape: the T3 thread id T3 assigned at launch.
 #
@@ -374,6 +375,53 @@ fm_backend_t3code_send_text_submit() {  # <thread-id> <text> <retries> <enter-sl
 # not-running, or unconfirmed.
 fm_backend_t3code_native_interrupt() {  # <thread-id>
   fm_backend_t3code_mcp interrupt --thread "$1" | fm_backend_t3code_json_get cancel
+}
+
+# fm_backend_t3code_session_stop <thread-id>: stop the thread's agent session
+# (bin/fm-t3-mcp.mjs session-stop owns the T3 call and its read-back proof)
+# and print stopped (T3 detached a live session) or already-stopped (none was
+# live). Exit 5 is the helper's refusal on a T3 that offers no session stop,
+# before anything was sent; 7 means the stop may have landed; any other
+# failure is proven not stopped. One exit request keeps one client request id
+# across retries, recorded under state/t3code-stops keyed by thread until an
+# outcome is proven, so a retry after a lost reply replays T3's original
+# result. The record is never kept past a proven outcome, because T3 replays a
+# reused id without stopping a session opened since; one older than an hour
+# starts a new request. As for a send, a held id ends only on a proven stop
+# or T3's typed refusal; any other failure leaves it unproven and reads 7.
+fm_backend_t3code_session_stop() {  # <thread-id>
+  local thread=$1 dir record id out rc=0 held=0
+  dir="${FM_STATE_OVERRIDE:-$FM_HOME/state}/t3code-stops"
+  mkdir -p "$dir" || return 1
+  record=$(printf '%s' "$thread" | node -e '
+process.stdout.write(require("crypto").createHash("sha256").update(require("fs").readFileSync(0)).digest("hex"));
+') || return 1
+  record=$dir/$record
+  if [ -n "$(find "$record" -mmin -60 2>/dev/null)" ] && id=$(cat "$record" 2>/dev/null) && [ -n "$id" ]; then
+    held=1
+  else
+    id=$(printf 'fm-stop-%s-%s-%s' "$(date +%s)" "${BASHPID:-$$}" "$RANDOM")
+    { printf '%s' "$id" > "$record.$$.tmp" && mv -f "$record.$$.tmp" "$record"; } || { rm -f "$record.$$.tmp"; return 1; }
+  fi
+  out=$(fm_backend_t3code_mcp session-stop --thread "$thread" --client-request-id "$id") || rc=$?
+  if [ "$rc" -eq 4 ] && [ "$held" = 0 ] && printf '%s' "$out" | node -e '
+let d;
+try { d = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { process.exit(1); }
+process.exit(d?.error?.code === "session_stop_unsupported" ? 0 : 1);
+'; then
+    rc=5
+  fi
+  if [ "$held" = 1 ] && [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then
+    rc=7
+  fi
+  [ "$rc" -eq 7 ] || rm -f "$record"
+  [ "$rc" -eq 0 ] || return "$rc"
+  printf '%s' "$out" | node -e '
+let d;
+try { d = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { process.exit(1); }
+if (!d || d.ok !== true || !Array.isArray(d.stoppedProviderSessionIds)) process.exit(1);
+process.stdout.write(d.stoppedProviderSessionIds.length > 0 ? "stopped" : "already-stopped");
+'
 }
 
 fm_backend_t3code_send_key() {  # <thread-id> <key>

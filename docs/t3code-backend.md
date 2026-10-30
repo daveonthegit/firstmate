@@ -74,6 +74,7 @@ The file is part of the primary's inherited local material, so every secondmate 
 A task's `--model` must be a model that instance lists in T3's catalog.
 `--model default` uses the T3 project's default model only when its instance matches `config/t3code-instances`; otherwise it refuses and asks for an explicit `--model`.
 `--effort` rides as the driver's reasoning option, `effort` for claude, `reasoningEffort` for codex, and `thinking` for pi, and must be one of the values the catalog lists for that model; a Pi model without reasoning lists no `thinking` option, so only `--effort default` passes for it.
+`fm-spawn.sh --effort default` is the same as omitting `--effort`: the driver keeps its own default reasoning option.
 An effort replaces only that option: `--model default` keeps every other project default option, such as Codex's service tier or Claude's fast mode, while an explicit model sends only the effort.
 Every selected option is checked against the model's catalog descriptors, accepting both current values-array catalogs and earlier option-list catalogs.
 
@@ -181,7 +182,12 @@ Escape and Ctrl-C are both a `t3_thread_interrupt`; Enter is a no-op and Ctrl-U 
 The control plane ([`agent-control.md`](agent-control.md)) reads the same status table.
 `interrupt` is a `t3_thread_interrupt` proven by the thread still reading alive afterwards.
 T3 stops its latest active run asynchronously and names it, so the `cancel=` verdict waits on exactly that run: `confirmed` when it reached a terminal status, `not-running` when there was no active run, else `unconfirmed`, even when a later queued run is already terminal or has started meanwhile.
-`exit` is refused before anything is sent: the V2 `/mcp` tools have no session stop, and an interrupt leaves the thread idle and alive, so no stop could be proven.
+`exit` is a `t3_thread_session` stop on a T3 build that lists that tool, such as the captain's fork; `fm-t3-mcp.mjs status` reports it as `sessionStop`.
+T3 ends the running turn and detaches the agent session in one command and keeps the thread and its conversation, so no interrupt or typed exit command comes first, and the next message starts a new session.
+A stopped thread still reads alive in the status table because it takes that next message, so the proof is T3's detach result, a read-back with no active run, and the thread still present: `stopped` when T3 detached a live session, `already-stopped` when none was live.
+One exit request keeps one client request id until its outcome is proven, so a retry after a lost reply replays T3's original result; a proven outcome drops the id, because T3 replays a reused id without stopping a session opened since.
+An unproven stop reports `exit=unconfirmed`, and the next `exit` is that retry.
+On a T3 that does not list the tool, such as upstream T3, `exit` is refused before anything is sent; `interrupt` ends the turn there and teardown archives the thread.
 `relaunch` is refused before anything is stopped: a T3 thread keeps its conversation, so a new turn continues the same agent, and a provider or model change through `t3_thread_configure` is a context handoff on that same thread rather than the fresh agent a relaunch promises.
 
 The watcher and `fm-crew-state.sh` use the adapter's [thread status table](#restart-and-liveness-behavior) ahead of harness gates and hook records (source `t3code-native`), so a codex crew settles from T3's status even though codex has no verified hook writer.
@@ -303,7 +309,7 @@ If a task's thread no longer reads back, release the task by hand:
   Unless `config/keep-ai-trailers` is present, the per-worktree environment selects Firstmate's Git commit hook to strip known AI trailers, including on T3 workers.
 - T3 also owns the Codex provider command, so Firstmate cannot apply the pane-backed worker's hook-disable or turn-end notify options.
   Firstmate's pane-backed hook-trust workaround therefore does not apply; supervision uses T3's [thread status table](#restart-and-liveness-behavior).
-- `fm-control.sh exit` is refused because the V2 `/mcp` tools have no session stop, and `relaunch` is refused because a thread keeps its conversation, so no fresh agent can replace it.
+- `fm-control.sh exit` needs a T3 build that offers `t3_thread_session`, so upstream T3 refuses it, and `relaunch` is refused because a thread keeps its conversation, so no fresh agent can replace it.
 - The WebSocket event stream is not available to an `mcp-client` credential; the [run wait](#push-events-and-polling-fallback) stands in for it.
 - A permission approval cannot be answered through `/mcp`; it waits for T3 Code itself.
 - Request-id deduplication holds within one T3 auth session only: every sign-in starts a new session, so resending an unconfirmed send, or retrying a frozen away-mode digest, after the captain signs in again can deliver it twice; verify such a message in T3 Code first.
