@@ -534,7 +534,7 @@ w.threads = {
 # Session start's deferred bootstrap stage pins the thread this firstmate runs
 # in, and only that thread, against T3's 30-minute idle release.
 test_bootstrap_pins_only_the_supervisor_thread() {
-  local out rc fb
+  local out rc fb captured
   t3_case keep-alive running
   fb="$CASE_DIR/bin"
   mkdir -p "$fb" "$CASE_DIR/state" "$CASE_DIR/data"
@@ -579,6 +579,28 @@ w.threads = {
   boot FM_SUPERVISOR_BACKEND=t3code FM_SUPERVISOR_TARGET=t-worker
   assert_contains "$OUT" "T3_KEEP_ALIVE: supervisor thread t-worker is not pinned" "a worker thread named as the supervisor must be refused"
   [ "$(t3_fake_calls t3_thread_update | grep -c t-worker)" = 0 ] || fail "a worker thread must never be pinned"
+
+  : > "$LOG"
+  captured=$(env -u TMUX_PANE -u HERDR_ENV -u HERDR_PANE_ID -u TERM_PROGRAM \
+    -u FM_SUPERVISOR_BACKEND -u FM_SUPERVISOR_TARGET -u FM_BACKEND \
+    FM_HOME="$REPO" FM_CONFIG_OVERRIDE="$CONFIG" bash -c '
+      . "$1/bin/fm-backend.sh"
+      . "$1/bin/fm-supervisor-target-lib.sh"
+      fm_capture_t3_supervisor_thread
+      bash -c '\''printf "%s" "$FM_T3_SUPERVISOR_THREAD"'\''
+    ' _ "$ROOT")
+  assert_equals t-captain "$captured" "active startup must export the captured primary identity"
+  t3_world_set 'w.threads["t-captain"].status = "completed"; w.threads["t-captain"].activeRunId = null;'
+  : > "$LOG"
+  boot FM_T3_SUPERVISOR_THREAD="$captured"
+  assert_contains "$OUT" "pinned T3 supervisor thread t-captain" "the deferred pin must survive the first turn ending"
+  assert_equals '{"threadId":"t-captain","action":"keep_alive","keepAlive":true}' "$(t3_fake_calls t3_thread_update)" \
+    "the deferred stage must pin the captured thread after its turn ends"
+  : > "$LOG"
+  boot
+  assert_contains "$OUT" "T3_KEEP_ALIVE: could not resolve the T3 supervisor thread" "failed discovery must warn"
+  [ -z "$(t3_fake_calls t3_thread_update)" ] || fail "failed discovery must not pin another thread"
+  t3_world_set 'w.threads["t-captain"].status = "running"; w.threads["t-captain"].activeRunId = "run-1";'
 
   # Upstream T3: t3_thread_update without keepAlive.
   t3_world_set 'w.keepAlive = false; w.threadUpdate = true; for (const t of Object.values(w.threads)) delete t.keepAlive;'
@@ -3091,6 +3113,11 @@ if [ -n "${FM_TEST_ONLY:-}" ]; then
   exit
 fi
 
+
+if [ "${1:-}" = --keep-alive-only ]; then
+  test_bootstrap_pins_only_the_supervisor_thread
+  exit 0
+fi
 
 test_native_restart_rearms_undelivered_stale_warning
 test_housekeeping_preserves_unknown_stale_recheck

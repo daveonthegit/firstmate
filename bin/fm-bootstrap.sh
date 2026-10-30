@@ -868,10 +868,12 @@ secondmate_handoff_resume() {
 # on any other backend is silent. bin/fm-t3-mcp.mjs keep-alive owns the
 # capability check, the worker-thread refusal, and the proof.
 t3code_supervisor_keep_alive() {
-  local backend thread out rc reason
-  backend=$(discover_supervisor_backend 2>/dev/null) || return 0
-  [ "$backend" = t3code ] || return 0
-  thread=$(discover_supervisor_target 2>/dev/null) || return 0
+  local thread out rc reason
+  if [ "${FM_T3_SUPERVISOR_THREAD+x}" != x ]; then
+    fm_capture_t3_supervisor_thread
+  fi
+  thread=$FM_T3_SUPERVISOR_THREAD
+  [ -n "$thread" ] || return 0
   if fm_backend_source t3code >/dev/null 2>&1; then
     out=$(fm_backend_t3code_mcp keep-alive --thread "$thread" 2>/dev/null) && rc=0 || rc=$?
   else

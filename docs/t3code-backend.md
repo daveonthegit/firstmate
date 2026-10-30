@@ -247,7 +247,7 @@ Teardown still requires a proven archive before returning the worktree.
 
 T3 releases an idle agent session after 30 minutes, and a firstmate whose session is gone stops waking on events until its thread gets a message.
 So when a firstmate primary or secondmate runs in a T3 thread, its locked session start pins that thread with `t3_thread_update` action `keep_alive`, and idle never ends that thread's agent session.
-The pin is the first sweep of the deferred startup stage (`t3code_supervisor_keep_alive` in [`bin/fm-bootstrap.sh`](../bin/fm-bootstrap.sh)), and it pins only the supervisor thread that [supervisor discovery](configuration.md#away-mode-supervisor-backend-fm_supervisor_backend--fm_supervisor_target) resolves: a secondmate's own thread from its launch environment, or a primary's thread by the cwd match.
+Session start captures the supervisor identity while its caller's turn is active, before launching the deferred startup stage. The pin is the first sweep of that stage (`t3code_supervisor_keep_alive` in [`bin/fm-bootstrap.sh`](../bin/fm-bootstrap.sh)), using the captured identity even if the turn has since ended. It pins only the supervisor thread that [supervisor discovery](configuration.md#away-mode-supervisor-backend-fm_supervisor_backend--fm_supervisor_target) resolves: a secondmate's own thread from its launch environment, or a primary's thread by the cwd match.
 A home whose supervisor runs in a tmux, Herdr, or Rex pane makes no T3 call, and a worker thread is never pinned, because `bin/fm-t3-mcp.mjs keep-alive` refuses any thread with a worktree of its own.
 Pinning again is harmless and no `/mcp` read reports the pin, so every locked session start sends it and prints one `BOOTSTRAP_INFO` line; the proof is T3's own update result.
 T3 keeps the pin on the thread, so a later session in the same thread is pinned too; stop, archive, and `fm-control.sh exit` still end the session.
@@ -256,7 +256,7 @@ The cost is one resident agent process per pinned thread.
 Only a T3 build whose `t3_thread_update` takes `keepAlive`, such as the captain's fork, offers the pin.
 On upstream T3 the session start prints a `T3_KEEP_ALIVE` warning and continues, and that supervisor goes quiet after 30 idle minutes.
 Any other failed pin prints the same warning with its reason; after the cause is fixed, `bin/fm-startup-network.sh run --locked 1` from the supervisor's own turn retries it.
-The cwd match finds a primary's thread only while its run is active, which is why the pin runs before the other deferred sweeps; a primary whose first turn ends before the stage reaches the pin stays unpinned, with no warning, until its next session start.
+The cwd match finds a primary's thread only while its run is active; startup captures it once on the blocking path, leaving the pin call deferred. Discovery failures print a `T3_KEEP_ALIVE` warning rather than silently skipping the pin.
 
 ## Push events and polling fallback
 
