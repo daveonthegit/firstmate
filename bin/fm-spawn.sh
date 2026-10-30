@@ -140,9 +140,11 @@
 #   t3code is experimental (docs/t3code-backend.md): T3 Code
 #   owns the agent session, so the spawn leases a treehouse slot durably,
 #   launches a T3 thread on it, and sends the launch brief over T3's /mcp
-#   endpoint instead of typing into a pane; only claude and codex harnesses.
+#   endpoint instead of typing into a pane; only claude, codex, and pi
+#   harnesses, and pi only for ship and scout workers.
 #   The exports a pane would receive before launch travel as per-directory
-#   harness config instead (spawn_t3code_env_install).
+#   harness config instead (spawn_t3code_env_install), or, for pi, as the
+#   thread's per-thread launch environment (spawn_t3code_launch_pi).
 #   A backend spawn refusal (missing dependency, version gate, unauthenticated
 #   socket, or unsupported secondmate mode) is terminal for that selected backend;
 #   callers must surface it instead of silently retrying another backend.
@@ -1545,6 +1547,23 @@ T3CODE_CREATE_UNCERTAIN=0
 T3CODE_LAUNCH_UNCONFIRMED=0
 T3CODE_PROJECT_ID=
 T3CODE_MODEL_SELECTION=
+# spawn_t3code_thread_create <worktree> [NAME=VALUE...]: launch this worker's
+# idle T3 thread on its leased slot, with any NAME=VALUE pairs as its
+# per-thread environment, and set T to the id T3 assigned. A launch whose
+# outcome is unproven (exit 1) leaves T3CODE_CREATE_UNCERTAIN set so abort
+# cleanup keeps the lease; any other failure launched nothing.
+spawn_t3code_thread_create() {
+  local wt=$1 rc=0
+  shift
+  T3CODE_CREATE_UNCERTAIN=1
+  T=$(fm_backend_t3code_thread_create "$T3CODE_PROJECT_ID" "$W" \
+    "$(git -C "$wt" branch --show-current 2>/dev/null || true)" "$wt" "$T3CODE_MODEL_SELECTION" "$@") || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq 1 ] || T3CODE_CREATE_UNCERTAIN=0
+    exit 1
+  fi
+  T3CODE_CREATE_UNCERTAIN=0
+}
 HERDR_PROJECTION_ABORT_CLEANUP=0
 HERDR_PROJECTION_ABORT_SESSION=
 HERDR_PROJECTION_ABORT_TASK_PANE=
@@ -3167,6 +3186,16 @@ if [ "$BACKEND" = t3code ]; then
   fi
   if [ -n "$WORKER_ACCOUNT" ]; then
     echo "error: backend=t3code cannot apply the $HARNESS worker account pin because T3's provider instance owns the account; select that instance in config/t3code-instances instead" >&2
+    exit 1
+  fi
+  # A pi thread's environment is fixed at launch, before its thread id
+  # exists, so a secondmate's own supervisor target cannot ride it.
+  if [ "$HARNESS" = pi ] && [ "$KIND" = secondmate ]; then
+    echo "error: backend=t3code runs pi only for ship and scout workers: a pi secondmate needs its own thread id in its launch environment, which T3 assigns only after launch; choose claude or codex, or another backend" >&2
+    exit 1
+  fi
+  if [ -n "$EXCLUDE_TOOLS" ]; then
+    echo "error: backend=t3code cannot apply config/crew-exclude-tools because T3 starts $HARNESS with its provider instance's own arguments; empty that file or choose another backend" >&2
     exit 1
   fi
 fi
@@ -5022,15 +5051,15 @@ EOF
         fi
         exit 1
       }
-      T3CODE_CREATE_UNCERTAIN=1
-      T=$(fm_backend_t3code_thread_create "$T3CODE_PROJECT_ID" "$W" \
-        "$(git -C "$WT" branch --show-current 2>/dev/null || true)" "$WT" "$T3CODE_MODEL_SELECTION") || {
-          [ "$?" -eq 1 ] || T3CODE_CREATE_UNCERTAIN=0
-          exit 1
-        }
-      T3CODE_CREATE_UNCERTAIN=0
+      if [ "$HARNESS" = pi ]; then
+        # Its environment is the launch's own, and not all of it exists yet:
+        # spawn_t3code_launch_pi launches this slot's thread once it does.
+        T=
+      else
+        spawn_t3code_thread_create "$WT"
+      fi
     fi
-    T3CODE_ABORT_CLEANUP=1
+    [ -z "$T" ] || T3CODE_ABORT_CLEANUP=1
     ;;
   esac
   # Orca and the Herdr projection own their own abort cleanup above; every other
@@ -5865,6 +5894,50 @@ spawn_t3code_claude_channel_install() {
   T3CODE_CLAUDE_CHANNEL_WRITTEN=1
   exclude_path 'CLAUDE.local.md'
 }
+# spawn_t3code_env_base - the facts a pane shell would receive before launch,
+# under the same conditions as the pane path, as NAME=VALUE pairs in
+# T3CODE_ENV. T3 starts the agent with its server's environment, whose PATH
+# can lack the toolchain this home runs on (an nvm node bin, for one), so the
+# thread gets this spawn's PATH, the same PATH the launch-env-allowlist floor
+# keeps. TRACEPARENT and a secondmate's launch prefix are the caller's.
+spawn_t3code_env_base() {
+  local t3code_path=$PATH
+  T3CODE_ENV=("GOTMPDIR=$TASK_TMP/gotmp" COMPACT_ADVISER_DISABLE=1 "FM_TASK_INBOX=$STATE_REAL/$ID.inbox")
+  if [ -n "$GH_ACCOUNT" ]; then
+    T3CODE_ENV+=("FM_GH_ACCOUNT=$GH_ACCOUNT")
+    FM_GH_SHIM_ALLOW_LINKED_WORKTREE=1 "$FM_ROOT/bin/fm-install-gh-shim.sh" --target "$TASK_TMP/gh-bin" >/dev/null || {
+      echo "error: could not install the T3 GitHub account channel" >&2
+      exit 1
+    }
+    t3code_path="$TASK_TMP/gh-bin:$PATH"
+  elif [ "${FM_GH_ACCOUNT:-}" = none ]; then
+    T3CODE_ENV+=(FM_GH_ACCOUNT=none)
+  fi
+  T3CODE_ENV+=("PATH=$t3code_path")
+  if [ "$GIT_HOOKS_INSTALLED" = 1 ]; then
+    T3CODE_ENV+=(GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath "GIT_CONFIG_VALUE_0=$GIT_HOOKS_DIR")
+  fi
+  if [ "$LAVISH_AXI_HOST_CONFIG_PRESENT" = 1 ]; then
+    T3CODE_ENV+=("LAVISH_AXI_HOST=$LAVISH_AXI_HOST")
+  fi
+  if [ "$KIND" = ship ] || [ "$KIND" = scout ]; then
+    T3CODE_ENV+=("FM_TASK_ID=$ID")
+  fi
+}
+# spawn_t3code_launch_pi - a pi worker's thread launch, deferred until every
+# fact in its environment exists and run before the task record is written,
+# so the record names the thread. Pi reads no per-directory environment file,
+# so the facts ride the launch as T3's per-thread environment, which T3
+# applies to the pi process it starts for the thread's first turn; the thread
+# is idle until the launch brief, and every abort before that archives it.
+# TRACEPARENT rides whenever trace context is on and is recorded once the
+# record exists (the pi branch below).
+spawn_t3code_launch_pi() {
+  spawn_t3code_env_base
+  [ -z "$SPAWN_TRACEPARENT" ] || T3CODE_ENV+=("TRACEPARENT=$SPAWN_TRACEPARENT")
+  spawn_t3code_thread_create "$WT" "${T3CODE_ENV[@]}"
+  T3CODE_ABORT_CLEANUP=1
+}
 spawn_t3code_env_install() {
   local harness=$1
   shift
@@ -5992,6 +6065,10 @@ esac
 # command does not carry, so the record would never be updated.
 busy_notify_turnend=true
 WIRING_HARNESS=$HARNESS
+# T3 starts pi with its provider instance's own arguments, so the -e busy
+# extension would never load; T3's native thread status is that worker's busy
+# source, as it is for codex there.
+[ "$BACKEND" != t3code ] || [ "$HARNESS" != pi ] || WIRING_HARNESS=
 if [ "$KIND" = secondmate ]; then
   busy_notify_turnend=false
   if [ "$RAW_LAUNCH" -ne 0 ]; then
@@ -6676,6 +6753,7 @@ else
   fi
 fi
 
+[ "$BACKEND" != t3code ] || [ "$HARNESS" != pi ] || spawn_t3code_launch_pi
 META_WINDOW=$T
 [ "$BACKEND" = orca ] && META_WINDOW=$W
 [ "$BACKEND" = t3code ] && META_WINDOW=$W
@@ -7179,37 +7257,21 @@ spawn_record_traceparent() {
   return "$status"
 }
 
-if [ "$BACKEND" = t3code ]; then
+if [ "$BACKEND" = t3code ] && [ "$HARNESS" = pi ]; then
+  # The thread launched with its environment; the TRACEPARENT that rode it is
+  # recorded now or the spawn aborts, archiving the thread before any turn
+  # could start pi with an unrecorded carrier.
+  if [ -n "$SPAWN_TRACEPARENT" ] && ! spawn_record_traceparent; then
+    echo "error: could not record the trace context $ID's T3 thread launched with" >&2
+    exit 1
+  fi
+elif [ "$BACKEND" = t3code ]; then
   # No pane to export into: the same facts, under the same conditions as the
   # pane path below, become the launch directory's harness config
   # (spawn_t3code_env_install). TRACEPARENT is delivered only once its meta
   # record exists, the same delivered-implies-recorded invariant the pane path
   # keeps by unsetting it when the record fails.
-  # T3 starts the agent with its server's environment, whose PATH can lack the
-  # toolchain this home runs on (an nvm node bin, for one), so the thread gets
-  # this spawn's PATH, the same PATH the launch-env-allowlist floor keeps.
-  T3CODE_ENV=("GOTMPDIR=$TASK_TMP/gotmp" COMPACT_ADVISER_DISABLE=1 "FM_TASK_INBOX=$STATE_REAL/$ID.inbox")
-  t3code_path=$PATH
-  if [ -n "$GH_ACCOUNT" ]; then
-    T3CODE_ENV+=("FM_GH_ACCOUNT=$GH_ACCOUNT")
-    FM_GH_SHIM_ALLOW_LINKED_WORKTREE=1 "$FM_ROOT/bin/fm-install-gh-shim.sh" --target "$TASK_TMP/gh-bin" >/dev/null || {
-      echo "error: could not install the T3 GitHub account channel" >&2
-      exit 1
-    }
-    t3code_path="$TASK_TMP/gh-bin:$PATH"
-  elif [ "${FM_GH_ACCOUNT:-}" = none ]; then
-    T3CODE_ENV+=(FM_GH_ACCOUNT=none)
-  fi
-  T3CODE_ENV+=("PATH=$t3code_path")
-  if [ "$GIT_HOOKS_INSTALLED" = 1 ]; then
-    T3CODE_ENV+=(GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath "GIT_CONFIG_VALUE_0=$GIT_HOOKS_DIR")
-  fi
-  if [ "$LAVISH_AXI_HOST_CONFIG_PRESENT" = 1 ]; then
-    T3CODE_ENV+=("LAVISH_AXI_HOST=$LAVISH_AXI_HOST")
-  fi
-  if [ "$KIND" = ship ] || [ "$KIND" = scout ]; then
-    T3CODE_ENV+=("FM_TASK_ID=$ID")
-  fi
+  spawn_t3code_env_base
   if [ -n "$SPAWN_TRACEPARENT" ] && spawn_record_traceparent; then
     T3CODE_ENV+=("TRACEPARENT=$SPAWN_TRACEPARENT")
   fi

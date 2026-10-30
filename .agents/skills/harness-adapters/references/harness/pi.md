@@ -5,6 +5,8 @@ Verified on 2026-07-27 with Pi and Pi-signed 0.82.0 unless a fact gives another 
 
 ## Operating facts
 
+These command-line and terminal facts apply to pane-backed sessions; for a Pi worker on T3 Code, read [Pi workers](../../../../../docs/t3code-backend.md#pi-workers) and the [provider-command limits](../../../../../docs/t3code-backend.md#active-limits).
+
 | Fact | Value |
 |---|---|
 | Busy state | The Firstmate-owned extension's `agent_start` marks busy and `agent_settled`, confirmed by `ctx.isIdle()`, marks idle; this covers retries, compaction, tool loops, and queued continuations. |

@@ -20,9 +20,10 @@
 //     $FM_T3CODE_ORIGIN, else the `origin` in
 //     ~/.t3/userdata/server-runtime.json.
 //   fm-t3-mcp.mjs status
-//     Credential expiry, the capability gate, and whether a loopback server's
-//     own process runs with telemetry off (telemetry: off|on|unknown; anything
-//     but off adds a stderr warning). Changes nothing.
+//     Credential expiry, the capability gate, whether t3_thread_launch offers
+//     a per-thread environment (launchEnvironment), and whether a loopback
+//     server's own process runs with telemetry off (telemetry: off|on|unknown;
+//     anything but off adds a stderr warning). Changes nothing.
 //   fm-t3-mcp.mjs project-ensure --root <abs-path> [--title <title>]
 //     The live T3 project whose workspaceRoot is <root> by real path, created
 //     when absent. A create that fails is looked up again, so a project a
@@ -30,23 +31,34 @@
 //   fm-t3-mcp.mjs project-read --project <id>
 //     That project's record (defaultModelSelection included); exit 3 with
 //     code project_not_found when T3 lists no live project with that id.
-//   fm-t3-mcp.mjs resolve-selection --harness <claude|codex> --instance <id>
+//   fm-t3-mcp.mjs resolve-selection --harness <claude|codex|pi> --instance <id>
 //       --model <slug|default> --effort <level|default> [--project <id>]
 //     The model selection a launch sends, resolved against T3's own catalog
 //     (orchestrator_capabilities): the instance must exist, be usable, and run
-//     the harness's driver (claude: claudeAgent, codex: codex); the model must
-//     be one that instance lists; model default takes the project's default
-//     selection, which must name the same instance. A non-default effort
-//     replaces only the driver's reasoning option (claude: effort, codex:
-//     reasoningEffort) and keeps every other default option; every option is
-//     then checked against that model's descriptors. Exit 4 refuses.
+//     the harness's driver (claude: claudeAgent, codex: codex, pi: pi); the
+//     model must be one that instance lists; model default takes the
+//     project's default selection, which must name the same instance. A
+//     non-default effort replaces only the driver's reasoning option (claude:
+//     effort, codex: reasoningEffort, pi: thinking) and keeps every other
+//     default option; every option is then checked against that model's
+//     descriptors. The pi harness reads its task environment only from a
+//     launch's per-thread environment, so it also refuses a T3 whose
+//     t3_thread_launch does not offer one. Exit 4 refuses.
 //   fm-t3-mcp.mjs launch --project <id> --title <title> --model-selection <json>
 //       [--worktree <abs-path>] [--branch <name>] [--message-file <file>]
+//       [--environment <json>]
 //     t3_thread_launch at runtimeMode full-access. With --worktree the
 //     workspace strategy is existing_worktree; without it, root (the project's
-//     own checkout). Reads the thread and its configuration back and
+//     own checkout). --environment, a JSON object of string variables, is the
+//     thread's per-thread environment, checked against T3's limits (at most
+//     64 names matching ^[A-Za-z_][A-Za-z0-9_]*$ of at most 128 characters,
+//     values of at most 8192); a T3 whose t3_thread_launch does not offer an
+//     environment refuses (exit 4) before anything is launched. T3 stores
+//     it in plain text, so it never carries a secret. Reads the thread and
+//     its configuration back and
 //     archives and refuses it unless T3 bound exactly that workspace, full
-//     access, instance, model, and every requested option value; a refused
+//     access, instance, model, and every requested option value, and, when
+//     T3 reports it, the environment's variable count; a refused
 //     thread that does not then read back archived with no active run exits
 //     1, because it may still be live. A read-back that fails also archives
 //     and exits 1, since the thread exists but its binding is unproven. T3's
@@ -131,7 +143,9 @@
 // TOOL_FAMILIES capability is met by its current or earlier tools, then reads
 // t3_environment_read and refuses unless its environmentId equals the one
 // recorded at sign-in, so a different T3 on the same origin is never driven
-// with this credential.
+// with this credential. It also records whether t3_thread_launch's input
+// schema lists an `environment` property, the only sign a T3 build carries a
+// per-thread environment to the agent it launches.
 //
 // FM_T3CODE_ARCHIVE_TIMEOUT_MS, a positive integer, replaces the 15000 ms bound
 // on the read-back that proves an archive (launch's cleanup archive, and
@@ -222,11 +236,20 @@ const TERMINAL_RUN = new Set(["completed", "failed", "cancelled", "interrupted",
 const ACTIVE_STATUSES = ["preparing", "queued", "starting", "running", "waiting"];
 const READ_LIMIT_MAX = 100;
 // Each Firstmate harness runs on one T3 driver, whose reasoning option id is
-// part of that driver's protocol; the values come from T3's catalog.
+// part of that driver's protocol; the values come from T3's catalog. Claude
+// and Codex read the task environment from per-directory files in the
+// thread's cwd; Pi has no such file, so its harness needs the launch's
+// per-thread environment.
 const DRIVERS = {
   claude: { driverKind: "claudeAgent", effortOption: "effort" },
   codex: { driverKind: "codex", effortOption: "reasoningEffort" },
+  pi: { driverKind: "pi", effortOption: "thinking", launchEnvironment: true },
 };
+// T3's per-thread environment limits (OrchestrationV2ThreadEnvironment).
+const ENVIRONMENT_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const ENVIRONMENT_MAX_NAMES = 64;
+const ENVIRONMENT_MAX_NAME = 128;
+const ENVIRONMENT_MAX_VALUE = 8192;
 const REPEATABLE = new Set(["option", "thread", "escalated"]);
 // Every MCP session this invocation opened, ended when the verb returns.
 const SESSIONS = new Set();
@@ -502,11 +525,22 @@ function toolError(data, content) {
   };
 }
 
+// Whether a tool's input schema lists <property>, following one top-level
+// $ref into its definitions.
+function schemaHasProperty(schema, property) {
+  let s = schema ?? {};
+  const ref = typeof s.$ref === "string" ? /^#\/(\$defs|definitions)\/(.+)$/.exec(s.$ref) : null;
+  if (ref) s = s[ref[1]]?.[ref[2]] ?? {};
+  return Boolean(s.properties && Object.hasOwn(s.properties, property));
+}
+
 // The capability gate: required tools present, environment id unchanged.
 export async function gate(session, cred) {
   const server = await session.open();
   const listed = await session.rpc("tools/list", {});
   const names = new Set((listed?.tools ?? []).map((t) => t.name));
+  const launchTool = (listed?.tools ?? []).find((t) => t.name === "t3_thread_launch");
+  const launchEnvironment = schemaHasProperty(launchTool?.inputSchema, "environment");
   const version = server?.serverInfo?.version ?? null;
   const missing = REQUIRED_TOOLS.filter((t) => !names.has(t));
   const families = {};
@@ -538,7 +572,20 @@ export async function gate(session, cred) {
     );
   }
   session.toolFamilies = families;
-  return { serverVersion: version, environmentId, serverVersionReported: envRead?.serverVersion ?? null, tools: [...names].sort(), toolFamilies: families };
+  session.launchEnvironment = launchEnvironment;
+  return { serverVersion: version, environmentId, serverVersionReported: envRead?.serverVersion ?? null, tools: [...names].sort(), toolFamilies: families, launchEnvironment };
+}
+
+// A harness that needs the per-thread environment refuses on a T3 whose
+// t3_thread_launch does not offer one, before anything is launched.
+function requireLaunchEnvironment(session, g, what, outcome = "") {
+  if (session.launchEnvironment) return;
+  throw new Refusal(
+    "environment_unsupported",
+    `T3 ${g.serverVersion ?? "(unknown version)"} at ${session.origin} does not offer a per-thread environment on t3_thread_launch, which ${what} needs for its task id, steering inbox, temp directory, and Git hook entry; run a T3 build whose t3_thread_launch takes \`environment\` (docs/t3code-backend.md#pi-workers)${outcome}`,
+    4,
+    { serverVersion: g.serverVersion },
+  );
 }
 
 // A thread's recorded binding (modelSelection, runtimeMode), read through the
@@ -693,6 +740,7 @@ async function status(flags) {
     environmentId: g.environmentId,
     serverVersion: g.serverVersion,
     recordedServerVersion: cred.server_version ?? null,
+    launchEnvironment: g.launchEnvironment,
     telemetry,
     ...(cred.warning ? { credentialWarning: cred.warning } : {}),
   };
@@ -798,6 +846,27 @@ function modelSelection(flags) {
   return sel;
 }
 
+// The launch's per-thread environment, held to T3's own limits so a value it
+// would refuse never reaches t3_thread_launch.
+function launchEnvironment(flags) {
+  if (flags.environment === undefined) return undefined;
+  let env;
+  try {
+    env = JSON.parse(flags.environment);
+  } catch {
+    usage("--environment must be JSON");
+  }
+  if (!env || typeof env !== "object" || Array.isArray(env)) usage("--environment must be a JSON object");
+  const names = Object.keys(env);
+  if (names.length > ENVIRONMENT_MAX_NAMES) usage(`--environment sets ${names.length} variables; T3 takes at most ${ENVIRONMENT_MAX_NAMES}`);
+  for (const name of names) {
+    if (!ENVIRONMENT_NAME.test(name) || name.length > ENVIRONMENT_MAX_NAME) usage(`--environment name '${name}' is not a variable name T3 accepts`);
+    if (typeof env[name] !== "string") usage(`--environment ${name} must be a string`);
+    if (env[name].length > ENVIRONMENT_MAX_VALUE) usage(`--environment ${name} is ${env[name].length} characters; T3 takes at most ${ENVIRONMENT_MAX_VALUE}`);
+  }
+  return env;
+}
+
 // An option selection is valid when the model's catalog describes its id and
 // lists its value. Current catalogs list the allowed values as a plain
 // `values` array (a boolean option lists `[false, true]`); older catalogs
@@ -813,11 +882,12 @@ function optionProblem(model, option) {
 async function resolveSelection(flags) {
   const harness = need(flags, "harness");
   const driver = DRIVERS[harness];
-  if (!driver) throw new Refusal("harness_unsupported", `backend=t3code supports only the claude and codex harnesses, not '${harness}'`);
+  if (!driver) throw new Refusal("harness_unsupported", `backend=t3code supports only the claude, codex, and pi harnesses, not '${harness}'`);
   const instanceId = need(flags, "instance");
   const wantModel = need(flags, "model");
   const effort = need(flags, "effort");
-  const { session } = await verifiedSession(flags);
+  const { session, gate: g } = await verifiedSession(flags);
+  if (driver.launchEnvironment) requireLaunchEnvironment(session, g, `a ${harness} worker`);
   const caps = await session.call("orchestrator_capabilities", {});
   const provider = (caps?.providers ?? []).find((p) => p.providerInstanceId === instanceId);
   if (!provider) throw new Refusal("instance_unknown", `T3 has no provider instance '${instanceId}' (config/t3code-instances maps the ${harness} harness to it)`);
@@ -855,8 +925,9 @@ async function resolveSelection(flags) {
 }
 
 // What a launch must read back: the workspace, full access, and exactly the
-// requested instance, model, and option values.
-function bindingProblems(t, config, selection, worktree) {
+// requested instance, model, and option values. T3 never returns a thread's
+// environment values; where it reports their count, that count must match.
+function bindingProblems(t, config, selection, worktree, environment) {
   const problems = [];
   if (worktree ? realOrRaw(t.worktreePath ?? "") !== realOrRaw(worktree) : (t.worktreePath ?? null) !== null) {
     problems.push(`worktreePath ${t.worktreePath ?? "none"}`);
@@ -869,6 +940,8 @@ function bindingProblems(t, config, selection, worktree) {
     const got = (bound.options ?? []).find((o) => o.id === option.id);
     if (got?.value !== option.value) problems.push(`option ${option.id}=${got ? got.value : "none"}`);
   }
+  const sent = environment === undefined ? 0 : Object.keys(environment).length;
+  if (t.environmentCount !== undefined && t.environmentCount !== sent) problems.push(`environmentCount ${t.environmentCount}`);
   return problems;
 }
 
@@ -876,6 +949,7 @@ async function launch(flags) {
   const worktree = flags.worktree;
   if (worktree !== undefined && !path.isAbsolute(worktree)) usage("--worktree must be an absolute path");
   const selection = modelSelection(flags);
+  const environment = launchEnvironment(flags);
   const message = flags["message-file"] ? readMessage(flags) : null;
   let session;
   let g;
@@ -885,6 +959,7 @@ async function launch(flags) {
     if (err instanceof Refusal && err.exit !== 1) throw err;
     throw new Refusal(err instanceof Refusal ? err.code : "unexpected", `${err?.message ?? String(err)}; no thread was launched`, 8, err instanceof Refusal ? err.extra : {});
   }
+  if (environment !== undefined) requireLaunchEnvironment(session, g, "this launch", "; no thread was launched");
   const workspaceStrategy = worktree
     ? { type: "existing_worktree", worktreePath: worktree, ...(flags.branch ? { branch: flags.branch } : {}) }
     : { type: "root", ...(flags.branch ? { branch: flags.branch } : {}) };
@@ -895,6 +970,7 @@ async function launch(flags) {
     runtimeMode: "full-access",
     interactionMode: "default",
     workspaceStrategy,
+    ...(environment !== undefined ? { environment } : {}),
     ...(message ? { message } : {}),
   };
   let out;
@@ -923,7 +999,7 @@ async function launch(flags) {
       { threadId: out.threadId },
     );
   }
-  const problems = bindingProblems(t, config, selection, worktree);
+  const problems = bindingProblems(t, config, selection, worktree, environment);
   if (problems.length) {
     const archived = await archiveLaunched();
     throw new Refusal(

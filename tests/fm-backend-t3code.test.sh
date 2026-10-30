@@ -375,8 +375,8 @@ test_model_selection_table() {
   assert_contains "$out" "runs the codex driver, not claudeAgent" "the refusal names the driver T3's catalog reports"
   rm -f "$CONFIG/t3code-instances"
   t3_world_set 'w.projects[0].defaultModelSelection = { instanceId: "claudeAgent", model: "claude-sonnet-5" }'
-  out=$(t3_run 'fm_backend_t3code_model_selection pi x high proj-1' 2>&1) && fail "a non-T3 harness must be refused"
-  assert_contains "$out" "only the claude and codex harnesses" "the harness refusal must name the supported set"
+  out=$(t3_run 'fm_backend_t3code_model_selection cursor x high proj-1' 2>&1) && fail "a non-T3 harness must be refused"
+  assert_contains "$out" "only the claude, codex, and pi harnesses" "the harness refusal must name the supported set"
   t3_world_set 'w.projects[0].defaultModelSelection = null'
   out=$(t3_run 'fm_backend_t3code_model_selection claude default default proj-1' 2>&1) && fail "model default with no project default must be refused"
   assert_contains "$out" "has no default model; pass --model" "the default-model refusal must name the fix"
@@ -391,6 +391,64 @@ test_model_selection_table() {
   out=$(t3_run 'fm_backend_t3code_model_selection claude default default proj-1')
   [ "$out" = '{"instanceId":"claude-pool","model":"claude-sonnet-5"}' ] || fail "matching default must use the configured instance, got '$out'"
   pass "fm_backend_t3code_model_selection: T3's catalog decides driver, model, and effort; overrides keep other options; default handling, instances file"
+}
+
+# A pi worker's task environment can only ride the launch's per-thread
+# environment, so its selection refuses a T3 that does not offer one, and
+# otherwise resolves against the Pi driver's catalog like any other harness.
+test_pi_selection_needs_launch_environment() {
+  local out
+  t3_case pi-selection
+  out=$(t3_run 'fm_backend_t3code_model_selection pi anthropic/claude-sonnet-5 high proj-1' 2>&1) && fail "pi must refuse a T3 without per-thread environment"
+  assert_contains "$out" "does not offer a per-thread environment on t3_thread_launch" "the refusal must name the missing launch environment"
+  assert_contains "$out" "a pi worker needs" "the refusal must name the harness"
+  [ -z "$(t3_dispatch_types)" ] || fail "the refusal must not mutate T3, got '$(t3_dispatch_types)'"
+  t3_world_set 'w.launchEnvironment = true'
+  [ "$(t3_run 'fm_backend_t3code_mcp status | fm_backend_t3code_json_get launchEnvironment')" = true ] || fail "status must report the offered launch environment"
+  out=$(t3_run 'fm_backend_t3code_model_selection pi anthropic/claude-sonnet-5 high proj-1')
+  [ "$out" = '{"instanceId":"pi","model":"anthropic/claude-sonnet-5","options":[{"id":"thinking","value":"high"}]}' ] \
+    || fail "pi effort should ride options id thinking on instance pi, got '$out'"
+  t3_world_set 'w.launchEnvironment = "ref"'
+  out=$(t3_run 'fm_backend_t3code_model_selection pi anthropic/claude-sonnet-5 default proj-1')
+  [ "$out" = '{"instanceId":"pi","model":"anthropic/claude-sonnet-5"}' ] || fail "a launch schema behind a top-level \$ref still offers the environment, got '$out'"
+  out=$(t3_run 'fm_backend_t3code_model_selection pi local/no-reasoning high proj-1' 2>&1) && fail "effort on a model without thinking must be refused"
+  assert_contains "$out" "cannot pass effort 'high' to harness 'pi'" "the effort refusal must name the harness"
+  printf 'pi=claudeAgent\n' > "$CONFIG/t3code-instances"
+  out=$(t3_run 'fm_backend_t3code_model_selection pi claude-sonnet-5 default proj-1' 2>&1) && fail "pi mapped onto a Claude instance must be refused"
+  assert_contains "$out" "runs the claudeAgent driver, not pi" "the refusal names the driver T3's catalog reports"
+  rm -f "$CONFIG/t3code-instances"
+  t3_world_set 'w.providers = [{ providerInstanceId: "pi", driverKind: "pi", constraints: ["Provider instance is disabled."], models: [] }]'
+  out=$(t3_run 'fm_backend_t3code_model_selection pi anthropic/claude-sonnet-5 default proj-1' 2>&1) && fail "a disabled Pi instance must be refused"
+  assert_contains "$out" "cannot run threads: Provider instance is disabled." "the refusal must carry T3's own constraint"
+  pass "fm_backend_t3code_model_selection pi: refuses without T3's per-thread launch environment, else resolves on the Pi driver with thinking as its effort"
+}
+
+test_thread_create_carries_environment() {
+  local id out rc launch selection='{"instanceId":"pi","model":"anthropic/claude-sonnet-5"}'
+  t3_case thread-environment
+  out=$(t3_run 'fm_backend_t3code_thread_create proj-1 fm-pi "" "$1" "$2" FM_TASK_ID=task-1' "$REPO" "$selection" 2>&1); rc=$?
+  expect_code 4 "$rc" "an environment launch on a T3 without per-thread environment is refused"$'\n'"$out"
+  assert_contains "$out" "no thread was launched" "the refusal must say nothing was launched"
+  [ -z "$(t3_dispatch_types)" ] || fail "the refusal must come before t3_thread_launch, got '$(t3_dispatch_types)'"
+  t3_world_set 'w.launchEnvironment = true'
+  id=$(t3_run 'fm_backend_t3code_thread_create proj-1 fm-pi "" "$1" "$2" FM_TASK_ID=task-1 "PATH=/a:/b" GIT_CONFIG_VALUE_0=x=y EMPTY=' "$REPO" "$selection") \
+    || fail "an environment launch failed"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  [ "$(t3_request "$launch" 'r.arguments.environment')" = '{"FM_TASK_ID":"task-1","PATH":"/a:/b","GIT_CONFIG_VALUE_0":"x=y","EMPTY":""}' ] \
+    || fail "each NAME=VALUE must split at its first = into the launch environment, got '$(t3_request "$launch" 'r.arguments.environment')'"
+  [ "$(t3_run 'fm_backend_t3code_mcp read --thread "$1" | node -e "process.stdout.write(String(JSON.parse(require(\"fs\").readFileSync(0,\"utf8\")).thread.environmentCount))"' "$id")" = 4 ] \
+    || fail "the fake must record the launched environment's count"
+  : > "$LOG"
+  t3_world_set 'w.bindEnvironmentCount = 1'
+  out=$(t3_run 'fm_backend_t3code_thread_create proj-1 fm-pi-short "" "$1" "$2" A=1 B=2' "$REPO" "$selection" 2>&1); rc=$?
+  expect_code 4 "$rc" "a thread whose environment count reads back short is archived and refused"$'\n'"$out"
+  assert_contains "$out" "environmentCount 1" "the binding refusal must name the environment count T3 reports"
+  [ "$(t3_dispatch_types)" = 't3_thread_launch t3_thread_organize' ] || fail "the short-environment thread must be archived, got '$(t3_dispatch_types)'"
+  : > "$LOG"
+  out=$(t3_run 'fm_backend_t3code_thread_create proj-1 fm-pi-bad "" "$1" "$2" "BAD NAME=1"' "$REPO" "$selection" 2>&1); rc=$?
+  expect_code 2 "$rc" "an environment name T3 cannot take is refused as invalid use"
+  [ -z "$(t3_dispatch_types)" ] || fail "an invalid environment must never reach t3_thread_launch, got '$(t3_dispatch_types)'"
+  pass "fm_backend_t3code_thread_create: NAME=VALUE pairs ride t3_thread_launch's environment, refused before launch where T3 does not offer it"
 }
 
 test_thread_create_and_turn_start_payloads() {
@@ -857,8 +915,8 @@ test_harness_admission_and_typing_refusals() {
   [ "$out" = 'error: backend=t3code has no pane to type into' ] || fail "the typing refusal changed: $out"
   [ ! -s "$LOG" ] || fail 'refused typing must not dispatch or read a thread'
   t3_run 'fm_backend_send_key t3code thread-live Enter' || fail 'runtime Enter remains a no-op'
-  t3_run 'fm_backend_validate_harness t3code claude; fm_backend_validate_harness t3code codex' || fail 'T3 supported harnesses changed'
-  for op in opencode pi pi-signed grok kimi cursor gemini muse rovo omp agy devin; do
+  t3_run 'fm_backend_validate_harness t3code claude; fm_backend_validate_harness t3code codex; fm_backend_validate_harness t3code pi' || fail 'T3 supported harnesses changed'
+  for op in opencode pi-signed grok kimi cursor gemini muse rovo omp agy devin; do
     if out=$(t3_run 'fm_backend_validate_harness t3code "$1"' "$op" 2>&1); then fail "T3 must refuse harness $op"; fi
     assert_contains "$out" "not '$op'" 'harness refusal must name the unsupported adapter'
   done
@@ -1895,18 +1953,118 @@ t3_worker_spawn() {
 
 test_spawn_refuses_launch_settings_t3_cannot_honor() {  # <config-file> <content> <expected-error> [harness]
   local file=$1 content=$2 expect=$3 harness=${4:-claude} model id out rc
-  case "$harness" in claude) model=claude-sonnet-5 ;; codex) model=gpt-5.6-sol ;; esac
+  case "$harness" in claude) model=claude-sonnet-5 ;; codex) model=gpt-5.6-sol ;; pi) model=anthropic/claude-sonnet-5 ;; esac
   id=$(t3_uid "t3cfgz-$file")
   t3_case "spawn-refuse-$file"
+  [ "$harness" != pi ] || t3_world_set 'w.launchEnvironment = true'
   printf '%s\n' "$content" > "$CONFIG/$file"
   t3_worker_setup "$id"
-  out=$(t3_worker_spawn "$id" "$harness" --model "$model"); rc=$?
+  out=$(t3_pi_path t3_worker_spawn "$id" "$harness" --model "$model"); rc=$?
   expect_code 1 "$rc" "a t3code $harness spawn must refuse config/$file=$content"$'\n'"$out"
   assert_contains "$out" "$expect" "the refusal must name config/$file"
   [ -z "$(t3_dispatch_types)" ] || fail "the refusal must come before any T3 mutation, got '$(t3_dispatch_types)'"
   [ "$(t3_log_line_of 'r.tool === "treehouse"')" -eq 0 ] || fail "the refusal must come before the slot is leased"
   assert_absent "$CASE_DIR/state/$id.meta" "a refused spawn records nothing"
   pass "fm-spawn.sh --backend t3code $harness: refuses config/$file=$content it cannot honor before any mutation"
+}
+
+# t3_pi_path <command...>: run <command> with a stand-in `pi` first on PATH, so
+# a pi spawn resolves its executable without a real Pi install.
+t3_pi_path() {
+  local bin="$CASE_DIR/pi-bin"
+  mkdir -p "$bin"
+  printf '#!/usr/bin/env bash\necho "usage: pi [options]"\n' > "$bin/pi"
+  chmod +x "$bin/pi"
+  PATH="$bin:$PATH" "$@"
+}
+
+# A pi worker has no per-directory environment file, so its whole task
+# environment rides t3_thread_launch, launched once every fact in it exists
+# (the Git hook directory included) and before its record names the thread.
+test_spawn_pi_worker_launches_with_environment() {
+  local id out rc launch thread env tp
+  id=$(t3_uid t3piz1)
+  t3_case spawn-pi
+  t3_world_set 'w.launchEnvironment = true'
+  t3_worker_setup "$id"
+  printf '%s\n' "$$" > "$CASE_DIR/state/.lock"
+  printf '%s on\n' "$$" > "$CASE_DIR/state/.trace-context-effective"
+  FM_T3_PROBE="$CASE_DIR/state/$id.git-hooks" t3_world_set 'w.probePath = process.env.FM_T3_PROBE'
+  out=$(t3_pi_path t3_worker_spawn "$id" pi --model anthropic/claude-sonnet-5 --effort low); rc=$?
+  expect_code 0 "$rc" "a pi scout on t3code should spawn against the fake T3 server"$'\n'"$out"
+  [ "$(t3_dispatch_types)" = "t3_thread_launch t3_thread_send" ] || fail "spawn must launch then send the brief, got '$(t3_dispatch_types)'"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  [ "$(t3_request "$launch" 'r.probe')" = true ] || fail "the pi thread must launch only after its Git hook directory exists"
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"pi","model":"anthropic/claude-sonnet-5","options":[{"id":"thinking","value":"low"}]}' ] \
+    || fail "the launch must carry the pi selection, got '$(t3_request "$launch" 'r.arguments.modelSelection')'"
+  [ "$(t3_request "$launch" 'r.arguments.workspaceStrategy.worktreePath')" = "$WORKER_WT" ] || fail "the launch must bind the leased worktree"
+  env=$(t3_request "$launch" 'r.arguments.environment')
+  [ "$(printf '%s' "$env" | node -e 'const e = JSON.parse(require("fs").readFileSync(0, "utf8")); process.stdout.write([e.FM_TASK_ID, e.FM_TASK_INBOX, e.GOTMPDIR, e.COMPACT_ADVISER_DISABLE, e.GIT_CONFIG_COUNT, e.GIT_CONFIG_KEY_0, e.GIT_CONFIG_VALUE_0].join("|"))')" = \
+    "$id|$CASE_DIR/state/$id.inbox|/tmp/fm-$id/gotmp|1|1|core.hooksPath|$CASE_DIR/state/$id.git-hooks" ] \
+    || fail "the launch environment must carry the task id, inbox, temp dir, kill switch, and Git hook entry, got '$env'"
+  assert_contains "$(printf '%s' "$env" | node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(0, "utf8")).PATH))')" \
+    "$CASE_DIR/fakebin:$CASE_DIR/pi-bin:" "the launch environment must carry the spawn's PATH"
+  case "$env" in *FM_T3CODE_ENV_KEYS*) fail "the launch environment must not carry the file channel's bookkeeping" ;; esac
+  tp=$(printf '%s' "$env" | node -e 'process.stdout.write(String(JSON.parse(require("fs").readFileSync(0, "utf8")).TRACEPARENT))')
+  case "$tp" in 00-????????????????????????????????-????????????????-??) ;; *) fail "the launch environment must carry TRACEPARENT when trace context is on, got '$tp'" ;; esac
+  grep -qxF "traceparent=$tp" "$CASE_DIR/state/$id.meta" || fail "the launched TRACEPARENT must be the one recorded in the meta"
+  thread=$(bash -c '. "$1"; fm_meta_get "$2" t3_thread_id' _ "$ROOT/bin/fm-backend.sh" "$CASE_DIR/state/$id.meta")
+  case "$thread" in mcp:*) ;; *) fail "meta t3_thread_id should be the id T3 assigned, got '$thread'" ;; esac
+  [ "$(t3_request "$(t3_log_line_of 'r.tool === "t3_thread_send"')" 'r.arguments.threadId')" = "$thread" ] || fail "the brief must go to the launched thread"
+  assert_grep "harness=pi" "$CASE_DIR/state/$id.meta" "meta must record the pi harness"
+  assert_absent "$WORKER_WT/.claude/settings.local.json" "a pi worker writes no Claude settings"
+  assert_absent "$WORKER_WT/.codex/config.toml" "a pi worker writes no Codex config"
+  assert_absent "$WORKER_WT/CLAUDE.local.md" "a pi worker gets no Claude channel statement"
+  assert_absent "$CASE_DIR/state/$id.pi-ext.ts" "T3 cannot load the pi busy extension, so spawn writes none"
+  pass "fm-spawn.sh --backend t3code pi: the task environment rides t3_thread_launch, launched after the Git hook exists and recorded as the task's thread"
+}
+
+test_spawn_pi_refuses_without_launch_environment() {
+  local id out rc
+  id=$(t3_uid t3pinoenvz)
+  t3_case spawn-pi-no-environment
+  t3_worker_setup "$id"
+  out=$(t3_pi_path t3_worker_spawn "$id" pi --model anthropic/claude-sonnet-5); rc=$?
+  expect_code 1 "$rc" "a pi spawn on a T3 without per-thread environment must refuse"$'\n'"$out"
+  assert_contains "$out" "does not offer a per-thread environment" "the refusal must name the missing launch environment"
+  [ -z "$(t3_dispatch_types)" ] || fail "the refusal must come before any T3 mutation, got '$(t3_dispatch_types)'"
+  [ "$(t3_log_line_of 'r.tool === "treehouse"')" -eq 0 ] || fail "the refusal must come before the slot is leased"
+  assert_absent "$CASE_DIR/state/$id.meta" "a refused spawn records nothing"
+  pass "fm-spawn.sh --backend t3code pi: refuses before any lease or launch when T3 cannot carry the task environment"
+}
+
+# The deferred launch's own gate fails after the lease: nothing was launched,
+# so the slot goes back with no thread to archive.
+test_spawn_pi_deferred_launch_gate_failure_returns_lease() {
+  local id out rc
+  id=$(t3_uid t3pigatez)
+  t3_case spawn-pi-launch-gate-down
+  t3_world_set 'w.launchEnvironment = true'
+  t3_worker_setup "$id"
+  out=$(T3_FAKE_WORLD="$T3_FAKE_WORLD" FM_T3_TREEHOUSE_GET_WORLD='w.dropTools = { t3_environment_read: 1 }' \
+    t3_pi_path t3_worker_spawn "$id" pi --model anthropic/claude-sonnet-5); rc=$?
+  expect_code 1 "$rc" "a deferred pi launch whose gate failed must abort spawn"$'\n'"$out"
+  [ -z "$(t3_dispatch_types)" ] || fail "no launch may be requested after the gate failed, got '$(t3_dispatch_types)'"
+  assert_not_contains "$out" "did not report an outcome" "a launch that was never requested is not an uncertain launch"
+  [ "$(t3_log_line_of 'r.tool === "treehouse" && r.args.indexOf("return --force") === 0')" -gt 0 ] \
+    || fail "a deferred launch that was never requested must return the lease"$'\n'"$out"
+  assert_absent "$CASE_DIR/state/$id.meta" "a refused spawn records nothing"
+  pass "fm-spawn.sh --backend t3code pi: a gate failure at the deferred launch returns the lease with no thread"
+}
+
+test_spawn_pi_secondmate_refused() {
+  local id home out rc
+  id=$(t3_uid t3pismz)
+  t3_case spawn-pi-secondmate
+  t3_world_set 'w.launchEnvironment = true'
+  home="$CASE_DIR/sm-home"
+  make_t3_secondmate_home "$home" "$id"
+  out=$(t3_pi_path spawn_t3_secondmate "$id" "$home" pi anthropic/claude-sonnet-5); rc=$?
+  expect_code 1 "$rc" "a pi secondmate on t3code must refuse"$'\n'"$out"
+  assert_contains "$out" "runs pi only for ship and scout workers" "the refusal must name the worker-only scope"
+  [ -z "$(t3_dispatch_types)" ] || fail "the refusal must come before any T3 mutation, got '$(t3_dispatch_types)'"
+  assert_absent "$home/config/t3code-token" "the refusal must come before the credential link"
+  pass "fm-spawn.sh --backend t3code --secondmate pi: refused before any mutation, since its supervisor target cannot ride the launch"
 }
 
 # The default posture is T3's own full-access mode, so an explicit bypass file
@@ -2048,13 +2206,13 @@ test_launch_gate_failure_returns_lease() {
 
 test_refused_launch_turn_archives_thread_and_returns_lease() {
   local harness model id out rc
-  for harness in claude codex; do
-    case "$harness" in claude) model=claude-sonnet-5 ;; codex) model=gpt-5.6-sol ;; esac
+  for harness in claude codex pi; do
+    case "$harness" in claude) model=claude-sonnet-5 ;; codex) model=gpt-5.6-sol ;; pi) model=anthropic/claude-sonnet-5 ;; esac
     id=$(t3_uid "t3turnz$harness")
     t3_case "spawn-launch-turn-refused-$harness"
-    t3_world_set 'w.failTools = { t3_thread_send: { code: "turn_refused", message: "launch turn refused" } }'
+    t3_world_set 'w.failTools = { t3_thread_send: { code: "turn_refused", message: "launch turn refused" } }; w.launchEnvironment = true'
     t3_worker_setup "$id"
-    out=$(t3_worker_spawn "$id" "$harness" --model "$model"); rc=$?
+    out=$(t3_pi_path t3_worker_spawn "$id" "$harness" --model "$model"); rc=$?
     expect_code 1 "$rc" "a refused $harness launch turn must abort spawn"$'\n'"$out"
     assert_contains "$out" "T3 refused the launch turn" "the refusal is reported"
     [ "$(t3_log_line_of 'r.tool === "t3_thread_organize"')" -gt "$(t3_log_line_of 'r.tool === "t3_thread_send"')" ] \
@@ -2797,7 +2955,9 @@ test_revoked_credential_names_signin
 test_capability_gate_refuses_control
 test_project_ensure_matches_realpath_or_creates
 test_model_selection_table
+test_pi_selection_needs_launch_environment
 test_thread_create_and_turn_start_payloads
+test_thread_create_carries_environment
 test_thread_create_uncertain_and_refused_outcomes
 test_thread_for_home_zero_one_and_ambiguous
 test_explicit_t3_selection_and_precedence
@@ -2849,6 +3009,11 @@ test_spawn_refuses_launch_settings_t3_cannot_honor codex-approval-mode approve-f
 test_spawn_refuses_launch_settings_t3_cannot_honor codex-permission-mode restricted "config/codex-permission-mode=restricted" codex
 test_spawn_codex_accepts_bypass_approval_mode
 test_spawn_refuses_launch_settings_t3_cannot_honor launch-env-allowlist HOME "config/launch-env-allowlist"
+test_spawn_refuses_launch_settings_t3_cannot_honor crew-exclude-tools bash "config/crew-exclude-tools" pi
+test_spawn_pi_worker_launches_with_environment
+test_spawn_pi_refuses_without_launch_environment
+test_spawn_pi_deferred_launch_gate_failure_returns_lease
+test_spawn_pi_secondmate_refused
 test_spawn_refuses_raw_launch_command
 test_spawn_abort_returns_lease_only_after_archive ok
 test_spawn_abort_returns_lease_only_after_archive fail
