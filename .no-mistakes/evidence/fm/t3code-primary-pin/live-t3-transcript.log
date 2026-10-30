@@ -1,0 +1,19 @@
+captured=mcp:c8db7b7a-983b-4a72-bee2-75bd77ad77c7
+{"ok":true,"threadId":"mcp:c8db7b7a-983b-4a72-bee2-75bd77ad77c7","runId":"run:thread:mcp%3Ac8db7b7a-983b-4a72-bee2-75bd77ad77c7:ordinal:1","status":"completed","timedOut":false}
+NEEDS_GH_AUTH
+BOOTSTRAP_INFO: pinned T3 supervisor thread mcp:c8db7b7a-983b-4a72-bee2-75bd77ad77c7 against idle release
+{"ok":false,"error":{"code":"keep_alive_worker_thread","message":"thread mcp:bebb1425-bed7-432f-86f9-c3cc42ad80ad works in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M678JNNB9V8FG0XG3EWTQTN7/.test-t3-lab/worker, so it is a worker, not a supervisor thread; refusing to pin it","threadId":"mcp:bebb1425-bed7-432f-86f9-c3cc42ad80ad"}}
+fm-t3-mcp: thread mcp:bebb1425-bed7-432f-86f9-c3cc42ad80ad works in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M678JNNB9V8FG0XG3EWTQTN7/.test-t3-lab/worker, so it is a worker, not a supervisor thread; refusing to pin it
+NEEDS_GH_AUTH
+T3_KEEP_ALIVE: could not resolve the T3 supervisor thread; it is not pinned and T3 will end its agent session after 30 idle minutes
+{"ok":true,"threadId":"mcp:c8db7b7a-983b-4a72-bee2-75bd77ad77c7","keepAlive":true}
+{"ok":true,"threadId":"mcp:c8db7b7a-983b-4a72-bee2-75bd77ad77c7","keepAlive":true}
+NEEDS_GH_AUTH
+T3_KEEP_ALIVE: supervisor thread mcp:bebb1425-bed7-432f-86f9-c3cc42ad80ad is not pinned (thread mcp:bebb1425-bed7-432f-86f9-c3cc42ad80ad works in /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M678JNNB9V8FG0XG3EWTQTN7/.test-t3-lab/worker, so it is a worker, not a supervisor thread; refusing to pin it); T3 will end its agent session after 30 idle minutes, and supervision then stops until the thread gets a message
+
+Non-T3 supervisor bootstrap (exit 0):
+NEEDS_GH_AUTH
+
+Read-only bootstrap (exit 0):
+NEEDS_GH_AUTH
+{"ok":true,"threadId":"mcp:c8db7b7a-983b-4a72-bee2-75bd77ad77c7","clientRequestId":"lab-cleanup","stoppedProviderSessionIds":["provider-session:provider-instance:claudeAgent:thread:mcp%3Ac8db7b7a-983b-4a72-bee2-75bd77ad77c7:f139c5b7-d19a-4514-bce8-158f62f2f2b0"],"activeRunId":null,"status":"completed"}

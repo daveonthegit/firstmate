@@ -1,0 +1,13 @@
+completed off the startup path in 2s: GitHub authentication, dead-secondmate relaunch, secondmate convergence, pending handoff delivery, project clone refresh with its drift reporting, the T3 supervisor keep-alive pin, and inactive terminal-outcome reconciliation.
+NEEDS_GH_AUTH
+BOOTSTRAP_INFO: pinned T3 supervisor thread mcp:c8db7b7a-983b-4a72-bee2-75bd77ad77c7 against idle release
+These ran AFTER the sections above were composed, so re-read any record a line here names.
+TIMINGS - where the deferred network checks spent their time (ms):
+  phase       gh-auth                                    start=+1518    elapsed=123
+  phase       t3-keep-alive                              start=+1651    elapsed=86
+  phase       secondmate-liveness                        start=+1741    elapsed=6
+  phase       secondmate-sync                            start=+1751    elapsed=23
+  phase       handoff-delivery                           start=+1779    elapsed=1
+  phase       fleet-sync                                 start=+1648    elapsed=1091
+  stage       network-checks probe_sweeps                start=+35      elapsed=2742
+  slowest: stage network-checks probe_sweeps 2742ms, phase fleet-sync 1091ms, phase gh-auth 123ms

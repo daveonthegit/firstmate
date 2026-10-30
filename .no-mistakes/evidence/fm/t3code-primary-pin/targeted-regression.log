@@ -1,0 +1,1 @@
+ok - bootstrap: pins only the T3 supervisor thread, when locked, and warns without failing on a T3 without the pin
