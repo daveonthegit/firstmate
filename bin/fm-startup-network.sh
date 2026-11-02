@@ -9,9 +9,10 @@
 # those calls is individually bounded, so one unreachable host could consume the
 # whole FM_SESSION_START_TIMEOUT budget and truncate the digest outright, turning
 # a slow network into a startup that never printed the work queue at all.
-# This script runs exactly that work OFF the blocking path: the digest is
-# composed from bounded local reads while these checks run concurrently in a
-# detached worker, and their result is reported back inline when it finishes in
+# This script runs that work and the T3 supervisor pin OFF the blocking path;
+# bin/fm-session-start.sh owns the earlier blocking T3 identity capture.
+# These checks run concurrently with the digest in a detached worker, and their
+# result is reported back inline when it finishes in
 # time, or as a durable wake when it does not. The locked startup's bounded
 # inactive-outcome scan also runs here because its local current-state reads can
 # be just as slow; that scan publishes its own findings to the durable wake queue.
@@ -24,7 +25,9 @@
 #   - The work is idempotent detection. A run whose report is lost (killed
 #     worker, truncated digest, crashed session) loses no finding: the next run
 #     re-derives the same inactive terminal child, dead secondmate, stuck clone,
-#     or undelivered handoff. There is no once-only signal to miss.
+#     or undelivered handoff. The T3 pin is also repeatable, but needs the
+#     supervisor identity captured by session start before its turn ends;
+#     without a captured identity, a manual retry must run from an active turn.
 #   - Results are durable and always surface. Network sweep output lands in
 #     state/.startup-network.report and reaches the agent either inline in the
 #     digest or, when it finishes too late for the digest to inline it, as a
@@ -95,8 +98,8 @@
 #   .startup-network.timings  per-step elapsed times for the last run, in
 #                             bin/fm-timing-lib.sh's tab-separated format: the
 #                             stage total, one record per network phase (gh auth,
-#                             secondmate liveness, secondmate convergence, handoff
-#                             delivery, fleet sync), one per secondmate for the
+#                             T3 keep-alive, secondmate liveness, secondmate
+#                             convergence, handoff delivery, fleet sync), one per secondmate for the
 #                             remote-touching steps (id and host), and one per
 #                             project clone. Published for a timed-out or failed
 #                             run too, where a partial record is the answer.
@@ -224,7 +227,7 @@ worker_alive() {
 phase_label() {  # <phases>
   case "$1" in
     probe) printf 'GitHub authentication' ;;
-    probe,sweeps) printf 'GitHub authentication, dead-secondmate relaunch, secondmate convergence, pending handoff delivery, project clone refresh with its drift reporting, and inactive terminal-outcome reconciliation' ;;
+    probe,sweeps) printf 'GitHub authentication, dead-secondmate relaunch, secondmate convergence, pending handoff delivery, project clone refresh with its drift reporting, the T3 supervisor keep-alive pin, and inactive terminal-outcome reconciliation' ;;
     *) printf 'the deferred network checks' ;;
   esac
 }
@@ -592,7 +595,7 @@ EOF
   fm_timing_record stage network-checks "$stage_started" "$phases"
 
   if [ "$downgraded" -eq 1 ]; then
-    printf 'NETWORK_CHECKS: the recorded fleet lock holder changed after these were requested, so dead-secondmate relaunch, secondmate convergence, pending handoff delivery, and project clone refresh were skipped; they belong to whichever session holds the lock now\n' >> "$out"
+    printf 'NETWORK_CHECKS: the recorded fleet lock holder changed after these were requested, so dead-secondmate relaunch, secondmate convergence, pending handoff delivery, project clone refresh, and the T3 supervisor keep-alive pin were skipped; they belong to whichever session holds the lock now\n' >> "$out"
   fi
   case "$rc" in
     0) publish "$generation" 'done' "$phases" "$sweep_locked" "$started" "$rc" "$out" "$timings" ;;

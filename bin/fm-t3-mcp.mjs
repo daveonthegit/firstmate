@@ -22,7 +22,8 @@
 //   fm-t3-mcp.mjs status
 //     Credential expiry, the capability gate, whether t3_thread_launch offers
 //     a per-thread environment (launchEnvironment), whether the server offers
-//     the t3_thread_session stop (sessionStop), and whether a loopback
+//     the t3_thread_session stop (sessionStop), whether t3_thread_update
+//     offers the keep_alive pin (keepAlive), and whether a loopback
 //     server's own process runs with telemetry off (telemetry: off|on|unknown;
 //     anything but off adds a stderr warning). Changes nothing.
 //   fm-t3-mcp.mjs project-ensure --root <abs-path> [--title <title>]
@@ -117,6 +118,15 @@
 //     a lost reply, T3's catch-all orchestration_error, or a read-back that
 //     still shows an active run within the timeout (default 10000 ms) exits
 //     7 (stop_unconfirmed), and only a retry with the same id is safe.
+//   fm-t3-mcp.mjs keep-alive --thread <id>
+//     Pin the thread's agent session against T3's 30-minute idle release with
+//     t3_thread_update action keep_alive (the captain's fork; upstream T3's
+//     t3_thread_update offers no keepAlive and refuses with exit 4, code
+//     keep_alive_unsupported, before anything is sent). Only a supervisor
+//     thread is pinned: a thread with a worktree of its own is a worker and
+//     refuses with exit 4, code keep_alive_worker_thread. Setting the pin
+//     again is harmless, and no /mcp read reports it, so every call sends it;
+//     T3's own update result reading keepAlive:true is the proof.
 //   fm-t3-mcp.mjs requests --thread <id>
 //     The thread's pending runtime requests: questions (each user-input
 //     request id with its questions, from T3's pending-request list/read) and
@@ -161,8 +171,9 @@
 // recorded at sign-in, so a different T3 on the same origin is never driven
 // with this credential. It also records whether t3_thread_launch's input
 // schema lists an `environment` property, the only sign a T3 build carries a
-// per-thread environment to the agent it launches, and whether the server
-// lists the optional SESSION_STOP_TOOL.
+// per-thread environment to the agent it launches, whether the server
+// lists the optional SESSION_STOP_TOOL, and whether t3_thread_update's input
+// schema lists `keepAlive`, the only sign a T3 build offers the keep-alive pin.
 //
 // FM_T3CODE_ARCHIVE_TIMEOUT_MS, a positive integer, replaces the 15000 ms bound
 // on the read-back that proves an archive (launch's cleanup archive, and
@@ -176,8 +187,9 @@
 // code, and a tool error without one reads as T3's catch-all
 // orchestration_error); 4 a local refusal
 // (no credential, expired credential, revoked credential, environment
-// mismatch, capability gate, or a launch binding mismatch whose thread read
-// back archived); 5 and 6 as thread-for-root says; 7 a
+// mismatch, capability gate, a launch binding mismatch whose thread read
+// back archived, or a keep-alive the server or thread refuses as the verb
+// says); 5 and 6 as thread-for-root says; 7 a
 // mutation whose request went out but whose outcome is unproven (send,
 // session-stop); 8 a launch
 // that failed before t3_thread_launch was requested (launch). A failure prints {"ok":false,"error":{...}} on stdout and one line on stderr.
@@ -227,6 +239,9 @@ const ENVIRONMENT_TOOL = "t3_environment_read";
 // Optional: a T3 build that stops a thread's agent session (the captain's
 // fork) lists it; upstream T3 does not, and every other verb still works.
 const SESSION_STOP_TOOL = "t3_thread_session";
+// Optional as well: upstream T3 lists t3_thread_update for titles only, and a
+// build with the keep-alive pin adds `keepAlive` to its input schema.
+const UPDATE_TOOL = "t3_thread_update";
 const EXPIRY_WARN_DAYS = 5;
 const DAY_MS = 86_400_000;
 const REQUEST_TIMEOUT_MS = 30_000;
@@ -562,6 +577,7 @@ export async function gate(session, cred) {
   const names = new Set((listed?.tools ?? []).map((t) => t.name));
   const launchTool = (listed?.tools ?? []).find((t) => t.name === "t3_thread_launch");
   const launchEnvironment = schemaHasProperty(launchTool?.inputSchema, "environment");
+  const keepAlive = schemaHasProperty((listed?.tools ?? []).find((t) => t.name === UPDATE_TOOL)?.inputSchema, "keepAlive");
   const version = server?.serverInfo?.version ?? null;
   const missing = REQUIRED_TOOLS.filter((t) => !names.has(t));
   const families = {};
@@ -596,7 +612,8 @@ export async function gate(session, cred) {
   session.toolFamilies = families;
   session.launchEnvironment = launchEnvironment;
   session.sessionStop = sessionStop;
-  return { serverVersion: version, environmentId, serverVersionReported: envRead?.serverVersion ?? null, tools: [...names].sort(), toolFamilies: families, launchEnvironment, sessionStop };
+  session.keepAlive = keepAlive;
+  return { serverVersion: version, environmentId, serverVersionReported: envRead?.serverVersion ?? null, tools: [...names].sort(), toolFamilies: families, launchEnvironment, sessionStop, keepAlive };
 }
 
 // A harness that needs the per-thread environment refuses on a T3 whose
@@ -765,6 +782,7 @@ async function status(flags) {
     recordedServerVersion: cred.server_version ?? null,
     launchEnvironment: g.launchEnvironment,
     sessionStop: g.sessionStop,
+    keepAlive: g.keepAlive,
     telemetry,
     ...(cred.warning ? { credentialWarning: cred.warning } : {}),
   };
@@ -1226,6 +1244,30 @@ async function sessionStop(flags) {
   throw unconfirmed(`run ${t.activeRunId} was still active after ${timeoutMs} ms`);
 }
 
+// keep-alive: the pin a firstmate supervisor thread needs so T3's 30-minute
+// idle release never ends the agent session that wakes on events.
+async function keepAlive(flags) {
+  const threadId = need(flags, "thread");
+  const { session, gate: g } = await verifiedSession(flags);
+  if (!session.keepAlive) {
+    throw new Refusal(
+      "keep_alive_unsupported",
+      `T3 ${g.serverVersion ?? "(unknown version)"} at ${session.origin} does not offer keepAlive on ${UPDATE_TOOL}, so it cannot pin thread ${threadId} against its 30-minute idle release; run a T3 build that offers it (docs/t3code-backend.md#supervisor-keep-alive)`,
+      4,
+      { serverVersion: g.serverVersion, threadId },
+    );
+  }
+  const t = threadOf(await session.call("t3_thread_read", { threadId, limit: 1, runLimit: 1 }));
+  if ((t.worktreePath ?? null) !== null) {
+    throw new Refusal("keep_alive_worker_thread", `thread ${threadId} works in ${t.worktreePath}, so it is a worker, not a supervisor thread; refusing to pin it`, 4, { threadId });
+  }
+  const out = await session.call(UPDATE_TOOL, { threadId, action: "keep_alive", keepAlive: true });
+  if (out?.keepAlive !== true) {
+    throw new Refusal("keep_alive_unproven", `T3 ${UPDATE_TOOL} on thread ${threadId} did not return keepAlive:true`, 1, { threadId });
+  }
+  return { ok: true, threadId, keepAlive: true };
+}
+
 function threadOf(out) {
   return out?.thread ?? out ?? {};
 }
@@ -1417,6 +1459,7 @@ const VERBS = {
   wait,
   interrupt,
   "session-stop": sessionStop,
+  "keep-alive": keepAlive,
   requests,
   respond,
   watch,

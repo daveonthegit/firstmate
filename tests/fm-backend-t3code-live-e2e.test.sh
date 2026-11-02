@@ -3,7 +3,8 @@
 # real T3 server a home is signed in to. It spends no model tokens and changes
 # nothing on the server: the capability gate and environment identity
 # (status, including whether t3_thread_launch offers the per-thread
-# environment a pi worker needs), the project catalog the adapter matches by real path, and a typed
+# environment a pi worker needs and whether t3_thread_update offers the
+# supervisor keep-alive pin), the project catalog the adapter matches by real path, and a typed
 # thread-not-found read (state). Default-on wherever node is installed;
 # FM_T3CODE_LIVE_E2E=0 or FM_LIVE=0 turns it off, and FM_T3CODE_LIVE_E2E=1 or
 # FM_LIVE=1 makes a missing credential or unreachable server a failure.
@@ -52,6 +53,11 @@ case "$launch_env" in
   true|false) ;;
   *) fail "T3 $version: status must report whether t3_thread_launch offers a per-thread environment, got '$launch_env'" ;;
 esac
+keep_alive=$(field "$status" keepAlive)
+case "$keep_alive" in
+  true|false) ;;
+  *) fail "T3 $version: status must report whether t3_thread_update offers the keep-alive pin, got '$keep_alive'" ;;
+esac
 
 TMP_ROOT=$(fm_test_tmproot fm-t3code-live)
 trap fm_test_cleanup EXIT
@@ -66,4 +72,4 @@ assert_equals false "$(field "$missing" exists)" "T3 $version: an absent thread 
 node "$HELPER" thread-for-root --root "$TMP_ROOT" --token-file "$TOKEN" >/dev/null 2>&1
 expect_code 5 $? "T3 $version: a root no project uses must find no supervisor thread"
 
-pass "t3code live transport: T3 $version environment $env_id passes the gate (telemetry=$(field "$status" telemetry), pi launch environment=$launch_env)"
+pass "t3code live transport: T3 $version environment $env_id passes the gate (telemetry=$(field "$status" telemetry), pi launch environment=$launch_env, supervisor keep-alive=$keep_alive)"
