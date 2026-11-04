@@ -3108,6 +3108,276 @@ test_housekeeping_removes_the_iterated_stale_marker() {
   pass "away housekeeping clears the stale marker it rechecked when two records share an endpoint"
 }
 
+# --- Claude seat balancing and usage-limit failover -------------------------
+
+# t3_two_seats: a world whose catalog holds two Claude seats, claudeAgent and
+# claude_b, and a config/t3code-instances naming both with quota identities.
+t3_two_seats() {
+  t3_world_set 'w.providers = ["claudeAgent", "claude_b"].map((providerInstanceId) => ({ providerInstanceId, driverKind: "claudeAgent", constraints: [],
+    models: ["claude-sonnet-5", "claude-fable-5-1"].map((id) => ({ id, options: [{ id: "effort", values: ["low", "high", "max"] }] })) }))'
+  mkdir -p "$CASE_DIR/seat-a" "$CASE_DIR/seat-b"
+  printf 'claude=claudeAgent %s\nclaude=claude_b %s\n' "$CASE_DIR/seat-a" "$CASE_DIR/seat-b" > "$CONFIG/t3code-instances"
+}
+
+# t3_quota_snapshot <file> <dir>=<spendPriority>:<runway>... - a quota-axi
+# --full --json snapshot with one Claude lane per config directory.
+t3_quota_snapshot() {
+  local file=$1
+  shift
+  node -e '
+const providers = process.argv.slice(2).map((arg) => {
+  const [dir, rest] = arg.split("=");
+  const [sp, runway] = rest.split(":");
+  return { provider: "claude", accountLocator: { kind: "config-dir", path: dir },
+    quotaSemantics: { status: "known", effectiveAvailability: [{ scope: "all_models", effectivePercentRemaining: runway === "exhausted_now" ? 0 : 50,
+      runway: { status: runway }, selection: { spendPriority: sp === "unknown" ? null : Number(sp) } }] } };
+});
+require("fs").writeFileSync(process.argv[1], JSON.stringify({ providers }));
+' "$file" "$@"
+}
+
+t3_choose() {  # <snapshot-file> [args for fm_backend_t3code_instance_choose...]
+  local snap=$1
+  shift
+  FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_run 'fm_backend_t3code_instance_choose "$@"' "$@"
+}
+
+test_seat_pool_parsing_is_backward_compatible() {
+  local out
+  t3_case seat-pool
+  out=$(t3_run 'fm_backend_t3code_instance_pool claude')
+  [ "$out" = $'claudeAgent\t' ] || fail "with no instances file claude must default to claudeAgent, got '$out'"
+  printf 'claude=claude-pool\ncodex=codex-a\ncodex=codex-b /tmp\n' > "$CONFIG/t3code-instances"
+  out=$(t3_run 'fm_backend_t3code_instance_pool claude')
+  [ "$out" = $'claude-pool\t' ] || fail "a single claude= line must stay a single seat, got '$out'"
+  out=$(t3_run 'fm_backend_t3code_instance_id codex')
+  [ "$out" = codex-b ] || fail "codex must keep the last line's instance, got '$out'"
+  printf 'claude=a ordinary\nclaude=b /x/y\nclaude=a /ignored\n' > "$CONFIG/t3code-instances"
+  out=$(HOME=/home/me t3_run 'fm_backend_t3code_instance_pool claude')
+  [ "$out" = $'a\t/home/me/.claude\nb\t/x/y' ] || fail "several claude= lines must form a deduplicated pool, got '$out'"
+  printf 'claude=a relative/dir\n' > "$CONFIG/t3code-instances"
+  out=$(t3_run 'fm_backend_t3code_instance_pool claude' 2>&1) && fail "a relative quota identity must refuse"
+  assert_contains "$out" "neither 'ordinary' nor an absolute Claude config directory" "the refusal must name the accepted forms"
+  pass "fm_backend_t3code_instance_pool: one line stays one seat, claude lines pool, codex keeps last-wins, bad identity refuses"
+}
+
+test_seat_choice_by_quota_rotation_and_marks() {
+  local out snap
+  t3_case seat-choose
+  t3_two_seats
+  snap="$CASE_DIR/snap.json"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.6:through_reset"
+  out=$(t3_choose "$snap" claude claude-sonnet-5)
+  assert_contains "$out" '"instance":"claude_b","basis":"quota"' "the seat with the higher spendPriority must win"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.9:exhausted_now"
+  out=$(t3_choose "$snap" claude claude-sonnet-5)
+  assert_contains "$out" '"instance":"claudeAgent","basis":"quota"' "an exhausted_now seat must be vetoed whatever its spendPriority"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset"
+  out=$(t3_choose "$snap" claude claude-sonnet-5)
+  assert_contains "$out" '"basis":"rotation"' "a seat quota cannot map must fall back to rotation"
+  assert_contains "$out" "quota-axi reports no lane for $CASE_DIR/seat-b" "the unmapped seat must be disclosed"
+  local first second
+  first=$(t3_choose /dev/null claude claude-sonnet-5 | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).instance)')
+  second=$(t3_choose /dev/null claude claude-sonnet-5 | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0,"utf8")).instance)')
+  [ "$first" != "$second" ] || fail "rotation must alternate between the two seats, got '$first' twice"
+  mkdir -p "$CASE_DIR/state/t3code-exhausted"
+  date +%s > "$CASE_DIR/state/t3code-exhausted/claude_b"
+  out=$(t3_choose /dev/null claude claude-sonnet-5)
+  assert_contains "$out" '"instance":"claudeAgent"' "a freshly exhausted, unmeasured seat must be passed over"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.6:through_reset"
+  out=$(t3_choose "$snap" claude claude-sonnet-5)
+  assert_contains "$out" '"instance":"claude_b","basis":"quota"' "a healthy quota measurement must outweigh an exhaustion mark"
+  out=$(t3_choose /dev/null claude claude-sonnet-5 claudeAgent)
+  assert_contains "$out" '"allExhausted":true' "excluding the only unmarked seat must report every seat exhausted"
+  out=$(t3_choose /dev/null claude claude-sonnet-5 claudeAgent claude_b 2>&1) && fail "excluding every seat must fail"
+  assert_contains "$out" "no other T3 seat" "the refusal must say no seat remains"
+  t3_world_set 'w.projects[0].defaultModelSelection = { instanceId: "claudeAgent", model: "claude-fable-5-1" }'
+  out=$(t3_run 'fm_backend_t3code_model_selection claude default high proj-1 claude_b')
+  [ "$out" = '{"instanceId":"claude_b","model":"claude-fable-5-1","options":[{"id":"effort","value":"high"}]}' ] \
+    || fail "the project default model must ride onto another configured seat, got '$out'"
+  pass "fm_backend_t3code_instance_choose: quota spendPriority wins, exhausted vetoes, unmapped seats rotate, marks pass over a seat until quota clears it"
+}
+
+test_spawn_balances_claude_seats() {
+  local id out rc launch snap
+  t3_case spawn-seats
+  t3_two_seats
+  snap="$CASE_DIR/snap.json"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.1:through_reset" "$CASE_DIR/seat-b=0.7:through_reset"
+  id=$(t3_uid t3seatz1)
+  t3_worker_setup "$id"
+  out=$(FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_worker_spawn "$id" claude --model claude-sonnet-5); rc=$?
+  expect_code 0 "$rc" "a two-seat claude spawn should succeed"$'\n'"$out"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection.instanceId')" = claude_b ] || fail "the launch must go to the seat with more quota headroom"
+  assert_grep "t3_instance=claude_b" "$CASE_DIR/state/$id.meta" "meta must record the chosen seat"
+  assert_grep "t3_instance_basis=quota" "$CASE_DIR/state/$id.meta" "meta must record how the seat was chosen"
+  assert_contains "$out" "notice: T3 seat claude_b (most quota headroom)" "the choice must be disclosed"
+
+  t3_case spawn-seats-explicit
+  t3_two_seats
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.1:through_reset" "$CASE_DIR/seat-b=0.7:through_reset"
+  id=$(t3_uid t3seatz2)
+  t3_worker_setup "$id"
+  out=$(FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_worker_spawn "$id" claude --model claude-sonnet-5 --t3-instance claudeAgent); rc=$?
+  expect_code 0 "$rc" "an explicit seat spawn should succeed"$'\n'"$out"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection.instanceId')" = claudeAgent ] || fail "--t3-instance must win over quota"
+  assert_grep "t3_instance_basis=explicit" "$CASE_DIR/state/$id.meta" "meta must record the explicit choice"
+
+  t3_case spawn-seats-unknown
+  t3_two_seats
+  id=$(t3_uid t3seatz3)
+  t3_worker_setup "$id"
+  out=$(t3_worker_spawn "$id" claude --model claude-sonnet-5 --t3-instance nope); rc=$?
+  expect_code 1 "$rc" "an undeclared seat must refuse"$'\n'"$out"
+  assert_contains "$out" "not a claude seat in config/t3code-instances" "the refusal must name the declared seats"
+  [ -z "$(t3_dispatch_types)" ] || fail "an undeclared seat must refuse before any T3 mutation"
+  [ "$(t3_log_line_of 'r.tool === "treehouse"')" -eq 0 ] || fail "an undeclared seat must refuse before the slot is leased"
+
+  t3_case spawn-seats-unmapped
+  t3_two_seats
+  id=$(t3_uid t3seatz4)
+  t3_worker_setup "$id"
+  out=$(FM_T3CODE_QUOTA_SNAPSHOT=/dev/null t3_worker_spawn "$id" claude --model claude-sonnet-5); rc=$?
+  expect_code 0 "$rc" "an unmeasurable two-seat spawn should still launch"$'\n'"$out"
+  assert_grep "t3_instance_basis=rotation" "$CASE_DIR/state/$id.meta" "unmeasurable quota must fall back to rotation"
+  assert_contains "$out" "rotation, since not every seat could be ranked by quota" "the rotation must be disclosed"
+  pass "fm-spawn.sh --backend t3code claude: balances seats by quota, --t3-instance wins, an undeclared seat refuses, unmeasurable quota rotates"
+}
+
+# t3_limited_thread <final-assistant-text> [run-status] [run-error] [error-item]:
+# a world whose thread-live last run ended with that message and status; an
+# error-item adds a terminal error item after it, the way the live server
+# records a failed run's provider error.
+t3_limited_thread() {
+  FM_T3_TEXT=$1 FM_T3_RUN_STATUS=${2:-completed} FM_T3_RUN_ERROR=${3:-} FM_T3_ERROR_ITEM=${4:-} t3_world_set '
+const t = w.threads["thread-live"];
+t.status = process.env.FM_T3_RUN_STATUS; t.activeRunId = null; t.providerInstanceId = "claudeAgent";
+t.modelSelection = { instanceId: "claudeAgent", model: "claude-sonnet-5", options: [{ id: "effort", value: "high" }] };
+t.runs = [{ runId: "run-limit", ordinal: 1, status: process.env.FM_T3_RUN_STATUS, providerInstanceId: "claudeAgent",
+  requestedAt: "2026-11-04T00:00:00.000Z", startedAt: "2026-11-04T00:00:00.000Z", completedAt: "2026-11-04T00:01:00.000Z",
+  ...(process.env.FM_T3_RUN_ERROR ? { error: { message: process.env.FM_T3_RUN_ERROR } } : {}) }];
+t.items = [{ type: "user_message", status: "completed", text: "go", runId: "run-limit" },
+  { type: "assistant_message", status: "completed", text: process.env.FM_T3_TEXT, runId: "run-limit" },
+  ...(process.env.FM_T3_ERROR_ITEM ? [{ type: "error", status: "failed", text: process.env.FM_T3_ERROR_ITEM, runId: "run-limit" }] : [])];'
+}
+
+# t3_failover_task <id> [kind]: a recorded T3 Claude task on thread-live.
+t3_failover_task() {
+  mkdir -p "$CASE_DIR/state" "$CASE_DIR/home"
+  printf 'window=fm-%s\nbackend=t3code\nharness=claude\nkind=%s\nmodel=claude-sonnet-5\nt3_thread_id=thread-live\nt3_instance=claudeAgent\n' \
+    "$1" "${2:-ship}" > "$CASE_DIR/state/$1.meta"
+}
+
+t3_failover() {  # <id> -> output, status in $?
+  FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$CASE_DIR/home" FM_STATE_OVERRIDE="$CASE_DIR/state" FM_CONFIG_OVERRIDE="$CONFIG" \
+    FM_T3CODE_QUOTA_SNAPSHOT="${FM_T3CODE_QUOTA_SNAPSHOT:-/dev/null}" "$ROOT/bin/fm-t3-seat-failover.sh" "$1" 2>&1
+}
+
+test_seat_failover_moves_a_limited_thread() {
+  local id=t3seatfo1 out rc configure send
+  t3_case seat-failover
+  t3_two_seats
+  t3_failover_task "$id"
+  t3_limited_thread "You've hit your session limit · resets 3:10pm (America/New_York)"
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 10 "$rc" "a run that ended on a usage limit must move"$'\n'"$out"
+  assert_contains "$out" "seat-failover: $id moved from claudeAgent to claude_b" "the move must name both seats"
+  configure=$(t3_log_line_of 'r.tool === "t3_thread_configure" && r.arguments.modelSelection')
+  [ "$configure" -gt 0 ] || fail "the move must write the thread's configuration"
+  [ "$(t3_request "$configure" 'r.arguments.modelSelection')" = '{"instanceId":"claude_b","model":"claude-sonnet-5","options":[{"id":"effort","value":"high"}]}' ] \
+    || fail "the move must keep the model and options, got '$(t3_request "$configure" 'r.arguments.modelSelection')'"
+  send=$(t3_log_line_of 'r.tool === "t3_thread_send"')
+  [ "$send" -gt "$configure" ] || fail "the continuation steer must follow the move"
+  assert_grep "t3_instance=claude_b" "$CASE_DIR/state/$id.meta" "meta must record the new seat"
+  assert_grep "t3_failover_count=1" "$CASE_DIR/state/$id.meta" "meta must count the move"
+  assert_grep "t3_failover_sent=1" "$CASE_DIR/state/$id.meta" "meta must record the continuation"
+  [ -n "$(find "$CASE_DIR/state/$id.inbox" -maxdepth 1 -name '*.msg' 2>/dev/null)" ] || fail "the continuation must be a durable steering-inbox record"
+  grep -rq "now runs on seat claude_b" "$CASE_DIR/state/$id.inbox" || fail "the continuation must name the new seat"
+  assert_present "$CASE_DIR/state/t3code-exhausted/claudeAgent" "the exhausted seat must be marked"
+  [ "$(t3_json_field "$T3_FAKE_WORLD" 'd.threads["thread-live"].items.length >= 2')" = true ] || fail "the transcript must be kept"
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 0 "$rc" "the continuation's new run is not limited"$'\n'"$out"
+  t3_limited_thread "You've hit your session limit · resets 3:10pm (America/New_York)"
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 0 "$rc" "the same limited run must be handled once"$'\n'"$out"
+  assert_contains "$out" "already handled" "a repeat call for the same run must say it was handled"
+
+  t3_case seat-failover-secondmate
+  t3_two_seats
+  t3_failover_task t3seatsm1 secondmate
+  t3_limited_thread "You've hit your 5-hour limit · resets 6:10pm (America/New_York)"
+  out=$(t3_failover t3seatsm1); rc=$?
+  expect_code 10 "$rc" "a usage-limited secondmate must move like a worker"$'\n'"$out"
+  assert_grep "t3_instance=claude_b" "$CASE_DIR/state/t3seatsm1.meta" "meta must record the secondmate's new seat"
+  grep -rq "through your parent channel" "$CASE_DIR/state/t3seatsm1.inbox" || fail "a secondmate's continuation must keep its charter's return channel"
+  pass "fm-t3-seat-failover.sh: a usage-limited run moves its thread to another seat, keeps model and transcript, steers once; a secondmate moves the same way"
+}
+
+test_seat_failover_evidence_and_limits() {
+  local id=t3seatfo2 out rc
+  t3_case seat-failover-evidence
+  t3_two_seats
+  t3_failover_task "$id"
+  t3_limited_thread "The usage limit you've hit your limit on is discussed in the docs; I finished the task and the PR is ready."
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 0 "$rc" "a message that only mentions a limit must not move"$'\n'"$out"
+  [ "$(t3_log_line_of 'r.tool === "t3_thread_configure" && r.arguments.modelSelection')" -eq 0 ] || fail "no move may be written without a limit"
+  t3_limited_thread "Done." failed "Claude AI usage limit reached|1793900000"
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 10 "$rc" "a failed run whose error names the usage limit must move"$'\n'"$out"
+
+  t3_case seat-failover-error-item
+  t3_two_seats
+  t3_failover_task "$id"
+  t3_limited_thread "Working on the tests now." completed "" "Claude API rate limit reached. Try again later."
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 0 "$rc" "an error item on a run that did not fail must not move"$'\n'"$out"
+  t3_limited_thread "Working on the tests now." failed "" "Claude API rate limit reached. Try again later."
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 10 "$rc" "a failed run whose error item names the limit must move"$'\n'"$out"
+  assert_contains "$out" "run error: Claude API rate limit reached" "the evidence must quote the error item"
+
+  t3_case seat-failover-exhausted
+  t3_two_seats
+  t3_failover_task "$id"
+  t3_limited_thread "Claude AI usage limit reached|1793900000"
+  t3_quota_snapshot "$CASE_DIR/snap.json" "$CASE_DIR/seat-b=0.5:exhausted_now"
+  out=$(FM_T3CODE_QUOTA_SNAPSHOT="$CASE_DIR/snap.json" t3_failover "$id"); rc=$?
+  expect_code 3 "$rc" "every other seat exhausted must stop without moving"$'\n'"$out"
+  assert_contains "$out" "every other Claude seat is exhausted too" "the outcome must say every seat is out"
+  [ "$(t3_log_line_of 'r.tool === "t3_thread_configure" && r.arguments.modelSelection')" -eq 0 ] || fail "an exhausted fleet must not be moved"
+  out=$(FM_T3CODE_QUOTA_SNAPSHOT="$CASE_DIR/snap.json" t3_failover "$id"); rc=$?
+  expect_code 0 "$rc" "the exhausted outcome must be reported once per run"$'\n'"$out"
+
+  t3_case seat-failover-bound
+  t3_two_seats
+  t3_failover_task "$id"
+  t3_limited_thread "You've hit your weekly limit · resets Nov 7"
+  out=$(FM_T3CODE_FAILOVER_MAX=0 t3_failover "$id"); rc=$?
+  expect_code 4 "$rc" "the per-task bound must stop further moves"$'\n'"$out"
+
+  t3_case seat-failover-unproven
+  t3_two_seats
+  t3_failover_task "$id"
+  t3_limited_thread "You've hit your session limit · resets 3:10pm"
+  t3_world_set 'w.configureIgnored = true'
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 1 "$rc" "a move T3 does not read back must fail"$'\n'"$out"
+  assert_contains "$out" "reads back instance claudeAgent" "the failure must name the read-back"
+  assert_grep "t3_instance=claudeAgent" "$CASE_DIR/state/$id.meta" "an unproven move must not be recorded"
+  [ "$(t3_log_line_of 'r.tool === "t3_thread_send"')" -eq 0 ] || fail "an unproven move must not steer"
+
+  t3_case seat-failover-single
+  t3_failover_task "$id"
+  t3_limited_thread "You've hit your session limit · resets 3:10pm"
+  out=$(t3_failover "$id"); rc=$?
+  expect_code 0 "$rc" "one configured seat leaves nothing to move to"$'\n'"$out"
+  assert_contains "$out" "one Claude seat configured" "the no-op must say why"
+  pass "fm-t3-seat-failover.sh: only a limit notice or limit error moves; all-exhausted, bounded, unproven, and single-seat cases do not"
+}
+
 if [ -n "${FM_TEST_ONLY:-}" ]; then
   "$FM_TEST_ONLY"
   exit
@@ -3222,3 +3492,8 @@ test_spawn_rejected_lease_is_neither_cleaned_nor_returned
 test_teardown_keeps_tracked_claude_local_md
 test_fractional_poll_event_wait
 test_housekeeping_removes_the_iterated_stale_marker
+test_seat_pool_parsing_is_backward_compatible
+test_seat_choice_by_quota_rotation_and_marks
+test_spawn_balances_claude_seats
+test_seat_failover_moves_a_limited_thread
+test_seat_failover_evidence_and_limits

@@ -354,8 +354,33 @@ fm_secondmate_liveness_relaunch() {  # <meta> <id> [timeout-secs]
     fi
   fi
   if [ "$FM_SM_LIVE_RESUME" = 1 ]; then
-    local target
+    local target seat_rc=0
     target=$(fm_backend_target_of_meta "$meta")
+    # A run that failed on its Claude seat's usage limit moves to another
+    # seat and is steered there (bin/fm-t3-seat-failover.sh) instead of being
+    # resumed onto the exhausted one. With no seat left, or when the check or
+    # move itself failed, it is not resumed either: the ledger records the
+    # attempt and bounds the retries a later pass makes.
+    FM_SM_LIVE_OUT=$(FM_HOME="${FM_HOME:-$FM_ROOT}" FM_STATE_OVERRIDE="$STATE" "$FM_ROOT/bin/fm-t3-seat-failover.sh" "$id" 2>&1) || seat_rc=$?
+    case "$seat_rc" in
+      10)
+        fm_secondmate_liveness_ledger_add "$id" relaunched || true
+        fm_lock_release "$relaunch_lock" || true
+        return 0
+        ;;
+      1|3|4)
+        fm_secondmate_liveness_ledger_add "$id" failed || true
+        fm_lock_release "$relaunch_lock" || true
+        FM_SM_LIVE_STATUS=skipped
+        if [ "$seat_rc" = 1 ]; then
+          FM_SM_LIVE_REASON="its Claude seat check or move failed, so it was not resumed: $FM_SM_LIVE_OUT"
+        else
+          FM_SM_LIVE_REASON="its failed run hit a Claude usage limit and no other seat can take it: $FM_SM_LIVE_OUT"
+        fi
+        FM_SM_LIVE_RC=1
+        return 1
+        ;;
+    esac
     if fm_backend_source t3code && FM_SM_LIVE_OUT=$(fm_backend_t3code_resume_failed "$target" 2>&1); then
       fm_secondmate_liveness_ledger_add "$id" relaunched || true
     else

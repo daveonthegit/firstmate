@@ -615,6 +615,36 @@ inbox_steer_busy() {  # <window> <backend> <task> <tail40>
   fi
 }
 
+# t3code_seat_failover_tick: a T3 Code Claude worker or secondmate whose run
+# ended on its seat's usage limit moves to another configured seat and is
+# steered to continue (bin/fm-t3-seat-failover.sh owns the check, the move,
+# its bound, and its once-per-run record). A move is routine recovery and only
+# logged; every seat exhausted, the move bound reached, or a failure wakes
+# firstmate once per distinct outcome.
+t3code_seat_failover_tick() {  # <window> <task>
+  local w=$1 task=$2 out rc=0 marker reason
+  if [ "$(window_backend "$w")" != t3code ] || [ "$(window_harness "$w")" != claude ]; then
+    return 0
+  fi
+  out=$(FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" "$SCRIPT_DIR/fm-t3-seat-failover.sh" "$task" 2>/dev/null) || rc=$?
+  marker="$STATE/.t3-seat-failover-$(window_key "$w")"
+  case "$rc" in
+    0) return 0 ;;
+    10)
+      rm -f "$marker"
+      triage_log "$out"
+      return 0
+      ;;
+    3) reason="check: t3-seats-exhausted $task: every Claude seat is out of usage, so the worker is stopped where it is (${out#seat-failover: "$task" exhausted })" ;;
+    4) reason="check: t3-seat-failover-bound $task: the worker hit a usage limit again after its allowed seat moves (${out#seat-failover: "$task" bounded })" ;;
+    *) reason="check: t3-seat-failover-failed $task: ${out:-the seat move check could not run}" ;;
+  esac
+  [ "$(cat "$marker" 2>/dev/null)" != "$reason" ] || return 0
+  printf '%s' "$reason" > "$marker" || return 0
+  fm_wake_append check "t3-seat-failover:$task" "$reason" || exit 1
+  wake "$reason"
+}
+
 # Steering-inbox loss detection, one cheap check per recorded window per poll.
 # bin/fm-task-inbox-lib.sh owns delivery, busy-deferral, retry, and escalation policy.
 # Endpoint and busy checks precede delivery so recovery never types into a busy,
@@ -4272,6 +4302,7 @@ EOF
     # Steering-inbox loss detection runs before the secondmate stale
     # exemption below, because a mate's steers land in an inbox too.
     [ -z "$task" ] || inbox_steer_check "$w" "$task"
+    [ -z "$task" ] || t3code_seat_failover_tick "$w" "$task"
     key=$(window_key "$w")
     last=$(status_declared_wait_line "$STATE/$task.status")
     if ! status_is_paused_or_captain_held "$last" && [ -e "$STATE/.paused-$key" ]; then
