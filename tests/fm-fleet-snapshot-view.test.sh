@@ -1149,7 +1149,8 @@ EOF
     "branch=fm/terminal-ship" \
     "harness=claude" \
     "kind=ship" \
-    "mode=local-only"
+    "mode=local-only" \
+    "spawn_gen=s1"
   record_claude_idle "$home/state" terminal-ship
   printf 'done: complete in branch fm/terminal-ship\n' > "$home/state/terminal-ship.status"
   out=$(PATH="$fakebin:$PATH" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)

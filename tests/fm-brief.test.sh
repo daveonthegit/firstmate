@@ -1646,7 +1646,7 @@ test_work_journal_section_follows_vault_opt_in() {
   brief="$home/data/journal-on-q2/brief.md"
   assert_grep "# Work journal" "$brief" "scout brief must carry the work-journal section when the vault is on"
   assert_grep "$home/data/journal-on-q2/journal.md" "$brief" "scout brief must name the capture file"
-  assert_grep "the report, the status file below, and the work-journal file named under Work journal." "$brief" \
+  assert_grep "write only the report, the status file below, and the work-journal file named under Work journal, except for" "$brief" \
     "scout brief must carve the capture file out of the worktree rule"
 
   FM_SECONDMATE_CHARTER='Supervise alpha.' FM_HOME="$home" \

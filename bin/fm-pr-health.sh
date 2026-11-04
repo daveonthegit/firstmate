@@ -137,10 +137,17 @@ save_health() { # json-file
 }
 
 gh_read() { # deadline repo args... : one bounded forge read
+  # repo selects the GitHub account that owns it (fm_pr_github_exec); an empty
+  # repo is an account-scoped read, such as the notification feed, which runs
+  # as the ambient gh identity.
   local left=$(($1 - $(date +%s))) repo=$2
   shift 2
   [ "$left" -gt 0 ] || return 124
   [ "$left" -le 5 ] || left=5
+  if [ -z "$repo" ]; then
+    fm_run_timed "$left" env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 gh "$@"
+    return
+  fi
   fm_run_timed "$left" env GH_HOST="$FM_PR_HOST" GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 \
     bash -c '. "$1/fm-pr-lib.sh"; shift; repo=$1; shift; fm_pr_github_exec "$repo" gh "$@"' \
     _ "$SCRIPT_DIR" "$repo" "$@"
@@ -223,7 +230,7 @@ read_pr() { # url deadline output-directory -> rest.json gql.json
   gh_read "$deadline" "$owner/$repo" api graphql --paginate --slurp -F "owner=$owner" -F "repo=$repo" -F "number=$number" \
     -f "query=$PR_QUERY" > "$out/pages.json" 2>/dev/null &
   local gql_pid=$!
-  gh_read "$deadline" api graphql -F "owner=$owner" -F "repo=$repo" -F "number=$number" \
+  gh_read "$deadline" "$owner/$repo" api graphql -F "owner=$owner" -F "repo=$repo" -F "number=$number" \
     -f "query=$SUITE_QUERY" > "$out/suites.json" 2>/dev/null &
   local suite_pid=$!
   wait "$rest_pid" || rest_rc=$?
@@ -246,7 +253,7 @@ read_pr() { # url deadline output-directory -> rest.json gql.json
         | select(.hasNextPage == true) | .endCursor // ""' "$out/gql.json")
       [ -n "$cursor" ] || return 0
       [ "$page" != last ] || return 1
-      gh_read "$deadline" api graphql -F "owner=$owner" -F "repo=$repo" -F "number=$number" -f "suiteCursor=$cursor" \
+      gh_read "$deadline" "$owner/$repo" api graphql -F "owner=$owner" -F "repo=$repo" -F "number=$number" -f "suiteCursor=$cursor" \
         -f "query=$SUITE_QUERY" > "$out/suites.json" 2>/dev/null || return 1
     fi
     jq -e --slurpfile more "$out/suites.json" '
@@ -349,7 +356,7 @@ read_notifications() { # deadline
   [ -z "$lm" ] || args+=(-H "If-Modified-Since: $lm")
   args+=("notifications?all=true&per_page=50${since:+&since=$since}")
   # gh exits non-zero on 304, so the status line, not the exit code, decides.
-  gh_read "$1" "${args[@]}" 2>/dev/null | tr -d '\r' > "$TMP/notify.txt" || true
+  gh_read "$1" "" "${args[@]}" 2>/dev/null | tr -d '\r' > "$TMP/notify.txt" || true
   status=$(sed -n '1s/^HTTP\/[0-9.]* \([0-9][0-9]*\).*/\1/p' "$TMP/notify.txt")
   case "$status" in
     304) NOTIFY_OK=1; return 0 ;;
