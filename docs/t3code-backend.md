@@ -200,7 +200,7 @@ A thread's capture stays byte-identical through a long tool call, so before repo
 That deferral is itself bounded by `FM_BUSY_TURN_MAX_SECS`, measured from the latest run boundary T3 records (completion, or start while the run is still active), so a hung run still reaches the possible-wedge alert, and a missing run timestamp never defers.
 `wedge_defer_t3code_running` in `bin/fm-watch.sh` owns that consult; all other classified words keep the ordinary escalation ladder, including its declared-wait, worktree-write, and dead-record checks.
 T3 launches Claude with the `user,project,local` setting sources, so the worktree `.claude/settings.local.json` busy hooks fire as on every other backend.
-A remote secondmate is unaffected by this backend: it always runs on the remote host's Herdr, and `--backend t3code` on one is refused.
+Remote secondmate backend support is defined in [`remote-secondmates.md`](remote-secondmates.md#refused-and-unsupported-launches); T3 Code remains unsupported there.
 
 Cleanup keeps all shared Firstmate safety checks.
 Before the slot returns to the pool, or before a secondmate home is removed, teardown interrupts any active run, archives the thread with `t3_thread_organize`, and requires T3 to read back `archived:true` with no active run, so no live thread can act in a slot another task may lease.
@@ -324,7 +324,7 @@ If a task's thread no longer reads back, release the task by hand:
 - [Pi workers](#pi-workers) require per-thread launch environment support.
   Pi secondmates are refused because their own thread id belongs in the launch environment but T3 assigns it only after launch.
 - A non-empty `config/crew-exclude-tools` refuses a T3 spawn: T3 owns the provider command, so Firstmate cannot add Pi's `--exclude-tools` flag.
-- T3 starts the agent at `full-access` with its provider instance's account and environment, so a spawn refuses `config/claude-permission-mode=auto` for `claude`, `config/codex-approval-mode=approve-for-me` or `config/codex-permission-mode=restricted` for `codex`, `config/launch-env-allowlist`, a worker account pin, and a raw launch command; select the account through `config/t3code-instances` instead.
+- T3 starts the agent at `full-access` with its provider instance's account and environment, so a spawn refuses `config/claude-permission-mode=auto` for `claude`, `config/codex-approval-mode=approve-for-me` or `config/codex-permission-mode=restricted` for `codex`, `config/launch-env-allowlist`, a worker account pin or a [declared Claude account list](configuration.md#several-claude-accounts-configclaude-accounts) entry, and a raw launch command; select the account through `config/t3code-instances` instead.
 - T3 owns the Claude provider command, so Firstmate cannot add its command-line prompt-suggestion, feedback-draft, or attribution controls; configure equivalent provider-instance settings in T3 when those policies are required.
   Unless `config/keep-ai-trailers` is present, the per-worktree environment selects Firstmate's Git commit hook to strip known AI trailers, including on T3 workers.
 - T3 also owns the Codex provider command, so Firstmate cannot apply the pane-backed worker's hook-disable or turn-end notify options.
