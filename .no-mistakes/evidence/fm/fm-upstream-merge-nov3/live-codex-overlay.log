@@ -1,0 +1,21 @@
+$ fm-t3code-codex-env.sh check <disposable-worker>
+$ fm-t3code-codex-env.sh install <disposable-worker> FM_TASK_ID=overlay-probe FM_TASK_INBOX=<lab-inbox>
+Installed configuration: {"model": "fixture-model", "shell_environment_policy": {"set": {"FM_TASK_ID": "overlay-probe", "FM_TASK_INBOX": "/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/overlay.yfDA8K/inbox"}}}
+Git index protection: S .codex/config.toml
+The following paths and/or pathspecs matched paths that exist
+outside of your sparse-checkout definition, so will not be
+updated in the index:
+.codex/config.toml
+hint: If you intend to update such entries, try one of the following:
+hint: * Use the --sparse option.
+hint: * Disable or modify the sparsity rules.
+hint: Disable this message with "git config set advice.updateSparsePath false"
+Ordinary staging exit=1 (Git skip-worktree protection)
+Ordinary staging did not stage the environment overlay.
+$ fm-t3code-codex-env.sh cleanup <disposable-worker>
+Original project bytes restored; index flag: H .codex/config.toml
+
+Adversarial scenario: refuse a project-owned shell environment policy.
+error: /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/overlay.yfDA8K/worker/.codex/config.toml: already defines [shell_environment_policy]; refusing to replace the project's policy table
+exit=1
+Project-owned policy was preserved without modification.

@@ -1,0 +1,34 @@
+/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/home
+scaffolded: /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/home/data/guard/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+
+$ fm-spawn.sh guard <disposable-project> --scout --backend tmux --harness claude 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/home
+error: config/claude-accounts declares 1 Claude accounts, so a Claude ship or scout launch must name one with --account; bin/fm-claude-account-quota.sh measures each, and Firstmate never picks a default
+exit=1
+Observable side effect: no task record was created.
+
+$ fm-spawn.sh guard <disposable-project> --scout --backend tmux --harness claude --account /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/not-declared
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/home
+error: account '/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/not-declared' is not declared in config/claude-accounts; name a declared entry with --account
+exit=1
+Observable side effect: no task record was created.
+
+$ fm-spawn.sh guard <disposable-project> --scout --backend tmux --harness claude --account /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/signed-out
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/home
+error: config/claude-accounts pins Claude workers to /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/signed-out, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/signed-out claude, then /login, or change the pin
+exit=1
+Observable side effect: no task record was created.
+
+$ fm-t3-mcp.mjs status --token-file <disposable-home>/config/t3code-token
+{"ok":false,"error":{"code":"no_credential","message":"no T3 credential at /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/home/config/t3code-token; the captain signs in with: bin/fm-t3-mcp.mjs login --access full-access"}}
+fm-t3-mcp: no T3 credential at /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/home/config/t3code-token; the captain signs in with: bin/fm-t3-mcp.mjs login --access full-access
+exit=4
+
+$ fm-claude-account-quota.sh --model claude-sonnet-5
+claude-account-quota:
+  row: /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/account  root=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/account  uncertainty: quota unknown (unavailable: Claude profile credentials missing)
+  row: /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/account  root=/Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/account  uncertainty: no applicable quota scope
+
+$ fm-claude-account-quota.sh (duplicate declared account)
+error: config/claude-accounts declares the same account twice: /Users/davidxiao/.no-mistakes/worktrees/747da666653e/01M6JNKW4VW6BS3HPPF5X0HHPT/.test-phase-tmp/live.M2nT9j/home/config/claude-accounts
+exit=2
