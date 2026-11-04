@@ -367,8 +367,8 @@ fm_secondmate_liveness_relaunch() {  # <meta> <id> [timeout-secs]
     return "$rc"
   fi
   # The respawn stays on the backend the mate is recorded on: a changed
-  # config/backend applies to new spawns, and moving a live mate to another
-  # backend is the explicit `fm-control.sh <id> relaunch --backend` path.
+  # config/backend applies to new spawns and is not authority to migrate a
+  # recorded mate to another backend.
   # A remote mate's backend is its host's, so it is never pinned from here.
   local -a respawn_args=("$id" --secondmate)
   [ -n "$(fm_meta_get "$meta" remote_host)" ] || respawn_args+=(--backend "$(fm_backend_of_meta "$meta")")

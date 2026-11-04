@@ -379,11 +379,10 @@ Both choices are local to each Firstmate home and are not part of secondmate inh
 Two optional local, gitignored files control the supervision host for this home: `config/supervision-host-off` opts the home out, and `config/supervision-host` opts a home in and selects its engine.
 The host runs the supervision branch's contract on a headless engine session beside a non-Pi primary.
 [docs/supervision-host.md](supervision-host.md) defines its design, current scope, and verified engines.
-A Claude, Cursor, OpenCode, omp, Grok, or Codex primary can run the host.
 
 A present `config/supervision-host-off`, whatever it holds, opts the home out on every primary.
 Otherwise a Claude primary runs the host by default: with no `config/supervision-host` it runs exactly as with an empty one, at the Claude engine's default model.
-A Cursor, OpenCode, omp, Grok, or Codex primary runs the host only while `config/supervision-host` exists and the home is not opted out.
+A supported non-Claude primary runs the host only while `config/supervision-host` exists and the home is not opted out; [current scope](supervision-host.md#scope-today) lists those primaries.
 A home that does not run the host behaves exactly as it does without it, and a Pi primary keeps its in-process supervision branch whatever either file says.
 `fm_supervision_host_enabled` in `bin/fm-supervision-engine-lib.sh` implements this gate for every reader.
 
@@ -400,7 +399,7 @@ Grok's arm command is rendered at session start, so a change to its host mode ta
 - empty or `default` selects the primary harness's own engine at that engine's default model (`sonnet` for the Claude engine);
 - `<engine> [<model>]` names a verified engine, currently only `claude`, and optionally the engine's own model name or alias; `default <model>` selects the primary harness's engine with that model.
 
-Only Claude has a verified engine of its own, so a Cursor, OpenCode, omp, Grok, or Codex home names `claude` in the file.
+Only Claude has a verified engine of its own, so a supported non-Claude home names `claude` in the file.
 
 ### Failures, when changes apply, and inheritance
 
@@ -1345,7 +1344,8 @@ In a file that declares no override, none of that applies: the legacy first-line
 
 A bare `<harness>` preserves the previous behavior: harness only, with no model or effort launch flag.
 When the harness token is absent or `default`, secondmate launch falls back through `config/crew-harness` and then the primary's own harness, and no model or effort is read from that file.
-A crew-only fallback (`muse`, `gemini`, `agy`, `devin`, `rovo`, `commandcode`, `polytoken`, or `cortex`) is skipped to the primary's own eligible harness, or `claude` when none is known, with a warning; explicit secondmate pins to those adapters are still refused.
+A fallback excluded by `harness_is_crew_only` in [`bin/fm-harness.sh`](../bin/fm-harness.sh) is skipped to the primary's own eligible harness, or `claude` when none is known, with a warning.
+Explicit secondmate pins instead pass the [harness support](#harness-support) checks at launch; agy supports an explicit secondmate pin even though the fallback resolver still skips it.
 Bootstrap surfaces an automatic substitution even after a successful respawn; [`bin/fm-harness.sh`](../bin/fm-harness.sh) owns the resolver's stderr contract.
 
 [`fm-harness.sh`](../bin/fm-harness.sh)'s header owns the resolver commands and optional secondmate-id argument.
@@ -2208,28 +2208,14 @@ Lavish is a presentation-only dependency for visual decisions and reports; nonvi
 **Backend requirements**
 
 The per-backend delta is required only for the backend resolved from `FM_BACKEND`, then `config/backend`, then runtime auto-detection, then default `tmux`, so a home is never told to install a tool an inactive backend or feature would need.
-`fm_backend_required_tools` in `bin/fm-backend.sh` owns the backend additions:
-
-| Resolved backend | Additional tools |
-| --- | --- |
-| `tmux` | `tmux`, `treehouse` |
-| `herdr` | `herdr`, `jq`, `treehouse` |
-| `zellij` | `zellij`, `jq`, `treehouse` |
-| `orca` | `orca` |
-| `cmux` | `cmux`, `jq`, `treehouse` |
-| `paseo` | `paseo`, `jq`, `treehouse` |
-| `rex` | `rex`, `jq`, `treehouse` |
-| `t3code` | `node`, `treehouse` |
-| `tern` | `tern`, `jq`, `treehouse` |
-
-The JSON-emitting adapters (`herdr`, `zellij`, `cmux`, `paseo`, `rex`, `tern`) need `jq` because their spawn and liveness paths parse backend JSON.
-Every session-provider-only backend (`tmux`, `herdr`, `zellij`, `cmux`, `paseo`, `rex`, `t3code`, `tern`) uses `treehouse` for worktrees.
+`fm_backend_required_tools` in [`bin/fm-backend.sh`](../bin/fm-backend.sh) owns the backend additions, including `jq` for JSON-emitting adapters.
+See [Runtime backend](#runtime-backend-configbackend--fm_backend) for worktree-provider ownership and each backend's setup guide.
 
 Backend tool availability uses the adapter's own executable resolver, so bootstrap and spawn agree on supported non-`PATH` locations such as cmux's bundled CLI and the Rex server bundle's `rex`.
 An unknown resolved backend emits `BACKEND_INVALID` and blocks dispatch instead of silently dropping its dependency delta or falling back to tmux.
 
 Orca provides both the task worktree and terminal endpoint (see "Runtime backend" above), so `backend=orca` requires only `orca` on top of the universal toolchain and skips both `treehouse` and every other backend's session CLI.
-A herdr, zellij, cmux, paseo, rex, t3code, or tern home is therefore never told `tmux` is missing, and the `treehouse` durable-lease upgrade check runs only for the backends that actually use treehouse.
+A non-tmux home is therefore never told `tmux` is missing, and the `treehouse` durable-lease upgrade check runs only for the backends that actually use treehouse.
 
 **Feature-specific requirements**
 
