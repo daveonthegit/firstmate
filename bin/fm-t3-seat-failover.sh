@@ -21,18 +21,22 @@
 #   4. records t3_instance=, t3_failover_result=, t3_failover_run=, and
 #      t3_failover_sent= in the task record, then sends one continuation steer
 #      through bin/fm-send.sh (a durable steering-inbox record plus doorbell).
-# Each limited run is handled once: a later call for the same run only
-# finishes a continuation steer that has not yet been recorded.
+#      A failed thread also needs an explicit recovery turn accepted by T3
+#      before t3_failover_sent=1; retries reuse the turn's request id.
+# Each limited run is moved once. An exhausted verdict is rechecked on later
+# calls without renewing that run's exhaustion mark; after a recorded move,
+# later calls only finish a continuation not yet recorded as sent.
+# The task's lifecycle control lock serializes the check through continuation.
 #
 # Stdout is one line, `seat-failover: <task> <word> <detail>`, and the exit
 # status follows the word:
 #   0  none     no usage limit, one seat, not a T3 Claude task, or this run was
 #               already handled
-#   10 moved    moved to another seat and the continuation steer recorded
-#   3  exhausted every other seat is exhausted or none is configured, so the
-#               thread stays where it is; the run is recorded as handled
-#   1  failed   the check, the move, or the steer failed; nothing is recorded
-#               as handled, so the next call retries
+#   10 moved    moved to another seat and the continuation recorded as sent
+#   3  exhausted every other seat is exhausted, so the thread stays where it
+#               is; later checks re-evaluate the alternatives
+#   1  failed   the check, the move, or the continuation failed; the next call
+#               retries, retaining any recorded move
 #   2  usage
 # The watcher (bin/fm-watch.sh) and secondmate recovery
 # (bin/fm-secondmate-liveness-lib.sh) call this; firstmate may run it by hand.

@@ -618,9 +618,8 @@ inbox_steer_busy() {  # <window> <backend> <task> <tail40>
 # t3code_seat_failover_tick: a T3 Code Claude worker or secondmate whose run
 # ended on its seat's usage limit moves to another configured seat and is
 # steered to continue (bin/fm-t3-seat-failover.sh owns the check, the move,
-# its bound, and its once-per-run record). A move is routine recovery and only
-# logged; every seat exhausted, the move bound reached, or a failure wakes
-# firstmate once per distinct outcome.
+# and its once-per-run record). A move is routine recovery and only logged;
+# every seat exhausted or a failure wakes firstmate once per distinct outcome.
 t3code_seat_failover_tick() {  # <window> <task>
   local w=$1 task=$2 out rc=0 marker reason
   if [ "$(window_backend "$w")" != t3code ] || [ "$(window_harness "$w")" != claude ]; then

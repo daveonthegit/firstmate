@@ -627,8 +627,8 @@ Task meta records `backend=` only for a non-default backend; an absent `backend=
 - An Orca task additionally records `orca_worktree_id=` and `terminal=`, with `window=fm-<id>` kept as the shared firstmate alias.
 
 - A cmux task additionally records `cmux_workspace_id=` and `cmux_surface_id=`.
-- A t3code task additionally records `t3_thread_id=`, `t3_project_id=`, `t3_instance=` (the T3 provider instance it runs on), and `t3_instance_basis=`, with `window=fm-<id>` kept as the shared firstmate alias.
-  After a [usage-limit seat move](t3code-backend.md#usage-limit-failover) it also records `t3_failover_result=`, `t3_failover_run=`, and `t3_failover_sent=`.
+- A t3code task additionally records `t3_thread_id=`, `t3_project_id=`, `t3_instance=` (the T3 provider instance it runs on), and `t3_instance_basis=` (`single`, `quota`, or `rotation`), with `window=fm-<id>` kept as the shared firstmate alias.
+  After a [usage-limit seat check](t3code-backend.md#usage-limit-failover) records a move or exhausted outcome, it also records `t3_failover_result=`, `t3_failover_run=`, and `t3_failover_sent=`.
 
 - A tern task additionally records `tern_session_id=`, `tern_tab_id=`, and `tern_block_id=`.
 - For hc endpoint fields and automatic-selection provenance, see [Task shape and metadata](hc-backend.md#task-shape-and-metadata).

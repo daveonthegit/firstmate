@@ -95,13 +95,17 @@ A repeated instance keeps its first line, and a directory that is neither `ordin
 
 At each Claude spawn, [`bin/backends/t3code.sh`](../bin/backends/t3code.sh) `fm_backend_t3code_instance_choose` picks the seat before anything is leased:
 
-- It reads `quota-axi --provider claude --full --json` once, with every seat's directory in `QUOTA_AXI_CLAUDE_PROFILES`, and matches each seat to the lane whose account path is that directory.
-- The seat with the highest `spendPriority` over its applicable scopes wins, the same fact [`quota-array-dispatch`](../.agents/skills/quota-array-dispatch/SKILL.md) ranks by; a seat quota-axi measures exhausted now is passed over.
+- Unless [shared-quota mode](configuration.md#crew-dispatch-profiles-configcrew-dispatchjson) disables quota ranking, it reads `quota-axi --provider claude --full --json` once when seat directories are available, with those directories in `QUOTA_AXI_CLAUDE_PROFILES`, and matches each seat to the lane whose account path is that directory.
+- It resolves the project's concrete model before ranking a default-model launch.
+  Applicable scopes are `all_models`, `all_products`, and `model:` or `product:` scopes naming the model's bare id or Claude family (`sonnet`, `opus`, `haiku`, or `fable`).
+  Any applicable exhausted bound excludes the seat; otherwise its score is the lowest `spendPriority` across those scopes, and the highest-scoring seat wins when all remaining seats can be ranked.
 - A seat with no directory, no matching lane, or no usable measurement is never guessed: the seats then take turns in file order, remembered in `state/t3code-rotation-claude`, and a quota tie takes the next seat the same way.
 - A seat that recently ran a worker into its usage limit is passed over for five hours (`FM_T3CODE_EXHAUSTED_SECS`) unless quota-axi measures it healthy.
-- With the home's `config/crew-dispatch.json` declaring `"shared_quota": true`, spawn and failover make no quota call and ignore supplied quota snapshots: seats rotate without quota ranking or quota-based exhaustion vetoes. Actual usage-limit marks still exclude seats until they expire.
+- With the home's `config/crew-dispatch.json` declaring `"shared_quota": true`, spawn and failover make no quota call and ignore supplied quota snapshots: seats rotate without quota ranking or quota-based exhaustion vetoes.
+  Actual usage-limit marks still exclude seats until they expire.
+- If every seat is exhausted, a new spawn still picks the next seat by rotation and discloses that outcome; failover instead leaves the existing thread stopped.
 
-The spawn prints the chosen seat with each seat's evidence, and the task records it as `t3_instance=` and how it was chosen as `t3_instance_basis=` (`single`, `quota`, or `rotation`).
+A multi-seat spawn prints the chosen seat with each seat's evidence; [task metadata](configuration.md#task-metadata) records the choice.
 
 #### Usage-limit failover
 
@@ -110,10 +114,13 @@ On each poll, [`bin/fm-watch.sh`](../bin/fm-watch.sh) runs [`bin/fm-t3-seat-fail
 It looks for that notice or error in the thread's latest finished run (`fm-t3-mcp.mjs limit-check`); a message that only discusses limits does not count.
 On a match it moves the same thread to another seat with `t3_thread_configure` `modelSelection` (`fm-t3-mcp.mjs configure`).
 The move keeps the model, options, transcript, and worktree, and it is read back before it counts.
-The script then sends a continuation steer through the steering inbox. For a failed thread, it explicitly starts a recovery turn to read that inbox and records delivery only after T3 accepts the turn; retries reuse the same request id.
+The script then sends a continuation steer through the steering inbox.
+For a failed thread, it explicitly starts a recovery turn to read that inbox and records delivery only after T3 accepts the turn; retries reuse the same request id.
 Each limited run is moved once.
 A move is routine and only logged.
-Firstmate is notified once per run when every other seat is exhausted. The thread stays where it is while subsequent checks re-evaluate the alternate seats without renewing the original run's exhaustion mark, then moves when quota measures a seat healthy or its usage-limit mark expires. Move and delivery failures are reported for retry.
+Firstmate is notified once per distinct outcome when every other seat is exhausted.
+The thread stays where it is while subsequent checks re-evaluate the alternate seats without renewing the original run's exhaustion mark, then moves when quota measures a seat healthy or its usage-limit mark expires.
+Move and delivery failures are reported for retry.
 Secondmate recovery runs the same check before resuming a failed secondmate run, so a usage-limited mate moves to another seat instead of resuming on the exhausted one.
 
 ### Capability gate
