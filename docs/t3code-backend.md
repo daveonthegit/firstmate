@@ -113,7 +113,7 @@ The move keeps the model, options, transcript, and worktree, and it is read back
 The script then sends a continuation steer through the steering inbox. For a failed thread, it explicitly starts a recovery turn to read that inbox and records delivery only after T3 accepts the turn; retries reuse the same request id.
 Each limited run is moved once.
 A move is routine and only logged.
-Firstmate is notified once per run when every other seat is exhausted. The thread stays where it is while subsequent checks re-evaluate the alternate seats, then moves when quota measures a seat healthy or its usage-limit mark expires. Move and delivery failures are reported for retry.
+Firstmate is notified once per run when every other seat is exhausted. The thread stays where it is while subsequent checks re-evaluate the alternate seats without renewing the original run's exhaustion mark, then moves when quota measures a seat healthy or its usage-limit mark expires. Move and delivery failures are reported for retry.
 Secondmate recovery runs the same check before resuming a failed secondmate run, so a usage-limited mate moves to another seat instead of resuming on the exhausted one.
 
 ### Capability gate

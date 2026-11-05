@@ -146,7 +146,9 @@ if [ "$RUN" = "$(fm_meta_get "$META" t3_failover_run)" ] && [ "$(fm_meta_get "$M
   send_continuation "$(fm_meta_get "$META" t3_instance)" "continuation resent for $RUN"
 fi
 
-[ -z "$FROM" ] || fm_backend_t3code_mark_exhausted "$FROM" || true
+if [ "$RUN" != "$(fm_meta_get "$META" t3_failover_run)" ]; then
+  [ -z "$FROM" ] || fm_backend_t3code_mark_exhausted "$FROM" || true
+fi
 [ -n "$MODEL" ] || report failed "could not resolve the model of T3 thread $THREAD" 1
 CHOICE=$(fm_backend_t3code_instance_choose claude "$MODEL" "$(fm_meta_get "$META" t3_project_id)" ${FROM:+"$FROM"}) \
   || report failed "could not choose an alternate Claude seat for run $RUN; the next check retries" 1

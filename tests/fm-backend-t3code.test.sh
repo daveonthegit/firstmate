@@ -3695,6 +3695,55 @@ process.stdout.write(sends[1].arguments.clientRequestId);
   pass "failed ships and secondmates report recovery only after an accepted continuation turn on the alternate seat"
 }
 
+test_seat_rechecks_do_not_renew_marks() {
+  local mode id seat out rc stamp actual round
+  for mode in unavailable shared; do
+    t3_case "seat-mutual-exhaustion-$mode"
+    t3_two_seats
+    if [ "$mode" = shared ]; then
+      printf '{"shared_quota":true}' > "$CONFIG/crew-dispatch.json"
+    fi
+    t3_failover_task t3stoppeda ship
+    t3_limited_thread "Working." failed "Claude AI usage limit reached|1793900000"
+    t3_world_set '
+const b = structuredClone(w.threads["thread-live"]);
+b.threadId = "thread-b"; b.providerInstanceId = "claude_b"; b.modelSelection.instanceId = "claude_b";
+b.runs[0].runId = "run-limit-b"; b.runs[0].providerInstanceId = "claude_b";
+for (const item of b.items) item.runId = "run-limit-b";
+w.threads["thread-b"] = b;'
+    fm_write_meta "$CASE_DIR/state/t3stoppedb.meta" "window=fm-t3stoppedb" "backend=t3code" "harness=claude" "kind=secondmate" "model=claude-sonnet-5" "t3_thread_id=thread-b" "t3_instance=claude_b"
+    mkdir -p "$CASE_DIR/state/t3code-exhausted"
+    for seat in claudeAgent claude_b; do
+      date +%s > "$CASE_DIR/state/t3code-exhausted/$seat"
+    done
+    for id in t3stoppeda t3stoppedb; do
+      out=$(FM_T3CODE_EXHAUSTED_SECS=18000 t3_failover "$id"); rc=$?
+      expect_code 3 "$rc" "both workers must initially stop with $mode quota"$'\n'"$out"
+    done
+    stamp=$(( $(date +%s) - 60 ))
+    for seat in claudeAgent claude_b; do
+      printf '%s\n' "$stamp" > "$CASE_DIR/state/t3code-exhausted/$seat"
+    done
+    for round in 1 2; do
+      for id in t3stoppeda t3stoppedb; do
+        out=$(FM_T3CODE_EXHAUSTED_SECS=18000 t3_failover "$id"); rc=$?
+        expect_code 3 "$rc" "polling either stopped worker must still respect the unexpired alternate mark"$'\n'"$out"
+      done
+      for seat in claudeAgent claude_b; do
+        IFS= read -r actual < "$CASE_DIR/state/t3code-exhausted/$seat"
+        assert_equals "$stamp" "$actual" "polling both owners must preserve the persisted exhaustion time of $seat"
+      done
+    done
+    for id in t3stoppeda t3stoppedb; do
+      out=$(FM_T3CODE_EXHAUSTED_SECS=30 t3_failover "$id"); rc=$?
+      expect_code 10 "$rc" "both stopped workers must recover when their original marks outlive the exhaustion horizon"$'\n'"$out"
+    done
+    assert_seat_recovery_running
+    assert_equals true "$(t3_json_field "$T3_FAKE_WORLD" 'd.threads["thread-b"].status === "running" && !!d.threads["thread-b"].activeRunId && d.threads["thread-b"].modelSelection.instanceId === "claudeAgent"')" "the worker originally on B must also restart on A"
+  done
+  pass "polling both stopped workers preserves original exhaustion times and permits both to recover after expiry"
+}
+
 test_seat_review_regressions() {
   test_seat_pool_parsing_is_backward_compatible
   test_seat_choice_by_quota_rotation_and_marks
@@ -3709,6 +3758,7 @@ test_seat_review_regressions() {
   test_seat_failover_retries_chooser_errors
   test_seat_failover_rechecks_exhaustion
   test_failed_seat_recovery_requires_accepted_turn
+  test_seat_rechecks_do_not_renew_marks
 }
 
 if [ -n "${FM_TEST_ONLY:-}" ]; then
@@ -3838,3 +3888,4 @@ test_default_model_does_not_validate_unselected_seat
 test_seat_failover_retries_chooser_errors
 test_seat_failover_rechecks_exhaustion
 test_failed_seat_recovery_requires_accepted_turn
+test_seat_rechecks_do_not_renew_marks
