@@ -156,6 +156,32 @@ expect_code 75 "$rc" "a quiet window must report an empty read"
 assert_equals "" "$(cat "$RESULT")" "an empty window printed a capture"
 pass "a quiet host window is an empty read, not a capture"
 
+# A real queued host operation must preempt an already-running status poll,
+# not merely be classified as eligible for preemption.
+primary env FM_REMOTE_WORKER_WAIT_SECONDS=30 "$ADAPTER" source mbp \
+  > "$TMP_ROOT/preempt.result" 2> "$TMP_ROOT/preempt.err" &
+POLL_PID=$!
+running=0
+for _ in $(seq 1 100); do
+  for state in "$TMP_ROOT/remote-jobs/jobs"/*/state; do
+    [ -f "$state" ] || continue
+    if [ "$(cat "$state")" = running ]; then running=1; break; fi
+  done
+  [ "$running" -eq 0 ] || break
+  sleep 0.1
+done
+[ "$running" -eq 1 ] || fail "the long status poll never started"
+started=$SECONDS
+out=$(primary "$ROOT/bin/fm-on.sh" mbp fm-remote-worker-control.sh file s1 journal) \
+  || fail "the queued document read failed: $out"
+assert_equals "journal for s1" "$out" "the queued read returned the wrong document"
+[ $((SECONDS - started)) -lt 15 ] || fail "the queued operation waited behind the 30-second poll"
+rc=0
+wait "$POLL_PID" || rc=$?
+expect_code 75 "$rc" "the preempted source must become an empty window"
+assert_equals "" "$(cat "$TMP_ROOT/preempt.result")" "a preempted poll produced a capture"
+pass "a queued host operation preempts a running status poll without waiting out its window"
+
 rc=0
 FM_FAKE_SSH_DOWN=1 capture || rc=$?
 expect_code 255 "$rc" "an unreachable host must pass its transport status through"
@@ -176,6 +202,19 @@ capture || fail "the post-break read failed: $(cat "$TMP_ROOT/source.err")"
 out=$(primary "$ADAPTER" ingest mbp "$RESULT") || fail "handle after a break failed: $out"
 assert_equals 1 "$(grep -c 'remote-worker-continuity-t1' "$PARENT/state/t1.status")" "a parked task escalated again"
 pass "a broken log escalates once and parks only that task"
+
+# Follow the operator recovery contract emitted by the adapter: remove BOTH
+# the parked marker and cursor. Retained mirror records prevent duplicates
+# when the host's inspected history is read again from zero.
+printf 'working [at=1793860000]: setup done\nworking [at=1793860020]: recovered\n' > "$HOST/state/t1.status"
+rm -f "$PARENT/state/remote-workers/mbp/t1.broken" "$PARENT/state/remote-workers/mbp/t1.cursor"
+capture || fail "the recovery read failed: $(cat "$TMP_ROOT/source.err")"
+out=$(primary "$ADAPTER" ingest mbp "$RESULT") || fail "recovery ingest failed: $out"
+assert_contains "$(cat "$PARENT/state/t1.status")" "recovered" "the reset task did not resume mirroring"
+assert_equals 1 "$(grep -c 'working \[at=1793860000\]' "$PARENT/state/t1.status")" "recovery duplicated a previously mirrored line"
+assert_absent "$PARENT/state/remote-workers/mbp/t1.broken" "the recovered task is still parked"
+assert_present "$PARENT/state/remote-workers/mbp/t1.cursor" "recovery did not commit a new cursor"
+pass "removing the broken marker and cursor resumes mirroring without duplicate lines"
 
 # A record for a task this home no longer holds is ignored.
 rm -f "$PARENT/state/s1.meta"

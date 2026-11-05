@@ -12,7 +12,7 @@
 # bin/fm-remote-delta-read.sh, with a zero wait, so continuity (offset plus
 # prefix digest), whole-line framing, and per-record size bounds keep their
 # one owner. A task whose claim is gone is skipped: its record here is retired
-# or never existed, and the primary stops listing it at cleanup.
+# or never existed. The primary adapter's header owns listener membership.
 #
 # One worker host is one remote home, and the remote job worker serves one
 # lane per home, so a single blocking read covers every task on the host
@@ -30,9 +30,11 @@
 # followed by <n> fm-remote-delta.v1 records, each exactly as
 # fm-remote-delta-read.sh prints it with one `task=<id>` line added after its
 # schema line. A record's header ends at its blank line and its payload is
-# exactly payload_bytes long. Records stop being added once their payloads
-# total FM_REMOTE_WORKER_EVENTS_MAX_BYTES (default 524288), so one bundle stays
-# well inside the job transport's 1 MiB stdout bound; a task left out is read
+# exactly payload_bytes long. The first available record is always included;
+# later records stop being added before their payloads would exceed
+# FM_REMOTE_WORKER_EVENTS_MAX_BYTES (default 524288). This is a payload budget,
+# not a total output bound: bundle and record headers add bytes, and the first
+# record retains the single-log reader's size bound. A task left out is read
 # again on the next call from its unchanged cursor.
 set -eu
 

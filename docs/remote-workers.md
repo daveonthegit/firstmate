@@ -35,10 +35,7 @@ Cleanup uses the host's ordinary [`fm-teardown.sh`](../bin/fm-teardown.sh), whos
 
 A placed worker appends status lines to its own status file in the host's home, and the primary mirrors them into its own status file for that task, so the watcher, the open-decision fold, crew state, and the PR gates read one stream exactly as for a local worker.
 The primary keeps one listener per host, not one per task, because the remote job worker serves one lane per home; that listener's host read, [`bin/fm-remote-worker-events.sh`](../bin/fm-remote-worker-events.sh), is preemptible, so a steer, state read, or cleanup for the same host never waits behind it.
-A task is a member of a host's listener when its primary task record names that host.
-Before a `done` line is mirrored, the task's journal and a scout's report are copied into the primary's `data/<task-id>/`, so the done line never arrives ahead of its report.
-A log that was rewritten or shortened on the host escalates once for that task and parks only that task; the host's other tasks keep flowing.
-The [adapter header](../bin/fm-procevent-remote-worker.sh) owns membership, cursors, document fetch, continuity handling, and how a parked task resumes.
+The [adapter header](../bin/fm-procevent-remote-worker.sh) owns membership, cursors, document fetch before completion (including missing-document and transport-failure handling), and recovery from broken log continuity.
 
 ## Register a worker host
 
