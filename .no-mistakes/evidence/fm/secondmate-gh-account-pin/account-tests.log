@@ -1,0 +1,25 @@
+ok - each account is selected from the repository it owns access to, not from global gh state
+ok - every github.com origin form resolves alike; other forges and originless checkouts select nothing
+ok - an all-numeric owner survives the ssh-port handling instead of silently selecting nothing
+ok - an unreadable 'gh auth status' refuses only where an account was needed, and its override works
+ok - a home logged in to another host only is left exactly as it was, whatever that host is called
+ok - gh absent, nobody logged in, and a single account all leave gh untouched
+ok - an undeterminable or ambiguous account is refused with its fix; unequal access resolves
+ok - config/gh-accounts decides an owner offline, and a bad line is reported not worked around
+ok - FM_GH_ACCOUNT overrides one run, none opts out, and an unknown login is refused
+ok - exec passes the credential to exactly one child, stands aside, or refuses to run
+ok - the evaluated snippet carries the right credential, or an unusable one that fails loudly
+ok - a spawned lane operates as the account its own repository needs, recorded and never switched globally
+ok - where a gh call enters the wrapper a lane exports nothing and keeps per-repository keying
+ok - an installed wrapper nothing resolves to still leaves the lane its own credential
+skip: fish not found (secondmate replacement pane)
+ok - a secondmate launch pins no GitHub account, so its home keys each repository off its own mapping
+ok - a home with one logged-in account spawns exactly as it did before
+ok - a spawn with no determinable account stops at dispatch with the reason and its fix
+ok - the wrapper passes account, config, help, and other-host commands straight to gh
+ok - a call that already carries a credential is never re-pointed at another account
+ok - repository work runs as that repository's own account; nothing to choose leaves gh alone
+ok - an attached -R, an api endpoint path, and a flag-looking value are all keyed off the right repository
+ok - an undeterminable account is refused, and an unreachable helper refuses only when a wrong account is possible
+ok - installing is idempotent and reversible, and a foreign gh is never replaced or removed
+# all fm-gh-account tests passed

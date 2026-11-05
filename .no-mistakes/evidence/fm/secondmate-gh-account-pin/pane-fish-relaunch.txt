@@ -1,0 +1,35 @@
+trees/747da666653e/01M6PKMN43MHXMXK8YNN8EX7Y3/.gate-lab/code/bin/fm-git-strip-ai-trailers.sh' env-file '~
+/.no-mistakes/worktrees/747da666653e/01M6PKMN43MHXMXK8YNN8EX7Y3/.gate-lab/primary/state/gh-live-pane-fish.git-hooks' '/t
+mp/fm-gh-live-pane-fish+deb24905a55b90a4db4d5a720923325ac1089492cd428d67df9a73f44381397c/git-config.s1793910022.15819.68
+22.sh' && . '/tmp/fm-gh-live-pane-fish+deb24905a55b90a4db4d5a720923325ac1089492cd428d67df9a73f44381397c/git-config.s1793
+910022.15819.6822.sh' || return 1 2>/dev/null || exit 1; FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJE
+CTS_OVERRIDE= FM_CONFIG_OVERRIDE= FM_PUBLIC_FOLLOWUP_PRIMARY_HOME='{worktrees}/
+01M6PKMN43MHXMXK8YNN8EX7Y3/.gate-lab/primary' FM_HOME='{run-worktree}
+XMXK8YNN8EX7Y3/.gate-lab/mate-fish' FM_TRACE_CONTEXT=off FM_SUPERVISION_MODEL=autoarm env -u CURSOR_AGENT -u CURSOR_INVO
+KED_AS -u GEMINI_CLI CLAUDE_CODE_ENABLE_PROMPT_SUGGESTION=false CLAUDE_CODE_SEND_FEEDBACK=0 claude --dangerously-skip-pe
+rmissions --add-dir '{run-worktree}/.gate-lab/primary/s
+tate/gh-live-pane-fish.inbox' --settings '{run-worktree}
+3/.gate-lab/primary/state/gh-live-pane-fish.claude-settings.json' ': Firstmate operational input waiting: read '\''/User
+s/davidxiao/.no-mistakes/worktrees/747da666653e/01M6PKMN43MHXMXK8YNN8EX7Y3/.gate-lab/mate-fish/state/operational-inbox/1
+793910024-9b7d32f1a047ce43.msg'\'' and handle its contents as Firstmate operational input.'
+^~~~^
+from sourcing file /tmp/fm-gh-live-pane-fish+deb24905a55b90a4db4d5a720923325ac1089492cd428d67df9a73f44381397c/launch.s17
+93910022.15819.6822.sh
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Allow external CLAUDE.md file imports?
+
+  This project's CLAUDE.md or .claude/rules imports files outside the current working directory. Never allow this for
+  third-party repositories.
+
+  External imports:
+    {run-worktree}/AGENTS.md
+
+  Important: Only use Claude Code with files you trust. Accessing untrusted files may pose security risks
+  https://code.claude.com/docs/en/security
+
+  ❯ No, disable external imports
+    Yes, allow external imports
+
+  Enter to confirm · Esc to cancel
+

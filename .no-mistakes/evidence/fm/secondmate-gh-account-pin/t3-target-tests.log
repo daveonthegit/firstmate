@@ -1,0 +1,21 @@
+fm-afk-launch: away-posture record archived at /private/var/folders/_h/2yg5n_mx0zq1c9vgfg2462_80000gn/T/fm-backend-t3code-tests.iOb3z2/restart-unknown-completed/home/state/afk-contracts/1793909542.afk-contract
+fm-afk-launch: away mode stopped; no daemon terminal was running, .afk cleared, and the posture record archived
+fm-afk-launch: away-posture record archived at /private/var/folders/_h/2yg5n_mx0zq1c9vgfg2462_80000gn/T/fm-backend-t3code-tests.iOb3z2/restart-unknown-failed/home/state/afk-contracts/1793909548.afk-contract
+fm-afk-launch: away mode stopped; no daemon terminal was running, .afk cleared, and the posture record archived
+ok - native restart re-arms discarded T3 stale warnings exactly once and preserves delivered suppression
+ok - away housekeeping preserves unknown stale rechecks and reports possible wedges until work resumes
+ok - away daemon on T3: a stall reported while unknown is not reported again once T3 reads idle
+ok - T3 stale watcher: harness=codex status=failed turn=fresh -> dead
+ok - t3code: a failed thread read reports unknown busy state, submits no away-mode injection, and keeps stale rechecks uncertain
+ok - T3 stale lookup honors paused and captain-held declarations
+ok - T3 stale watcher: harness=codex status=running turn=fresh -> absorb
+ok - T3 stale watcher: harness=claude status=running turn=fresh -> absorb
+ok - T3 stale watcher: harness=codex status=waiting turn=fresh -> absorb
+ok - T3 stale watcher: harness=codex status=starting turn=fresh -> surface
+ok - T3 stale watcher: harness=codex status=completed turn=fresh -> surface
+ok - T3 stale watcher: harness=codex status=failed turn=fresh -> dead
+ok - T3 stale watcher: harness=codex status=running turn=hung -> surface
+ok - T3 stale watcher: harness=pi status=waiting turn=fresh -> absorb
+ok - T3 stale watcher: harness=pi status=completed turn=fresh -> surface
+ok - fm-spawn.sh --backend t3code --secondmate: carries no GitHub account pin, even when the home's origin selects one
+ok - fm-spawn.sh --backend t3code --secondmate: project on the home, root-strategy thread, charter message, launch prefix as settings env

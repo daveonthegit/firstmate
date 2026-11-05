@@ -1,0 +1,3 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.gate-lab/primary
+warning: secondmate gh-live-t3-pin sync skipped before launch: primary default-branch commit cannot be resolved
+spawned gh-live-t3-pin harness=claude kind=secondmate mode=secondmate yolo=off window=fm-gh-live-t3-pin worktree={run-worktree}/.gate-lab/mate

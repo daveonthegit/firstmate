@@ -1,0 +1,35 @@
+Welcome to fish, the friendly interactive shell
+Type help for instructions on how to use fish
+davidxiao@Davids-MBP ~/.n/w/7/0/.g/mate-fish> export GOTMPDIR=/tmp/fm-gh-live-pane-fish/gotmp
+davidxiao@Davids-MBP ~/.n/w/7/0/.g/mate-fish (lab)> export COMPACT_ADVISER_DISABLE=1
+davidxiao@Davids-MBP ~/.n/w/7/0/.g/mate-fish (lab)> export GH_TOKEN=''
+davidxiao@Davids-MBP ~/.n/w/7/0/.g/mate-fish (lab)> . '/tmp/fm-gh-live-pane-fish+deb24905a55b90a4db4d5a720923325ac108949
+2cd428d67df9a73f44381397c/launch.s1793910011.81461.8303.sh'
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Allow external CLAUDE.md file imports?
+
+  This project's CLAUDE.md or .claude/rules imports files outside the current working directory. Never allow this for
+  third-party repositories.
+
+  External imports:
+    {run-worktree}/AGENTS.md
+
+  Important: Only use Claude Code with files you trust. Accessing untrusted files may pose security risks
+  https://code.claude.com/docs/en/security
+
+  ❯ No, disable external imports
+    Yes, allow external imports
+
+  Enter to confirm · Esc to cancel
+
+
+
+
+
+
+
+
+
+
+

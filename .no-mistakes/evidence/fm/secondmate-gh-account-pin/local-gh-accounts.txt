@@ -1,0 +1,10 @@
+github.com
+  ✓ Logged in to github.com account fixture-source ({run-worktree}/.gate-lab/gh-local-synthetic/hosts.yml)
+  - Active account: true
+  - Git operations protocol: https
+  - Token: **************
+
+  ✓ Logged in to github.com account fixture-target ({run-worktree}/.gate-lab/gh-local-synthetic/hosts.yml)
+  - Active account: false
+  - Git operations protocol: https
+  - Token: ***************

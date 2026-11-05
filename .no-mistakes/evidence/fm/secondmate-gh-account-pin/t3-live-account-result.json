@@ -1,0 +1,25 @@
+{
+  "settingsEnv": {
+    "FM_T3CODE_ENV_KEYS": "GOTMPDIR,COMPACT_ADVISER_DISABLE,FM_TASK_INBOX,PATH,GIT_CONFIG_COUNT,GIT_CONFIG_KEY_0,GIT_CONFIG_VALUE_0,FM_ROOT_OVERRIDE,FM_STATE_OVERRIDE,FM_DATA_OVERRIDE,FM_PROJECTS_OVERRIDE,FM_CONFIG_OVERRIDE,FM_PUBLIC_FOLLOWUP_PRIMARY_HOME,FM_HOME,FM_TRACE_CONTEXT,FM_SUPERVISION_MODEL,FM_SUPERVISOR_BACKEND,FM_SUPERVISOR_TARGET",
+    "GOTMPDIR": "/tmp/fm-gh-live-t3-pin/gotmp",
+    "COMPACT_ADVISER_DISABLE": "1",
+    "FM_TASK_INBOX": "{run-worktree}/.gate-lab/primary/state/gh-live-t3-pin.inbox",
+    "PATH": "~/.pi/agent/bin:~/.opencode/bin:~/.ast/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/opt/pkg/env/active/bin:/opt/pmk/env/global/bin:/Library/Apple/usr/bin:/opt/homebrew/bin:~/.local/bin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/sbin:/usr/local/sbin",
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "core.hooksPath",
+    "GIT_CONFIG_VALUE_0": "{run-worktree}/.gate-lab/primary/state/gh-live-t3-pin.git-hooks",
+    "FM_ROOT_OVERRIDE": "",
+    "FM_STATE_OVERRIDE": "",
+    "FM_DATA_OVERRIDE": "",
+    "FM_PROJECTS_OVERRIDE": "",
+    "FM_CONFIG_OVERRIDE": "",
+    "FM_PUBLIC_FOLLOWUP_PRIMARY_HOME": "{run-worktree}/.gate-lab/primary",
+    "FM_HOME": "{run-worktree}/.gate-lab/mate",
+    "FM_TRACE_CONTEXT": "off",
+    "FM_SUPERVISION_MODEL": "autoarm",
+    "FM_SUPERVISOR_BACKEND": "t3code",
+    "FM_SUPERVISOR_TARGET": "mcp:1a307ee5-9b95-4a0e-8261-82e73929e90d"
+  },
+  "metadataAccount": null,
+  "thread": "mcp:1a307ee5-9b95-4a0e-8261-82e73929e90d"
+}
