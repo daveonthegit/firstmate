@@ -412,6 +412,32 @@ test_typed_failure_and_transport_errors() {
   pass "fm-t3-mcp: tool errors exit 3 with T3's code, an unreachable server exits 1"
 }
 
+# host-credential is offline: it reads only the token file, so it names a
+# loopback origin's credential this home's own even with no server answering,
+# and refuses a link or another machine's origin before any request.
+test_host_credential_is_offline_and_local_only() {
+  local linked="$TMP_ROOT/host-credential-link"
+  fresh_case host-credential
+  t3_fake_credential "$CRED" env-fake-1 "" 600 http://127.0.0.1:9
+  mcp host-credential
+  expect_code 0 "$RC" "a loopback credential is this machine's own: $ERR"
+  assert_equals http://127.0.0.1:9 "$(field "$OUT" origin)" "host-credential reports the origin"
+  [ ! -s "$T3_FAKE_LOG" ] || fail "host-credential must make no request"
+  t3_fake_credential "$CRED" env-fake-1 "" 600 http://192.0.2.7:3773
+  mcp host-credential
+  expect_code 4 "$RC" "another machine's origin is refused"
+  assert_equals credential_not_local "$(field "$OUT" error.code)" "a foreign origin refusal code"
+  t3_fake_credential "$CRED"
+  rm -f "$linked"
+  ln -s "$CRED" "$linked"
+  OUT=$(node "$HELPER" host-credential --token-file "$linked" 2>/dev/null)
+  RC=$?
+  rm -f "$linked"
+  expect_code 4 "$RC" "a linked credential is refused"
+  assert_equals credential_linked "$(field "$OUT" error.code)" "a linked credential refusal code"
+  pass "fm-t3-mcp host-credential: offline, accepts only this home's own file naming a loopback origin"
+}
+
 test_telemetry_reported() {
   local tdir="$TMP_ROOT/telemetry"
   t3_fake_stop
@@ -1061,6 +1087,7 @@ test_send_state_capture_interrupt_archive
 test_thread_for_root
 test_typed_failure_and_transport_errors
 test_telemetry_reported
+test_host_credential_is_offline_and_local_only
 test_read_limit_matches_t3_cap
 test_interrupt_confirms_only_the_interrupted_run
 test_send_lost_reply_is_unconfirmed_and_retry_is_one_delivery

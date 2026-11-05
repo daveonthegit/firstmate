@@ -2,7 +2,7 @@
 # Check, and optionally repair, one remote account's second-mate readiness.
 #
 # Usage:
-#   bin/fm-on.sh <secondmate-id|ssh-alias> fm-remote-doctor.sh [--fix] [--backend herdr|rex|any]
+#   bin/fm-on.sh <secondmate-id|ssh-alias> fm-remote-doctor.sh [--fix] [--backend herdr|rex|t3code|any]
 #
 # Run it through fm-on.sh so the fixed entrypoint invokes this readiness owner
 # over its plain SSH bootstrap. The command reports the same filesystem-composed
@@ -10,10 +10,12 @@
 # worker itself.
 #
 # A remote second mate runs on one session-provider backend: herdr (the
-# default) in the dedicated fm-remote session, or rex on the host's own
-# persistent rex server in a 2ndmate-<id>-<hash> session. --backend names the
-# one to verify; the default `any` resolves herdr when its CLI is present, then
-# rex, so a host offering both is still verified for the default backend. On
+# default) in the dedicated fm-remote session, rex on the host's own
+# persistent rex server in a 2ndmate-<id>-<hash> session, or t3code as a thread
+# on the host's own T3 Code server. --backend names the one to verify; the
+# default `any` resolves herdr when its CLI is present, then rex, so a host
+# offering both is still verified for the default backend, and t3code is
+# verified only when named. On
 # the Herdr backend the account needs the Firstmate-owned Aqua Herdr agent plus
 # the sibling dev.firstmate.remote-job worker that runs normal fm-on commands
 # through the Aqua or Linux job-worker path. On darwin, that Herdr agent runs
@@ -30,9 +32,15 @@
 # the account's personal unix socket, which is detached from every SSH session;
 # --fix may run `rex server start` when no server answers, but never installs
 # the CLI and never stops or restarts an answering server: an exit-when-empty
-# server is a human gap that needs an operator-scheduled restart. The remote job
+# server is a human gap that needs an operator-scheduled restart. On the T3 Code
+# backend (t3code, verified only when named) the account needs node and a T3
+# Code server answering this home's own sign-in: config/t3code-token in FM_HOME
+# must pass bin/fm-t3-mcp.mjs host-credential (its own regular file, naming
+# this machine's loopback origin) and then that server's capability gate
+# (`status`). Both are human gaps, because the sign-in and the T3 server are
+# the account owner's; --fix never signs in or starts T3. The remote job
 # worker is backend-independent, so its Aqua login-session requirement is
-# checked under either backend. Doctor remains invokable over the plain-SSH
+# checked under every backend. Doctor remains invokable over the plain-SSH
 # bootstrap path to inspect and repair that worker. SSH cannot create an Aqua
 # session, so a host with no GUI login is a human gap rather than something
 # --fix attempts to bypass.
@@ -109,10 +117,10 @@ while [ "$#" -gt 0 ]; do
     --fix) MODE=fix ;;
     --backend)
       shift
-      case "${1:-}" in herdr | rex | any) DOCTOR_BACKEND=$1 ;; *) usage ;; esac
+      case "${1:-}" in herdr | rex | t3code | any) DOCTOR_BACKEND=$1 ;; *) usage ;; esac
       ;;
     --backend=*)
-      case "${1#--backend=}" in herdr | rex | any) DOCTOR_BACKEND=${1#--backend=} ;; *) usage ;; esac
+      case "${1#--backend=}" in herdr | rex | t3code | any) DOCTOR_BACKEND=${1#--backend=} ;; *) usage ;; esac
       ;;
     --worker-tool-probe)
       [ "${FM_REMOTE_JOB_ACTIVE:-}" = 1 ] || { printf 'error: worker tool probe requires the remote job worker\n' >&2; exit 64; }
@@ -137,8 +145,11 @@ if [ "$DOCTOR_BACKEND" = any ]; then
     DOCTOR_BACKEND=none
   fi
 fi
+# T3 Code needs no session CLI of its own: node, which speaks to its server, takes
+# that slot.
 case "$DOCTOR_BACKEND" in
   herdr | rex) REQUIRED_TOOLS=(git jq "$DOCTOR_BACKEND" tasks-axi treehouse) ;;
+  t3code) REQUIRED_TOOLS=(git jq node tasks-axi treehouse) ;;
   *) REQUIRED_TOOLS=(git jq backend tasks-axi treehouse) ;;
 esac
 
@@ -503,7 +514,7 @@ report_required_tools_from_worker() {
   # probe reports `backend=MISSING` rather than resolving differently.
   local -a probe_args=(--worker-tool-probe)
   case "$DOCTOR_BACKEND" in
-    herdr | rex) probe_args+=(--backend "$DOCTOR_BACKEND") ;;
+    herdr | rex | t3code) probe_args+=(--backend "$DOCTOR_BACKEND") ;;
   esac
   if ! job_id=$(fm_remote_job_stage "${HOME:-}" "$FM_ROOT" "${FM_HOME:-}" \
     fm-remote-doctor.sh "${probe_args[@]}" </dev/null); then
@@ -528,7 +539,7 @@ report_required_tools_from_worker() {
     fact=${line#required }
     name=${fact%%=*}
     value=${fact#*=}
-    case "$name" in git | jq | herdr | rex | backend | tasks-axi | treehouse | harness) ;; *) valid=0; continue ;; esac
+    case "$name" in git | jq | herdr | rex | node | backend | tasks-axi | treehouse | harness) ;; *) valid=0; continue ;; esac
     case "$seen" in *" $name "*) valid=0; continue ;; esac
     seen="$seen$name "
     count=$((count + 1))
@@ -743,6 +754,52 @@ check_rex_server() {
   record rex-server "ok: persistent rex server on $endpoint (API revision $server_api)"
 }
 
+# The T3 Code server runs the mate's thread itself, outside every SSH session,
+# so readiness is this home's own sign-in to it and its capability gate, both
+# owned by bin/fm-t3-mcp.mjs: host-credential first (offline: this home's own
+# regular file, naming this machine's loopback origin), then status.
+t3code_token_file() {
+  printf '%s/config/t3code-token' "${FM_HOME:-}"
+}
+
+check_t3code() {
+  local token out
+  if ! command -v node >/dev/null 2>&1; then
+    record t3code "human: node does not resolve on the remote runtime PATH, so the T3 credential cannot be read" \
+      "install node on that account, or add a ~/.local/bin wrapper for it; the remote second mate's t3code backend speaks to T3 through it"
+    return 0
+  fi
+  if [ -z "${FM_HOME:-}" ]; then
+    record t3code "human: this run names no second mate home, so there is no T3 credential to check" \
+      "run this command through the second mate's id with fm-on.sh, so it checks that home's config/t3code-token"
+    return 0
+  fi
+  token=$(t3code_token_file)
+  if ! out=$(node "$SCRIPT_DIR/fm-t3-mcp.mjs" host-credential --token-file "$token" 2>&1 >/dev/null); then
+    out=$(printf '%s\n' "$out" | grep -v '^warning:' | tail -1)
+    record t3code "human: ${out#fm-t3-mcp: }" \
+      "on that machine, as that account, run '$FM_ROOT/bin/fm-t3-mcp.mjs login --access full-access --token-file $token' (the captain's sign-in), then rerun this command"
+    return 0
+  fi
+  record t3code "ok: $token is this home's own sign-in to a loopback T3 origin"
+}
+
+check_t3code_server() {
+  local out
+  if ! check_is_ok t3code; then
+    record t3code-server "human: the T3 server cannot be checked until this home's own credential passes" \
+      "close the t3code gap above first"
+    return 0
+  fi
+  if ! out=$(node "$SCRIPT_DIR/fm-t3-mcp.mjs" status --token-file "$(t3code_token_file)" 2>&1 >/dev/null); then
+    out=$(printf '%s\n' "$out" | grep -v '^warning:' | tail -1)
+    record t3code-server "human: ${out#fm-t3-mcp: }" \
+      "start T3 Code on that machine and keep it running, or have the captain sign in again there if the credential was refused, then rerun this command"
+    return 0
+  fi
+  record t3code-server "ok: the T3 server this home signed in to answers and passes the capability gate"
+}
+
 # A persistent rex server is `rex server start`, detached from every SSH
 # session. This repair runs only when no server answers; an answering server is
 # never stopped or restarted here, because stopping it ends every process in
@@ -907,19 +964,22 @@ run_checks() { # <resolved-login-shell>
   case "$DOCTOR_BACKEND" in
     herdr) check_herdr ;;
     rex) check_rex ;;
+    t3code) check_t3code ;;
     *) check_backend ;;
   esac
   check_gui_session
   check_remote_job_worker
   # Backend infrastructure is checked only for the selected backend: herdr
   # needs the Aqua-owned fm-remote server, rex needs a persistent personal rex
-  # server, and the no-backend gap has nothing further to prove.
+  # server, t3code needs the T3 server this home signed in to, and the
+  # no-backend gap has nothing further to prove.
   case "$DOCTOR_BACKEND" in
     herdr)
       check_launch_agent "$shell"
       check_herdr_server
       ;;
     rex) check_rex_server ;;
+    t3code) check_t3code_server ;;
   esac
   check_entrypoint_link
 }

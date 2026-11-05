@@ -1346,7 +1346,7 @@ fi
 spawn_remote_secondmate() {
   local id=$1 remote host root home harness positional model effort backend out rc meta tmp
   local remote_backend remote_target remote_harness remote_herdr_session registry_lock remote_lock remote_generation
-  local remote_rex_session_id remote_rex_server remote_rex_ok
+  local remote_rex_session_id remote_rex_server remote_rex_ok remote_t3_thread_id
   local remote_traceparent remote_recorded_traceparent sm_primary_head sync_out sync_rc account_config
   local -a launch_args
   id=${POS[0]:-}
@@ -1454,11 +1454,11 @@ spawn_remote_secondmate() {
   # A remote second mate runs only on a backend whose session-provider server
   # outlives every SSH connection that supervises it: herdr (its server belongs
   # to the host's GUI login session) is the default; rex runs on the host's
-  # persistent personal rex server. Without an explicit selection a relaunch
-  # keeps the backend its record names, and a record written before rex
-  # existed names none, so it is herdr. bin/fm-remote-doctor.sh gates that host
-  # on the selected backend, and the remote home's config/backend never
-  # overrides the selection.
+  # persistent personal rex server; t3code runs a thread on the host's own T3
+  # Code server. Without an explicit selection a relaunch keeps the backend its
+  # record names, and a record written before rex existed names none, so it is
+  # herdr. bin/fm-remote-doctor.sh gates that host on the selected backend, and
+  # the remote home's config/backend never overrides the selection.
   backend=${BACKEND_ARG:-}
   if [ -z "$backend" ] && [ -f "$meta" ]; then
     backend=$(fm_meta_get "$meta" remote_backend)
@@ -1466,10 +1466,23 @@ spawn_remote_secondmate() {
   case "${backend:--}" in
   -) backend=herdr ;;
   herdr | rex) ;;
+  t3code)
+    # T3 runs only claude and codex second mates; refuse here, before the
+    # host is synced or sent inherited material, rather than on the host.
+    case "$harness" in
+    claude | codex) ;;
+    *)
+      fm_lock_release "$registry_lock" || true
+      fm_lock_release "$SPAWN_TASK_LOCK" || true
+      echo "error: a remote secondmate on the t3code backend runs only the claude or codex harness, not '$harness'" >&2
+      return 1
+      ;;
+    esac
+    ;;
   *)
     fm_lock_release "$registry_lock" || true
     fm_lock_release "$SPAWN_TASK_LOCK" || true
-    echo "error: a remote secondmate runs only on the herdr or rex backend, not '$backend'" >&2
+    echo "error: a remote secondmate runs only on the herdr, rex, or t3code backend, not '$backend'" >&2
     return 1
     ;;
   esac
@@ -1587,6 +1600,7 @@ spawn_remote_secondmate() {
   remote_herdr_session=
   remote_rex_session_id=
   remote_rex_server=
+  remote_t3_thread_id=
   case "$remote_backend" in
     herdr)
       remote_herdr_session=$(printf '%s\n' "$out" | sed -n 's/^herdr_session=//p' | tail -1)
@@ -1615,6 +1629,19 @@ spawn_remote_secondmate() {
         fm_lock_release "$registry_lock" || true
         fm_lock_release "$SPAWN_TASK_LOCK" || true
         echo "error: remote launch returned malformed Rex route metadata (session '${remote_rex_session_id:-missing}', server '${remote_rex_server:-missing}', target '${remote_target:-missing}'); preserving the remote route for reconciliation" >&2
+        return 1
+      fi
+      ;;
+    t3code)
+      # The target is the T3 thread id the host's own server assigned, and the
+      # route names the same thread; T3 ids are opaque atoms like mcp:<uuid>.
+      remote_t3_thread_id=$(printf '%s\n' "$out" | sed -n 's/^t3_thread_id=//p' | tail -1)
+      case "$remote_target" in *[!0-9a-zA-Z:_-]*) remote_t3_thread_id= ;; esac
+      if [ -z "$remote_t3_thread_id" ] || [ "$remote_t3_thread_id" != "$remote_target" ]; then
+        fm_lock_release "$remote_lock" || true
+        fm_lock_release "$registry_lock" || true
+        fm_lock_release "$SPAWN_TASK_LOCK" || true
+        echo "error: remote launch returned malformed T3 route metadata (thread '${remote_t3_thread_id:-missing}', target '${remote_target:-missing}'); preserving the remote route for reconciliation" >&2
         return 1
       fi
       ;;
@@ -1651,6 +1678,7 @@ spawn_remote_secondmate() {
         echo "remote_rex_session_id=$remote_rex_session_id"
         echo "remote_rex_server=$remote_rex_server"
         ;;
+      t3code) echo "remote_t3_thread_id=$remote_t3_thread_id" ;;
     esac
     echo "remote_target=$remote_target"
     [ -z "$remote_recorded_traceparent" ] || echo "traceparent=$remote_recorded_traceparent"
@@ -5450,9 +5478,17 @@ EOF
     if [ "$KIND" = secondmate ]; then
       # The home's own daemon and crew call the same server, so they read the
       # primary's credential through a link rather than a copy of the secret.
+      # A remote second mate's host-local launch runs with the home's own
+      # config as $CONFIG: that home holds its own sign-in to this machine's
+      # T3, which a link onto itself would destroy, so it is checked instead.
       T3CODE_HOME_ENV=1
-      if ! { mkdir -p "$PROJ_ABS/config" &&
-        ln -sfn "$(cd "$CONFIG" && pwd -P)/t3code-token" "$PROJ_ABS/config/t3code-token"; }; then
+      if ! mkdir -p "$PROJ_ABS/config"; then
+        echo "error: could not create $PROJ_ABS/config for $ID" >&2
+        exit 1
+      fi
+      if [ "$(cd "$CONFIG" && pwd -P)" = "$(cd "$PROJ_ABS/config" && pwd -P)" ]; then
+        node "$SCRIPT_DIR/fm-t3-mcp.mjs" host-credential --token-file "$PROJ_ABS/config/t3code-token" >/dev/null || exit 1
+      elif ! ln -sfn "$(cd "$CONFIG" && pwd -P)/t3code-token" "$PROJ_ABS/config/t3code-token"; then
         echo "error: could not link the T3 credential into $PROJ_ABS/config for $ID" >&2
         exit 1
       fi

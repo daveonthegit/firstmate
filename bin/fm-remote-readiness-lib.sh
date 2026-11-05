@@ -11,12 +11,13 @@
 # owner of every check, every repair, and every message; nothing here restates
 # them.
 #
-# <backend> is herdr, rex, or any (the default). A concrete backend is passed
+# <backend> is herdr, rex, t3code, or any (the default). A concrete backend is passed
 # to the doctor's --backend flag; `any` invokes it bare, which resolves
 # whichever supported backend that host provides. A remote still on the
 # herdr-only doctor exits 2 on the unknown flag; an explicit herdr request then
-# retries bare, whose only selectable backend there is herdr. rex has no such
-# fallback: a remote that old cannot run it.
+# retries bare, whose only selectable backend there is herdr. rex and t3code
+# have no such fallback: a remote that old cannot run them, and an older doctor
+# that knows rex but not t3code refuses the flag, which reads as not ready.
 #
 # Returns 0 when the host is ready, 1 when a gap remains, and 255 when SSH could
 # not complete. 255 means unknown remote completion, so a caller preserves its

@@ -78,7 +78,8 @@ fm_secondmate_restart_capable() {  # <meta-file>
     FM_SECONDMATE_RESTART_HOST=$remote_host
     # A remote mate's endpoint record lives on its host; the parent's own record
     # names the backend that launch established there, and the remote route
-    # accepts only herdr or rex.
+    # accepts only herdr, rex, or t3code; t3code then refuses below exactly as
+    # a local T3 second mate does.
     backend=$(fm_meta_get "$meta" remote_backend)
     [ -n "$backend" ] || backend=herdr
   else

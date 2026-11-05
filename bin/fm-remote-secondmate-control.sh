@@ -2,7 +2,7 @@
 # Host-local lifecycle control for the remote secondmate home selected by fm-on.
 #
 # Usage:
-#   fm-remote-secondmate-control.sh launch <id> <harness> <model|-> <effort|-> {herdr|rex} [traceparent]
+#   fm-remote-secondmate-control.sh launch <id> <harness> <model|-> <effort|-> {herdr|rex|t3code} [traceparent]
 #   fm-remote-secondmate-control.sh relaunch <id> <harness> <model|default|-> <effort|default|->
 #   fm-remote-secondmate-control.sh state <id>
 #   fm-remote-secondmate-control.sh route <id>
@@ -17,10 +17,13 @@
 #
 # Remote placement ends here, but the second-mate agent runs only on a
 # session-provider backend whose server survives every SSH disconnection that
-# supervises it: herdr in the dedicated fm-remote session, or rex in this
-# home's own 2ndmate-<id>-<hash> session on the host's personal rex server.
-# Launch refuses any other selection rather than reading this home's
-# config/backend. The user's interactive sessions remain for the user's work.
+# supervises it: herdr in the dedicated fm-remote session, rex in this
+# home's own 2ndmate-<id>-<hash> session on the host's personal rex server, or
+# t3code as a thread on this host's own T3 Code server, driven with this home's
+# own sign-in (config/t3code-token, a regular file whose origin is loopback;
+# bin/fm-t3-mcp.mjs host-credential owns that test). Launch refuses any other
+# selection rather than reading this home's config/backend. The user's
+# interactive sessions remain for the user's work.
 # fm-spawn/fm-send/fm-teardown keep owning the local endpoint mechanics.
 # The home's own workers keep their ordinary backend selection.
 # bin/fm-remote-doctor.sh owns that host's readiness for the selected backend.
@@ -44,6 +47,8 @@
 # Relaunch is not a second lifecycle implementation: it runs the ORDINARY local
 # control plane here, because from this host the mate is a plain local
 # secondmate. cmd_relaunch below owns why the parent must hand it the profile.
+# Because it is that plane, a t3code mate's relaunch is refused exactly as a
+# local T3 second mate's is: a T3 thread has no replacement agent to launch.
 # It ends by printing the same route block `route` prints, so a caller that
 # invoked it directly (rather than through bin/fm-remote-secondmate-relaunch.sh,
 # which reads this block to keep the parent's own record in sync) still gets
@@ -69,7 +74,7 @@ REMOTE_HERDR_SESSION=fm-remote
 export FM_BACKEND_REX_NO_AUTOSTART=1
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
-usage() { sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 validate_id() { case "$1" in ''|*[!A-Za-z0-9._-]*) die "invalid secondmate id: $1" ;; esac; }
 
 # Sourcing fm-wake-lib.sh through the libraries below creates "$FM_HOME/state",
@@ -144,11 +149,42 @@ remote_endpoint_load() {
           ;;
       esac
       ;;
+    t3code)
+      # The validator above already binds t3_thread_id to the target. The
+      # locality gate is the credential every endpoint operation here resolves
+      # through: this home's own sign-in to this host's T3, never a link to
+      # another home's or a credential for another machine's server.
+      if ! remote_t3code_credential_check; then
+        REMOTE_ENDPOINT_ERROR="remote secondmate $id endpoint is a T3 thread, but $REMOTE_T3CODE_CREDENTIAL_ERROR; refusing access until it is restored"
+        return 1
+      fi
+      ;;
     *)
-      REMOTE_ENDPOINT_ERROR="remote secondmate $id endpoint is recorded on backend '$REMOTE_ENDPOINT_BACKEND'; a remote secondmate runs only on herdr or rex; refusing access until it is explicitly migrated"
+      REMOTE_ENDPOINT_ERROR="remote secondmate $id endpoint is recorded on backend '$REMOTE_ENDPOINT_BACKEND'; a remote secondmate runs only on herdr, rex, or t3code; refusing access until it is explicitly migrated"
       return 1
       ;;
   esac
+}
+
+# This home's T3 credential must be its own sign-in to this host's T3 server.
+# bin/fm-t3-mcp.mjs host-credential is the one owner of that test; its refusal
+# line becomes REMOTE_T3CODE_CREDENTIAL_ERROR.
+remote_t3code_credential_check() {
+  local out
+  REMOTE_T3CODE_CREDENTIAL_ERROR=
+  command -v node >/dev/null 2>&1 || {
+    REMOTE_T3CODE_CREDENTIAL_ERROR="node does not resolve on this host, so its T3 credential cannot be read"
+    return 1
+  }
+  if out=$(node "$SCRIPT_DIR/fm-t3-mcp.mjs" host-credential \
+    --token-file "$TARGET_HOME/config/t3code-token" 2>&1 >/dev/null); then
+    return 0
+  fi
+  out=$(printf '%s
+' "$out" | grep -v '^warning:' | tail -1)
+  out=${out#fm-t3-mcp: }
+  REMOTE_T3CODE_CREDENTIAL_ERROR=${out:-the T3 credential in $TARGET_HOME/config could not be verified}
+  return 1
 }
 
 remote_endpoint_require() {
@@ -210,6 +246,9 @@ print_route() { # <id>
       printf 'rex_session_id=%s\n' "$rex_session_id"
       printf 'rex_server=%s\n' "$rex_server"
       ;;
+    t3code)
+      printf 't3_thread_id=%s\n' "$REMOTE_ENDPOINT_TARGET"
+      ;;
   esac
   printf 'harness=%s\n' "$harness"
   printf 'model=%s\n' "$model"
@@ -245,10 +284,18 @@ cmd_launch() {
   fi
   # The selected backend's session-provider server must survive every SSH
   # disconnection a remote route depends on: the herdr server belongs to the
-  # GUI login session, and a persistent `rex server start` server is a
-  # detached daemon no SSH session owns. bin/fm-remote-doctor.sh is the
-  # readiness owner for whichever backend the parent selected.
-  case "$selected_backend" in herdr|rex) ;; *) die "a remote secondmate runs only on the herdr or rex backend, not '$selected_backend'" ;; esac
+  # GUI login session, a persistent `rex server start` server is a detached
+  # daemon no SSH session owns, and a T3 Code server runs its threads itself,
+  # outside every SSH session. bin/fm-remote-doctor.sh is the readiness owner
+  # for whichever backend the parent selected.
+  case "$selected_backend" in
+    herdr|rex) ;;
+    t3code)
+      case "$harness" in claude|codex) ;; *) die "a remote secondmate on the t3code backend runs only the claude or codex harness, not '$harness'" ;; esac
+      remote_t3code_credential_check || die "a remote secondmate on the t3code backend needs this home's own sign-in to this host's T3 server: $REMOTE_T3CODE_CREDENTIAL_ERROR"
+      ;;
+    *) die "a remote secondmate runs only on the herdr, rex, or t3code backend, not '$selected_backend'" ;;
+  esac
   mkdir -p "$CONTROL_STATE" "$CONTROL_DATA"
   meta=$(meta_path "$id")
   if [ -f "$meta" ]; then
@@ -271,10 +318,19 @@ cmd_launch() {
         return 0
         ;;
       dead)
+        # On t3code a dead thread is one whose run failed; the kill is the
+        # proven archive, so a replacement never runs beside a live thread.
         fm_backend_kill "$REMOTE_ENDPOINT_BACKEND" "$REMOTE_ENDPOINT_TARGET" 2>/dev/null \
           || die "could not remove the confirmed agent-less endpoint"
         ;;
-      missing) ;;
+      missing)
+        # A T3 thread reads missing once archived, which T3 may still be
+        # finishing; its idempotent kill re-proves the close first.
+        if [ "$REMOTE_ENDPOINT_BACKEND" = t3code ]; then
+          fm_backend_kill t3code "$REMOTE_ENDPOINT_TARGET" 2>/dev/null \
+            || die "could not prove the recorded T3 thread closed; refusing a duplicate launch"
+        fi
+        ;;
       *) die "remote endpoint state is $current; refusing duplicate launch" ;;
     esac
   fi
@@ -389,7 +445,9 @@ cmd_send_body() {
       return 0
       ;;
   esac
-  fm_task_inbox_ring "$REMOTE_ENDPOINT_BACKEND" "$REMOTE_ENDPOINT_TARGET" "$rec" "fm-$id" || ring_rc=$?
+  # The route state directory scopes a t3code ring's send record, the same
+  # place the host-local launch kept its first message's.
+  FM_STATE_OVERRIDE=$CONTROL_STATE fm_task_inbox_ring "$REMOTE_ENDPOINT_BACKEND" "$REMOTE_ENDPOINT_TARGET" "$rec" "fm-$id" || ring_rc=$?
   case "$ring_rc" in
     1) printf 'notice: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at %s\n' "$rec" >&2 ;;
     2) printf 'notice: doorbell did not reach %s; the steer is durably recorded at %s\n' "$REMOTE_ENDPOINT_TARGET" "$rec" >&2 ;;
