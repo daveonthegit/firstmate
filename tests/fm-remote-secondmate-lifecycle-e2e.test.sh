@@ -1680,6 +1680,10 @@ pass "a remote secondmate may run on rex with strict route validation both ways"
 if command -v node >/dev/null 2>&1; then
   cp "$remote_route_meta" "$TMP_ROOT/remote-ios-before-t3.meta"
   cp "$PARENT/state/ios.meta" "$TMP_ROOT/parent-ios-before-t3.meta"
+  # Launch and liveness recovery both resolve the parent's second-mate pin, so
+  # the leg pins a profile T3 runs for its duration.
+  cp "$PARENT/config/secondmate-harness" "$TMP_ROOT/secondmate-harness-before-t3"
+  printf 'claude claude-sonnet-5\n' > "$PARENT/config/secondmate-harness"
   ln -sf "$(command -v node)" "$REMOTE_ROOT/bin/node"
   printf '#!/usr/bin/env bash\nexit 0\n' > "$REMOTE_ROOT/bin/treehouse"
   chmod +x "$REMOTE_ROOT/bin/treehouse"
@@ -1687,7 +1691,7 @@ if command -v node >/dev/null 2>&1; then
   t3_fake_case "$TMP_ROOT/t3-case" '{"projects":[],"threads":{}}'
   t3_fake_credential "$REMOTE_HOME/config/t3code-token"
   rm -f "$remote_route_meta"
-  remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend t3code --harness claude --model claude-sonnet-5 \
+  remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend t3code \
     >"$TMP_ROOT/spawn-t3.out" 2>&1 \
     || fail "a remote t3code secondmate launch was refused: $(cat "$TMP_ROOT/spawn-t3.out")"
   t3_thread=$(sed -n 's/^remote_t3_thread_id=//p' "$PARENT/state/ios.meta" | tail -1)
@@ -1715,7 +1719,7 @@ if command -v node >/dev/null 2>&1; then
     || fail "the failed t3code run was not projected dead from its own host"
   BOOT_T3_DEAD=$(FM_BOOTSTRAP_VERBOSE_FACTS=1 remote_env "$ROOT/bin/fm-bootstrap.sh")
   assert_contains "$BOOT_T3_DEAD" 'secondmate ios relaunched after remote endpoint dead' \
-    "the failed t3code secondmate was not reported relaunched"$'\n'"$BOOT_T3_DEAD"
+    "the failed t3code secondmate was not reported relaunched"$'\n'"$(printf '%s\n' "$BOOT_T3_DEAD" | grep -v '━')"
   assert_grep 'remote_backend=t3code' "$PARENT/state/ios.meta" "recovery moved the t3code secondmate off its recorded backend"
   t3_new_thread=$(sed -n 's/^remote_t3_thread_id=//p' "$PARENT/state/ios.meta" | tail -1)
   [ -n "$t3_new_thread" ] && [ "$t3_new_thread" != "$t3_thread" ] || fail "recovery did not record a fresh t3code thread"
@@ -1724,6 +1728,7 @@ if command -v node >/dev/null 2>&1; then
     || fail "the relaunched t3code endpoint did not read alive"
   t3_fake_stop
   rm -f "$REMOTE_ROOT/bin/node" "$REMOTE_ROOT/bin/treehouse" "$REMOTE_HOME/config/t3code-token"
+  mv -f "$TMP_ROOT/secondmate-harness-before-t3" "$PARENT/config/secondmate-harness"
   mv -f "$TMP_ROOT/remote-ios-before-t3.meta" "$remote_route_meta"
   mv -f "$TMP_ROOT/parent-ios-before-t3.meta" "$PARENT/state/ios.meta"
   pass "a remote secondmate may run as a thread on its host's T3, steered and recovered there"
