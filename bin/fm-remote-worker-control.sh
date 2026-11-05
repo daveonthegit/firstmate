@@ -54,12 +54,15 @@
 #   schema=fm-remote-worker-control.v1
 #   task=<id> kind=<ship|scout> backend=<b> target=<t> worktree=<path>
 #   project=<path> harness=<h> model=<m> effort=<e> mode=<m> yolo=<y>
-#   branch=<b> (ship only, when recorded)
+#   branch=<b> base_branch=<b> (when recorded)
 # one key=value per line.
 #
-# send writes the steer idempotently (FM_SEND_IDEMPOTENT=1), so the primary may
-# repeat this leg once after an ambiguous transport failure without a second
-# record. teardown runs the full ordinary fm-teardown here - landed-work test,
+# send and send-stdin require a primary-minted unique delivery id for each new
+# steer, even when its text repeats. Reuse the id and exact message only for a
+# retry of that immutable request after an ambiguous transport failure.
+# FM_SEND_IDEMPOTENT=1 deduplicates the correlation-marked body against pending
+# and acknowledged inbox records. teardown runs the full ordinary fm-teardown
+# here - landed-work test,
 # endpoint close, process reaper, worktree return - and removes the claim only
 # once that task record is gone.
 set -eu

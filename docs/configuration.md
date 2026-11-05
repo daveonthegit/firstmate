@@ -1255,13 +1255,13 @@ A local standalone-clone home cannot receive a primary-local commit through that
 ## Worker hosts (data/worker-hosts.md)
 
 The optional local, gitignored `data/worker-hosts.md` names the other machines that run individual ship and scout workers for this primary ([remote workers](remote-workers.md)).
-Each record is one line, and every other line is ignored prose:
+Each line beginning with `- ` must be a record; other lines are ignored prose:
 
 ```text
 - <id> - <one-sentence summary> (host: <ssh-alias>; root: <absolute-code-root>; home: <absolute-home>; added YYYY-MM-DD)
 ```
 
-`bin/fm-worker-host-lib.sh` owns parsing, and [`bin/fm-on.sh`](../bin/fm-on.sh) resolves a worker host id or a unique SSH alias across this file and the remote records in `data/secondmates.md`.
+`bin/fm-worker-host-lib.sh` owns parsing; the [`fm-on.sh` header](../bin/fm-on.sh) owns route selection across the worker host and remote second-mate registries.
 A malformed record stops routing rather than being skipped.
 
 ## Harness support

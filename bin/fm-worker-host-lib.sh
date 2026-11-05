@@ -5,11 +5,12 @@
 # A worker host is another SSH-reachable machine that runs a headless
 # Firstmate home for this primary's ship and scout workers. The primary keeps
 # every task record; the host only runs the ordinary local scripts against its
-# own home (docs/remote-workers.md). One record per host:
-#   - <id> - <summary> (host: <ssh-alias>; root: <abs-code-root>; home: <abs-home>; added YYYY-MM-DD)
+# own home (docs/remote-workers.md). docs/configuration.md's Worker hosts
+# section owns the record format.
 # The summary is natural language, so field boundaries are anchored to the
 # structured suffix rather than to incidental punctuation, exactly as in
-# bin/fm-secondmate-registry-lib.sh. Every other line is ignored prose.
+# bin/fm-secondmate-registry-lib.sh. Routing rejects malformed record lines;
+# lines without the `- ` prefix are ignored prose.
 
 WORKER_HOST_ID=
 WORKER_HOST_SUMMARY=

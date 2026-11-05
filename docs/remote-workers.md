@@ -28,14 +28,13 @@ The host's spawn re-validates the brief against the host's own `data/projects.md
 
 The host leg answers only for tasks a primary placed there.
 A spawn for a task the host already holds reports the existing route instead of launching again, which makes a re-run after an unconfirmed SSH spawn safe.
-`send <task-id> <delivery-id> <message>` and `send-stdin <task-id> <delivery-id>` require a primary-minted unique token for each new steer, even when its text repeats.
-Reuse that token and the exact message only for a retry of that same immutable request after an unconfirmed transport; its correlation-marked inbox body deduplicates against both pending and acknowledged records.
-Cleanup on the host is its ordinary cleanup, including the landed-work test, so unlanded work on the host is refused there exactly as it would be locally.
+The [controller header](../bin/fm-remote-worker-control.sh) owns delivery identity and retry requirements for steering.
+Cleanup uses the host's ordinary [`fm-teardown.sh`](../bin/fm-teardown.sh), whose header owns the landed-work test and force exception.
 
 ## Register a worker host
 
 Add one line per host to the primary's `data/worker-hosts.md`; [configuration](configuration.md#worker-hosts-dataworker-hostsmd) owns the record format.
-A worker host id and a remote second-mate id must differ, and an SSH alias used by more than one remote home is usable only through its ids.
+The [`fm-on.sh` header](../bin/fm-on.sh) owns route uniqueness across both registries, including id and SSH-alias collisions.
 
 ## Prepare the worker host
 
