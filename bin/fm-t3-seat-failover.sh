@@ -120,6 +120,11 @@ continuation() {
 send_continuation() {  # <seat> <detail>
   FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" "$SCRIPT_DIR/fm-send.sh" "$ID" "$(continuation "$1")" >/dev/null \
     || report failed "moved to $1 but the continuation steer was not recorded; the next check resends it" 1
+  if [ "$RUN_STATUS" = failed ]; then
+    FM_T3CODE_CLIENT_REQUEST_ID="fm-seat-failover-$ID-$RUN" fm_backend_t3code_turn_start "$THREAD" \
+      "Firstmate recovery: your Claude seat has changed. Read and act on the pending instructions in your steering inbox before continuing." \
+      || report failed "moved to $1 but the recovery turn was not accepted; the next check retries it" 1
+  fi
   meta_put t3_failover_sent=1 || report failed "moved to $1 and steered, but the task record could not be updated" 1
   report moved "$2" 10
 }
@@ -130,14 +135,13 @@ CHECK=$(fm_backend_t3code_mcp limit-check --thread "$THREAD" 2>/dev/null) \
 FIELDS=$(printf '%s' "$CHECK" | node -e '
 const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const clean = (v) => String(v ?? "").replace(/[\t\n\r]/g, " ");
-process.stdout.write([d.limited === true ? 1 : 0, clean(d.runId), clean(d.instanceId), clean(d.evidence), clean(d.model)].join("\t"));
+process.stdout.write([d.limited === true ? 1 : 0, clean(d.runId), clean(d.instanceId), clean(d.evidence), clean(d.model), clean(d.runStatus)].join("\t"));
 ') || report failed "unreadable limit check for T3 thread $THREAD" 1
-IFS=$'\t' read -r LIMITED RUN FROM EVIDENCE MODEL <<< "$FIELDS"
+IFS=$'\t' read -r LIMITED RUN FROM EVIDENCE MODEL RUN_STATUS <<< "$FIELDS"
 [ "$LIMITED" = 1 ] || report none "latest run did not end on a usage limit" 0
 [ -n "$FROM" ] || FROM=$(fm_meta_get "$META" t3_instance)
 
-if [ "$RUN" = "$(fm_meta_get "$META" t3_failover_run)" ]; then
-  [ "$(fm_meta_get "$META" t3_failover_result)" != exhausted ] || report exhausted "run $RUN has no usable alternate seat" 3
+if [ "$RUN" = "$(fm_meta_get "$META" t3_failover_run)" ] && [ "$(fm_meta_get "$META" t3_failover_result)" != exhausted ]; then
   [ "$(fm_meta_get "$META" t3_failover_sent)" != 1 ] || report none "run $RUN already handled" 0
   send_continuation "$(fm_meta_get "$META" t3_instance)" "continuation resent for $RUN"
 fi
@@ -154,7 +158,7 @@ process.stdout.write([d.instance, d.allExhausted ? 1 : 0, d.notes.join("; ").rep
 IFS=$'\t' read -r TO ALL NOTES <<< "$CHOICE"
 if [ "$ALL" = 1 ]; then
   meta_put "t3_failover_run=$RUN" t3_failover_result=exhausted t3_failover_sent=1 || report failed "could not record run $RUN as handled" 1
-  report exhausted "seat $FROM hit its usage limit ($EVIDENCE) and every other Claude seat is exhausted too: $NOTES" 3
+  report exhausted "run $RUN: every other Claude seat is exhausted too" 3
 fi
 
 MOVE=$(fm_backend_t3code_mcp configure --thread "$THREAD" --instance "$TO" 2>&1) \

@@ -110,10 +110,10 @@ On each poll, [`bin/fm-watch.sh`](../bin/fm-watch.sh) runs [`bin/fm-t3-seat-fail
 It looks for that notice or error in the thread's latest finished run (`fm-t3-mcp.mjs limit-check`); a message that only discusses limits does not count.
 On a match it moves the same thread to another seat with `t3_thread_configure` `modelSelection` (`fm-t3-mcp.mjs configure`).
 The move keeps the model, options, transcript, and worktree, and it is read back before it counts.
-The script then sends one continuation steer through the steering inbox.
-Each limited run is handled once.
+The script then sends a continuation steer through the steering inbox. For a failed thread, it explicitly starts a recovery turn to read that inbox and records delivery only after T3 accepts the turn; retries reuse the same request id.
+Each limited run is moved once.
 A move is routine and only logged.
-Firstmate is notified once when every other seat is exhausted or when the move fails, and the thread then stays where it is.
+Firstmate is notified once per run when every other seat is exhausted. The thread stays where it is while subsequent checks re-evaluate the alternate seats, then moves when quota measures a seat healthy or its usage-limit mark expires. Move and delivery failures are reported for retry.
 Secondmate recovery runs the same check before resuming a failed secondmate run, so a usage-limited mate moves to another seat instead of resuming on the exhausted one.
 
 ### Capability gate

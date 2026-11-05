@@ -3620,6 +3620,81 @@ test_seat_failover_retries_chooser_errors() {
   pass "chooser failures leave runs retryable and corrected configuration allows failover without resetting task state"
 }
 
+assert_seat_recovery_running() {
+  assert_equals true "$(t3_json_field "$T3_FAKE_WORLD" 'd.threads["thread-live"].status === "running" && !!d.threads["thread-live"].activeRunId && d.threads["thread-live"].activeRunId !== "run-limit"')" "failover must start an actual continuation run, not merely enqueue a message"
+  assert_equals claude_b "$(t3_json_field "$T3_FAKE_WORLD" 'd.threads["thread-live"].modelSelection.instanceId')" "the continuation must run on the alternate seat"
+  [ "$(t3_log_line_of 'r.tool === "t3_thread_send"')" -gt 0 ] || fail "recovery must reach the T3 send interface"
+}
+
+test_seat_failover_rechecks_exhaustion() {
+  local mode kind snap out rc first
+  for mode in quota expiry; do
+    for kind in ship secondmate; do
+      t3_case "seat-replenished-$mode-$kind"
+      t3_two_seats
+      t3_failover_task t3replenished "$kind"
+      t3_limited_thread "Working." failed "Claude AI usage limit reached|1793900000"
+      snap="$CASE_DIR/quota.json"
+      if [ "$mode" = quota ]; then
+        t3_quota_snapshot "$snap" "$CASE_DIR/seat-b=0.8:exhausted_now"
+      else
+        printf '{}' > "$snap"
+        mkdir -p "$CASE_DIR/state/t3code-exhausted"
+        date +%s > "$CASE_DIR/state/t3code-exhausted/claude_b"
+      fi
+      out=$(FM_T3CODE_QUOTA_SNAPSHOT="$snap" t3_failover t3replenished); rc=$?
+      expect_code 3 "$rc" "an exhausted alternate must leave the $kind stopped"$'\n'"$out"
+      first=$out
+      out=$(FM_T3CODE_QUOTA_SNAPSHOT="$snap" t3_failover t3replenished); rc=$?
+      expect_code 3 "$rc" "the exhausted alternate must still block ordinary recovery"$'\n'"$out"
+      assert_equals "$first" "$out" "repeated exhaustion must preserve the watcher's notification deduplication key"
+      [ "$(t3_log_line_of 'r.tool === "t3_thread_send"')" -eq 0 ] || fail "an exhausted alternate must not start a turn"
+      if [ "$mode" = quota ]; then
+        t3_quota_snapshot "$snap" "$CASE_DIR/seat-b=0.8:through_reset"
+      else
+        printf 1 > "$CASE_DIR/state/t3code-exhausted/claude_b"
+      fi
+      out=$(FM_T3CODE_QUOTA_SNAPSHOT="$snap" t3_failover t3replenished); rc=$?
+      expect_code 10 "$rc" "the same stopped $kind run must recover after $mode replenishment"$'\n'"$out"
+      assert_seat_recovery_running
+      assert_grep 't3_failover_sent=1' "$CASE_DIR/state/t3replenished.meta" "accepted recovery must be recorded"
+    done
+  done
+  pass "exhaustion is rechecked without duplicate notifications and replenished quota or expired marks restart ships and secondmates"
+}
+
+test_failed_seat_recovery_requires_accepted_turn() {
+  local kind out rc first_id second_id
+  for kind in ship secondmate; do
+    t3_case "seat-recovery-acceptance-$kind"
+    t3_two_seats
+    t3_failover_task t3accepted "$kind"
+    t3_limited_thread "Working." failed "Claude AI usage limit reached|1793900000"
+    t3_world_set 'w.failTools = { t3_thread_send: { code: "invalid_request", message: "send refused" } }'
+    out=$(t3_failover t3accepted); rc=$?
+    expect_code 1 "$rc" "a refused recovery turn must not report a successful $kind move"$'\n'"$out"
+    assert_contains "$out" 'recovery turn was not accepted' "the failure must name the delivery boundary"
+    assert_grep 't3_instance=claude_b' "$CASE_DIR/state/t3accepted.meta" "the proven seat move must remain recorded"
+    assert_grep 't3_failover_sent=0' "$CASE_DIR/state/t3accepted.meta" "an enqueued but unaccepted continuation must remain pending"
+    assert_equals failed "$(t3_json_field "$T3_FAKE_WORLD" 'd.threads["thread-live"].status')" "a refused turn must leave the thread failed"
+    first_id=$(t3_request "$(t3_log_line_of 'r.tool === "t3_thread_send"')" 'r.arguments.clientRequestId')
+    t3_world_set 'w.failTools = {}'
+    out=$(t3_failover t3accepted); rc=$?
+    expect_code 10 "$rc" "a pending $kind continuation must recover once its turn is accepted"$'\n'"$out"
+    assert_seat_recovery_running
+    assert_grep 't3_failover_sent=1' "$CASE_DIR/state/t3accepted.meta" "only an accepted recovery may be recorded as sent"
+    second_id=$(node -e '
+const sends = require("fs").readFileSync(process.argv[1], "utf8").split("\n").filter(Boolean).map(JSON.parse).filter((r) => r.tool === "t3_thread_send");
+if (sends.length !== 2) process.exit(1);
+process.stdout.write(sends[1].arguments.clientRequestId);
+' "$LOG") || fail "the pending recovery must make exactly one retry send"
+    assert_equals "$first_id" "$second_id" "recovery retries must reuse their T3 idempotency key"
+    out=$(t3_failover t3accepted); rc=$?
+    expect_code 0 "$rc" "the accepted running continuation must not trigger another recovery"$'\n'"$out"
+  done
+  pass "failed ships and secondmates report recovery only after an accepted continuation turn on the alternate seat"
+}
+
 test_seat_review_regressions() {
   test_seat_pool_parsing_is_backward_compatible
   test_seat_choice_by_quota_rotation_and_marks
@@ -3632,6 +3707,8 @@ test_seat_review_regressions() {
   test_seat_shared_quota_opt_out
   test_default_model_does_not_validate_unselected_seat
   test_seat_failover_retries_chooser_errors
+  test_seat_failover_rechecks_exhaustion
+  test_failed_seat_recovery_requires_accepted_turn
 }
 
 if [ -n "${FM_TEST_ONLY:-}" ]; then
@@ -3759,3 +3836,5 @@ test_seat_rotation_serializes_shared_choices
 test_seat_shared_quota_opt_out
 test_default_model_does_not_validate_unselected_seat
 test_seat_failover_retries_chooser_errors
+test_seat_failover_rechecks_exhaustion
+test_failed_seat_recovery_requires_accepted_turn
