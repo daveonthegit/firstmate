@@ -28,7 +28,8 @@ The host's spawn re-validates the brief against the host's own `data/projects.md
 
 The host leg answers only for tasks a primary placed there.
 A spawn for a task the host already holds reports the existing route instead of launching again, which makes a re-run after an unconfirmed SSH spawn safe.
-A steer is written idempotently, so one retry after an unconfirmed transport does not produce a second record.
+`send <task-id> <delivery-id> <message>` and `send-stdin <task-id> <delivery-id>` require a primary-minted unique token for each new steer, even when its text repeats.
+Reuse that token and the exact message only for a retry of that same immutable request after an unconfirmed transport; its correlation-marked inbox body deduplicates against both pending and acknowledged records.
 Cleanup on the host is its ordinary cleanup, including the landed-work test, so unlanded work on the host is refused there exactly as it would be locally.
 
 ## Register a worker host

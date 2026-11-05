@@ -35,6 +35,14 @@ case "${1:-}" in
     done
     printf '%s\n' "$name" > "$window_file"
     ;;
+  capture-pane)
+    case "${FM_FAKE_CAPTURE_MODE:-}" in
+      missing) printf 'pane not found\n' >&2; exit 7 ;;
+      large) perl -e 'print "x" x 131072' ;;
+      large-failure) perl -e 'print "x" x 131072'; exit 7 ;;
+      *) printf 'worker output\n' ;;
+    esac
+    ;;
   kill-window) : > "$window_file" ;;
 esac
 exit 0
@@ -116,19 +124,49 @@ test_spawn_renders_host_brief_and_reports_route() {
   esac
   pass "route and state answer for a placed task with the ordinary one-line crew state"
 
-  out=$(on_host "$CONTROL" send t1 'please also update the changelog' 2>&1) \
+  out=$(on_host "$CONTROL" send t1 delivery-1 'continue' 2>&1) \
     || fail "send failed: $out"
-  find "$HOST_HOME/state/t1.inbox" -maxdepth 1 -name '*.msg' | grep -q . \
-    || fail "send wrote no steering-inbox record on the host"
-  out=$(on_host "$CONTROL" send t1 'please also update the changelog' 2>&1) \
-    || fail "a repeated send failed: $out"
   [ "$(find "$HOST_HOME/state/t1.inbox" -maxdepth 1 -name '*.msg' | wc -l | tr -d ' ')" -eq 1 ] \
-    || fail "a repeated identical send was not deduplicated onto the same record"
-  out=$(printf 'second line\nthird line' | on_host "$CONTROL" send-stdin t1 2>&1) \
-    || fail "send-stdin failed: $out"
+    || fail "send did not write exactly one record"
+  out=$(printf 'continue' | on_host "$CONTROL" send-stdin t1 delivery-1 2>&1) \
+    || fail "a true retry through stdin failed: $out"
+  [ "$(find "$HOST_HOME/state/t1.inbox" -maxdepth 1 -name '*.msg' | wc -l | tr -d ' ')" -eq 1 ] \
+    || fail "a true retry was not deduplicated"
+  mv "$HOST_HOME/state/t1.inbox/"*.msg "$HOST_HOME/state/t1.inbox/handled/"
+  out=$(on_host "$CONTROL" send t1 delivery-1 'continue' 2>&1) \
+    || fail "an acknowledged retry failed: $out"
+  [ "$(find "$HOST_HOME/state/t1.inbox" -maxdepth 1 -name '*.msg' | wc -l | tr -d ' ')" -eq 0 ] \
+    || fail "a true retry of an acknowledged send wrote another record"
+  out=$(printf 'continue' | on_host "$CONTROL" send-stdin t1 delivery-2 2>&1) \
+    || fail "a later identical steer failed: $out"
+  [ "$(find "$HOST_HOME/state/t1.inbox" -maxdepth 1 -name '*.msg' | wc -l | tr -d ' ')" -eq 1 ] \
+    || fail "an acknowledged identical steer swallowed a new delivery"
+  out=$(on_host "$CONTROL" send t1 delivery-3 'continue' 2>&1) \
+    || fail "a distinct pending steer failed: $out"
   [ "$(find "$HOST_HOME/state/t1.inbox" -maxdepth 1 -name '*.msg' | wc -l | tr -d ' ')" -eq 2 ] \
-    || fail "send-stdin did not write its own record"
-  pass "send writes an idempotent host steering-inbox record"
+    || fail "a pending identical steer swallowed a new delivery"
+  out=$(printf 'second line\nthird line' | on_host "$CONTROL" send-stdin t1 delivery-4 2>&1) \
+    || fail "multiline send-stdin failed: $out"
+  assert_contains "$(cat "$HOST_HOME/state/t1.inbox/"*.msg)" $'second line\nthird line' "stdin lost the multiline steer"
+  if on_host "$CONTROL" send t1 --fire-and-forget old-id continue >/dev/null 2>&1; then
+    fail "send accepted the removed delivery mode"
+  fi
+  if printf 'continue' | on_host "$CONTROL" send-stdin t1 --fire-and-forget old-id >/dev/null 2>&1; then
+    fail "send-stdin accepted the removed delivery mode"
+  fi
+  pass "delivery tokens distinguish new steers from pending and acknowledged retries"
+
+  out=$(on_host "$CONTROL" capture t1) || fail "ordinary capture failed"
+  assert_equals 'worker output' "$out" "capture changed ordinary output"
+  out=$(FM_FAKE_CAPTURE_MODE=large on_host "$CONTROL" capture t1 100) || fail "bounded capture failed"
+  [ "${#out}" -eq 65536 ] || fail "capture did not enforce the byte bound"
+  if FM_FAKE_CAPTURE_MODE=missing on_host "$CONTROL" capture t1 > /dev/null 2>&1; then
+    fail "capture hid an unreadable endpoint"
+  fi
+  if FM_FAKE_CAPTURE_MODE=large-failure on_host "$CONTROL" capture t1 100 > /dev/null 2>&1; then
+    fail "capture hid a failure after oversized output"
+  fi
+  pass "capture bounds successful output without hiding endpoint failures"
 
   mkdir -p "$HOST_HOME/data/t1"
   printf 'what happened\n' > "$HOST_HOME/data/t1/journal.md"

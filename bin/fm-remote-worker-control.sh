@@ -5,8 +5,8 @@
 #   fm-remote-worker-control.sh spawn <task-id> <project> [--scout] [flags...]  # # Task body on stdin
 #   fm-remote-worker-control.sh route <task-id>
 #   fm-remote-worker-control.sh state <task-id>
-#   fm-remote-worker-control.sh send <task-id> [--fire-and-forget <delivery-id>] <message>
-#   fm-remote-worker-control.sh send-stdin <task-id> [--fire-and-forget <delivery-id>]  # message on stdin
+#   fm-remote-worker-control.sh send <task-id> <delivery-id> <message>
+#   fm-remote-worker-control.sh send-stdin <task-id> <delivery-id>  # message on stdin
 #   fm-remote-worker-control.sh control <task-id> {interrupt|exit}
 #   fm-remote-worker-control.sh answer <task-id> [<request-id> <answers-json>]
 #   fm-remote-worker-control.sh capture <task-id> [lines]
@@ -256,28 +256,22 @@ cmd_spawn() {
   print_route "$id"
 }
 
-cmd_send() { # <id> [--fire-and-forget <delivery-id>] <message>
-  local id=$1 message
-  local -a send_args
-  shift
-  send_args=()
-  if [ "${1:-}" = --fire-and-forget ]; then
-    [ "$#" -ge 2 ] || usage
-    send_args+=(--fire-and-forget "$2")
-    shift 2
-  fi
-  [ "$#" -eq 1 ] || usage
-  message=$1
+cmd_send() {
+  [ "$#" -eq 3 ] || usage
+  local id=$1 delivery_id=$2 message=$3
+  case "$delivery_id" in
+    ''|-*|*[!A-Za-z0-9._-]*) die "invalid delivery id: $delivery_id" ;;
+  esac
   [ -n "${message//[[:space:]]/}" ] || die "remote steer message must be nonempty"
   require_task "$id"
-  FM_SEND_IDEMPOTENT=1 "$SCRIPT_DIR/fm-send.sh" "$id" "${send_args[@]}" "$message"
+  message="[remote-worker delivery: $delivery_id]"$'\n'"$message"
+  FM_SEND_IDEMPOTENT=1 "$SCRIPT_DIR/fm-send.sh" "$id" "$message"
 }
 
-cmd_send_stdin() { # <id> [--fire-and-forget <delivery-id>]
-  local id=$1 message
-  shift
+cmd_send_stdin() {
+  local id=$1 delivery_id=$2 message
   IFS= read -r -d '' message < /dev/stdin || :
-  cmd_send "$id" "$@" "$message"
+  cmd_send "$id" "$delivery_id" "$message"
 }
 
 cmd_control() {
@@ -304,7 +298,23 @@ cmd_capture() {
   case "$lines" in ''|*[!0-9]*|0) die "capture line count must be positive" ;; esac
   [ "$lines" -le "$CAPTURE_MAX_LINES" ] || die "capture line count exceeds $CAPTURE_MAX_LINES"
   require_task "$id"
-  "$SCRIPT_DIR/fm-peek.sh" "$id" "$lines" | head -c 65536
+  (
+    set -o pipefail
+    "$SCRIPT_DIR/fm-peek.sh" "$id" "$lines" | perl -e '
+      binmode STDIN; binmode STDOUT;
+      my $remaining = 65536;
+      while (1) {
+        my $n = read(STDIN, my $chunk, 8192);
+        die "capture read failed: $!" unless defined $n;
+        last unless $n;
+        if ($remaining > 0) {
+          my $out = substr($chunk, 0, $remaining);
+          print $out or die "capture write failed: $!";
+          $remaining -= length($out);
+        }
+      }
+    '
+  )
 }
 
 cmd_file() {
@@ -347,8 +357,8 @@ case "$VERB" in
   spawn) [ "$#" -ge 2 ] || usage; cmd_spawn "$@" ;;
   route) [ "$#" -eq 1 ] || usage; validate_home; require_task "$1"; print_route "$1" ;;
   state) [ "$#" -eq 1 ] || usage; validate_home; require_claim "$1"; "$SCRIPT_DIR/fm-crew-state.sh" "$1" ;;
-  send) [ "$#" -ge 2 ] || usage; validate_home; cmd_send "$@" ;;
-  send-stdin) [ "$#" -ge 1 ] && [ "$#" -le 3 ] || usage; validate_home; cmd_send_stdin "$@" ;;
+  send) [ "$#" -eq 3 ] || usage; validate_home; cmd_send "$@" ;;
+  send-stdin) [ "$#" -eq 2 ] || usage; validate_home; cmd_send_stdin "$@" ;;
   control) [ "$#" -eq 2 ] || usage; validate_home; cmd_control "$@" ;;
   answer) validate_home; cmd_answer "$@" ;;
   capture) [ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage; validate_home; cmd_capture "$@" ;;
