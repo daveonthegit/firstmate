@@ -3429,6 +3429,54 @@ for (const item of t.items) item.runId = t.runs[0].runId;'
   pass "failover serializes competing callers and permits switches across replenished windows"
 }
 
+test_seat_rotation_serializes_shared_choices() {
+  local fb barrier snap mode p1 p2 rc1 rc2 first second out
+  t3_case seat-rotation-concurrent
+  t3_two_seats
+  fb="$CASE_DIR/fakebin"; mkdir -p "$fb"
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'mktemp "$FM_T3_QUOTA_BARRIER/ready.XXXXXX" >/dev/null || exit 1' \
+    'for ((i=0; i<100; i++)); do' \
+    '  count=$(find "$FM_T3_QUOTA_BARRIER" -name "ready.*" | wc -l)' \
+    '  if [ "$count" -ge 2 ]; then cat "$FM_T3_QUOTA_TEST_SNAPSHOT"; exit; fi' \
+    '  sleep 0.05' \
+    'done' \
+    'exit 1' > "$fb/quota-axi"
+  chmod +x "$fb/quota-axi"
+  snap="$CASE_DIR/quota.json"
+  for mode in unavailable tied exhausted; do
+    barrier="$CASE_DIR/barrier-$mode"; mkdir -p "$barrier"
+    case "$mode" in
+      unavailable) printf '{}' > "$snap" ;;
+      tied) t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.5:through_reset" "$CASE_DIR/seat-b=0.5:through_reset" ;;
+      exhausted) t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.5:exhausted_now" "$CASE_DIR/seat-b=0.5:exhausted_now" ;;
+    esac
+    PATH="$fb:$PATH" FM_T3CODE_QUOTA_SNAPSHOT= FM_T3CODE_QUOTA_SECONDS=10 \
+      FM_T3_QUOTA_BARRIER="$barrier" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" \
+      t3_run 'fm_backend_t3code_instance_choose claude claude-sonnet-5 proj-1' > "$CASE_DIR/first.json" & p1=$!
+    PATH="$fb:$PATH" FM_T3CODE_QUOTA_SNAPSHOT= FM_T3CODE_QUOTA_SECONDS=10 \
+      FM_T3_QUOTA_BARRIER="$barrier" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" \
+      t3_run 'fm_backend_t3code_instance_choose claude claude-sonnet-5 proj-1' > "$CASE_DIR/second.json" & p2=$!
+    wait "$p1"; rc1=$?
+    wait "$p2"; rc2=$?
+    expect_code 0 "$rc1" "the first concurrent $mode choice must succeed"
+    expect_code 0 "$rc2" "the second concurrent $mode choice must succeed"
+    [ "$(find "$barrier" -name 'ready.*' | wc -l | tr -d ' ')" = 2 ] || fail "both callers must reach the quota boundary"
+    first=$(t3_json_field "$CASE_DIR/first.json" 'd.instance')
+    second=$(t3_json_field "$CASE_DIR/second.json" 'd.instance')
+    case "$first/$second" in
+      claudeAgent/claude_b|claude_b/claudeAgent) ;;
+      *) fail "load balancing must consume different seats for concurrent $mode choices, got $first/$second" ;;
+    esac
+    assert_equals rotation "$(t3_json_field "$CASE_DIR/first.json" 'd.basis')" "the first $mode choice must use rotation"
+    assert_equals rotation "$(t3_json_field "$CASE_DIR/second.json" 'd.basis')" "the second $mode choice must use rotation"
+  done
+  out=$(t3_choose /dev/null claude claude-sonnet-5 claudeAgent claude_b 2>&1) && fail "excluding every seat must fail"
+  out=$(t3_choose /dev/null claude claude-sonnet-5 claudeAgent)
+  assert_contains "$out" '"instance":"claude_b"' "a failed choice must release its lock for the next excluded-seat choice"
+  pass "shared seat rotation balances concurrent choices with unavailable, tied, or exhausted quota and releases locks on errors"
+}
+
 test_seat_review_regressions() {
   test_seat_pool_parsing_is_backward_compatible
   test_seat_choice_by_quota_rotation_and_marks
@@ -3437,6 +3485,7 @@ test_seat_review_regressions() {
   test_seat_failover_evidence_and_limits
   test_seat_model_scope_regressions
   test_seat_failover_serialization_and_replenishment
+  test_seat_rotation_serializes_shared_choices
 }
 
 if [ -n "${FM_TEST_ONLY:-}" ]; then
@@ -3560,3 +3609,4 @@ test_seat_failover_moves_a_limited_thread
 test_seat_failover_evidence_and_limits
 test_seat_model_scope_regressions
 test_seat_failover_serialization_and_replenishment
+test_seat_rotation_serializes_shared_choices

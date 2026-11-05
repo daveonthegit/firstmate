@@ -180,7 +180,7 @@ fm_backend_t3code_mark_exhausted() {  # <instance>
 # are all_models, all_products, and model:/product: scopes naming the model's
 # bare id or Claude family; the seat's spendPriority is the lowest among them. The rotation
 # remembers the last seat chosen per harness in state/t3code-rotation-<harness>.
-fm_backend_t3code_instance_choose() {  # <harness> <model> <project-id> [exclude...]
+fm_backend_t3code_instance_choose() (  # <harness> <model> <project-id> [exclude...]
   local harness=$1 model=${2:-default} project_id=$3 pool state rotation last='' snapshot='' dirs='' line dir out chosen selection
   shift 3
   pool=$(fm_backend_t3code_instance_pool "$harness") || return 1
@@ -190,7 +190,6 @@ fm_backend_t3code_instance_choose() {  # <harness> <model> <project-id> [exclude
   fi
   state=${FM_STATE_OVERRIDE:-$FM_HOME/state}
   rotation="$state/t3code-rotation-$harness"
-  [ ! -f "$rotation" ] || last=$(cat "$rotation" 2>/dev/null)
   if [ "$(printf '%s\n' "$pool" | grep -c .)" -gt 1 ]; then
     while IFS= read -r line; do
       dir=${line#*$'\t'}
@@ -206,6 +205,16 @@ fm_backend_t3code_instance_choose() {  # <harness> <model> <project-id> [exclude
       snapshot=$(fm_run_timed "${FM_T3CODE_QUOTA_SECONDS:-60}" env -u QUOTA_AXI_SNAPSHOT \
         QUOTA_AXI_CLAUDE_PROFILES="$dirs" quota-axi --provider claude --full --json 2>/dev/null </dev/null) || true
     fi
+  fi
+  if [ "$(printf '%s\n' "$pool" | grep -c .)" -gt 1 ]; then
+    if ! command -v fm_lock_acquire_wait >/dev/null 2>&1; then
+      . "$(dirname -- "$FM_BACKEND_T3CODE_HELPER")/fm-wake-lib.sh"
+    fi
+    mkdir -p "$state" || return 1
+    fm_lock_acquire_wait "$rotation.lock" || return 1
+    trap 'rm -f "$rotation.$$.tmp"; fm_lock_release "$rotation.lock"' EXIT
+    trap 'exit 1' HUP INT TERM
+    [ ! -f "$rotation" ] || last=$(cat "$rotation" 2>/dev/null) || return 1
   fi
   # shellcheck disable=SC2016  # ${...} belongs to the Node snippet.
   out=$(FM_T3_POOL=$pool FM_T3_SNAPSHOT=$snapshot FM_T3_LAST=$last FM_T3_MODEL=$model \
@@ -279,12 +288,10 @@ process.stdout.write(JSON.stringify({ instance, basis, allExhausted: !live.lengt
 ' "$@") || return 1
   chosen=$(printf '%s' "$out" | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).instance)') || return 1
   if [ "$(printf '%s\n' "$pool" | grep -c .)" -gt 1 ]; then
-    if ! { mkdir -p "$state" && printf '%s' "$chosen" > "$rotation.$$.tmp" && mv -f "$rotation.$$.tmp" "$rotation"; }; then
-      rm -f "$rotation.$$.tmp"
-    fi
+    { printf '%s' "$chosen" > "$rotation.$$.tmp" && mv -f "$rotation.$$.tmp" "$rotation"; } || return 1
   fi
   printf '%s' "$out"
-}
+)
 
 # fm_backend_t3code_model_selection: the launch's model selection, resolved
 # against T3's own catalog before anything is leased (bin/fm-t3-mcp.mjs
