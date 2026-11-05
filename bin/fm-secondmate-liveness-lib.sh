@@ -126,7 +126,7 @@ fm_secondmate_liveness_recent_attempts() {  # <id> <window-secs>
 #   FM_SM_LIVE_KILL    1 when relaunch must first kill a confirmed-dead local
 #                      endpoint (its shell husk occupies the name)
 #   FM_SM_LIVE_RESUME  1 when relaunch continues the endpoint in place instead
-#                      of replacing it: a T3 thread whose last run failed is
+#                      of replacing it: a local T3 thread whose last run failed is
 #                      still readable and takes a new turn on its own
 #                      transcript, so it is resumed, never replaced
 #   FM_SM_LIVE_CAUSE   relaunch cause phrase, on relaunchable

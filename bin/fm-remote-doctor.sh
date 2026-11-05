@@ -40,7 +40,7 @@
 # (`status`). Both are human gaps, because the sign-in and the T3 server are
 # the account owner's; --fix never signs in or starts T3. The remote job
 # worker is backend-independent, so its Aqua login-session requirement is
-# checked under either backend. Doctor remains invokable over the plain-SSH
+# checked under every backend. Doctor remains invokable over the plain-SSH
 # bootstrap path to inspect and repair that worker. SSH cannot create an Aqua
 # session, so a host with no GUI login is a human gap rather than something
 # --fix attempts to bypass.

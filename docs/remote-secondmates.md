@@ -23,7 +23,7 @@ Firstmate does not support placing an individual worker remotely or failing a re
 
 The remote second-mate agent runs on one of three session-provider backends, selected per launch.
 [Launch selection and placement](#launch-or-recover) define the backend contract.
-Provisioning checks any available supported backend; launch checks the selected one.
+Provisioning uses the [default readiness selection](#check-a-host); launch checks the selected backend.
 
 - `fm-remote` is reserved for remote fleet work and must not be used for personal work.
 - The user's interactive Herdr session remains `default` and is not a remote-secondmate prerequisite.

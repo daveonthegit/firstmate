@@ -56,7 +56,7 @@ The credential is much narrower than T3's administrative bearer from `t3 auth se
 
 The credential, the server's origin, its environment id, and its version are written to the local, gitignored `config/t3code-token`, mode 0600.
 A missing credential refuses with an error that names the sign-in command; an expired, revoked, or incomplete one asks the captain to sign in again, an over-readable one asks for `chmod 600` or a fresh sign-in, and one that is not valid JSON names the parse error.
-A secondmate spawned on this backend gets `config/t3code-token` as a symlink to the primary's credential file, so its own daemon and crew use the same credential without a copy of the secret, and a fresh sign-in reaches them.
+A local secondmate spawned on this backend gets `config/t3code-token` as a symlink to the primary's credential file, so its own daemon and crew use the same credential without a copy of the secret, and a fresh sign-in reaches them.
 Teardown removes that link, with the rest of the T3 environment the spawn wrote into the home, before a pooled home returns to the pool.
 A [remote second mate](remote-secondmates.md#t3-code-second-mates) instead holds its own sign-in to its host's T3, which the spawn there checks and never links.
 
@@ -284,9 +284,10 @@ Thread persistence alone does not prove a live agent.
 
 Inspect a failed worker's thread error before sending a new turn through its normal steer path.
 A new turn continues the same driver and transcript; `fm-control.sh relaunch` remains refused.
-Automatic secondmate recovery treats a failed run the same way: the thread is still readable, so recovery resumes it in place with one recovery turn instead of archiving it and launching a second thread, and the relaunch ledger bounds repeats.
+Automatic local secondmate recovery treats a failed run the same way: the thread is still readable, so recovery resumes it in place with one recovery turn instead of archiving it and launching a second thread, and the relaunch ledger bounds repeats.
 That turn tells the secondmate to re-read its `AGENTS.md` and config first, and startup still delivers its queued config re-read retries, because a resumed conversation does not re-read on its own the way a fresh launch does.
 A secondmate thread that reads missing is closed again through the idempotent archive before a replacement thread is launched, and when that close cannot be proven the thread and its record stay as recorded and nothing is spawned; other backends keep their existing best-effort close ([`bin/fm-secondmate-liveness-lib.sh`](../bin/fm-secondmate-liveness-lib.sh)).
+Remote secondmate recovery follows the [remote launch-or-recover contract](remote-secondmates.md#liveness-recovery), not this local continuation path.
 Teardown still requires a proven archive before returning the worktree.
 
 ## Supervisor keep-alive
