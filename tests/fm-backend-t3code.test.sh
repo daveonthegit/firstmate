@@ -3696,7 +3696,7 @@ process.stdout.write(sends[1].arguments.clientRequestId);
 }
 
 test_seat_rechecks_do_not_renew_marks() {
-  local mode id seat out rc stamp actual round
+  local mode id seat out rc stamp actual _
   for mode in unavailable shared; do
     t3_case "seat-mutual-exhaustion-$mode"
     t3_two_seats
@@ -3724,7 +3724,7 @@ w.threads["thread-b"] = b;'
     for seat in claudeAgent claude_b; do
       printf '%s\n' "$stamp" > "$CASE_DIR/state/t3code-exhausted/$seat"
     done
-    for round in 1 2; do
+    for _ in 1 2; do
       for id in t3stoppeda t3stoppedb; do
         out=$(FM_T3CODE_EXHAUSTED_SECS=18000 t3_failover "$id"); rc=$?
         expect_code 3 "$rc" "polling either stopped worker must still respect the unexpired alternate mark"$'\n'"$out"

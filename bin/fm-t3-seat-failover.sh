@@ -67,6 +67,7 @@ CONTROL_LOCK_HELD=0
 META_LOCK=
 META_LOCK_HELD=0
 META_TMP=
+# shellcheck disable=SC2329 # Registered by the EXIT trap below.
 cleanup() {
   [ -z "$META_TMP" ] || rm -f -- "$META_TMP"
   if [ "$META_LOCK_HELD" = 1 ]; then
