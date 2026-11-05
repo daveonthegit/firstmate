@@ -3477,6 +3477,78 @@ test_seat_rotation_serializes_shared_choices() {
   pass "shared seat rotation balances concurrent choices with unavailable, tied, or exhausted quota and releases locks on errors"
 }
 
+test_seat_shared_quota_opt_out() {
+  local fb calls snap out rc id launch mode
+  t3_case seat-shared-quota
+  t3_two_seats
+  fb="$CASE_DIR/quota-bin"; mkdir -p "$fb"
+  calls="$CASE_DIR/quota-calls"
+  printf '%s\n' '#!/usr/bin/env bash' \
+    'printf "called\\n" >> "$FM_T3_QUOTA_CALL_LOG"' \
+    'cat "$FM_T3_QUOTA_TEST_SNAPSHOT"' > "$fb/quota-axi"
+  chmod +x "$fb/quota-axi"
+  snap="$CASE_DIR/quota.json"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.8:through_reset"
+  printf '{"shared_quota":false}' > "$CONFIG/crew-dispatch.json"
+  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT= \
+    t3_run 'fm_backend_t3code_instance_choose claude claude-sonnet-5 proj-1')
+  assert_contains "$out" '"instance":"claude_b","basis":"quota"' "shared_quota false must retain quota ranking"
+  assert_present "$calls" "the quota boundary stub must record calls when quota is enabled"
+  rm -f "$calls" "$CASE_DIR/state/t3code-rotation-claude"
+  printf '{"shared_quota":true}' > "$CONFIG/crew-dispatch.json"
+  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT= \
+    t3_run 'fm_backend_t3code_instance_choose claude claude-sonnet-5 proj-1')
+  assert_contains "$out" '"instance":"claudeAgent","basis":"rotation"' "the shared budget must rotate instead of preferring higher per-seat quota"
+  assert_contains "$out" 'quota ranking off' "the disabled quota evidence must be disclosed"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.8:exhausted_now"
+  out=$(t3_choose "$snap" claude claude-sonnet-5)
+  assert_contains "$out" '"instance":"claude_b","basis":"rotation"' "a supplied snapshot must not veto a seat in a shared-budget home"
+  mkdir -p "$CASE_DIR/state/t3code-exhausted"
+  date +%s > "$CASE_DIR/state/t3code-exhausted/claude_b"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.8:through_reset"
+  out=$(t3_choose "$snap" claude claude-sonnet-5)
+  assert_contains "$out" '"instance":"claudeAgent"' "quota must not clear a real usage-limit mark under the opt-out"
+  rm -f "$CASE_DIR/state/t3code-exhausted/claude_b" "$CASE_DIR/state/t3code-rotation-claude"
+  id=$(t3_uid t3sharedspawn)
+  t3_worker_setup "$id"
+  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT= \
+    t3_worker_spawn "$id" claude --model claude-sonnet-5); rc=$?
+  expect_code 0 "$rc" "a shared-budget spawn must succeed"$'\n'"$out"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  assert_equals claudeAgent "$(t3_request "$launch" 'r.arguments.modelSelection.instanceId')" "spawn must rotate rather than rank the higher-priority second seat"
+  assert_absent "$calls" "shared-budget choice and spawn must make no quota-axi call"
+
+  for mode in snapshot live; do
+    t3_case "seat-shared-failover-$mode"
+    t3_two_seats
+    t3_failover_task t3sharedfo
+    t3_limited_thread "You've hit your session limit · resets 3:10pm"
+    printf '{"shared_quota":true}' > "$CONFIG/crew-dispatch.json"
+    snap="$CASE_DIR/quota.json"
+    t3_quota_snapshot "$snap" "$CASE_DIR/seat-b=0.8:exhausted_now"
+    if [ "$mode" = snapshot ]; then
+      out=$(FM_T3CODE_QUOTA_SNAPSHOT="$snap" t3_failover t3sharedfo); rc=$?
+    else
+      out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT= \
+        FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$CASE_DIR/home" FM_STATE_OVERRIDE="$CASE_DIR/state" FM_CONFIG_OVERRIDE="$CONFIG" \
+        "$ROOT/bin/fm-t3-seat-failover.sh" t3sharedfo 2>&1); rc=$?
+    fi
+    expect_code 10 "$rc" "shared-budget failover must ignore $mode quota exhaustion"$'\n'"$out"
+    assert_grep 't3_instance=claude_b' "$CASE_DIR/state/t3sharedfo.meta" "the alternate seat must receive the thread"
+    assert_absent "$calls" "shared-budget failover must make no quota-axi call"
+    t3_failover_task t3sharedfo
+    t3_limited_thread "You've hit your session limit · resets 3:10pm"
+    date +%s > "$CASE_DIR/state/t3code-exhausted/claude_b"
+    t3_quota_snapshot "$snap" "$CASE_DIR/seat-b=0.8:through_reset"
+    out=$(FM_T3CODE_QUOTA_SNAPSHOT="$snap" t3_failover t3sharedfo); rc=$?
+    expect_code 3 "$rc" "shared-budget failover must still refuse an actually exhausted alternate"$'\n'"$out"
+  done
+  printf '{"shared_quota":"true"}' > "$CONFIG/crew-dispatch.json"
+  out=$(t3_choose "$snap" claude claude-sonnet-5 2>&1) && fail "a non-boolean opt-out must refuse"
+  assert_contains "$out" 'shared_quota must be true or false' "malformed shared quota must be actionable"
+  pass "shared-quota opt-out suppresses calls, ranking, and quota vetoes for spawn and failover while retaining real exhaustion marks"
+}
+
 test_seat_review_regressions() {
   test_seat_pool_parsing_is_backward_compatible
   test_seat_choice_by_quota_rotation_and_marks
@@ -3486,6 +3558,7 @@ test_seat_review_regressions() {
   test_seat_model_scope_regressions
   test_seat_failover_serialization_and_replenishment
   test_seat_rotation_serializes_shared_choices
+  test_seat_shared_quota_opt_out
 }
 
 if [ -n "${FM_TEST_ONLY:-}" ]; then
@@ -3610,3 +3683,4 @@ test_seat_failover_evidence_and_limits
 test_seat_model_scope_regressions
 test_seat_failover_serialization_and_replenishment
 test_seat_rotation_serializes_shared_choices
+test_seat_shared_quota_opt_out

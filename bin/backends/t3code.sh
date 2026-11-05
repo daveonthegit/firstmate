@@ -181,16 +181,27 @@ fm_backend_t3code_mark_exhausted() {  # <instance>
 # bare id or Claude family; the seat's spendPriority is the lowest among them. The rotation
 # remembers the last seat chosen per harness in state/t3code-rotation-<harness>.
 fm_backend_t3code_instance_choose() (  # <harness> <model> <project-id> [exclude...]
-  local harness=$1 model=${2:-default} project_id=$3 pool state rotation last='' snapshot='' dirs='' line dir out chosen selection
+  local harness=$1 model=${2:-default} project_id=$3 pool state rotation last='' snapshot='' dirs='' line dir out chosen selection rules shared_quota=false
   shift 3
   pool=$(fm_backend_t3code_instance_pool "$harness") || return 1
+  rules="$(fm_backend_t3code_config_dir)/crew-dispatch.json"
+  if [ -f "$rules" ]; then
+    shared_quota=$(node -e '
+try {
+  const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+  if (!d || typeof d !== "object" || Array.isArray(d)) throw new Error("expected an object");
+  if (Object.hasOwn(d, "shared_quota") && typeof d.shared_quota !== "boolean") throw new Error("shared_quota must be true or false when present");
+  process.stdout.write(String(d.shared_quota === true));
+} catch (e) { console.error(`error: ${process.argv[1]}: ${e.message}`); process.exit(1); }
+' "$rules") || return 1
+  fi
   if [ "$model" = default ]; then
     selection=$(fm_backend_t3code_model_selection "$harness" default default "$project_id") || return 1
     model=$(printf '%s' "$selection" | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).model)') || return 1
   fi
   state=${FM_STATE_OVERRIDE:-$FM_HOME/state}
   rotation="$state/t3code-rotation-$harness"
-  if [ "$(printf '%s\n' "$pool" | grep -c .)" -gt 1 ]; then
+  if [ "$shared_quota" = false ] && [ "$(printf '%s\n' "$pool" | grep -c .)" -gt 1 ]; then
     while IFS= read -r line; do
       dir=${line#*$'\t'}
       [ -z "$dir" ] || dirs=${dirs:+$dirs:}$dir
@@ -217,7 +228,7 @@ fm_backend_t3code_instance_choose() (  # <harness> <model> <project-id> [exclude
     [ ! -f "$rotation" ] || last=$(cat "$rotation" 2>/dev/null) || return 1
   fi
   # shellcheck disable=SC2016  # ${...} belongs to the Node snippet.
-  out=$(FM_T3_POOL=$pool FM_T3_SNAPSHOT=$snapshot FM_T3_LAST=$last FM_T3_MODEL=$model \
+  out=$(FM_T3_POOL=$pool FM_T3_SNAPSHOT=$snapshot FM_T3_SHARED_QUOTA=$shared_quota FM_T3_LAST=$last FM_T3_MODEL=$model \
     FM_T3_EXHAUSTED_DIR=$(fm_backend_t3code_exhausted_dir) FM_T3_EXHAUSTED_SECS=${FM_T3CODE_EXHAUSTED_SECS:-18000} \
     node -e '
 const fs = require("fs");
@@ -253,7 +264,8 @@ for (const s of candidates) {
   let mark = 0;
   try { mark = Number(fs.readFileSync(`${process.env.FM_T3_EXHAUSTED_DIR}/${s.instance}`, "utf8").trim()) || 0; } catch {}
   s.marked = mark > 0 && now - mark < Number(process.env.FM_T3_EXHAUSTED_SECS);
-  if (!s.dir) { s.why = "no quota identity in config/t3code-instances"; }
+  if (process.env.FM_T3_SHARED_QUOTA === "true") { s.why = "quota ranking off: home declares a single shared quota"; }
+  else if (!s.dir) { s.why = "no quota identity in config/t3code-instances"; }
   else {
     const lane = lanes.find((p) => p.accountLocator?.path && real(p.accountLocator.path) === real(s.dir));
     const q = lane?.quotaSemantics;

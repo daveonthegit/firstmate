@@ -99,6 +99,7 @@ At each Claude spawn, [`bin/backends/t3code.sh`](../bin/backends/t3code.sh) `fm_
 - The seat with the highest `spendPriority` over its applicable scopes wins, the same fact [`quota-array-dispatch`](../.agents/skills/quota-array-dispatch/SKILL.md) ranks by; a seat quota-axi measures exhausted now is passed over.
 - A seat with no directory, no matching lane, or no usable measurement is never guessed: the seats then take turns in file order, remembered in `state/t3code-rotation-claude`, and a quota tie takes the next seat the same way.
 - A seat that recently ran a worker into its usage limit is passed over for five hours (`FM_T3CODE_EXHAUSTED_SECS`) unless quota-axi measures it healthy.
+- With the home's `config/crew-dispatch.json` declaring `"shared_quota": true`, spawn and failover make no quota call and ignore supplied quota snapshots: seats rotate without quota ranking or quota-based exhaustion vetoes. Actual usage-limit marks still exclude seats until they expire.
 
 The spawn prints the chosen seat with each seat's evidence, and the task records it as `t3_instance=` and how it was chosen as `t3_instance_basis=` (`single`, `quota`, or `rotation`).
 
