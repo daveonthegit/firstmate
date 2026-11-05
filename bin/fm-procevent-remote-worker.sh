@@ -44,8 +44,9 @@
 #     capture unhandled for the runner's retry
 #   - a continuity break appends one keyed blocked line for that task and
 #     parks only that task (state/remote-workers/<id>/<task>.broken), so the
-#     host's other tasks keep flowing; removing the marker or the task's
-#     cursor after inspection resumes it
+#     host's other tasks keep flowing; after inspection, remove both the
+#     task's .broken marker and .cursor to resume from offset 0 of the host
+#     log. The per-task mirrored-line record prevents duplicate appends
 # A record for a task that is no longer a member is ignored.
 #
 # The source answers `relisten` and never reports a capture terminal, so one
@@ -253,7 +254,7 @@ ingest_record() { # <host> <task> <record>
   [ -e "$status_file" ] || (umask 077; : > "$status_file") || die "cannot create the status log for $task"
   read_cursor "$host" "$task"
   if [ "$rec_status" = continuity-broken ]; then
-    line="blocked [key=remote-worker-continuity-$task]: worker status continuity broke for $task on worker host $host ($reason) at offset $CURSOR_OFFSET prefix ${CURSOR_HASH:0:12}; mirroring for this task is parked until $(broken_path "$host" "$task") is removed"
+    line="blocked [key=remote-worker-continuity-$task]: worker status continuity broke for $task on worker host $host ($reason) at offset $CURSOR_OFFSET prefix ${CURSOR_HASH:0:12}; after inspection, remove both $(broken_path "$host" "$task") and $(cursor_path "$host" "$task") to resume mirroring from offset 0"
     rc=0
     append_once "$status_file" "$line" || rc=$?
     [ "$rc" -ne 2 ] || die "cannot append the continuity escalation for $task"
