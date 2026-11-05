@@ -1,0 +1,3 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+notice: live1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned live1 harness=claude kind=ship mode=local-only yolo=off window=fm-lab-host:fm-live1 worktree={run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample

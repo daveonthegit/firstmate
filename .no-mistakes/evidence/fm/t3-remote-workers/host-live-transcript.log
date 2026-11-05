@@ -1,0 +1,197 @@
+=== Real tmux ship launch and host-local route ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+notice: live-ship2 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned live-ship2 harness=claude kind=ship mode=local-only yolo=off window=host:fm-live-ship2 worktree={run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample
+schema=fm-remote-worker-control.v1
+task=live-ship2
+kind=ship
+backend=tmux
+target=host:fm-live-ship2
+worktree={run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample
+project={run-worktree}/.l/projects/sample
+harness=claude
+model=default
+effort=default
+mode=local-only
+yolo=off
+branch=fm/live-ship2
+=== Duplicate spawn must reuse route without another window ===
+notice: task live-ship2 is already placed on this worker host; reporting its existing route
+schema=fm-remote-worker-control.v1
+task=live-ship2
+kind=ship
+backend=tmux
+target=host:fm-live-ship2
+worktree={run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample
+project={run-worktree}/.l/projects/sample
+harness=claude
+model=default
+effort=default
+mode=local-only
+yolo=off
+branch=fm/live-ship2
+state: working · source: pane · harness busy (fm-spawn)
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+=== Capacity-one host defers a second launch without a claim/brief ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+deferred: project sample admits 1 worker(s) at once on this machine ({run-worktree}/.l/config/project-capacity) and 1 already hold a place (live-ship2); task live-full was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+capacity exit=75
+=== Send retry identity at the real persisted inbox interface ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.l/state/live-ship2.inbox/001.msg and the watcher will re-ring
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.l/state/live-ship2.inbox/001.msg and the watcher will re-ring
+First steer and its immediate retry: one pending message
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.l/state/live-ship2.inbox/handled/001.msg and the watcher will re-ring
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.l/state/live-ship2.inbox/002.msg and the watcher will re-ring
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.l/state/live-ship2.inbox/003.msg and the watcher will re-ring
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.l/state/live-ship2.inbox/004.msg and the watcher will re-ring
+Acknowledged retry: zero new messages; three new request IDs: three pending messages
+--- 002.msg
+schema=fm-task-inbox.v1
+at=2026-11-05T08:09:10Z
+body-terminator=1
+--
+[remote-worker delivery: request-B]
+continue
+--- 003.msg
+schema=fm-task-inbox.v1
+at=2026-11-05T08:09:17Z
+body-terminator=1
+--
+[remote-worker delivery: request-C]
+continue
+--- 004.msg
+schema=fm-task-inbox.v1
+at=2026-11-05T08:09:27Z
+--
+[remote-worker delivery: request-D]
+line one
+line two
+--- 001.msg
+schema=fm-task-inbox.v1
+at=2026-11-05T08:08:58Z
+body-terminator=1
+--
+[remote-worker delivery: request-A]
+continue
+=== Removed secondmate-only send mode ===
+Host-local leg for ship and scout workers a primary places on a worker host.
+
+Usage (reached through bin/fm-on.sh <worker-host-id> on the primary):
+  fm-remote-worker-control.sh spawn <task-id> <project> [--scout] [flags...]  # # Task body on stdin
+  fm-remote-worker-control.sh route <task-id>
+  fm-remote-worker-control.sh state <task-id>
+  fm-remote-worker-control.sh send <task-id> <delivery-id> <message>
+  fm-remote-worker-control.sh send-stdin <task-id> <delivery-id>  # message on stdin
+  fm-remote-worker-control.sh control <task-id> {interrupt|exit}
+  fm-remote-worker-control.sh answer <task-id> [<request-id> <answers-json>]
+  fm-remote-worker-control.sh capture <task-id> [lines]
+  fm-remote-worker-control.sh file <task-id> {report|journal|brief}
+  fm-remote-worker-control.sh teardown <task-id> [--force]
+
+exit=2 (expected nonzero)
+=== Unclaimed local task cannot be read or steered ===
+error: task unclaimed was not placed on this worker host by a primary (no {run-worktree}/.l/state/unclaimed.remote-worker)
+exit=1 (expected nonzero)
+=== Only report/journal/brief may be retrieved ===
+error: remote worker file must be report, journal, or brief, not: ../secrets
+exit=1 (expected nonzero)
+=== Primary-only relaunch stays refused ===
+error: relaunch is not offered for a remote worker; it stays a decision for the primary
+exit=1 (expected nonzero)
+Synthetic local journal
+=== Dirty host worktree must survive ordinary teardown ===
+=== Refuse discarding uncommitted changes ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+REFUSED: local-only worktree {run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample has work not yet merged into main and not on any remote.
+uncommitted changes present (untracked-only leftovers)
+untracked paths (up to 10):
+  unlanded.txt
+Merge the branch into local main first (bin/fm-merge-local.sh after the captain approves), or push to a fork/remote, or get the captain's explicit OK to discard, then --force.
+exit=1 (expected nonzero)
+=== Real terminal output is bounded and endpoint failures propagate ===
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+capture bytes=65536; contract maximum=65536
+=== Missing real tmux endpoint propagates capture failure ===
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+can't find window: capture-proof
+exit=1 (expected nonzero)
+=== Cleanup and scout launch ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for live-ship2: 13727 27380
+teardown: force-killing leaked worktree process(es) for live-ship2: 13727
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown live-ship2 complete (window host:fm-live-ship2, worktree {run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample)
+Backlog: live-ship2 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.l/data/backlog.md - move live-ship2 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+=== Route disappears after teardown ===
+error: task live-ship2 was not placed on this worker host by a primary (no {run-worktree}/.l/state/live-ship2.remote-worker)
+exit=1 (expected nonzero)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+spawned live-scout harness=claude kind=scout window=host:fm-live-scout worktree={run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample
+schema=fm-remote-worker-control.v1
+task=live-scout
+kind=scout
+backend=tmux
+target=host:fm-live-scout
+worktree={run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample
+project={run-worktree}/.l/projects/sample
+harness=claude
+model=default
+effort=default
+schema=fm-remote-worker-control.v1
+task=live-scout
+kind=scout
+backend=tmux
+target=host:fm-live-scout
+worktree={run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample
+project={run-worktree}/.l/projects/sample
+harness=claude
+model=default
+effort=default
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown: reaping leaked worktree process(es) for live-scout: 14215 27217
+teardown: force-killing leaked worktree process(es) for live-scout: 14215
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown live-scout complete (window host:fm-live-scout, worktree {run-worktree}/.l/pool/.treehouse/sample-05bf8c/1/sample)
+Backlog: live-scout just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.l/data/backlog.md - move live-scout to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+=== Prepared-home guards ===
+=== Missing host marker ===
+error: {run-worktree}/.l is not a worker host home: it has no .fm-worker-host marker (docs/remote-workers.md)
+exit=1 (expected nonzero)
+=== Host must not own an automatic backlog ===
+error: worker host home {run-worktree}/.l must set config/backlog-backend to manual: the primary's backlog owns these tasks
+exit=1 (expected nonzero)
+ALL LOCAL HOST-LEG SCENARIOS COMPLETED

@@ -1,0 +1,2 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+spawned scout1 harness=claude kind=scout window=fm-lab-host:fm-scout1 worktree={run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample

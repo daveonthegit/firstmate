@@ -1,0 +1,51 @@
+treehouse get
+davidxiao@Mac sample % treehouse get
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/sample-05bf8c/1/sample. Type 'exit' to return.
+cd -- '~/.treehouse/sample-05bf8c/1/sample'
+davidxiao@Mac sample % cd -- '~/.treehouse/sample-05bf8c/1/sample'
+davidxiao@Mac sample % export GOTMPDIR=/tmp/fm-live-ship/gotmp
+davidxiao@Mac sample % export COMPACT_ADVISER_DISABLE=1
+davidxiao@Mac sample % export FM_TASK_ID=live-ship
+davidxiao@Mac sample % . '/tmp/fm-live-ship+c462889a8db3706e190c11de4b2b396a855c9971f2022250db6d789daf7f1665/launch.s1793865939.46206.17938.sh'
+Welcome to Claude Code v2.1.318
+..........................................................
+
+     *                                       █████▓▓░
+                                 *         ███▓░     ░░
+            ░░░░░░                        ███▓░
+    ░░░   ░░░░░░░░░░                      ███▓░
+   ░░░░░░░░░░░░░░░░░░░    *                ██▓░░      ▓
+                                             ░▓▓███▓▓░
+ *                                 ░░░░
+                                 ░░░░░░░░
+                               ░░░░░░░░░░░░░░░░
+       █████████                                        *
+      ██▄█████▄██                        *
+       █████████      *
+.......█ █   █ █..........................................
+
+ Let's get started.
+
+ Choose the text style that looks best with your terminal
+ To change this later, run /theme
+
+     Auto (match terminal)
+ ❯ ✔ Dark mode
+     Light mode
+     Dark mode (colorblind-friendly)
+     Light mode (colorblind-friendly)
+     Dark mode (ANSI colors only)
+     Light mode (ANSI colors only)
+
+ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  1  function greet() {
+  2 -  console.log("Hello, World!");
+  2 +  console.log("Hello, Claude!");
+  3  }
+ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Syntax theme: Monokai Extended (ctrl+t to disable)
+

@@ -1,0 +1,6 @@
+ok - spawn renders the brief on the host, fills the primary's # Task, launches, and reports the route
+ok - a repeated spawn of a placed task is idempotent and launches nothing
+ok - route and state answer for a placed task with the ordinary one-line crew state
+ok - delivery tokens distinguish new steers from pending and acknowledged retries
+WARNING: watcher still down (same stale episode; last beat: 168s ago, grace 300s) - full banner already printed this episode.
+WARNING: watcher still down (same stale episode; last beat: 175s ago, grace 300s) - full banner already printed this episode.

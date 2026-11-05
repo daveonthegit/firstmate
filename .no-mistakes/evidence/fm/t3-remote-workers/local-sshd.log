@@ -1,0 +1,42 @@
+Server listening on 127.0.0.1 port 29483.
+Connection from 127.0.0.1 port 60646 on 127.0.0.1 port 29483
+Accepted key ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg found at {run-worktree}/.worker-validation/ssh/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60646 ssh2 [preauth]
+Accepted key ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg found at {run-worktree}/.worker-validation/ssh/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60646 ssh2: ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 54099
+Starting session: forced-command (config) '{run-worktree}/.worker-validation/ssh/forced-command.py' for davidxiao from 127.0.0.1 port 60646 id 0
+Received disconnect from 127.0.0.1 port 60646:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60646
+Connection from 127.0.0.1 port 60753 on 127.0.0.1 port 29483
+Accepted key ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg found at {run-worktree}/.worker-validation/ssh/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60753 ssh2 [preauth]
+Accepted key ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg found at {run-worktree}/.worker-validation/ssh/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60753 ssh2: ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 68521
+Starting session: forced-command (config) '{run-worktree}/.worker-validation/ssh/forced-command.py' for davidxiao from 127.0.0.1 port 60753 id 0
+Received disconnect from 127.0.0.1 port 60753:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60753
+Connection from 127.0.0.1 port 60899 on 127.0.0.1 port 29483
+Accepted key ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg found at {run-worktree}/.worker-validation/ssh/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60899 ssh2 [preauth]
+Accepted key ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg found at {run-worktree}/.worker-validation/ssh/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60899 ssh2: ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 78326
+Starting session: forced-command (config) '{run-worktree}/.worker-validation/ssh/forced-command.py' for davidxiao from 127.0.0.1 port 60899 id 0
+Received disconnect from 127.0.0.1 port 60899:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60899
+Connection from 127.0.0.1 port 61052 on 127.0.0.1 port 29483
+Accepted key ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg found at {run-worktree}/.worker-validation/ssh/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 61052 ssh2 [preauth]
+Accepted key ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg found at {run-worktree}/.worker-validation/ssh/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 61052 ssh2: ED25519 SHA256:wKpTFO4kpkKurf4F5njZcHexUfClkMSGJLy8GSjHsOg
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 90408
+Starting session: forced-command (config) '{run-worktree}/.worker-validation/ssh/forced-command.py' for davidxiao from 127.0.0.1 port 61052 id 0
+Received disconnect from 127.0.0.1 port 61052:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 61052
+Received signal 15; terminating.

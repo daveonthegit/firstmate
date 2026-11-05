@@ -1,0 +1,57 @@
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+Mac:sample davidxiao$ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at {run-worktree}/.live-worker/pool
+/.treehouse/sample-243ae9/1/sample. Type 'exit' to return.
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+Mac:sample davidxiao$ cd -- '{run-worktree}/.live-worke
+r/pool/.treehouse/sample-243ae9/1/sample'
+Mac:sample davidxiao$ export GOTMPDIR=/tmp/fm-live1/gotmp
+Mac:sample davidxiao$ export COMPACT_ADVISER_DISABLE=1
+Mac:sample davidxiao$ export FM_TASK_ID=live1
+Mac:sample davidxiao$ . '/tmp/fm-live1+016469fef484bfd036e7af9163c94fa529a4ea45c91db8d4b92e72503ae8d718/launch.s17938681
+42.53398.2472.sh'
+Welcome to Claude Code v2.1.318
+..........................................................
+
+     *                                       █████▓▓░
+                                 *         ███▓░     ░░
+            ░░░░░░                        ███▓░
+    ░░░   ░░░░░░░░░░                      ███▓░
+   ░░░░░░░░░░░░░░░░░░░    *                ██▓░░      ▓
+                                             ░▓▓███▓▓░
+ *                                 ░░░░
+                                 ░░░░░░░░
+                               ░░░░░░░░░░░░░░░░
+       █████████                                        *
+      ██▄█████▄██                        *
+       █████████      *
+.......█ █   █ █..........................................
+
+ Let's get started.
+
+ Choose the text style that looks best with your terminal
+ To change this later, run /theme
+
+     Auto (match terminal)
+ ❯ ✔ Dark mode
+     Light mode
+     Dark mode (colorblind-friendly)
+     Light mode (colorblind-friendly)
+     Dark mode (ANSI colors only)
+     Light mode (ANSI colors only)
+
+ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  1  function greet() {
+  2 -  console.log("Hello, World!");
+  2 +  console.log("Hello, Claude!");
+  3  }
+ ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+  Syntax theme: Monokai Extended (ctrl+t to disable)
+

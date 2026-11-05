@@ -1,0 +1,45 @@
+=== Worker registry selects its home through real localhost SSH and remote job worker ===
+schema=fm-remote-worker-control.v1
+task=transport-proof
+kind=scout
+backend=tmux
+target=host:transport-proof
+project={run-worktree}/.l/projects/sample
+harness=claude
+exit=0
+=== Unique worker SSH alias also routes ===
+schema=fm-remote-worker-control.v1
+task=transport-proof
+kind=scout
+backend=tmux
+target=host:transport-proof
+project={run-worktree}/.l/projects/sample
+harness=claude
+exit=0
+=== Shared alias across worker and secondmate is refused before transport ===
+error: remote route 'worker-local' is ambiguous across 2 configured remote homes; use a secondmate or worker host id
+exit=1
+=== Distinct worker ID remains routable beside secondmate ===
+schema=fm-remote-worker-control.v1
+task=transport-proof
+kind=scout
+backend=tmux
+target=host:transport-proof
+project={run-worktree}/.l/projects/sample
+harness=claude
+exit=0
+=== Distinct secondmate ID remains routable beside worker ===
+schema=fm-remote-worker-control.v1
+task=transport-proof
+kind=scout
+backend=tmux
+target=host:transport-proof
+project={run-worktree}/.l/projects/sample
+harness=claude
+exit=0
+=== Cross-registry ID collision is refused ===
+error: remote route 'mate' is ambiguous across 2 configured remote homes; use a secondmate or worker host id
+exit=1
+ALL LOCALHOST TRANSPORT SCENARIOS COMPLETED
+worker cleanup exit=0  
+local sshd stopped exit=0

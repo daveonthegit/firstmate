@@ -1,0 +1,130 @@
+{run-worktree}/.live-worker/host
+error: {run-worktree}/.live-worker/host is not a worker host home: it has no .fm-worker-host marker (docs/remote-workers.md)
+error: worker host home {run-worktree}/.live-worker/host must set config/backlog-backend to manual: the primary's backlog owns these tasks
+schema=fm-remote-worker-control.v1
+task=live1
+kind=ship
+backend=tmux
+target=fm-lab-host:fm-live1
+worktree={run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample
+project={run-worktree}/.live-worker/host/projects/sample
+harness=claude
+model=default
+effort=default
+mode=local-only
+yolo=off
+branch=fm/live1
+schema=fm-remote-worker-control.v1
+task=live1
+kind=ship
+backend=tmux
+target=fm-lab-host:fm-live1
+worktree={run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample
+project={run-worktree}/.live-worker/host/projects/sample
+harness=claude
+model=default
+effort=default
+mode=local-only
+yolo=off
+branch=fm/live1
+state: working · source: pane · harness busy (fm-spawn)
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 11s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+notice: task live1 is already placed on this worker host; reporting its existing route
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+WARNING: watcher still down (same stale episode; last beat: 12s ago, grace 300s) - full banner already printed this episode.
+deferred: project sample admits 1 worker(s) at once on this machine ({run-worktree}/.live-worker/host/config/project-capacity) and 1 already hold a place (live1); task deferred was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+
+CAPACITY REFUSAL: exit=75, no claim or brief
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+WARNING: watcher still down (same stale episode; last beat: 14s ago, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.live-worker/host/state/live1.inbox/001.msg and the watcher will re-ring
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+WARNING: watcher still down (same stale episode; last beat: 15s ago, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.live-worker/host/state/live1.inbox/001.msg and the watcher will re-ring
+Pending retry: one inbox record; acknowledgement moved to handled/
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+WARNING: watcher still down (same stale episode; last beat: 16s ago, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.live-worker/host/state/live1.inbox/handled/001.msg and the watcher will re-ring
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+WARNING: watcher still down (same stale episode; last beat: 18s ago, grace 300s) - full banner already printed this episode.
+fm-send: doorbell skipped (composer visibly holds pending text); the steer is durably recorded at {run-worktree}/.live-worker/host/state/live1.inbox/002.msg and the watcher will re-ring
+Acknowledged req1 retry: no new record. New identical req2: one pending record.
+schema=fm-task-inbox.v1
+at=2026-11-05T08:42:33Z
+body-terminator=1
+--
+[remote-worker delivery: req2]
+continue
+
+schema=fm-task-inbox.v1
+at=2026-11-05T08:42:28Z
+body-terminator=1
+--
+[remote-worker delivery: req1]
+continue
+
+live journal
+error: remote worker file must be report, journal, or brief, not: ../secrets
+REFUSED: file live1 ../secrets (exit 1)
+error: relaunch is not offered for a remote worker; it stays a decision for the primary
+REFUSED: control live1 relaunch (exit 1)
+error: task unplaced was not placed on this worker host by a primary (no {run-worktree}/.live-worker/host/state/unplaced.remote-worker)
+REFUSED: route unplaced (exit 1)
+error: invalid delivery id: --fire-and-forget
+REFUSED: send live1 --fire-and-forget continue (exit 1)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+WARNING: watcher still down (same stale episode; last beat: 21s ago, grace 300s) - full banner already printed this episode.
+REFUSED: worktree {run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample has uncommitted changes.
+uncommitted changes present (includes tracked edits)
+Commit them (or get the captain's explicit OK to discard, then --force).
+UNLANDED WORK: ordinary teardown refused (exit 1), task and claim preserved
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+interrupt-delivered live1 harness=claude backend=tmux verified=agent-alive cancel=unconfirmed
+WARNING: watcher still down (same stale episode; last beat: 22s ago, grace 300s) - full banner already printed this episode.
+can't find window: fm-live1
+VANISHED ENDPOINT: capture exit=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+WARNING: watcher still down (same stale episode; last beat: 24s ago, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for live1: 57778 64360 87285
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown live1 complete (window fm-lab-host:fm-live1, worktree {run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample)
+Backlog: live1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.live-worker/host/data/backlog.md - move live1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+CLEANUP: task record and placement claim removed
+schema=fm-remote-worker-control.v1
+task=scout1
+kind=scout
+backend=tmux
+target=fm-lab-host:fm-scout1
+worktree={run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample
+project={run-worktree}/.live-worker/host/projects/sample
+harness=claude
+model=default
+effort=default
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-worker/host
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 57s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown: reaping leaked worktree process(es) for scout1: 20450 28568
+teardown: force-killing leaked worktree process(es) for scout1: 20450
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+teardown scout1 complete (window fm-lab-host:fm-scout1, worktree {run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample)
+Backlog: scout1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.live-worker/host/data/backlog.md - move scout1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+SCOUT CLEANUP: placement claim removed
+
+Generated public brief contract checked: primary task body, host-local status/report/journal paths, no unfilled task placeholder.

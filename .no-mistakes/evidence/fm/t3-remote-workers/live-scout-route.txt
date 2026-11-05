@@ -1,0 +1,10 @@
+schema=fm-remote-worker-control.v1
+task=scout1
+kind=scout
+backend=tmux
+target=fm-lab-host:fm-scout1
+worktree={run-worktree}/.live-worker/pool/.treehouse/sample-243ae9/1/sample
+project={run-worktree}/.live-worker/host/projects/sample
+harness=claude
+model=default
+effort=default

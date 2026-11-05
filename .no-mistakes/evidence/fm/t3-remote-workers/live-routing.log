@@ -1,0 +1,14 @@
+$ {run-worktree}/bin/fm-on.sh lab-ssh fm-remote-worker-control.sh route x
+error: remote route 'lab-ssh' is ambiguous across 2 configured remote homes; use a secondmate or worker host id
+EXIT=1
+$ {run-worktree}/bin/fm-on.sh worker fm-remote-worker-control.sh route x
+error: remote route 'worker' is ambiguous across 2 configured remote homes; use a secondmate or worker host id
+EXIT=1
+$ ssh-keygen -q -t ed25519 -N '' -f {run-worktree}/.live-routing/hostkey
+EXIT=0
+$ ssh-keygen -q -t ed25519 -N '' -f {run-worktree}/.live-routing/identity
+EXIT=0
+$ {run-worktree}/bin/fm-on.sh worker fm-remote-doctor.sh
+error: remote root and home must be separate, non-overlapping directories
+EXIT=64
+Real SSH roundtrip unavailable; see sshd log.
