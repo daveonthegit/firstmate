@@ -7443,7 +7443,7 @@ SPAWN_META_PATH=$SPAWN_META_TMP
 preserve_relaunch_meta() {
   awk -F= '
     BEGIN {
-      split("window endpoint_task_id worktree project harness hermes_profile hermes_home kind mode yolo branch tasktmp base_branch upstream_consent forge backup_remote backup_prefix model effort opencode_version account account_provider omp_profile busy_gen spawn_gen approval_mode traceparent backend herdr_session herdr_workspace_id herdr_tab_id herdr_pane_id zellij_session zellij_tab_id zellij_pane_id orca_worktree_id terminal cmux_workspace_id cmux_surface_id paseo_terminal_id paseo_workspace_id rex_server rex_session_id rex_window_id rex_block_id t3_thread_id t3_project_id t3_instance t3_instance_basis tern_session_id tern_tab_id tern_block_id hc_session hc_terminal home projects control_relaunch_tx polytoken_session polytoken_port polytoken_credential", keys, " ")
+      split("window endpoint_task_id worktree project harness hermes_profile hermes_home kind mode yolo branch tasktmp base_branch upstream_consent forge backup_remote backup_prefix model effort opencode_version account account_provider gh_account omp_profile busy_gen spawn_gen approval_mode traceparent backend herdr_session herdr_workspace_id herdr_tab_id herdr_pane_id zellij_session zellij_tab_id zellij_pane_id orca_worktree_id terminal cmux_workspace_id cmux_surface_id paseo_terminal_id paseo_workspace_id rex_server rex_session_id rex_window_id rex_block_id t3_thread_id t3_project_id t3_instance t3_instance_basis tern_session_id tern_tab_id tern_block_id hc_session hc_terminal home projects control_relaunch_tx polytoken_session polytoken_port polytoken_credential", keys, " ")
       for (i in keys) owned[keys[i]] = 1
     }
     !($1 in owned)
@@ -8153,7 +8153,9 @@ else
   }
   # Let a repository-aware shim select per-call identity when installed; otherwise
   # materialize the lane's token inside its shell, never in captured launch text.
-  if [ -n "$GH_ACCOUNT" ] && ! "$FM_ROOT/bin/fm-install-gh-shim.sh" --check 2>/dev/null | grep -q '^in effect: yes'; then
+  if [ "$KIND" = secondmate ]; then
+    spawn_send_text_line "$T" "unset GH_TOKEN"
+  elif [ -n "$GH_ACCOUNT" ] && ! "$FM_ROOT/bin/fm-install-gh-shim.sh" --check 2>/dev/null | grep -q '^in effect: yes'; then
     spawn_send_text_line "$T" "eval \"\$($(shell_quote "$FM_ROOT/bin/fm-gh-account.sh") env --account $(shell_quote "$GH_ACCOUNT"))\""
     sleep 0.3
   fi

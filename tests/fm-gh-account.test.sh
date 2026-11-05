@@ -480,9 +480,21 @@ make_spawn_case() {  # <name> <id> <origin>
 set -u
 case "$*" in
   *"#{pane_current_path}"*) printf '%s\n' "${FM_FAKE_PANE_PATH:-}"; exit 0 ;;
+  *"#{pane_current_command}"*) printf 'bash\n'; exit 0 ;;
 esac
 case "${1:-}" in
-  send-keys) printf '%s\n' "$*" >> "${FM_FAKE_TMUX_LOG:?FM_FAKE_TMUX_LOG unset}"; exit 0 ;;
+  send-keys)
+    printf '%s\n' "$*" >> "${FM_FAKE_TMUX_LOG:?FM_FAKE_TMUX_LOG unset}"
+    if [ -n "${FM_FAKE_PANE_SCRIPT:-}" ]; then
+      if [ "${4:-}" = -l ]; then
+        case "${5:-}" in
+          '. '*) printf 'printf "%%s\\n" "${GH_TOKEN:-none}"\n' >> "$FM_FAKE_PANE_SCRIPT" ;;
+        esac
+      elif [ "${5:-}" = Enter ]; then
+        printf '%s\n' "$4" >> "$FM_FAKE_PANE_SCRIPT"
+      fi
+    fi
+    exit 0 ;;
   display-message) printf 'firstmate\n'; exit 0 ;;
   # Key sends first prove the task window exists in the session inventory, so
   # the window a new-window call names is listed from then on.
@@ -664,7 +676,7 @@ test_spawn_exports_when_the_wrapper_is_not_reached() {
 # Its launch must therefore pin no account at all: one lane-wide credential would
 # override every other repository's mapping for the whole home.
 test_spawn_secondmate_pins_no_account() {
-  local rec id sm out status
+  local rec id sm out status seen
   id=gh-spawn-secondmate-z7
   rec=$(make_spawn_case spawn-secondmate "$id" git@github.com:daveonthegit/firstmate.git)
   read_spawn_case "$rec"
@@ -691,8 +703,27 @@ test_spawn_secondmate_pins_no_account() {
     "a secondmate record named one GitHub account for a home that spans many repositories"
   assert_no_grep fm-gh-account.sh "$SENT_LOG" \
     "a secondmate's shell was pinned to the firstmate repository owner's account"
-  assert_no_grep GH_TOKEN "$SENT_LOG" "a credential was sent into the secondmate's pane"
+  assert_no_grep ghtoken "$SENT_LOG" "a credential was sent into the secondmate's pane"
   assert_no_violations "secondmate spawn"
+
+  printf 'gh_account=daveonthegit\n' >> "$HOME_DIR/state/$id.meta"
+  : > "$CASE_DIR/pane.sh"
+  out=$(HOME="$SPAWN_HOME" FM_ROOT_OVERRIDE='' FM_HOME="$HOME_DIR" \
+    FM_STATE_OVERRIDE="$HOME_DIR/state" FM_DATA_OVERRIDE="$HOME_DIR/data" \
+    FM_PROJECTS_OVERRIDE="$HOME_DIR/projects" FM_CONFIG_OVERRIDE="$HOME_DIR/config" \
+    FM_SPAWN_NO_GUARD=1 FM_BACKEND=tmux TMUX="fake,1,0" \
+    FM_FAKE_PANE_PATH="$sm" FM_FAKE_TMUX_LOG="$SENT_LOG" FM_FAKE_TMUX_WINDOWS="$CASE_DIR/tmux-windows" \
+    FM_FAKE_PANE_SCRIPT="$CASE_DIR/pane.sh" \
+    FM_FAKE_GH_ACCOUNTS='daveonthegit davidx-secco' FM_FAKE_GH_ACCESS='daveonthegit=50' FM_FAKE_GH_LOG="$LOG" \
+    PATH="$FAKEBIN:$PATH" \
+    "$SPAWN" "$id" --relaunch --harness claude 2>&1)
+  status=$?
+  expect_code 0 "$status" "secondmate relaunch failed: $out"
+  seen=$(GH_TOKEN=ghtoken-daveonthegit PATH="$FAKEBIN:$PATH" sh "$CASE_DIR/pane.sh")
+  expect_code 0 "$?" "replacement pane commands failed"
+  [ "$seen" = none ] || fail "replacement launch inherited the old owner's token: $seen"
+  assert_no_grep gh_account= "$HOME_DIR/state/$id.meta" \
+    "a replacement secondmate retained its previous account pin"
   pass "a secondmate launch pins no GitHub account, so its home keys each repository off its own mapping"
 }
 
