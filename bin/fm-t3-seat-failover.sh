@@ -144,10 +144,8 @@ fi
 
 [ -z "$FROM" ] || fm_backend_t3code_mark_exhausted "$FROM" || true
 [ -n "$MODEL" ] || report failed "could not resolve the model of T3 thread $THREAD" 1
-CHOICE=$(fm_backend_t3code_instance_choose claude "$MODEL" "$(fm_meta_get "$META" t3_project_id)" ${FROM:+"$FROM"} 2>/dev/null) || {
-  meta_put "t3_failover_run=$RUN" t3_failover_result=exhausted t3_failover_sent=1 || report failed "could not record run $RUN as handled" 1
-  report exhausted "seat $FROM hit its usage limit ($EVIDENCE) and no other Claude seat is configured" 3
-}
+CHOICE=$(fm_backend_t3code_instance_choose claude "$MODEL" "$(fm_meta_get "$META" t3_project_id)" ${FROM:+"$FROM"}) \
+  || report failed "could not choose an alternate Claude seat for run $RUN; the next check retries" 1
 # shellcheck disable=SC2016  # ${...} belongs to the Node snippet.
 CHOICE=$(printf '%s' "$CHOICE" | node -e '
 const d = JSON.parse(require("fs").readFileSync(0, "utf8"));

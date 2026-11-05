@@ -3549,6 +3549,77 @@ test_seat_shared_quota_opt_out() {
   pass "shared-quota opt-out suppresses calls, ranking, and quota vetoes for spawn and failover while retaining real exhaustion marks"
 }
 
+test_default_model_does_not_validate_unselected_seat() {
+  local mode snap out rc id launch
+  for mode in quota rotation; do
+    t3_case "seat-default-unselected-$mode"
+    t3_two_seats
+    t3_world_set '
+w.providers[0].constraints = ["disabled"];
+w.projects[0].defaultModelSelection = { instanceId: "claude_b", model: "claude-fable-5-1" };'
+    snap="$CASE_DIR/quota.json"
+    if [ "$mode" = quota ]; then
+      t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.8:through_reset"
+    else
+      printf '{}' > "$snap"
+    fi
+    mkdir -p "$CASE_DIR/state"
+    printf claudeAgent > "$CASE_DIR/state/t3code-rotation-claude"
+    out=$(t3_choose "$snap" claude default); rc=$?
+    expect_code 0 "$rc" "default-model $mode choice must not validate the unselected disabled seat"$'\n'"$out"
+    assert_contains "$out" '"instance":"claude_b"' "the usable alternate must be chosen"
+    printf claudeAgent > "$CASE_DIR/state/t3code-rotation-claude"
+    id=$(t3_uid "t3default$mode")
+    t3_worker_setup "$id"
+    out=$(FM_T3CODE_QUOTA_SNAPSHOT="$snap" t3_worker_spawn "$id" claude --model default); rc=$?
+    expect_code 0 "$rc" "a default-model spawn must launch on the healthy selected seat"$'\n'"$out"
+    launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+    assert_equals claude_b "$(t3_request "$launch" 'r.arguments.modelSelection.instanceId')" "the thread must launch on the chosen seat"
+    assert_equals claude-fable-5-1 "$(t3_request "$launch" 'r.arguments.modelSelection.model')" "the launch must retain the concrete project default"
+  done
+  t3_case seat-default-selected-disabled
+  t3_two_seats
+  t3_world_set '
+w.providers[1].constraints = ["disabled"];
+w.projects[0].defaultModelSelection = { instanceId: "claude_b", model: "claude-fable-5-1" };'
+  snap="$CASE_DIR/quota.json"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.8:through_reset"
+  id=$(t3_uid t3defaultdisabled)
+  t3_worker_setup "$id"
+  out=$(FM_T3CODE_QUOTA_SNAPSHOT="$snap" t3_worker_spawn "$id" claude --model default); rc=$?
+  expect_code 1 "$rc" "the selected disabled seat must still refuse before leasing"$'\n'"$out"
+  assert_contains "$out" 'cannot run threads' "the refusal must explain the selected seat's constraints"
+  [ "$(t3_log_line_of 'r.tool === "treehouse"')" -eq 0 ] || fail "an unusable selected seat must refuse before leasing"
+  [ "$(t3_log_line_of 'r.tool === "t3_thread_launch"')" -eq 0 ] || fail "an unusable selected seat must not launch"
+  pass "default model resolution is independent of unselected seats while launch still validates the selected seat"
+}
+
+test_seat_failover_retries_chooser_errors() {
+  local mode out rc
+  for mode in malformed nonboolean; do
+    t3_case "seat-chooser-retry-$mode"
+    t3_two_seats
+    t3_failover_task t3chooserretry secondmate
+    t3_limited_thread "You've hit your session limit · resets 3:10pm"
+    cp "$CASE_DIR/state/t3chooserretry.meta" "$CASE_DIR/meta-before"
+    case "$mode" in
+      malformed) printf '{' > "$CONFIG/crew-dispatch.json" ;;
+      nonboolean) printf '{"shared_quota":"true"}' > "$CONFIG/crew-dispatch.json" ;;
+    esac
+    out=$(t3_failover t3chooserretry); rc=$?
+    expect_code 1 "$rc" "a $mode chooser configuration must be a retryable failure"$'\n'"$out"
+    assert_contains "$out" 'could not choose an alternate Claude seat' "the error must not claim seats are exhausted"
+    cmp -s "$CASE_DIR/meta-before" "$CASE_DIR/state/t3chooserretry.meta" || fail "a chooser error must not persist a handled run or exhaustion verdict"
+    [ "$(t3_log_line_of 'r.tool === "t3_thread_configure" && r.arguments.modelSelection')" -eq 0 ] || fail "a chooser error must not move the thread"
+    [ "$(t3_log_line_of 'r.tool === "t3_thread_send"')" -eq 0 ] || fail "a chooser error must not resume the limited run"
+    printf '{"shared_quota":false}' > "$CONFIG/crew-dispatch.json"
+    out=$(t3_failover t3chooserretry); rc=$?
+    expect_code 10 "$rc" "correcting only the configuration must allow the same limited run to move"$'\n'"$out"
+    assert_grep 't3_instance=claude_b' "$CASE_DIR/state/t3chooserretry.meta" "the recovered run must reach the alternate seat"
+  done
+  pass "chooser failures leave runs retryable and corrected configuration allows failover without resetting task state"
+}
+
 test_seat_review_regressions() {
   test_seat_pool_parsing_is_backward_compatible
   test_seat_choice_by_quota_rotation_and_marks
@@ -3559,6 +3630,8 @@ test_seat_review_regressions() {
   test_seat_failover_serialization_and_replenishment
   test_seat_rotation_serializes_shared_choices
   test_seat_shared_quota_opt_out
+  test_default_model_does_not_validate_unselected_seat
+  test_seat_failover_retries_chooser_errors
 }
 
 if [ -n "${FM_TEST_ONLY:-}" ]; then
@@ -3684,3 +3757,5 @@ test_seat_model_scope_regressions
 test_seat_failover_serialization_and_replenishment
 test_seat_rotation_serializes_shared_choices
 test_seat_shared_quota_opt_out
+test_default_model_does_not_validate_unselected_seat
+test_seat_failover_retries_chooser_errors
