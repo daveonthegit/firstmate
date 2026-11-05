@@ -2999,7 +2999,7 @@ This section is the single owner of the runner's operating contract.
 - A durable handled acknowledgement stops future source re-announcement, while a record already queued remains under the durable queue's authority until the ordinary drain's sequence-bound post-handling acknowledgement consumes it.
 - By default, a runner releases its claim after one poll; an adapter that opts into `relisten` keeps that runner and claim across empty waits and captured results, adopting a replacement registration only when the registered command is unchanged and the claim still belongs to it.
   A failed relisten check releases the claim; the runner never refreshes its own home lease.
-  The `bin/fm-procevent.sh` header owns the exact seam, and [remote secondmates](remote-secondmates.md#how-remote-lines-are-mirrored) owns the reply listener's behavior.
+  The `bin/fm-procevent.sh` header owns the exact seam, [remote secondmates](remote-secondmates.md#how-remote-lines-are-mirrored) owns the reply listener's behavior, and [remote workers](remote-workers.md#status-mirror) owns the worker host status listener's.
 
 **Reconcile sources**
 
