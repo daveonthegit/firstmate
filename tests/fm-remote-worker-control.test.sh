@@ -108,6 +108,13 @@ test_spawn_renders_host_brief_and_reports_route() {
 
   out=$(on_host "$CONTROL" route t1) || fail "route failed for a placed task"
   assert_contains "$out" "task=t1" "route did not print the placed task"
+  out=$(on_host "$CONTROL" state t1 2>&1) || fail "state failed for a placed task: $out"
+  [ "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" -eq 1 ] || fail "state did not print exactly one crew-state line: $out"
+  case "$out" in
+    'state: '*' source: '*) ;;
+    *) fail "state did not print a crew-state verdict: $out" ;;
+  esac
+  pass "route and state answer for a placed task with the ordinary one-line crew state"
 
   out=$(on_host "$CONTROL" send t1 'please also update the changelog' 2>&1) \
     || fail "send failed: $out"

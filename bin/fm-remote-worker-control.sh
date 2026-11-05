@@ -205,6 +205,8 @@ cmd_spawn() {
       || die "task id $id is already used by a task this worker host did not receive from a primary"
     [ "$(fm_meta_get "$meta" kind)" = "$kind" ] \
       || die "task $id already runs here as a $(fm_meta_get "$meta" kind), not a $kind"
+    [ "$(fm_meta_get "$meta" project)" = "$proj_dir" ] \
+      || die "task $id already runs here on project $(fm_meta_get "$meta" project), not $proj_dir"
     printf 'notice: task %s is already placed on this worker host; reporting its existing route\n' "$id" >&2
     print_route "$id"
     return 0
