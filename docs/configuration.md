@@ -2183,7 +2183,8 @@ A single-account home is unchanged.
 The optional local, gitignored `config/gh-accounts` maps `<owner> <account>` per line (comments, blanks, and `=` separators accepted); an explicit mapping wins and an unavailable mapped account refuses rather than falling back.
 Secondmates inherit the mapping.
 `FM_GH_ACCOUNT=<login>` overrides one invocation; `none` opts out when no GitHub API access is needed.
-Spawn resolves before endpoint creation and records `gh_account=` separately from upstream's model-provider `account=` pin.
+Spawn resolves a ship or scout lane's account before endpoint creation and records `gh_account=` separately from upstream's model-provider `account=` pin.
+A secondmate launch selects and carries no account, because its home resolves each repository from its own mapping.
 Forge reads and merges likewise use the repository's account.
 
 A lane-wide credential cannot reach no-mistakes' shared daemon.

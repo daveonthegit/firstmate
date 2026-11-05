@@ -659,6 +659,43 @@ test_spawn_exports_when_the_wrapper_is_not_reached() {
   pass "an installed wrapper nothing resolves to still leaves the lane its own credential"
 }
 
+# A secondmate home's own origin is the firstmate repository, yet the home works
+# across many repositories and resolves each from its own config/gh-accounts.
+# Its launch must therefore pin no account at all: one lane-wide credential would
+# override every other repository's mapping for the whole home.
+test_spawn_secondmate_pins_no_account() {
+  local rec id sm out status
+  id=gh-spawn-secondmate-z7
+  rec=$(make_spawn_case spawn-secondmate "$id" git@github.com:daveonthegit/firstmate.git)
+  read_spawn_case "$rec"
+  sm="$CASE_DIR/secondmate-home"
+  mkdir -p "$sm/bin" "$sm/data"
+  printf '# Firstmate\n' > "$sm/AGENTS.md"
+  printf '%s\n' "$id" > "$sm/.fm-secondmate-home"
+  printf 'charter for %s\n' "$id" > "$sm/data/charter.md"
+  printf '%s\n' 'projects/' 'state/' 'data/' 'config/' '.no-mistakes/' > "$sm/.gitignore"
+  git -C "$sm" init -q -b main
+  git -C "$sm" remote add origin git@github.com:daveonthegit/firstmate.git
+  out=$(HOME="$SPAWN_HOME" FM_ROOT_OVERRIDE='' FM_HOME="$HOME_DIR" \
+    FM_STATE_OVERRIDE="$HOME_DIR/state" FM_DATA_OVERRIDE="$HOME_DIR/data" \
+    FM_PROJECTS_OVERRIDE="$HOME_DIR/projects" FM_CONFIG_OVERRIDE="$HOME_DIR/config" \
+    FM_SPAWN_NO_GUARD=1 FM_BACKEND=tmux TMUX="fake,1,0" \
+    FM_FAKE_PANE_PATH="$sm" FM_FAKE_TMUX_LOG="$SENT_LOG" FM_FAKE_TMUX_WINDOWS="$CASE_DIR/tmux-windows" \
+    FM_FAKE_GH_ACCOUNTS='daveonthegit davidx-secco' FM_FAKE_GH_ACCESS='daveonthegit=50' FM_FAKE_GH_LOG="$LOG" \
+    PATH="$FAKEBIN:$PATH" \
+    "$SPAWN" "$id" "$sm" --harness claude --secondmate 2>&1)
+  status=$?
+  expect_code 0 "$status" "secondmate spawn failed: $out"
+  assert_grep "kind=secondmate" "$HOME_DIR/state/$id.meta" "the case did not launch a secondmate"
+  assert_no_grep gh_account= "$HOME_DIR/state/$id.meta" \
+    "a secondmate record named one GitHub account for a home that spans many repositories"
+  assert_no_grep fm-gh-account.sh "$SENT_LOG" \
+    "a secondmate's shell was pinned to the firstmate repository owner's account"
+  assert_no_grep GH_TOKEN "$SENT_LOG" "a credential was sent into the secondmate's pane"
+  assert_no_violations "secondmate spawn"
+  pass "a secondmate launch pins no GitHub account, so its home keys each repository off its own mapping"
+}
+
 # A single-account home spawns exactly as it did before this selection existed.
 test_spawn_without_a_choice_is_unchanged() {
   local rec id out status
@@ -962,6 +999,7 @@ test_env_snippet_fails_closed_in_the_shell
 test_spawn_hands_the_lane_its_own_account
 test_spawn_leaves_the_credential_to_the_wrapper
 test_spawn_exports_when_the_wrapper_is_not_reached
+test_spawn_secondmate_pins_no_account
 test_spawn_without_a_choice_is_unchanged
 test_spawn_refuses_an_undeterminable_account
 test_shim_leaves_gh_alone_where_it_must

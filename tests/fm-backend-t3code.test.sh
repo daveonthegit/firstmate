@@ -2040,6 +2040,36 @@ test_spawn_secondmate_runs_thread_in_home_with_env() {
   pass "fm-spawn.sh --backend t3code --secondmate: project on the home, root-strategy thread, charter message, launch prefix as settings env"
 }
 
+# A secondmate home's origin is the firstmate repository, but the home works
+# across many repositories and resolves each from its own config/gh-accounts, so
+# its launch must carry no account: no FM_GH_ACCOUNT and no per-task gh shim on
+# PATH, even where the home's own origin owner would select one, and a pin an
+# earlier spawn wrote must not survive the relaunch.
+test_spawn_secondmate_carries_no_github_account() {
+  local id home out settings
+  id=$(t3_uid t3smgh1)
+  t3_case spawn-secondmate-gh
+  home="$CASE_DIR/sm-home-gh"
+  make_t3_secondmate_home "$home" "$id"
+  git -C "$home" remote add origin https://github.com/selected/firstmate.git
+  t3_account_fixture "$CASE_DIR/account-bin"
+  local PATH="$CASE_DIR/account-bin:$PATH"
+  export PATH
+  mkdir -p "$home/.claude"
+  printf '{"env":{"FM_GH_ACCOUNT":"selected","FM_T3CODE_ENV_KEYS":"FM_GH_ACCOUNT"}}\n' > "$home/.claude/settings.local.json"
+  # No per-invocation override: the home's own origin owner is what selects.
+  out=$(unset FM_GH_ACCOUNT; spawn_t3_secondmate "$id" "$home" claude claude-sonnet-5)
+  expect_code 0 $? "a t3code secondmate in a multi-account home should spawn"$'\n'"$out"
+  settings="$home/.claude/settings.local.json"
+  [ "$(t3_json_field "$settings" 'd.env.FM_GH_ACCOUNT')" = undefined ] \
+    || fail "a secondmate launch must not pin one GitHub account, got '$(t3_json_field "$settings" 'd.env.FM_GH_ACCOUNT')'"
+  [ "$(t3_json_field "$settings" 'd.env.PATH')" = "$PATH" ] \
+    || fail "a secondmate launch must not put a single-account gh shim on PATH, got '$(t3_json_field "$settings" 'd.env.PATH')'"
+  assert_absent "/tmp/fm-$id/gh-bin" "a secondmate launch must install no per-task gh shim"
+  assert_no_grep gh_account= "$CASE_DIR/home/state/$id.meta" "a secondmate record must name no GitHub account"
+  pass "fm-spawn.sh --backend t3code --secondmate: carries no GitHub account pin, even when the home's origin selects one"
+}
+
 test_spawn_codex_secondmate_writes_toml_env() {
   local id home out thread toml
   t3_require_tomllib test_spawn_codex_secondmate_writes_toml_env || return 0
@@ -3863,6 +3893,7 @@ test_spawn_abort_returns_lease_only_after_archive fail
 test_uncertain_thread_launch_keeps_lease
 test_spawn_never_writes_inherited_git_config
 test_spawn_secondmate_refuses_symlinked_claude_settings
+test_spawn_secondmate_carries_no_github_account
 test_launch_gate_failure_returns_lease
 test_refused_launch_turn_archives_thread_and_returns_lease
 test_misbound_thread_launch_returns_lease

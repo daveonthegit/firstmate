@@ -4628,8 +4628,16 @@ PROJ_ABS_REAL=$(cd "$PROJ_ABS" 2>/dev/null && pwd -P) || PROJ_ABS_REAL="$PROJ_AB
 # active and fail late on a repository that account cannot see. Resolved here,
 # before any backend resource exists, so an undeterminable account stops the
 # spawn at dispatch instead of surfacing as a forge error deep inside a pipeline.
+# A secondmate is not one lane: its "project" is a firstmate home whose origin
+# names the firstmate repository, while the home works across many repositories
+# and resolves each one from its own config/gh-accounts. Pinning that home's
+# launch to one account would override every other repository's mapping, so a
+# secondmate launch selects nothing and carries no account.
 GH_ACCOUNT_RC=0
-GH_ACCOUNT=$("$FM_ROOT/bin/fm-gh-account.sh" resolve --dir "$PROJ_ABS") || GH_ACCOUNT_RC=$?
+GH_ACCOUNT=
+if [ "$KIND" != secondmate ]; then
+  GH_ACCOUNT=$("$FM_ROOT/bin/fm-gh-account.sh" resolve --dir "$PROJ_ABS") || GH_ACCOUNT_RC=$?
+fi
 case "$GH_ACCOUNT_RC" in
   0|3) ;;
   *)
@@ -6432,7 +6440,7 @@ spawn_t3code_env_base() {
       exit 1
     }
     t3code_path="$TASK_TMP/gh-bin:$PATH"
-  elif [ "${FM_GH_ACCOUNT:-}" = none ]; then
+  elif [ "${FM_GH_ACCOUNT:-}" = none ] && [ "$KIND" != secondmate ]; then
     T3CODE_ENV+=(FM_GH_ACCOUNT=none)
   fi
   T3CODE_ENV+=("PATH=$t3code_path")
