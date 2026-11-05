@@ -1,0 +1,9 @@
+ok - A host-local launch runs the mate as a thread on the host's T3 with the home's own sign-in
+ok - B a steer is a durable inbox record plus one T3 doorbell
+ok - C capture reads the thread and relaunch is refused by the control plane
+ok - D a linked or foreign T3 credential is refused
+ok - E a failed run is archived before a replacement thread launches
+ok - F the doctor checks the home's own T3 sign-in and its server
+ok - G the parent-side remote spawn gate accepts t3code for claude and refuses other harnesses first
+ok - H host-local retirement archives the thread and removes the home
+ALL TESTS PASSED
