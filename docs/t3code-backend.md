@@ -69,14 +69,59 @@ Revoke it with `t3 auth session revoke <id>` and delete `config/t3code-token` wh
 ### Provider instances and models
 
 `config/t3code-instances` maps a harness to a T3 provider instance id, one `harness=instanceId` line each; the defaults are `claude=claudeAgent`, `codex=codex`, and `pi=pi`.
+For codex and pi the last line naming the harness wins; claude may name [several seats](#several-claude-seats).
 Spawn resolves the selection against T3's own catalog (`orchestrator_capabilities`) before anything is leased: the instance must exist, be usable, and run the harness's driver (`claudeAgent` for claude, `codex` for codex, `pi` for pi), so a mapping onto another driver's instance is refused, and a disabled instance is refused with T3's own reason.
 The file is part of the primary's inherited local material, so every secondmate home receives the primary's mapping and its own T3 workers launch on the same provider instances; a home without the file falls back to those bare defaults, which need not name a configured account.
 A task's `--model` must be a model that instance lists in T3's catalog.
-`--model default` uses the T3 project's default model only when its instance matches `config/t3code-instances`; otherwise it refuses and asks for an explicit `--model`.
+`--model default` uses the T3 project's default model only when its instance is one `config/t3code-instances` declares for the harness; otherwise it refuses and asks for an explicit `--model`.
+When the default names another declared Claude seat, its model and options ride onto the seat the launch chose.
 `--effort` rides as the driver's reasoning option, `effort` for claude, `reasoningEffort` for codex, and `thinking` for pi, and must be one of the values the catalog lists for that model; a Pi model without reasoning lists no `thinking` option, so only `--effort default` passes for it.
 An explicit `--effort default` leaves the selected model's reasoning option unchanged, without inheriting a secondmate effort pin; with an explicit model the driver keeps its default, while `--model default` preserves the project's options.
 An effort replaces only that option: `--model default` keeps every other project default option, such as Codex's service tier or Claude's fast mode, while an explicit model sends only the effort.
 Every selected option is checked against the model's catalog descriptors, accepting both current values-array catalogs and earlier option-list catalogs.
+
+### Several Claude seats
+
+A home with more than one Claude subscription signed in to T3 can spread Claude workers across them.
+Each subscription is its own T3 provider instance (a seat), and every `claude=` line names one, optionally followed by a space and the Claude config directory that seat signs in with, `ordinary` meaning `~/.claude`:
+
+```text
+claude=claudeAgent ordinary
+claude=claude_second /home/me/.claude-second
+```
+
+One `claude=` line, with or without a directory, behaves exactly as before.
+A repeated instance keeps its first line, and a directory that is neither `ordinary` nor absolute refuses every Claude spawn.
+
+At each Claude spawn, [`bin/backends/t3code.sh`](../bin/backends/t3code.sh) `fm_backend_t3code_instance_choose` picks the seat before anything is leased:
+
+- Unless [shared-quota mode](configuration.md#crew-dispatch-profiles-configcrew-dispatchjson) disables quota ranking, it reads `quota-axi --provider claude --full --json` once when seat directories are available, with those directories in `QUOTA_AXI_CLAUDE_PROFILES`, and matches each seat to the lane whose account path is that directory.
+- It resolves the project's concrete model before ranking a default-model launch.
+  Applicable scopes are `all_models`, `all_products`, and `model:` or `product:` scopes naming the model's bare id or Claude family (`sonnet`, `opus`, `haiku`, or `fable`).
+  Any applicable exhausted bound excludes the seat; otherwise its score is the lowest `spendPriority` across those scopes, and the highest-scoring seat wins when all remaining seats can be ranked.
+- A seat with no directory, no matching lane, or no usable measurement is never guessed: the seats then take turns in file order, remembered in `state/t3code-rotation-claude`, and a quota tie takes the next seat the same way.
+- A seat that recently ran a worker into its usage limit is passed over for five hours (`FM_T3CODE_EXHAUSTED_SECS`) unless quota-axi measures it healthy.
+- With the home's `config/crew-dispatch.json` declaring `"shared_quota": true`, spawn and failover make no quota call and ignore supplied quota snapshots: seats rotate without quota ranking or quota-based exhaustion vetoes.
+  Actual usage-limit marks still exclude seats until they expire.
+- If every seat is exhausted, a new spawn still picks the next seat by rotation and discloses that outcome; failover instead leaves the existing thread stopped.
+
+A multi-seat spawn prints the chosen seat with each seat's evidence; [task metadata](configuration.md#task-metadata) records the choice.
+
+#### Usage-limit failover
+
+When a Claude seat runs out of usage, Claude Code ends the turn with a short notice such as `You've hit your session limit · resets 3:10pm`, or the run fails with a usage-limit error.
+On each poll, [`bin/fm-watch.sh`](../bin/fm-watch.sh) runs [`bin/fm-t3-seat-failover.sh`](../bin/fm-t3-seat-failover.sh) for every T3 Claude worker and secondmate in this home.
+It looks for that notice or error in the thread's latest finished run (`fm-t3-mcp.mjs limit-check`); a message that only discusses limits does not count.
+On a match it moves the same thread to another seat with `t3_thread_configure` `modelSelection` (`fm-t3-mcp.mjs configure`).
+The move keeps the model, options, transcript, and worktree, and it is read back before it counts.
+The script then sends a continuation steer through the steering inbox.
+For a failed thread, it explicitly starts a recovery turn to read that inbox and records delivery only after T3 accepts the turn; retries reuse the same request id.
+Each limited run is moved once.
+A move is routine and only logged.
+Firstmate is notified once per distinct outcome when every other seat is exhausted.
+The thread stays where it is while subsequent checks re-evaluate the alternate seats without renewing the original run's exhaustion mark, then moves when quota measures a seat healthy or its usage-limit mark expires.
+Move and delivery failures are reported for retry.
+Secondmate recovery runs the same check before resuming a failed secondmate run, so a usage-limited mate moves to another seat instead of resuming on the exhausted one.
 
 ### Capability gate
 
@@ -86,7 +131,7 @@ When T3 lists both, pending questions use the merged `t3_pending_request`, but t
 
 | Capability | Current tool family | Earlier tool family |
 |---|---|---|
-| Read a thread's binding | `t3_thread_configure` with only `threadId` (a read; the helper never sends `modelSelection`) | `t3_thread_configuration` |
+| Read a thread's binding | `t3_thread_configure` with only `threadId` (a read; only a [seat move](#usage-limit-failover) sends `modelSelection`, a write both generations accept) | `t3_thread_configuration` |
 | Pending questions | `t3_pending_request` with `action` `list`, `read`, or `respond` | `t3_pending_request_list`, `t3_pending_request_read`, `t3_pending_request_respond` |
 
 It then refuses unless `t3_environment_read` reports the environment id recorded at sign-in, so a different T3 server behind the same address is never driven with this credential.

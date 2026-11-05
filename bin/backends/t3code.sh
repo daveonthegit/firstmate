@@ -91,33 +91,241 @@ fm_backend_t3code_project_ensure() {  # <project-path> -> project id
   fm_backend_t3code_mcp project-ensure --root "$real" --title "fm-$(basename "$real")" | fm_backend_t3code_json_get projectId
 }
 
-fm_backend_t3code_instance_id() {  # <harness>
-  local harness=$1 file line value
+# fm_backend_t3code_instance_pool <harness>: the provider instances (seats)
+# config/t3code-instances names for <harness>, one `instance<TAB>quota-dir`
+# line each in file order. A line is `harness=instanceId [quota-dir]`, where
+# quota-dir is the Claude config directory that instance signs in with
+# (`ordinary` is ~/.claude), the identity quota-axi measures it by. Claude
+# alone pools: every distinct claude= line is one seat. Codex and pi keep one
+# instance, the last line naming them, and ignore a quota-dir. A harness the
+# file never names gets its default instance (claude=claudeAgent,
+# codex=codex, pi=pi) with no quota identity.
+fm_backend_t3code_instance_pool() {  # <harness>
+  local harness=$1 file line value instance dir pool='' default
   case "$harness" in
-    claude) value=claudeAgent ;;
-    codex) value=codex ;;
-    pi) value=pi ;;
+    claude) default=claudeAgent ;;
+    codex) default=codex ;;
+    pi) default=pi ;;
     *) echo "error: backend=t3code supports only the claude, codex, and pi harnesses, not '$harness'" >&2; return 1 ;;
   esac
   file="$(fm_backend_t3code_config_dir)/t3code-instances"
   if [ -f "$file" ]; then
     while IFS= read -r line || [ -n "$line" ]; do
-      case "$line" in "$harness="*) value=${line#*=} ;; esac
+      line=${line%$'\r'}
+      case "$line" in "$harness="*) ;; *) continue ;; esac
+      value=${line#*=}
+      instance=${value%% *}
+      dir=
+      [ "$instance" = "$value" ] || dir=${value#* }
+      [ -n "$instance" ] || { echo "error: $file maps harness '$harness' to an empty instance id" >&2; return 1; }
+      if [ "$harness" != claude ]; then
+        pool=$instance$'\t'
+        continue
+      fi
+      case "$dir" in
+        ''|/*) ;;
+        ordinary) dir="${HOME:?HOME is required for an ordinary quota identity}/.claude" ;;
+        *) echo "error: $file gives claude instance '$instance' the quota identity '$dir', which is neither 'ordinary' nor an absolute Claude config directory" >&2; return 1 ;;
+      esac
+      case $'\n'$pool in *$'\n'"$instance"$'\t'*) continue ;; esac
+      pool=$pool$instance$'\t'$dir$'\n'
     done < "$file"
   fi
-  [ -n "$value" ] || { echo "error: $file maps harness '$harness' to an empty instance id" >&2; return 1; }
-  printf '%s' "$value"
+  [ -n "$pool" ] || pool=$default$'\t'
+  printf '%s\n' "${pool%$'\n'}"
 }
+
+# The single instance a harness launches on when its pool has one seat, and
+# the first seat otherwise (a caller that balances seats uses
+# fm_backend_t3code_instance_choose instead).
+fm_backend_t3code_instance_id() {  # <harness>
+  local pool
+  pool=$(fm_backend_t3code_instance_pool "$1") || return 1
+  pool=${pool%%$'\n'*}
+  printf '%s' "${pool%%$'\t'*}"
+}
+
+fm_backend_t3code_exhausted_dir() {
+  printf '%s/t3code-exhausted' "${FM_STATE_OVERRIDE:-$FM_HOME/state}"
+}
+
+# fm_backend_t3code_mark_exhausted <instance>: record that <instance> just ran
+# a worker into its usage limit, so seat choice passes over it until quota-axi
+# measures it healthy again or FM_T3CODE_EXHAUSTED_SECS (default 18000, the
+# five-hour Claude window) has passed.
+fm_backend_t3code_mark_exhausted() {  # <instance>
+  local dir
+  dir=$(fm_backend_t3code_exhausted_dir)
+  mkdir -p "$dir" && date +%s > "$dir/$1"
+}
+
+# fm_backend_t3code_instance_choose <harness> <model> <project-id> [exclude-instance...]:
+# pick the seat a Claude thread launches on, or moves to, among the harness's
+# pool less the excluded instances. Prints one JSON object: instance, basis
+# (single: one seat; quota: the highest quota-axi spendPriority; rotation:
+# the next seat after the last one chosen, used whenever any remaining seat
+# cannot be measured or a quota tie must be broken), allExhausted (every
+# remaining seat is proven exhausted, by quota-axi's exhausted_now runway or no
+# remaining allowance, or by a fresh exhaustion mark quota-axi does not
+# contradict; the chosen instance is then only the rotation's next seat), and
+# notes (each seat's evidence, for disclosure). Exit 1 when no seat remains.
+#
+# Quota comes from one `quota-axi --provider claude --full --json` read with
+# QUOTA_AXI_CLAUDE_PROFILES naming every seat's quota-dir, matched to its seat
+# by the lane's accountLocator.path (real paths on both sides), and bounded by
+# FM_T3CODE_QUOTA_SECONDS (default 60). FM_T3CODE_QUOTA_SNAPSHOT names a file
+# holding that JSON instead, for tests. A seat with no quota-dir, no matching
+# lane, an unknown lane, no applicable scope, or a non-numeric spendPriority
+# is unmeasured: seats are then rotated, never guessed. The applicable scopes
+# are all_models, all_products, and model:/product: scopes naming the model's
+# bare id or Claude family; the seat's spendPriority is the lowest among them. The rotation
+# remembers the last seat chosen per harness in state/t3code-rotation-<harness>.
+fm_backend_t3code_instance_choose() (  # <harness> <model> <project-id> [exclude...]
+  local harness=$1 model=${2:-default} project_id=$3 pool state rotation last='' snapshot='' dirs='' line dir out chosen project rules shared_quota=false
+  shift 3
+  pool=$(fm_backend_t3code_instance_pool "$harness") || return 1
+  rules="$(fm_backend_t3code_config_dir)/crew-dispatch.json"
+  if [ -f "$rules" ]; then
+    # shellcheck disable=SC2016 # ${...} belongs to the Node snippet.
+    shared_quota=$(node -e '
+try {
+  const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+  if (!d || typeof d !== "object" || Array.isArray(d)) throw new Error("expected an object");
+  if (Object.hasOwn(d, "shared_quota") && typeof d.shared_quota !== "boolean") throw new Error("shared_quota must be true or false when present");
+  process.stdout.write(String(d.shared_quota === true));
+} catch (e) { console.error(`error: ${process.argv[1]}: ${e.message}`); process.exit(1); }
+' "$rules") || return 1
+  fi
+  if [ "$model" = default ]; then
+    project=$(fm_backend_t3code_mcp project-read --project "$project_id") || return 1
+    model=$(printf '%s' "$project" | node -e '
+const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+const model = d.project?.defaultModelSelection?.model;
+if (!d.ok || typeof model !== "string" || !model) {
+  console.error("error: T3 project has no default model; pass --model explicitly");
+  process.exit(1);
+}
+process.stdout.write(model);
+') || return 1
+  fi
+  state=${FM_STATE_OVERRIDE:-$FM_HOME/state}
+  rotation="$state/t3code-rotation-$harness"
+  if [ "$shared_quota" = false ] && [ "$(printf '%s\n' "$pool" | grep -c .)" -gt 1 ]; then
+    while IFS= read -r line; do
+      dir=${line#*$'\t'}
+      [ -z "$dir" ] || dirs=${dirs:+$dirs:}$dir
+    done <<< "$pool"
+    if [ -n "${FM_T3CODE_QUOTA_SNAPSHOT:-}" ]; then
+      snapshot=$(cat "$FM_T3CODE_QUOTA_SNAPSHOT" 2>/dev/null) || snapshot=
+    elif [ -n "$dirs" ] && command -v quota-axi >/dev/null 2>&1; then
+      if ! command -v fm_run_timed >/dev/null 2>&1; then
+        # shellcheck source=bin/fm-timeout-lib.sh
+        . "$(dirname -- "$FM_BACKEND_T3CODE_HELPER")/fm-timeout-lib.sh"
+      fi
+      snapshot=$(fm_run_timed "${FM_T3CODE_QUOTA_SECONDS:-60}" env -u QUOTA_AXI_SNAPSHOT \
+        QUOTA_AXI_CLAUDE_PROFILES="$dirs" quota-axi --provider claude --full --json 2>/dev/null </dev/null) || true
+    fi
+  fi
+  if [ "$(printf '%s\n' "$pool" | grep -c .)" -gt 1 ]; then
+    if ! command -v fm_lock_acquire_wait >/dev/null 2>&1; then
+      . "$(dirname -- "$FM_BACKEND_T3CODE_HELPER")/fm-wake-lib.sh"
+    fi
+    mkdir -p "$state" || return 1
+    fm_lock_acquire_wait "$rotation.lock" || return 1
+    trap 'rm -f "$rotation.$$.tmp"; fm_lock_release "$rotation.lock"' EXIT
+    trap 'exit 1' HUP INT TERM
+    [ ! -f "$rotation" ] || last=$(cat "$rotation" 2>/dev/null) || return 1
+  fi
+  # shellcheck disable=SC2016  # ${...} belongs to the Node snippet.
+  out=$(FM_T3_POOL=$pool FM_T3_SNAPSHOT=$snapshot FM_T3_SHARED_QUOTA=$shared_quota FM_T3_LAST=$last FM_T3_MODEL=$model \
+    FM_T3_EXHAUSTED_DIR=$(fm_backend_t3code_exhausted_dir) FM_T3_EXHAUSTED_SECS=${FM_T3CODE_EXHAUSTED_SECS:-18000} \
+    node -e '
+const fs = require("fs");
+const real = (p) => { try { return fs.realpathSync(p); } catch { return p; } };
+const exclude = new Set(process.argv.slice(1));
+const seats = process.env.FM_T3_POOL.split("\n").filter(Boolean).map((l) => {
+  const [instance, dir] = l.split("\t");
+  return { instance, dir: dir || "" };
+});
+const candidates = seats.filter((s) => !exclude.has(s.instance));
+if (!candidates.length) { console.error("error: no other T3 seat is configured for this harness in config/t3code-instances"); process.exit(1); }
+const rotate = (list) => {
+  const order = seats.map((s) => s.instance);
+  const from = order.indexOf(process.env.FM_T3_LAST);
+  for (let i = 1; i <= order.length; i++) {
+    const next = order[(from + i + order.length) % order.length];
+    if (list.some((s) => s.instance === next)) return next;
+  }
+  return list[0].instance;
+};
+if (seats.length === 1) {
+  process.stdout.write(JSON.stringify({ instance: candidates[0].instance, basis: "single", allExhausted: false, notes: [] }));
+  process.exit(0);
+}
+let lanes = [];
+try { lanes = (JSON.parse(process.env.FM_T3_SNAPSHOT || "{}").providers ?? []).filter((p) => p.provider === "claude"); } catch { lanes = []; }
+const bare = String(process.env.FM_T3_MODEL).split("/").pop();
+const family = /^claude-(sonnet|opus|haiku|fable)(?:-|$)/.exec(bare)?.[1];
+const names = new Set([bare, ...(family ? [family] : [])]);
+const now = Math.floor(Date.now() / 1000);
+const notes = [];
+for (const s of candidates) {
+  let mark = 0;
+  try { mark = Number(fs.readFileSync(`${process.env.FM_T3_EXHAUSTED_DIR}/${s.instance}`, "utf8").trim()) || 0; } catch {}
+  s.marked = mark > 0 && now - mark < Number(process.env.FM_T3_EXHAUSTED_SECS);
+  if (process.env.FM_T3_SHARED_QUOTA === "true") { s.why = "quota ranking off: home declares a single shared quota"; }
+  else if (!s.dir) { s.why = "no quota identity in config/t3code-instances"; }
+  else {
+    const lane = lanes.find((p) => p.accountLocator?.path && real(p.accountLocator.path) === real(s.dir));
+    const q = lane?.quotaSemantics;
+    if (!lane) s.why = `quota-axi reports no lane for ${s.dir}`;
+    else if (!["known", "partial"].includes(q?.status)) s.why = `quota ${q?.status ?? "unknown"}${lane.state?.error ? ` (${lane.state.error})` : ""}`;
+    else {
+      const scopes = (q.effectiveAvailability ?? []).filter((a) => a.scope === "all_models" || a.scope === "all_products"
+        || (["model", "product"].some((kind) => [...names].some((name) => a.scope === `${kind}:${name}`))));
+      if (!scopes.length) s.why = "no applicable quota scope";
+      else if (scopes.some((a) => a.runway?.status === "exhausted_now" || (typeof a.effectivePercentRemaining === "number" && a.effectivePercentRemaining <= 0))) {
+        s.exhausted = true;
+        s.why = "quota-axi measures it exhausted now";
+      } else if (scopes.some((a) => typeof a.selection?.spendPriority !== "number")) s.why = "spendPriority unknown";
+      else s.priority = Math.min(...scopes.map((a) => a.selection.spendPriority));
+    }
+  }
+  if (s.marked && s.priority === undefined) { s.exhausted = true; s.why = `${s.why}; hit its usage limit within ${process.env.FM_T3_EXHAUSTED_SECS}s`; }
+  notes.push(`${s.instance}: ${s.priority !== undefined ? `spendPriority ${s.priority}` : s.why}`);
+}
+const live = candidates.filter((s) => !s.exhausted);
+let instance;
+let basis;
+if (!live.length) { instance = rotate(candidates); basis = "rotation"; }
+else if (live.every((s) => s.priority !== undefined)) {
+  const best = Math.max(...live.map((s) => s.priority));
+  const tied = live.filter((s) => s.priority === best);
+  instance = tied.length === 1 ? tied[0].instance : rotate(tied);
+  basis = tied.length === 1 ? "quota" : "rotation";
+  if (tied.length > 1) notes.push(`quota tie at spendPriority ${best}`);
+} else { instance = rotate(live); basis = "rotation"; }
+process.stdout.write(JSON.stringify({ instance, basis, allExhausted: !live.length, notes }));
+' "$@") || return 1
+  chosen=$(printf '%s' "$out" | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).instance)') || return 1
+  if [ "$(printf '%s\n' "$pool" | grep -c .)" -gt 1 ]; then
+    { printf '%s' "$chosen" > "$rotation.$$.tmp" && mv -f "$rotation.$$.tmp" "$rotation"; } || return 1
+  fi
+  printf '%s' "$out"
+)
 
 # fm_backend_t3code_model_selection: the launch's model selection, resolved
 # against T3's own catalog before anything is leased (bin/fm-t3-mcp.mjs
-# resolve-selection owns the driver, model, and option checks). Prints the
-# selection JSON; the helper prints its own refusal.
-fm_backend_t3code_model_selection() {  # <harness> <model> <effort> <project-id> -> JSON
-  local harness=$1 model=${2:-default} effort=${3:-default} project_id=$4 instance out
-  instance=$(fm_backend_t3code_instance_id "$harness") || return 1
+# resolve-selection owns the driver, model, and option checks). <instance>
+# names the seat (default: the harness's single or first configured seat);
+# every configured seat of the harness may own the project's default model.
+# Prints the selection JSON; the helper prints its own refusal.
+fm_backend_t3code_model_selection() {  # <harness> <model> <effort> <project-id> [instance] -> JSON
+  local harness=$1 model=${2:-default} effort=${3:-default} project_id=$4 instance=${5:-} pool out
+  [ -n "$instance" ] || instance=$(fm_backend_t3code_instance_id "$harness") || return 1
+  pool=$(fm_backend_t3code_instance_pool "$harness" | cut -f1 | paste -sd, -) || return 1
   out=$(fm_backend_t3code_mcp resolve-selection --harness "$harness" --instance "$instance" \
-    --model "$model" --effort "$effort" --project "$project_id") || return 1
+    --model "$model" --effort "$effort" --project "$project_id" --pool "$pool") || return 1
   printf '%s' "$out" | node -e '
 const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
 if (!d.ok || !d.selection) process.exit(1);

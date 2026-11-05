@@ -23,7 +23,10 @@
 //     read when called without modelSelection; earlier T3 also lists
 //     t3_thread_configure but refuses it without modelSelection) and
 //     t3_pending_request_list, _read, and _respond into t3_pending_request
-//     {action}. The fake serves both generations; tools/list offers the
+//     {action}. t3_thread_configure with modelSelection is the write that
+//     moves a thread to another provider instance; both generations accept
+//     it, and the fake applies it unless the world sets configureIgnored.
+//     The fake serves both generations; tools/list offers the
 //     earlier one by default and CURRENT_TOOLS when the world sets toolset
 //     "current", and a tools/call for a tool tools/list does not offer is
 //     refused, as T3 refuses it;
@@ -322,7 +325,17 @@ async function callTool(w, name, a) {
       if (a.modelSelection === undefined && offeredTools(w).includes("t3_thread_configuration")) {
         return [err("invalid_params", "Invalid parameters for tool 't3_thread_configure': Missing key at [\"modelSelection\"]"), false];
       }
-      if (a.modelSelection !== undefined) return [err("unsupported", "the fake serves only the configuration read"), false];
+      if (a.modelSelection !== undefined) {
+        // Both generations take the write: it rebinds the thread's provider
+        // instance, model, and options for its next run, keeping its items.
+        if (!t) return [notFound(a.threadId), false];
+        if (!w.configureIgnored) {
+          t.modelSelection = { ...a.modelSelection };
+          t.providerInstanceId = a.modelSelection.instanceId;
+          t.model = a.modelSelection.model;
+        }
+        return [ok({ threadId: t.threadId, modelSelection: t.modelSelection ?? a.modelSelection }), true];
+      }
     // falls through: from T3 0.1.3, without modelSelection it is the read
     case "t3_thread_configuration": {
       if (!t) return [notFound(a.threadId), false];

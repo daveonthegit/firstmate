@@ -2842,6 +2842,24 @@ bin/fm-t3-mcp.mjs archive --thread <thread>
 No `/mcp` read reports the pin: `t3_thread_read`, `t3_thread_list`, and `t3_thread_configure` on that build return no `keepAlive`, so only the `t3_thread_update` result proves it.
 Before the pin existed, the same scenario on `t3@0.1.5+fork.1` lost the `claude` process exactly 30 minutes after the last turn, and a later event queued without waking it.
 
+### Claude seat move after a usage limit
+
+On 2026-11-04, on the captain's fork `t3@0.1.5+fork.2` on macOS arm64, a Claude worker thread ran on one of two Claude provider instances (seats) and its seat hit the five-hour usage limit mid-task.
+Firstmate moved the thread by hand with `t3_thread_configure` `modelSelection` naming the other seat's `instanceId` with the same model and `effort` option, then sent one continuation turn.
+This is the same move [`bin/fm-t3-seat-failover.sh`](../../bin/fm-t3-seat-failover.sh) makes.
+The worker then read the result without changing anything:
+
+| Check | Result |
+| --- | --- |
+| `t3_thread_configure` input schema | `modelSelection` with `instanceId`, `model` (required), `options`, and `provider`; the description says it sets the thread's provider, model, and options and leaves permission modes alone |
+| Binding read-back (`t3_thread_configure` with only `threadId`) | the other seat's `instanceId`, the same model, `effort` `high`, and `runtimeMode` `full-access` unchanged |
+| Limited run in `t3_thread_read` `recentRuns` | `status` `failed`, `providerInstanceId` the exhausted seat, and no error field on the run record |
+| Limited run's last items (positions 177 and 178 of its 179) | an `assistant_message` whose `text` is `You've hit your 5-hour limit · resets 6:10pm (America/New_York)`, then an item with `type` `error`, `status` `failed`, `title` `Usage limit reached`, and `text` `Claude API rate limit reached. Try again later.` |
+| Continuation run | ordinal 2 on the new seat, continuing the same transcript in the same worktree |
+
+So `limit-check` reads the failed run's `error` items as well as any run error field and the final notice, because this server records the provider failure as an item, not on the run.
+The automatic path was not run end to end against the live server; the [fake `/mcp` server](../../tests/t3-fake-server.mjs) covers it in `tests/fm-backend-t3code.test.sh`.
+
 ### Tool names in 0.1.3 and later
 
 On 2026-10-27, `tools/list` on `t3 v0.1.4-nightly.20261027.3770` offered `t3_thread_configure` and `t3_pending_request`, but not `t3_thread_configuration` or the three `t3_pending_request_*` tools.

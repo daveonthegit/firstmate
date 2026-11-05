@@ -164,6 +164,10 @@
 #   The exports a pane would receive before launch travel as per-directory
 #   harness config instead (spawn_t3code_env_install), or, for pi, as the
 #   thread's per-thread launch environment (spawn_t3code_launch_pi).
+#   When config/t3code-instances names several Claude seats, a claude launch
+#   takes the seat fm_backend_t3code_instance_choose picks (quota-axi
+#   spendPriority, else rotation); the seat and how it was chosen are recorded
+#   as t3_instance= and t3_instance_basis=.
 #   A backend spawn refusal (missing dependency, version gate, unauthenticated
 #   socket, or unsupported secondmate mode) is terminal for that selected backend;
 #   callers must surface it instead of silently retrying another backend.
@@ -1691,6 +1695,25 @@ T3CODE_CREATE_UNCERTAIN=0
 T3CODE_LAUNCH_UNCONFIRMED=0
 T3CODE_PROJECT_ID=
 T3CODE_MODEL_SELECTION=
+T3CODE_INSTANCE=
+T3CODE_INSTANCE_BASIS=
+# spawn_t3code_choose_instance: set T3CODE_INSTANCE and T3CODE_INSTANCE_BASIS
+# to the seat this launch runs on, before anything is leased.
+spawn_t3code_choose_instance() {
+  local choice
+  choice=$(fm_backend_t3code_instance_choose "$HARNESS" "${MODEL:-default}" "$T3CODE_PROJECT_ID") || return 1
+  # shellcheck disable=SC2016  # ${...} belongs to the Node snippet.
+  choice=$(printf '%s' "$choice" | node -e '
+const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+if (d.basis !== "single") {
+  const why = d.allExhausted ? "every seat reads exhausted, so the rotation picked" : d.basis === "quota" ? "most quota headroom" : "rotation, since not every seat could be ranked by quota";
+  console.error(`notice: T3 seat ${d.instance} (${why}): ${d.notes.join("; ")}`);
+}
+process.stdout.write(`${d.instance}\t${d.basis}`);
+') || return 1
+  T3CODE_INSTANCE=${choice%%$'\t'*}
+  T3CODE_INSTANCE_BASIS=${choice#*$'\t'}
+}
 # spawn_t3code_thread_create <worktree> [NAME=VALUE...]: launch this worker's
 # idle T3 thread on its leased slot, with any NAME=VALUE pairs as its
 # per-thread environment, and set T to the id T3 assigned. A launch whose
@@ -5422,7 +5445,8 @@ EOF
     # The T3 project is the directory the agent runs in: the project for a
     # worker, the home itself for a secondmate.
     T3CODE_PROJECT_ID=$(fm_backend_t3code_project_ensure "$PROJ_ABS") || exit 1
-    T3CODE_MODEL_SELECTION=$(fm_backend_t3code_model_selection "$HARNESS" "${MODEL:-default}" "${EFFORT:-default}" "$T3CODE_PROJECT_ID") || exit 1
+    spawn_t3code_choose_instance || exit 1
+    T3CODE_MODEL_SELECTION=$(fm_backend_t3code_model_selection "$HARNESS" "${MODEL:-default}" "${EFFORT:-default}" "$T3CODE_PROJECT_ID" "$T3CODE_INSTANCE") || exit 1
     if [ "$KIND" = secondmate ]; then
       # The home's own daemon and crew call the same server, so they read the
       # primary's credential through a link rather than a copy of the secret.
@@ -7375,7 +7399,7 @@ SPAWN_META_PATH=$SPAWN_META_TMP
 preserve_relaunch_meta() {
   awk -F= '
     BEGIN {
-      split("window endpoint_task_id worktree project harness hermes_profile hermes_home kind mode yolo branch tasktmp base_branch upstream_consent forge backup_remote backup_prefix model effort opencode_version account account_provider omp_profile busy_gen spawn_gen approval_mode traceparent backend herdr_session herdr_workspace_id herdr_tab_id herdr_pane_id zellij_session zellij_tab_id zellij_pane_id orca_worktree_id terminal cmux_workspace_id cmux_surface_id paseo_terminal_id paseo_workspace_id rex_server rex_session_id rex_window_id rex_block_id t3_thread_id t3_project_id tern_session_id tern_tab_id tern_block_id hc_session hc_terminal home projects control_relaunch_tx polytoken_session polytoken_port polytoken_credential", keys, " ")
+      split("window endpoint_task_id worktree project harness hermes_profile hermes_home kind mode yolo branch tasktmp base_branch upstream_consent forge backup_remote backup_prefix model effort opencode_version account account_provider omp_profile busy_gen spawn_gen approval_mode traceparent backend herdr_session herdr_workspace_id herdr_tab_id herdr_pane_id zellij_session zellij_tab_id zellij_pane_id orca_worktree_id terminal cmux_workspace_id cmux_surface_id paseo_terminal_id paseo_workspace_id rex_server rex_session_id rex_window_id rex_block_id t3_thread_id t3_project_id t3_instance t3_instance_basis tern_session_id tern_tab_id tern_block_id hc_session hc_terminal home projects control_relaunch_tx polytoken_session polytoken_port polytoken_credential", keys, " ")
       for (i in keys) owned[keys[i]] = 1
     }
     !($1 in owned)
@@ -7465,6 +7489,8 @@ preserve_relaunch_meta() {
   if [ "$BACKEND" = t3code ]; then
     echo "t3_thread_id=$T"
     echo "t3_project_id=$T3CODE_PROJECT_ID"
+    echo "t3_instance=$T3CODE_INSTANCE"
+    echo "t3_instance_basis=$T3CODE_INSTANCE_BASIS"
   fi
   if [ "$BACKEND" = tern ]; then
     echo "tern_session_id=$TERN_SESSION_ID"
