@@ -462,6 +462,7 @@ Placement is per backend:
 
 A T3 Code second mate runs only the `claude` or `codex` harness; the primary refuses any other before it contacts the host.
 Its thread is driven with the remote home's own sign-in to that host's T3, never the primary's credential and never a link to another home's.
+Seeding still passes the default readiness gate, which needs the herdr or rex CLI on that host, because the home and its sign-in do not exist yet; T3 Code is selected at launch.
 After the route is seeded, the captain signs in once on the remote machine, as the remote account:
 
 ```sh
@@ -726,6 +727,7 @@ It refuses while any of these holds:
 Herdr retirement closes only the retiring secondmate's panes or `2ndmate-<id>` workspace in `fm-remote`, never the shared session or a sibling's workspace or panes.
 Rex retirement follows the [recorded-block and empty-session cleanup contract](rex-backend.md#cleanup-and-the-absence-proof), never stopping the shared server.
 T3 Code retirement archives the mate's thread with the same proof a [local T3 secondmate's](t3code-backend.md#current-lifecycle-and-safety) gets, including its `lsof` requirement, and leaves its `fm-` project in that host's T3.
+Without a valid sign-in there is no archive proof, so a mate whose 30-day T3 credential has lapsed must be signed in again on its host before it can be retired, with or without `--force`.
 SSH exit 255 preserves both the route and local records because completion is unknown.
 `--force` remains the explicit discard path and requires the same captain authority as local secondmate discard.
 
