@@ -3451,10 +3451,10 @@ test_seat_rotation_serializes_shared_choices() {
       tied) t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.5:through_reset" "$CASE_DIR/seat-b=0.5:through_reset" ;;
       exhausted) t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.5:exhausted_now" "$CASE_DIR/seat-b=0.5:exhausted_now" ;;
     esac
-    PATH="$fb:$PATH" FM_T3CODE_QUOTA_SNAPSHOT= FM_T3CODE_QUOTA_SECONDS=10 \
+    PATH="$fb:$PATH" FM_T3CODE_QUOTA_SNAPSHOT='' FM_T3CODE_QUOTA_SECONDS=10 \
       FM_T3_QUOTA_BARRIER="$barrier" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" \
       t3_run 'fm_backend_t3code_instance_choose claude claude-sonnet-5 proj-1' > "$CASE_DIR/first.json" & p1=$!
-    PATH="$fb:$PATH" FM_T3CODE_QUOTA_SNAPSHOT= FM_T3CODE_QUOTA_SECONDS=10 \
+    PATH="$fb:$PATH" FM_T3CODE_QUOTA_SNAPSHOT='' FM_T3CODE_QUOTA_SECONDS=10 \
       FM_T3_QUOTA_BARRIER="$barrier" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" \
       t3_run 'fm_backend_t3code_instance_choose claude claude-sonnet-5 proj-1' > "$CASE_DIR/second.json" & p2=$!
     wait "$p1"; rc1=$?
@@ -3490,13 +3490,13 @@ test_seat_shared_quota_opt_out() {
   snap="$CASE_DIR/quota.json"
   t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.2:through_reset" "$CASE_DIR/seat-b=0.8:through_reset"
   printf '{"shared_quota":false}' > "$CONFIG/crew-dispatch.json"
-  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT= \
+  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT='' \
     t3_run 'fm_backend_t3code_instance_choose claude claude-sonnet-5 proj-1')
   assert_contains "$out" '"instance":"claude_b","basis":"quota"' "shared_quota false must retain quota ranking"
   assert_present "$calls" "the quota boundary stub must record calls when quota is enabled"
   rm -f "$calls" "$CASE_DIR/state/t3code-rotation-claude"
   printf '{"shared_quota":true}' > "$CONFIG/crew-dispatch.json"
-  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT= \
+  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT='' \
     t3_run 'fm_backend_t3code_instance_choose claude claude-sonnet-5 proj-1')
   assert_contains "$out" '"instance":"claudeAgent","basis":"rotation"' "the shared budget must rotate instead of preferring higher per-seat quota"
   assert_contains "$out" 'quota ranking off' "the disabled quota evidence must be disclosed"
@@ -3511,7 +3511,7 @@ test_seat_shared_quota_opt_out() {
   rm -f "$CASE_DIR/state/t3code-exhausted/claude_b" "$CASE_DIR/state/t3code-rotation-claude"
   id=$(t3_uid t3sharedspawn)
   t3_worker_setup "$id"
-  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT= \
+  out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT='' \
     t3_worker_spawn "$id" claude --model claude-sonnet-5); rc=$?
   expect_code 0 "$rc" "a shared-budget spawn must succeed"$'\n'"$out"
   launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
@@ -3529,7 +3529,7 @@ test_seat_shared_quota_opt_out() {
     if [ "$mode" = snapshot ]; then
       out=$(FM_T3CODE_QUOTA_SNAPSHOT="$snap" t3_failover t3sharedfo); rc=$?
     else
-      out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT= \
+      out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT='' \
         FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$CASE_DIR/home" FM_STATE_OVERRIDE="$CASE_DIR/state" FM_CONFIG_OVERRIDE="$CONFIG" \
         "$ROOT/bin/fm-t3-seat-failover.sh" t3sharedfo 2>&1); rc=$?
     fi

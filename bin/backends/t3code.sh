@@ -186,6 +186,7 @@ fm_backend_t3code_instance_choose() (  # <harness> <model> <project-id> [exclude
   pool=$(fm_backend_t3code_instance_pool "$harness") || return 1
   rules="$(fm_backend_t3code_config_dir)/crew-dispatch.json"
   if [ -f "$rules" ]; then
+    # shellcheck disable=SC2016 # ${...} belongs to the Node snippet.
     shared_quota=$(node -e '
 try {
   const d = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
