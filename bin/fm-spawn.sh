@@ -8154,7 +8154,7 @@ else
   # Let a repository-aware shim select per-call identity when installed; otherwise
   # materialize the lane's token inside its shell, never in captured launch text.
   if [ "$KIND" = secondmate ]; then
-    spawn_send_text_line "$T" "unset GH_TOKEN"
+    spawn_send_text_line "$T" "export GH_TOKEN=''"
   elif [ -n "$GH_ACCOUNT" ] && ! "$FM_ROOT/bin/fm-install-gh-shim.sh" --check 2>/dev/null | grep -q '^in effect: yes'; then
     spawn_send_text_line "$T" "eval \"\$($(shell_quote "$FM_ROOT/bin/fm-gh-account.sh") env --account $(shell_quote "$GH_ACCOUNT"))\""
     sleep 0.3

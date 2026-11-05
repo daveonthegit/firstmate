@@ -488,7 +488,7 @@ case "${1:-}" in
     if [ -n "${FM_FAKE_PANE_SCRIPT:-}" ]; then
       if [ "${4:-}" = -l ]; then
         case "${5:-}" in
-          '. '*) printf 'printf "%%s\\n" "${GH_TOKEN:-none}"\n' >> "$FM_FAKE_PANE_SCRIPT" ;;
+          '. '*) printf '%s\n' "sh -c 'printf \"%s\\n\" \"\${GH_TOKEN:-none}\"'" >> "$FM_FAKE_PANE_SCRIPT" ;;
         esac
       elif [ "${5:-}" = Enter ]; then
         printf '%s\n' "$4" >> "$FM_FAKE_PANE_SCRIPT"
@@ -676,7 +676,7 @@ test_spawn_exports_when_the_wrapper_is_not_reached() {
 # Its launch must therefore pin no account at all: one lane-wide credential would
 # override every other repository's mapping for the whole home.
 test_spawn_secondmate_pins_no_account() {
-  local rec id sm out status seen
+  local rec id sm out status seen pane_shell
   id=gh-spawn-secondmate-z7
   rec=$(make_spawn_case spawn-secondmate "$id" git@github.com:daveonthegit/firstmate.git)
   read_spawn_case "$rec"
@@ -719,9 +719,15 @@ test_spawn_secondmate_pins_no_account() {
     "$SPAWN" "$id" --relaunch --harness claude 2>&1)
   status=$?
   expect_code 0 "$status" "secondmate relaunch failed: $out"
-  seen=$(GH_TOKEN=ghtoken-daveonthegit PATH="$FAKEBIN:$PATH" sh "$CASE_DIR/pane.sh")
-  expect_code 0 "$?" "replacement pane commands failed"
-  [ "$seen" = none ] || fail "replacement launch inherited the old owner's token: $seen"
+  for pane_shell in sh bash fish; do
+    if ! command -v "$pane_shell" >/dev/null 2>&1; then
+      printf 'skip: %s not found (secondmate replacement pane)\n' "$pane_shell"
+      continue
+    fi
+    seen=$(GH_TOKEN=ghtoken-daveonthegit PATH="$FAKEBIN:$PATH" "$pane_shell" "$CASE_DIR/pane.sh")
+    expect_code 0 "$?" "replacement pane commands failed in $pane_shell"
+    [ "$seen" = none ] || fail "replacement launch in $pane_shell inherited the old owner's token: $seen"
+  done
   assert_no_grep gh_account= "$HOME_DIR/state/$id.meta" \
     "a replacement secondmate retained its previous account pin"
   pass "a secondmate launch pins no GitHub account, so its home keys each repository off its own mapping"
