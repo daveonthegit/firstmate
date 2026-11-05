@@ -1,0 +1,34 @@
+warning: T3 credential expires in 0.0 days (2026-11-05T01:44:27.255Z); the captain signs in again before then
+{"ok":true,"origin":"http://127.0.0.1:47863","expiresAt":"2026-11-05T01:44:27.255Z","daysLeft":0,"environmentId":"1bcb3bcd-6c1f-4891-9e77-118ad7bb7b31","serverVersion":"0.1.5+fork.2","recordedServerVersion":null,"launchEnvironment":true,"sessionStop":true,"keepAlive":true,"telemetry":"off","credentialWarning":"T3 credential expires in 0.0 days (2026-11-05T01:44:27.255Z); the captain signs in again before then"}
+Disposable real T3 Claude catalog: [{"instance":"claudeAgent","constraints":[]}]
+
+SCENARIO: quota prefers the seat with higher spend priority
+{"instance":"unconfigured-seat-a","basis":"quota","allExhausted":false,"notes":["unconfigured-seat-a: spendPriority 0.9","claudeAgent: spendPriority 0.3"]}
+
+SCENARIO: family quota bounds constrain explicit model choice
+{"instance":"claudeAgent","basis":"quota","allExhausted":false,"notes":["unconfigured-seat-a: quota-axi measures it exhausted now","claudeAgent: spendPriority 0.3"]}
+
+SCENARIO: selected seat validates against real catalog independently of invalid unselected first seat
+warning: T3 credential expires in 0.0 days (2026-11-05T01:44:27.255Z); the captain signs in again before then
+Resolved selection: {"instanceId":"claudeAgent","model":"claude-fable-5-1","options":[{"id":"effort","value":"high"}]}
+warning: T3 credential expires in 0.0 days (2026-11-05T01:44:27.255Z); the captain signs in again before then
+fm-t3-mcp: T3 has no provider instance 'unconfigured-seat-a' (config/t3code-instances maps the claude harness to it)
+Selected unusable seat refusal exit=1 (expected nonzero)
+
+SCENARIO: concurrent unknown-quota choices balance six-to-six
+Concurrent selections: {"claudeAgent":6,"unconfigured-seat-a":6}
+
+SCENARIO: shared-quota mode ignores model-exhausted snapshot and rotates
+{"instance":"unconfigured-seat-a","basis":"rotation","allExhausted":false,"notes":["unconfigured-seat-a: quota ranking off: home declares a single shared quota","claudeAgent: quota ranking off: home declares a single shared quota"]}
+{"instance":"claudeAgent","basis":"rotation","allExhausted":false,"notes":["unconfigured-seat-a: quota ranking off: home declares a single shared quota","claudeAgent: quota ranking off: home declares a single shared quota"]}
+
+SCENARIO: actual usage marks veto until expiry even with shared quota
+{"instance":"claudeAgent","basis":"rotation","allExhausted":false,"notes":["unconfigured-seat-a: quota ranking off: home declares a single shared quota; hit its usage limit within 18000s","claudeAgent: quota ranking off: home declares a single shared quota"]}
+{"instance":"unconfigured-seat-a","basis":"rotation","allExhausted":false,"notes":["unconfigured-seat-a: quota ranking off: home declares a single shared quota","claudeAgent: quota ranking off: home declares a single shared quota"]}
+
+SCENARIO: malformed quota policy refuses and corrected policy retries
+error: {run-worktree}/.test-seat-tmp/home/config/crew-dispatch.json: shared_quota must be true or false when present
+Malformed shared_quota refusal exit=1 (expected nonzero)
+{"instance":"claudeAgent","basis":"rotation","allExhausted":false,"notes":["unconfigured-seat-a: quota ranking off: home declares a single shared quota","claudeAgent: quota ranking off: home declares a single shared quota"]}
+
+LOCAL CHOOSER SCENARIOS COMPLETE; no agent turn or production credentials used.

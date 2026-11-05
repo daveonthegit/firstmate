@@ -1,0 +1,4 @@
+warning: T3 credential expires in 0.0 days (2026-11-05T01:44:27.255Z); the captain signs in again before then
+{"ok":true,"origin":"http://127.0.0.1:47863","expiresAt":"2026-11-05T01:44:27.255Z","daysLeft":0,"environmentId":"1bcb3bcd-6c1f-4891-9e77-118ad7bb7b31","serverVersion":"0.1.5+fork.2","recordedServerVersion":null,"launchEnvironment":true,"sessionStop":true,"keepAlive":true,"telemetry":"off","credentialWarning":"T3 credential expires in 0.0 days (2026-11-05T01:44:27.255Z); the captain signs in again before then"}
+warning: T3 credential expires in 0.0 days (2026-11-05T01:44:27.255Z); the captain signs in again before then
+fm-t3-mcp: T3 t3_project_create failed: Changing projects or environment settings needs a live full-access/default calling thread or a full-access client.

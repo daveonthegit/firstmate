@@ -1,0 +1,14 @@
+ok - fm_backend_t3code_instance_pool: one line stays one seat, claude lines pool, codex keeps last-wins, bad identity refuses
+ok - fm_backend_t3code_instance_choose: quota spendPriority wins, exhausted vetoes, unmapped seats rotate, marks pass over a seat until quota clears it
+ok - fm-spawn.sh --backend t3code claude: balances seats by quota, unmeasurable quota rotates
+ok - fm-t3-seat-failover.sh: a usage-limited run moves its thread to another seat, keeps model and transcript, steers once; a secondmate moves the same way
+ok - fm-t3-seat-failover.sh: only a limit notice or limit error moves; all-exhausted, unproven, and single-seat cases do not
+ok - concrete Claude model scopes constrain explicit/default launches and failover without constraining sibling models
+ok - failover serializes competing callers and permits switches across replenished windows
+ok - shared seat rotation balances concurrent choices with unavailable, tied, or exhausted quota and releases locks on errors
+ok - shared-quota opt-out suppresses calls, ranking, and quota vetoes for spawn and failover while retaining real exhaustion marks
+ok - default model resolution is independent of unselected seats while launch still validates the selected seat
+ok - chooser failures leave runs retryable and corrected configuration allows failover without resetting task state
+ok - exhaustion is rechecked without duplicate notifications and replenished quota or expired marks restart ships and secondmates
+ok - failed ships and secondmates report recovery only after an accepted continuation turn on the alternate seat
+ok - polling both stopped workers preserves original exhaustion times and permits both to recover after expiry
