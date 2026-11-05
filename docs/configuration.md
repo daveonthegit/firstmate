@@ -2184,14 +2184,14 @@ The optional local, gitignored `config/gh-accounts` maps `<owner> <account>` per
 Secondmates inherit the mapping.
 `FM_GH_ACCOUNT=<login>` overrides one invocation; `none` opts out when no GitHub API access is needed.
 Spawn resolves a ship or scout lane's account before endpoint creation and records `gh_account=` separately from upstream's model-provider `account=` pin.
-A secondmate launch selects and carries no account, because its home resolves each repository from its own mapping.
+A secondmate launch selects and carries no account, because its home resolves each repository from its own mapping; relaunch removes the previous launch's account pin and clears its pane's `GH_TOKEN`.
 Forge reads and merges likewise use the repository's account.
 
 A lane-wide credential cannot reach no-mistakes' shared daemon.
 [`bin/fm-install-gh-shim.sh`](../bin/fm-install-gh-shim.sh) can install the repository-aware [`fm-gh-shim.sh`](../bin/fm-gh-shim.sh) ahead of real `gh` on PATH, without restarting the daemon or changing account state.
 It corrects identifiable GitHub repository calls and passes through auth, help, version, other-host, and no-selection calls; unresolved multi-account access refuses.
-T3 Code launches install a per-task shim and carry only the selected `FM_GH_ACCOUNT` login and shim `PATH` through the persisted environment overlay, never a credential value.
-For pane launches, where the shim is in effect, spawn exports no credential so each call selects by its own repository; otherwise the worker shell materializes the selected token without typing the secret into the pane.
+T3 Code ship and scout launches with a selected account install a per-task shim and carry only the selected `FM_GH_ACCOUNT` login and shim `PATH` through the persisted environment overlay, never a credential value.
+For ship and scout pane launches, where the shim is in effect, spawn exports no credential so each call selects by its own repository; otherwise the worker shell materializes the selected token without typing the secret into the pane.
 Installing shadows `gh` for every process using that PATH, including manual use; install from a durable copy, not a disposable task copy.
 The installer header owns checking, removal, and the explicit warned linked-copy override; the account helper header owns resolution and command mechanics.
 
