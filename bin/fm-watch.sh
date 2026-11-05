@@ -636,7 +636,6 @@ t3code_seat_failover_tick() {  # <window> <task>
       return 0
       ;;
     3) reason="check: t3-seats-exhausted $task: every Claude seat is out of usage, so the worker is stopped where it is (${out#seat-failover: "$task" exhausted })" ;;
-    4) reason="check: t3-seat-failover-bound $task: the worker hit a usage limit again after its allowed seat moves (${out#seat-failover: "$task" bounded })" ;;
     *) reason="check: t3-seat-failover-failed $task: ${out:-the seat move check could not run}" ;;
   esac
   [ "$(cat "$marker" 2>/dev/null)" != "$reason" ] || return 0

@@ -3139,7 +3139,7 @@ require("fs").writeFileSync(process.argv[1], JSON.stringify({ providers }));
 t3_choose() {  # <snapshot-file> [args for fm_backend_t3code_instance_choose...]
   local snap=$1
   shift
-  FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_run 'fm_backend_t3code_instance_choose "$@"' "$@"
+  FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_run 'h=$1; m=$2; shift 2; fm_backend_t3code_instance_choose "$h" "$m" proj-1 "$@"' "$@"
 }
 
 test_seat_pool_parsing_is_backward_compatible() {
@@ -3214,27 +3214,6 @@ test_spawn_balances_claude_seats() {
   assert_grep "t3_instance_basis=quota" "$CASE_DIR/state/$id.meta" "meta must record how the seat was chosen"
   assert_contains "$out" "notice: T3 seat claude_b (most quota headroom)" "the choice must be disclosed"
 
-  t3_case spawn-seats-explicit
-  t3_two_seats
-  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.1:through_reset" "$CASE_DIR/seat-b=0.7:through_reset"
-  id=$(t3_uid t3seatz2)
-  t3_worker_setup "$id"
-  out=$(FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_worker_spawn "$id" claude --model claude-sonnet-5 --t3-instance claudeAgent); rc=$?
-  expect_code 0 "$rc" "an explicit seat spawn should succeed"$'\n'"$out"
-  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
-  [ "$(t3_request "$launch" 'r.arguments.modelSelection.instanceId')" = claudeAgent ] || fail "--t3-instance must win over quota"
-  assert_grep "t3_instance_basis=explicit" "$CASE_DIR/state/$id.meta" "meta must record the explicit choice"
-
-  t3_case spawn-seats-unknown
-  t3_two_seats
-  id=$(t3_uid t3seatz3)
-  t3_worker_setup "$id"
-  out=$(t3_worker_spawn "$id" claude --model claude-sonnet-5 --t3-instance nope); rc=$?
-  expect_code 1 "$rc" "an undeclared seat must refuse"$'\n'"$out"
-  assert_contains "$out" "not a claude seat in config/t3code-instances" "the refusal must name the declared seats"
-  [ -z "$(t3_dispatch_types)" ] || fail "an undeclared seat must refuse before any T3 mutation"
-  [ "$(t3_log_line_of 'r.tool === "treehouse"')" -eq 0 ] || fail "an undeclared seat must refuse before the slot is leased"
-
   t3_case spawn-seats-unmapped
   t3_two_seats
   id=$(t3_uid t3seatz4)
@@ -3243,7 +3222,7 @@ test_spawn_balances_claude_seats() {
   expect_code 0 "$rc" "an unmeasurable two-seat spawn should still launch"$'\n'"$out"
   assert_grep "t3_instance_basis=rotation" "$CASE_DIR/state/$id.meta" "unmeasurable quota must fall back to rotation"
   assert_contains "$out" "rotation, since not every seat could be ranked by quota" "the rotation must be disclosed"
-  pass "fm-spawn.sh --backend t3code claude: balances seats by quota, --t3-instance wins, an undeclared seat refuses, unmeasurable quota rotates"
+  pass "fm-spawn.sh --backend t3code claude: balances seats by quota, unmeasurable quota rotates"
 }
 
 # t3_limited_thread <final-assistant-text> [run-status] [run-error] [error-item]:
@@ -3291,7 +3270,6 @@ test_seat_failover_moves_a_limited_thread() {
   send=$(t3_log_line_of 'r.tool === "t3_thread_send"')
   [ "$send" -gt "$configure" ] || fail "the continuation steer must follow the move"
   assert_grep "t3_instance=claude_b" "$CASE_DIR/state/$id.meta" "meta must record the new seat"
-  assert_grep "t3_failover_count=1" "$CASE_DIR/state/$id.meta" "meta must count the move"
   assert_grep "t3_failover_sent=1" "$CASE_DIR/state/$id.meta" "meta must record the continuation"
   [ -n "$(find "$CASE_DIR/state/$id.inbox" -maxdepth 1 -name '*.msg' 2>/dev/null)" ] || fail "the continuation must be a durable steering-inbox record"
   grep -rq "now runs on seat claude_b" "$CASE_DIR/state/$id.inbox" || fail "the continuation must name the new seat"
@@ -3349,14 +3327,8 @@ test_seat_failover_evidence_and_limits() {
   assert_contains "$out" "every other Claude seat is exhausted too" "the outcome must say every seat is out"
   [ "$(t3_log_line_of 'r.tool === "t3_thread_configure" && r.arguments.modelSelection')" -eq 0 ] || fail "an exhausted fleet must not be moved"
   out=$(FM_T3CODE_QUOTA_SNAPSHOT="$CASE_DIR/snap.json" t3_failover "$id"); rc=$?
-  expect_code 0 "$rc" "the exhausted outcome must be reported once per run"$'\n'"$out"
-
-  t3_case seat-failover-bound
-  t3_two_seats
-  t3_failover_task "$id"
-  t3_limited_thread "You've hit your weekly limit · resets Nov 7"
-  out=$(FM_T3CODE_FAILOVER_MAX=0 t3_failover "$id"); rc=$?
-  expect_code 4 "$rc" "the per-task bound must stop further moves"$'\n'"$out"
+  expect_code 3 "$rc" "the exhausted verdict must persist for the same run"$'\n'"$out"
+  [ "$(t3_log_line_of 'r.tool === "t3_thread_send"')" -eq 0 ] || fail "an exhausted run must not resume"
 
   t3_case seat-failover-unproven
   t3_two_seats
@@ -3375,7 +3347,96 @@ test_seat_failover_evidence_and_limits() {
   out=$(t3_failover "$id"); rc=$?
   expect_code 0 "$rc" "one configured seat leaves nothing to move to"$'\n'"$out"
   assert_contains "$out" "one Claude seat configured" "the no-op must say why"
-  pass "fm-t3-seat-failover.sh: only a limit notice or limit error moves; all-exhausted, bounded, unproven, and single-seat cases do not"
+  pass "fm-t3-seat-failover.sh: only a limit notice or limit error moves; all-exhausted, unproven, and single-seat cases do not"
+}
+
+test_seat_model_scope_regressions() {
+  local snap out rc id launch
+  t3_case seat-model-scopes
+  t3_two_seats
+  snap="$CASE_DIR/snap.json"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.9:through_reset" "$CASE_DIR/seat-b=0.5:through_reset"
+  node -e '
+const fs = require("fs"), file = process.argv[1], d = JSON.parse(fs.readFileSync(file));
+d.providers[0].quotaSemantics.effectiveAvailability.push({ scope: "model:fable", effectivePercentRemaining: 0, runway: { status: "exhausted_now" }, selection: { spendPriority: 0.9 } });
+fs.writeFileSync(file, JSON.stringify(d));
+' "$snap"
+  out=$(t3_choose "$snap" claude claude-fable-5-1)
+  assert_contains "$out" '"instance":"claude_b"' "dispatch-auth's exhausted model:fable bound must veto the higher account priority"
+  out=$(t3_choose "$snap" claude claude-sonnet-5)
+  assert_contains "$out" '"instance":"claudeAgent"' "Fable's bound must not constrain Sonnet"
+  t3_world_set 'w.projects[0].defaultModelSelection = { instanceId: "claudeAgent", model: "claude-fable-5-1" }'
+  out=$(t3_choose "$snap" claude default)
+  assert_contains "$out" '"instance":"claude_b"' "the project default must be concrete before quota ranking"
+  id=$(t3_uid t3seatdefault)
+  t3_worker_setup "$id"
+  out=$(FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_worker_spawn "$id" claude --model default); rc=$?
+  expect_code 0 "$rc" "default-model balancing must launch"$'\n'"$out"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  assert_equals claude_b "$(t3_request "$launch" 'r.arguments.modelSelection.instanceId')" "a default-model launch must avoid the family-exhausted seat"
+  assert_equals claude-fable-5-1 "$(t3_request "$launch" 'r.arguments.modelSelection.model')" "balancing must retain the project's model"
+
+  t3_case seat-failover-model
+  t3_two_seats
+  t3_failover_task t3seatmodel
+  fm_write_meta "$CASE_DIR/state/t3seatmodel.meta" "window=fm-t3seatmodel" "backend=t3code" "harness=claude" "kind=ship" "model=default" "t3_thread_id=thread-live" "t3_instance=claudeAgent"
+  t3_limited_thread "Claude AI usage limit reached|1793900000" failed "Claude AI usage limit reached|1793900000"
+  t3_world_set 'w.threads["thread-live"].modelSelection.model = "claude-fable-5-1"'
+  snap="$CASE_DIR/snap.json"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-b=0.9:through_reset"
+  node -e '
+const fs = require("fs"), file = process.argv[1], d = JSON.parse(fs.readFileSync(file));
+d.providers[0].quotaSemantics.effectiveAvailability.push({ scope: "product:fable", effectivePercentRemaining: 0, runway: { status: "exhausted_now" }, selection: { spendPriority: 0.9 } });
+fs.writeFileSync(file, JSON.stringify(d));
+' "$snap"
+  out=$(FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_failover t3seatmodel); rc=$?
+  expect_code 3 "$rc" "failover must rank the thread's concrete model, not metadata default"$'\n'"$out"
+  [ "$(t3_log_line_of 'r.tool === "t3_thread_configure" && r.arguments.modelSelection')" -eq 0 ] || fail "a model-exhausted alternative must not receive the thread"
+  pass "concrete Claude model scopes constrain explicit/default launches and failover without constraining sibling models"
+}
+
+test_seat_failover_serialization_and_replenishment() {
+  local id=t3seatserial p1 p2 rc1 rc2 out snap n
+  t3_case seat-failover-serial
+  t3_two_seats
+  t3_failover_task "$id" secondmate
+  t3_limited_thread "You've hit your session limit · resets 3:10pm"
+  t3_failover "$id" > "$CASE_DIR/first.out" & p1=$!
+  t3_failover "$id" > "$CASE_DIR/second.out" & p2=$!
+  wait "$p1"; rc1=$?
+  wait "$p2"; rc2=$?
+  [ "$((rc1 + rc2))" -eq 10 ] || fail "concurrent callers must produce one move and one no-op, got $rc1 and $rc2"
+  out=$(node -e '
+const rows = require("fs").readFileSync(process.argv[1], "utf8").trim().split("\n").filter(Boolean).map(JSON.parse);
+process.stdout.write(String(rows.filter((r) => r.tool === "t3_thread_configure" && r.arguments.modelSelection).length));
+' "$LOG")
+  assert_equals 1 "$out" "concurrent recovery and watcher checks must configure once"
+  out=$(find "$CASE_DIR/state/$id.inbox" -maxdepth 1 -name '*.msg' | wc -l | tr -d ' ')
+  assert_equals 1 "$out" "concurrent checks must enqueue exactly one continuation"
+
+  snap="$CASE_DIR/snap.json"
+  t3_quota_snapshot "$snap" "$CASE_DIR/seat-a=0.5:through_reset" "$CASE_DIR/seat-b=0.5:through_reset"
+  for n in 2 3 4 5; do
+    t3_limited_thread "You've hit your session limit · resets 3:10pm"
+    FM_T3_RUN_NUMBER=$n t3_world_set '
+const t = w.threads["thread-live"], from = Number(process.env.FM_T3_RUN_NUMBER) % 2 === 0 ? "claude_b" : "claudeAgent";
+t.providerInstanceId = from; t.modelSelection.instanceId = from;
+t.runs[0].runId = `run-limit-${process.env.FM_T3_RUN_NUMBER}`; t.runs[0].providerInstanceId = from;
+for (const item of t.items) item.runId = t.runs[0].runId;'
+    out=$(FM_T3CODE_QUOTA_SNAPSHOT=$snap t3_failover "$id"); rc1=$?
+    expect_code 10 "$rc1" "replenished seats must remain usable beyond three moves"$'\n'"$out"
+  done
+  pass "failover serializes competing callers and permits switches across replenished windows"
+}
+
+test_seat_review_regressions() {
+  test_seat_pool_parsing_is_backward_compatible
+  test_seat_choice_by_quota_rotation_and_marks
+  test_spawn_balances_claude_seats
+  test_seat_failover_moves_a_limited_thread
+  test_seat_failover_evidence_and_limits
+  test_seat_model_scope_regressions
+  test_seat_failover_serialization_and_replenishment
 }
 
 if [ -n "${FM_TEST_ONLY:-}" ]; then
@@ -3497,3 +3558,5 @@ test_seat_choice_by_quota_rotation_and_marks
 test_spawn_balances_claude_seats
 test_seat_failover_moves_a_limited_thread
 test_seat_failover_evidence_and_limits
+test_seat_model_scope_regressions
+test_seat_failover_serialization_and_replenishment

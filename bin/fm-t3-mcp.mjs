@@ -1146,6 +1146,7 @@ async function limitCheck(flags) {
   const run = (out?.recentRuns ?? [])[0] ?? null;
   const base = { ok: true, threadId, runId: run?.runId ?? null, runStatus: run?.status ?? null, instanceId: run?.providerInstanceId ?? t.providerInstanceId ?? null };
   if (!run || !TERMINAL_RUN.has(run.status) || t.activeRunId) return { ...base, limited: false, evidence: null };
+  base.model = (await threadConfiguration(session, threadId))?.modelSelection?.model ?? null;
   const errorText = runErrorText(run);
   if (USAGE_LIMIT_ERROR.test(errorText)) return { ...base, limited: true, evidence: `run error: ${errorText.slice(0, 300)}` };
   const { items } = await readTail(session, threadId, t.itemCount ?? 0, LIMIT_TAIL_ITEMS);

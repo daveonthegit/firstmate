@@ -100,8 +100,7 @@ At each Claude spawn, [`bin/backends/t3code.sh`](../bin/backends/t3code.sh) `fm_
 - A seat with no directory, no matching lane, or no usable measurement is never guessed: the seats then take turns in file order, remembered in `state/t3code-rotation-claude`, and a quota tie takes the next seat the same way.
 - A seat that recently ran a worker into its usage limit is passed over for five hours (`FM_T3CODE_EXHAUSTED_SECS`) unless quota-axi measures it healthy.
 
-The spawn prints the chosen seat with each seat's evidence, and the task records it as `t3_instance=` and how it was chosen as `t3_instance_basis=` (`single`, `quota`, `rotation`, or `explicit`).
-`--t3-instance <id>` names the seat for one spawn and wins over the balance; it must be a seat the file declares for the harness and refuses on every other backend.
+The spawn prints the chosen seat with each seat's evidence, and the task records it as `t3_instance=` and how it was chosen as `t3_instance_basis=` (`single`, `quota`, or `rotation`).
 
 #### Usage-limit failover
 
@@ -111,9 +110,9 @@ It looks for that notice or error in the thread's latest finished run (`fm-t3-mc
 On a match it moves the same thread to another seat with `t3_thread_configure` `modelSelection` (`fm-t3-mcp.mjs configure`).
 The move keeps the model, options, transcript, and worktree, and it is read back before it counts.
 The script then sends one continuation steer through the steering inbox.
-Each limited run is handled once, and a task moves at most `FM_T3CODE_FAILOVER_MAX` times (default 3).
+Each limited run is handled once.
 A move is routine and only logged.
-Firstmate is notified once when every other seat is exhausted, when the bound is reached, or when the move fails, and the thread then stays where it is.
+Firstmate is notified once when every other seat is exhausted or when the move fails, and the thread then stays where it is.
 Secondmate recovery runs the same check before resuming a failed secondmate run, so a usage-limited mate moves to another seat instead of resuming on the exhausted one.
 
 ### Capability gate

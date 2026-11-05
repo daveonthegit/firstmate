@@ -368,7 +368,7 @@ fm_secondmate_liveness_relaunch() {  # <meta> <id> [timeout-secs]
         fm_lock_release "$relaunch_lock" || true
         return 0
         ;;
-      1|3|4)
+      1|3)
         fm_secondmate_liveness_ledger_add "$id" failed || true
         fm_lock_release "$relaunch_lock" || true
         FM_SM_LIVE_STATUS=skipped

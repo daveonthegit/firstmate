@@ -159,7 +159,7 @@ fm_backend_t3code_mark_exhausted() {  # <instance>
   mkdir -p "$dir" && date +%s > "$dir/$1"
 }
 
-# fm_backend_t3code_instance_choose <harness> <model> [exclude-instance...]:
+# fm_backend_t3code_instance_choose <harness> <model> <project-id> [exclude-instance...]:
 # pick the seat a Claude thread launches on, or moves to, among the harness's
 # pool less the excluded instances. Prints one JSON object: instance, basis
 # (single: one seat; quota: the highest quota-axi spendPriority; rotation:
@@ -178,12 +178,16 @@ fm_backend_t3code_mark_exhausted() {  # <instance>
 # lane, an unknown lane, no applicable scope, or a non-numeric spendPriority
 # is unmeasured: seats are then rotated, never guessed. The applicable scopes
 # are all_models, all_products, and model:/product: scopes naming the model's
-# bare id; the seat's spendPriority is the lowest among them. The rotation
+# bare id or Claude family; the seat's spendPriority is the lowest among them. The rotation
 # remembers the last seat chosen per harness in state/t3code-rotation-<harness>.
-fm_backend_t3code_instance_choose() {  # <harness> <model> [exclude...]
-  local harness=$1 model=${2:-default} pool state rotation last='' snapshot='' dirs='' line dir out chosen
-  shift 2
+fm_backend_t3code_instance_choose() {  # <harness> <model> <project-id> [exclude...]
+  local harness=$1 model=${2:-default} project_id=$3 pool state rotation last='' snapshot='' dirs='' line dir out chosen selection
+  shift 3
   pool=$(fm_backend_t3code_instance_pool "$harness") || return 1
+  if [ "$model" = default ]; then
+    selection=$(fm_backend_t3code_model_selection "$harness" default default "$project_id") || return 1
+    model=$(printf '%s' "$selection" | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0, "utf8")).model)') || return 1
+  fi
   state=${FM_STATE_OVERRIDE:-$FM_HOME/state}
   rotation="$state/t3code-rotation-$harness"
   [ ! -f "$rotation" ] || last=$(cat "$rotation" 2>/dev/null)
@@ -232,6 +236,8 @@ if (seats.length === 1) {
 let lanes = [];
 try { lanes = (JSON.parse(process.env.FM_T3_SNAPSHOT || "{}").providers ?? []).filter((p) => p.provider === "claude"); } catch { lanes = []; }
 const bare = String(process.env.FM_T3_MODEL).split("/").pop();
+const family = /^claude-(sonnet|opus|haiku|fable)(?:-|$)/.exec(bare)?.[1];
+const names = new Set([bare, ...(family ? [family] : [])]);
 const now = Math.floor(Date.now() / 1000);
 const notes = [];
 for (const s of candidates) {
@@ -246,7 +252,7 @@ for (const s of candidates) {
     else if (!["known", "partial"].includes(q?.status)) s.why = `quota ${q?.status ?? "unknown"}${lane.state?.error ? ` (${lane.state.error})` : ""}`;
     else {
       const scopes = (q.effectiveAvailability ?? []).filter((a) => a.scope === "all_models" || a.scope === "all_products"
-        || (bare !== "default" && (a.scope === `model:${bare}` || a.scope === `product:${bare}`)));
+        || (["model", "product"].some((kind) => [...names].some((name) => a.scope === `${kind}:${name}`))));
       if (!scopes.length) s.why = "no applicable quota scope";
       else if (scopes.some((a) => a.runway?.status === "exhausted_now" || (typeof a.effectivePercentRemaining === "number" && a.effectivePercentRemaining <= 0))) {
         s.exhausted = true;

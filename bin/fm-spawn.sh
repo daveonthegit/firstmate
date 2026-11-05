@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Spawn a direct report: a crewmate in a treehouse or Orca worktree, or a
 # secondmate in its isolated firstmate home.
-# Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--t3-instance <id>] [--herdr-resume-lock-wait]
-#        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--t3-instance <id>] [--herdr-resume-lock-wait]
-#        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--backend <name>] [--t3-instance <id>] --secondmate
+# Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
+#        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
+#        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--backend <name>] --secondmate
 #   --mode and --yolo are this task's delivery contract, REQUIRED for every ship
 #   spawn and refused on --scout and --secondmate spawns. Firstmate resolves both
 #   per task at intake (AGENTS.md section 7); data/projects.md holds the captain's
@@ -166,10 +166,8 @@
 #   thread's per-thread launch environment (spawn_t3code_launch_pi).
 #   When config/t3code-instances names several Claude seats, a claude launch
 #   takes the seat fm_backend_t3code_instance_choose picks (quota-axi
-#   spendPriority, else rotation) unless --t3-instance <id> names one of them;
-#   the seat and how it was chosen are recorded as t3_instance= and
-#   t3_instance_basis=. --t3-instance is refused on every other backend and for
-#   an instance the file does not declare for the harness.
+#   spendPriority, else rotation); the seat and how it was chosen are recorded
+#   as t3_instance= and t3_instance_basis=.
 #   A backend spawn refusal (missing dependency, version gate, unauthenticated
 #   socket, or unsupported secondmate mode) is terminal for that selected backend;
 #   callers must surface it instead of silently retrying another backend.
@@ -1024,8 +1022,6 @@ UPSTREAM_CONSENT_SET=0
 TRACEPARENT_SET=0
 ACCOUNT_ARG=
 ACCOUNT_SET=0
-T3_INSTANCE_ARG=
-T3_INSTANCE_SET=0
 RELAUNCH=0
 # Opt-in only: exact-resume presentation-order lock waits instead of refusing.
 # Absent/unset keeps upstream refuse-on-contention. See header.
@@ -1088,10 +1084,6 @@ for a in "$@"; do
     account)
       ACCOUNT_ARG=$a
       ACCOUNT_SET=1
-      ;;
-    t3-instance)
-      T3_INSTANCE_ARG=$a
-      T3_INSTANCE_SET=1
       ;;
     *)
       echo "error: internal parser state for --$want_value" >&2
@@ -1169,11 +1161,6 @@ for a in "$@"; do
     ACCOUNT_ARG=${a#--account=}
     ACCOUNT_SET=1
     ;;
-  --t3-instance) want_value=t3-instance ;;
-  --t3-instance=*)
-    T3_INSTANCE_ARG=${a#--t3-instance=}
-    T3_INSTANCE_SET=1
-    ;;
   *) POS+=("$a") ;;
   esac
 done
@@ -1223,10 +1210,6 @@ fi
 }
 [ "$ACCOUNT_SET" -eq 0 ] || [ -n "$ACCOUNT_ARG" ] || {
   echo "error: --account requires a non-empty value" >&2
-  exit 1
-}
-[ "$T3_INSTANCE_SET" -eq 0 ] || [ -n "$T3_INSTANCE_ARG" ] || {
-  echo "error: --t3-instance requires a non-empty value" >&2
   exit 1
 }
 # A secondmate, local or remote, launches on its own per-mate pin, so --account
@@ -1715,23 +1698,10 @@ T3CODE_MODEL_SELECTION=
 T3CODE_INSTANCE=
 T3CODE_INSTANCE_BASIS=
 # spawn_t3code_choose_instance: set T3CODE_INSTANCE and T3CODE_INSTANCE_BASIS
-# to the seat this launch runs on, before anything is leased. --t3-instance
-# wins (basis explicit) but must be a seat config/t3code-instances declares
-# for the harness; otherwise fm_backend_t3code_instance_choose balances the
-# harness's seats, and its evidence is printed so the choice is disclosed.
+# to the seat this launch runs on, before anything is leased.
 spawn_t3code_choose_instance() {
-  local pool choice
-  pool=$(fm_backend_t3code_instance_pool "$HARNESS" | cut -f1) || return 1
-  if [ "$T3_INSTANCE_SET" = 1 ]; then
-    printf '%s\n' "$pool" | grep -Fxq -- "$T3_INSTANCE_ARG" || {
-      echo "error: --t3-instance $T3_INSTANCE_ARG is not a $HARNESS seat in config/t3code-instances (declared: $(printf '%s' "$pool" | paste -sd, -))" >&2
-      return 1
-    }
-    T3CODE_INSTANCE=$T3_INSTANCE_ARG
-    T3CODE_INSTANCE_BASIS=explicit
-    return 0
-  fi
-  choice=$(fm_backend_t3code_instance_choose "$HARNESS" "${MODEL:-default}") || return 1
+  local choice
+  choice=$(fm_backend_t3code_instance_choose "$HARNESS" "${MODEL:-default}" "$T3CODE_PROJECT_ID") || return 1
   # shellcheck disable=SC2016  # ${...} belongs to the Node snippet.
   choice=$(printf '%s' "$choice" | node -e '
 const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
@@ -3562,10 +3532,6 @@ WORKER_ACCOUNT_ROOT=${WORKER_ACCOUNT_ROOT%%$'\t'*}
 # T3 starts the agent itself, at full access, with its provider instance's own
 # account and environment, so a launch setting only a Firstmate-built command
 # line can apply refuses here instead of being silently widened or dropped.
-if [ "$T3_INSTANCE_SET" = 1 ] && [ "$BACKEND" != t3code ]; then
-  echo "error: --t3-instance applies only to backend=t3code, not $BACKEND" >&2
-  exit 1
-fi
 if [ "$BACKEND" = t3code ]; then
   if [ "$RAW_LAUNCH" = 1 ]; then
     echo "error: backend=t3code cannot run a raw launch command because T3 starts the agent itself; pass a harness name or choose another backend" >&2

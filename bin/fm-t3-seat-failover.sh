@@ -18,12 +18,11 @@
 #   3. picks the next seat with fm_backend_t3code_instance_choose, excluding
 #      that seat, and moves the idle thread there with fm-t3-mcp.mjs configure,
 #      which proves the move by reading it back;
-#   4. records t3_instance=, t3_failover_count=, t3_failover_run=, and
+#   4. records t3_instance=, t3_failover_result=, t3_failover_run=, and
 #      t3_failover_sent= in the task record, then sends one continuation steer
 #      through bin/fm-send.sh (a durable steering-inbox record plus doorbell).
 # Each limited run is handled once: a later call for the same run only
-# finishes a continuation steer that has not yet been recorded. Moves are
-# bounded per task by FM_T3CODE_FAILOVER_MAX (default 3).
+# finishes a continuation steer that has not yet been recorded.
 #
 # Stdout is one line, `seat-failover: <task> <word> <detail>`, and the exit
 # status follows the word:
@@ -32,8 +31,6 @@
 #   10 moved    moved to another seat and the continuation steer recorded
 #   3  exhausted every other seat is exhausted or none is configured, so the
 #               thread stays where it is; the run is recorded as handled
-#   4  bounded  this task already moved FM_T3CODE_FAILOVER_MAX times; the run
-#               is recorded as handled
 #   1  failed   the check, the move, or the steer failed; nothing is recorded
 #               as handled, so the next call retries
 #   2  usage
@@ -55,23 +52,14 @@ STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 ID=$1
 case "$ID" in ''|*[!A-Za-z0-9._-]*) echo "error: '$ID' is not a task id" >&2; exit 2 ;; esac
 META="$STATE/$ID.meta"
-MAX=${FM_T3CODE_FAILOVER_MAX:-3}
-case "$MAX" in ''|*[!0-9]*) echo "error: FM_T3CODE_FAILOVER_MAX must be a whole number" >&2; exit 2 ;; esac
 
 report() {  # <word> <detail> <status>
   printf 'seat-failover: %s %s %s\n' "$ID" "$1" "$2"
   exit "$3"
 }
 
-[ -f "$META" ] || report none "no task record" 0
-[ "$(fm_backend_of_meta "$META")" = t3code ] || report none "not a T3 Code task" 0
-[ "$(fm_meta_get "$META" harness)" = claude ] || report none "not a Claude task" 0
-THREAD=$(fm_backend_target_of_meta "$META")
-[ -n "$THREAD" ] || report none "no T3 thread recorded" 0
-fm_backend_source t3code || report failed "the T3 Code adapter could not be loaded" 1
-POOL=$(fm_backend_t3code_instance_pool claude) || report failed "config/t3code-instances is invalid" 1
-[ "$(printf '%s\n' "$POOL" | grep -c .)" -gt 1 ] || report none "one Claude seat configured" 0
-
+CONTROL_LOCK="$STATE/.control-$ID.lock"
+CONTROL_LOCK_HELD=0
 META_LOCK=
 META_LOCK_HELD=0
 META_TMP=
@@ -80,9 +68,23 @@ cleanup() {
   if [ "$META_LOCK_HELD" = 1 ]; then
     fm_lock_release "$META_LOCK" || true
   fi
+  if [ "$CONTROL_LOCK_HELD" = 1 ]; then
+    fm_lock_release "$CONTROL_LOCK" || true
+  fi
 }
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
+
+fm_lock_acquire_wait "$CONTROL_LOCK"
+CONTROL_LOCK_HELD=1
+[ -f "$META" ] || report none "no task record" 0
+[ "$(fm_backend_of_meta "$META")" = t3code ] || report none "not a T3 Code task" 0
+[ "$(fm_meta_get "$META" harness)" = claude ] || report none "not a Claude task" 0
+THREAD=$(fm_backend_target_of_meta "$META")
+[ -n "$THREAD" ] || report none "no T3 thread recorded" 0
+fm_backend_source t3code || report failed "the T3 Code adapter could not be loaded" 1
+POOL=$(fm_backend_t3code_instance_pool claude) || report failed "config/t3code-instances is invalid" 1
+[ "$(printf '%s\n' "$POOL" | grep -c .)" -gt 1 ] || report none "one Claude seat configured" 0
 
 # meta_put KEY=VALUE...: replace those keys in the task record, atomically
 # under its lock.
@@ -128,27 +130,22 @@ CHECK=$(fm_backend_t3code_mcp limit-check --thread "$THREAD" 2>/dev/null) \
 FIELDS=$(printf '%s' "$CHECK" | node -e '
 const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
 const clean = (v) => String(v ?? "").replace(/[\t\n\r]/g, " ");
-process.stdout.write([d.limited === true ? 1 : 0, clean(d.runId), clean(d.instanceId), clean(d.evidence)].join("\t"));
+process.stdout.write([d.limited === true ? 1 : 0, clean(d.runId), clean(d.instanceId), clean(d.evidence), clean(d.model)].join("\t"));
 ') || report failed "unreadable limit check for T3 thread $THREAD" 1
-IFS=$'\t' read -r LIMITED RUN FROM EVIDENCE <<< "$FIELDS"
+IFS=$'\t' read -r LIMITED RUN FROM EVIDENCE MODEL <<< "$FIELDS"
 [ "$LIMITED" = 1 ] || report none "latest run did not end on a usage limit" 0
 [ -n "$FROM" ] || FROM=$(fm_meta_get "$META" t3_instance)
 
 if [ "$RUN" = "$(fm_meta_get "$META" t3_failover_run)" ]; then
+  [ "$(fm_meta_get "$META" t3_failover_result)" != exhausted ] || report exhausted "run $RUN has no usable alternate seat" 3
   [ "$(fm_meta_get "$META" t3_failover_sent)" != 1 ] || report none "run $RUN already handled" 0
   send_continuation "$(fm_meta_get "$META" t3_instance)" "continuation resent for $RUN"
 fi
 
 [ -z "$FROM" ] || fm_backend_t3code_mark_exhausted "$FROM" || true
-COUNT=$(fm_meta_get "$META" t3_failover_count)
-case "$COUNT" in ''|*[!0-9]*) COUNT=0 ;; esac
-if [ "$COUNT" -ge "$MAX" ]; then
-  meta_put "t3_failover_run=$RUN" t3_failover_sent=1 || report failed "could not record run $RUN as handled" 1
-  report bounded "seat $FROM hit its usage limit ($EVIDENCE) and this task already moved $COUNT times" 4
-fi
-
-CHOICE=$(fm_backend_t3code_instance_choose claude "$(fm_meta_get "$META" model)" ${FROM:+"$FROM"} 2>/dev/null) || {
-  meta_put "t3_failover_run=$RUN" t3_failover_sent=1 || report failed "could not record run $RUN as handled" 1
+[ -n "$MODEL" ] || report failed "could not resolve the model of T3 thread $THREAD" 1
+CHOICE=$(fm_backend_t3code_instance_choose claude "$MODEL" "$(fm_meta_get "$META" t3_project_id)" ${FROM:+"$FROM"} 2>/dev/null) || {
+  meta_put "t3_failover_run=$RUN" t3_failover_result=exhausted t3_failover_sent=1 || report failed "could not record run $RUN as handled" 1
   report exhausted "seat $FROM hit its usage limit ($EVIDENCE) and no other Claude seat is configured" 3
 }
 # shellcheck disable=SC2016  # ${...} belongs to the Node snippet.
@@ -158,12 +155,12 @@ process.stdout.write([d.instance, d.allExhausted ? 1 : 0, d.notes.join("; ").rep
 ') || report failed "unreadable seat choice" 1
 IFS=$'\t' read -r TO ALL NOTES <<< "$CHOICE"
 if [ "$ALL" = 1 ]; then
-  meta_put "t3_failover_run=$RUN" t3_failover_sent=1 || report failed "could not record run $RUN as handled" 1
+  meta_put "t3_failover_run=$RUN" t3_failover_result=exhausted t3_failover_sent=1 || report failed "could not record run $RUN as handled" 1
   report exhausted "seat $FROM hit its usage limit ($EVIDENCE) and every other Claude seat is exhausted too: $NOTES" 3
 fi
 
 MOVE=$(fm_backend_t3code_mcp configure --thread "$THREAD" --instance "$TO" 2>&1) \
   || report failed "could not move T3 thread $THREAD from $FROM to $TO: $(printf '%s' "$MOVE" | tail -1)" 1
-meta_put "t3_instance=$TO" "t3_failover_count=$((COUNT + 1))" "t3_failover_run=$RUN" t3_failover_sent=0 \
+meta_put "t3_instance=$TO" t3_failover_result=moved "t3_failover_run=$RUN" t3_failover_sent=0 \
   || report failed "moved T3 thread $THREAD to $TO but could not record it" 1
 send_continuation "$TO" "from $FROM to $TO after a usage limit ($EVIDENCE); $NOTES"
