@@ -102,6 +102,8 @@ The shared no-mistakes gate lifecycle boundary is summarized in [architecture.md
 | `fm-extension.sh`        | Expose extension binding commands through the tracked shell and remote-home command boundary |
 | `fm-procevent.sh`        | Register, supervise, capture, classify, acknowledge, and safely retire built-in or explicitly bound process-event sources |
 | `fm-procevent-remote-reply.sh` | Relay the remote-secondmate status stream through non-destructive process-event deltas |
+| `fm-procevent-remote-worker.sh` | Mirror the status streams of workers placed on a [worker host](remote-workers.md#status-mirror) through one process-event source per host |
+| `fm-remote-worker-events.sh` | Host-side preemptible read of every placed worker's status log in one call, for the worker host status mirror |
 | `fm-procevent-quota.sh`  | Wake Firstmate when tracked quota drops below a threshold, is exhausted, or cannot be polled |
 | `fm-procevent-grokbot.sh` | Wake on bot-authored Grok Bot replies through gateway-backed read-only polling |
 | `fm-procevent-when.sh`   | Fire a trust-bound deterministic action at most once when its registered condition holds, then wake with the outcome |

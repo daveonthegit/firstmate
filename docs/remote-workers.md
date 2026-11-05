@@ -9,8 +9,8 @@ The worker host runs a headless Firstmate home with its own project clones, work
 
 ## Current limits
 
-- This build provides the worker host registry, its route, and the host-local leg described below.
-- The primary side - placing a task on a host, mirroring its status back, and its read, steer, and cleanup paths - is not wired yet, so no command here starts a remote worker on the primary's behalf.
+- This build provides the worker host registry, its route, the host-local leg, and the status mirror described below.
+- Placing a task on a host from the primary, and the primary's read, steer, and cleanup paths for it, are not wired yet, so no command here starts a remote worker on the primary's behalf and nothing arms the mirror.
 - Automatic placement by load is not built; placement will be an explicit per-task choice first.
 
 ## How it works
@@ -30,6 +30,15 @@ The host leg answers only for tasks a primary placed there.
 A spawn for a task the host already holds reports the existing route instead of launching again, which makes a re-run after an unconfirmed SSH spawn safe.
 The [controller header](../bin/fm-remote-worker-control.sh) owns delivery identity and retry requirements for steering.
 Cleanup uses the host's ordinary [`fm-teardown.sh`](../bin/fm-teardown.sh), whose header owns the landed-work test and force exception.
+
+## Status mirror
+
+A placed worker appends status lines to its own status file in the host's home, and the primary mirrors them into its own status file for that task, so the watcher, the open-decision fold, crew state, and the PR gates read one stream exactly as for a local worker.
+The primary keeps one listener per host, not one per task, because the remote job worker serves one lane per home; that listener's host read, [`bin/fm-remote-worker-events.sh`](../bin/fm-remote-worker-events.sh), is preemptible, so a steer, state read, or cleanup for the same host never waits behind it.
+A task is a member of a host's listener when its primary task record names that host.
+Before a `done` line is mirrored, the task's journal and a scout's report are copied into the primary's `data/<task-id>/`, so the done line never arrives ahead of its report.
+A log that was rewritten or shortened on the host escalates once for that task and parks only that task; the host's other tasks keep flowing.
+The [adapter header](../bin/fm-procevent-remote-worker.sh) owns membership, cursors, document fetch, continuity handling, and how a parked task resumes.
 
 ## Register a worker host
 
@@ -54,3 +63,4 @@ A worker host runs its workers with every credential placed on it, so treat it a
 
 [`tests/fm-remote-worker-control.test.sh`](../tests/fm-remote-worker-control.test.sh) drives the host leg against a fake worker-host home with the real brief, spawn, steer, file, and cleanup scripts.
 [`tests/fm-on.test.sh`](../tests/fm-on.test.sh) covers worker host routing beside remote second-mate routes.
+[`tests/fm-remote-worker-mirror.test.sh`](../tests/fm-remote-worker-mirror.test.sh) drives the status mirror through the real entrypoint, remote job worker, and process-event runner.
