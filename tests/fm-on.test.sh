@@ -528,6 +528,49 @@ assert_contains "$out" "home=$REMOTE_HOME" "secondmate-id routing broke after al
 write_registry
 pass "ambiguous aliases refuse while exact secondmate ids remain routable"
 
+# A worker host is a second route source (data/worker-hosts.md). Its id routes
+# to its own home, an alias shared with a remote secondmate becomes ambiguous,
+# an id shared across both registries is refused, and a home with only a
+# worker host registry still routes.
+WORKER_HOME="$TMP_ROOT/worker-home"
+mkdir -p "$WORKER_HOME"
+cat > "$LOCAL_HOME/data/worker-hosts.md" <<EOF
+# Worker hosts
+- mbp - spare MacBook worker host (host: remote-mac; root: $REMOTE_ROOT; home: $WORKER_HOME; added 2026-11-05)
+EOF
+out=$(fm_on mbp fm-probe-two.sh)
+assert_contains "$out" "home=$WORKER_HOME" "a worker host id did not route to its own home"
+out=$(fm_on ios fm-probe-two.sh)
+assert_contains "$out" "home=$REMOTE_HOME" "a secondmate id stopped routing beside a worker host"
+if out=$(fm_on remote-mac fm-probe-two.sh 2>&1); then
+  fail "an SSH alias shared by a secondmate and a worker host was accepted"
+fi
+assert_contains "$out" "ambiguous" "a shared alias did not report ambiguity"
+cat >> "$LOCAL_HOME/data/worker-hosts.md" <<EOF
+- ios - clashing worker host id (host: other-mac; root: $REMOTE_ROOT; home: $WORKER_HOME; added 2026-11-05)
+EOF
+if fm_on ios fm-probe-two.sh >/dev/null 2>&1; then
+  fail "an id recorded in both registries was accepted"
+fi
+printf '%s\n' '- broken - no structured suffix' >> "$LOCAL_HOME/data/worker-hosts.md"
+if out=$(fm_on mbp fm-probe-two.sh 2>&1); then
+  fail "a malformed worker host registry was accepted"
+fi
+assert_contains "$out" "malformed worker host registry entry" "a malformed worker host record was not named"
+rm -f "$LOCAL_HOME/data/secondmates.md"
+cat > "$LOCAL_HOME/data/worker-hosts.md" <<EOF
+- mbp - spare MacBook worker host (host: remote-mac; root: $REMOTE_ROOT; home: $WORKER_HOME; added 2026-11-05)
+EOF
+out=$(fm_on remote-mac fm-probe-two.sh)
+assert_contains "$out" "home=$WORKER_HOME" "a worker host alias did not route without a secondmate registry"
+rm -f "$LOCAL_HOME/data/worker-hosts.md"
+if out=$(fm_on mbp fm-probe-two.sh 2>&1); then
+  fail "a route was accepted with neither registry present"
+fi
+assert_contains "$out" "no worker host registry" "a missing pair of registries was not named"
+write_registry
+pass "worker host records route by id or unique alias beside secondmate routes"
+
 : > "$SSH_COUNT"
 set +e
 FM_FAKE_SSH_MODE=unreachable fm_on ios fm-mutate.sh "$REMOTE_HOME/mutations" >/dev/null 2>&1
