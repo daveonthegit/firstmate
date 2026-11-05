@@ -14,8 +14,8 @@
 # charters still use a single `{TASK}` charter fill. Firstmate may adjust other
 # sections when the task genuinely deviates (e.g. working an existing external
 # PR instead of shipping a new one).
-# Usage: fm-brief.sh <task-id> <repo-name> --mode <no-mistakes|direct-PR|local-only> [--branch-prefix <prefix>] [--base-branch <branch>] [--forge <none|gerrit|forgejo|external> [--shape squash]] [--pr <auto|manual>] [--herdr-lab]
-#        fm-brief.sh <task-id> <repo-name> --scout [--base-branch <branch>] [--herdr-lab]
+# Usage: fm-brief.sh <task-id> <repo-name> --mode <no-mistakes|direct-PR|local-only> [--branch-prefix <prefix>] [--base-branch <branch>] [--forge <none|gerrit|forgejo|external> [--shape squash]] [--pr <auto|manual>] [--herdr-lab] [--journal]
+#        fm-brief.sh <task-id> <repo-name> --scout [--base-branch <branch>] [--herdr-lab] [--journal]
 #        fm-brief.sh <task-id> --secondmate {<project>...|--no-projects}
 #   --scout writes the scout contract instead: the deliverable is a report at
 #   data/<task-id>/report.md (no branch, no push, no PR) and the worktree is scratch.
@@ -38,6 +38,9 @@
 #   after scaffolding and the caller-supplied repo string cannot reliably
 #   identify this repo. Briefs made without it carry a loud declaration so an
 #   omitted contract cannot be silent.
+#   --journal includes the Work journal section even when this home has no
+#   vault of its own; a worker host passes it when the primary's brief has one
+#   (bin/fm-remote-worker-control.sh).
 # For ship tasks, --mode is REQUIRED and shapes the definition of done. Firstmate
 # resolves it per task at intake (AGENTS.md section 7); data/projects.md holds the
 # captain's standing posture as context, and this script never reads it:
@@ -220,6 +223,7 @@ CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 case "$CONFIG" in /*) ;; *) CONFIG="$PWD/$CONFIG" ;; esac
 KIND=ship
 HERDR_LAB=0
+JOURNAL_FORCED=0
 NO_PROJECTS=0
 MODE=
 MODE_SET=0
@@ -262,6 +266,7 @@ for a in "$@"; do
     --scout) KIND=scout ;;
     --secondmate) KIND=secondmate ;;
     --herdr-lab) HERDR_LAB=1 ;;
+    --journal) JOURNAL_FORCED=1 ;;
     --no-projects) NO_PROJECTS=1 ;;
     --mode) want_value=mode ;;
     --mode=*) MODE=${a#--mode=}; MODE_SET=1 ;;
@@ -608,10 +613,12 @@ fi
 REPO=${POS[1]}
 
 # Work-journal capture, present only when the vault journal is on (the presence
-# check is bin/fm-vault.sh's own `path` subcommand, so the opt-in has one owner).
+# check is bin/fm-vault.sh's own `path` subcommand, so the opt-in has one owner)
+# or when --journal forces it: a worker host renders a primary's brief and has
+# no vault of its own, so the primary forwards its own verdict.
 JOURNAL_SECTION=
 SCOUT_RULE2="2. Stay inside this worktree; outside it, write only the report and status file below, except for the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none\`, exactly as specified under Definition of done."
-if FM_HOME="$FM_HOME" FM_CONFIG_OVERRIDE="$CONFIG" "$SCRIPT_DIR/fm-vault.sh" path >/dev/null 2>&1; then
+if [ "$JOURNAL_FORCED" = 1 ] || FM_HOME="$FM_HOME" FM_CONFIG_OVERRIDE="$CONFIG" "$SCRIPT_DIR/fm-vault.sh" path >/dev/null 2>&1; then
   SCOUT_RULE2="2. Stay inside this worktree; outside it, write only the report, the status file below, and the work-journal file named under Work journal, except for the task's empty-inventory attestation through \`fm-captain-hold.sh complete --none\`, exactly as specified under Definition of done."
   IFS= read -r -d '' JOURNAL_SECTION <<EOF || true
 

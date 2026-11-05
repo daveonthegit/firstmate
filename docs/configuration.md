@@ -1252,6 +1252,18 @@ An existing linked-worktree home that predates this rule advances through its ma
 
 A local standalone-clone home cannot receive a primary-local commit through that no-fetch sync, so it receives the rule through `/updatefirstmate` instead.
 
+## Worker hosts (data/worker-hosts.md)
+
+The optional local, gitignored `data/worker-hosts.md` names the other machines that run individual ship and scout workers for this primary ([remote workers](remote-workers.md)).
+Each line beginning with `- ` must be a record; other lines are ignored prose:
+
+```text
+- <id> - <one-sentence summary> (host: <ssh-alias>; root: <absolute-code-root>; home: <absolute-home>; added YYYY-MM-DD)
+```
+
+`bin/fm-worker-host-lib.sh` owns parsing; the [`fm-on.sh` header](../bin/fm-on.sh) owns route selection across the worker host and remote second-mate registries.
+A malformed record stops routing rather than being skipped.
+
 ## Harness support
 
 claude, codex, opencode, pi, pi-signed, grok, kimi, cursor, and omp are empirically verified for crewmate and secondmate launches; gemini is verified for crewmate and scout launches only, and [README requirements](../README.md#requirements) own the set supported for the primary session.

@@ -36,7 +36,8 @@
     "docs/t3code-backend.md",
     "docs/tern-backend.md",
     "docs/hc-backend.md",
-    "docs/remote-secondmates.md"
+    "docs/remote-secondmates.md",
+    "docs/remote-workers.md"
   ],
   "requiredOwnerPointers": [
     {
@@ -475,6 +476,10 @@
     },
     {
       "path": "docs/remote-secondmates.md",
+      "audience": "operator-current"
+    },
+    {
+      "path": "docs/remote-workers.md",
       "audience": "operator-current"
     },
     {
