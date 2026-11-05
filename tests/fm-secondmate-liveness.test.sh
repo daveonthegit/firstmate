@@ -1044,6 +1044,32 @@ test_remote_full_probe_legacy_record_defaults_herdr() {
   pass "full probe: a record without remote_backend stays a herdr route"
 }
 
+# A remote second mate on t3code is a thread on its host's own T3 server; the
+# parent's record names that backend, the readiness gate asks the doctor about
+# it, a matching route stays live, and a failed run (the host reports dead) is
+# relaunched on that same host rather than resumed or replaced locally.
+test_remote_full_probe_t3code_route() {
+  local w out
+  w=$(make_remote_probe_world_rex probe-t3code)
+  sed -i.bak '/^remote_backend=/d;/^remote_rex_/d;/^remote_target=/d' "$w/home/state/rsm1.meta"
+  rm -f "$w/home/state/rsm1.meta.bak"
+  printf 'remote_backend=t3code\nremote_t3_thread_id=mcp:t3-mate\nremote_target=mcp:t3-mate\n' >> "$w/home/state/rsm1.meta"
+
+  out=$(probe_remote "$w" full FM_FAKE_ROUTE_BACKEND=t3code FM_FAKE_ROUTE_TARGET=mcp:t3-mate)
+  [ "$out" = 'alive|alive|0|||' ] || fail "a live t3code route should stay a quiet no-op, got: $out"
+  grep -q -- '--backend t3code' "$w/ssh.log" \
+    || fail "the readiness gate did not ask the remote doctor about t3code: $(cat "$w/ssh.log")"
+
+  out=$(probe_remote "$w" full FM_FAKE_ROUTE_BACKEND=herdr)
+  [ "$out" = "skipped|alive|0|||alive remote endpoint runs on backend 'herdr', but this home recorded 't3code'; migrate or retire it explicitly" ] \
+    || fail "a herdr route under a t3code record must be reported, got: $out"
+
+  out=$(probe_remote "$w" poll FM_FAKE_REMOTE_REPLY=dead)
+  [ "$out" = 'relaunchable|dead|0|remote endpoint dead on its configured host|host=lab-host|' ] \
+    || fail "a failed remote T3 run should relaunch on its own host, got: $out"
+  pass "full probe: a t3code route stays alive through the t3code readiness gate and relaunches on its host"
+}
+
 test_tmux_agent_state_classifies
 test_tmux_agent_state_rejects_malformed_targets_before_probe
 test_herdr_agent_state_preserves_husk_classifier
@@ -1073,6 +1099,7 @@ test_remote_poll_probe_unreachable_preserves_route
 test_remote_full_probe_rex_route
 test_remote_full_probe_rex_backend_drift
 test_remote_full_probe_rex_readiness_verdicts
+test_remote_full_probe_t3code_route
 test_remote_full_probe_legacy_record_defaults_herdr
 
 echo "# all fm-secondmate-liveness tests passed"

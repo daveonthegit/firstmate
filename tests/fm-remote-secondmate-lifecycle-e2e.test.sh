@@ -10,6 +10,8 @@ set -u
 . "$(dirname "${BASH_SOURCE[0]}")/herdr-client-pair-fixture.sh"
 # shellcheck source=tests/rex-fake-fixture.sh
 . "$(dirname "${BASH_SOURCE[0]}")/rex-fake-fixture.sh"
+# shellcheck source=tests/t3-fake-lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/t3-fake-lib.sh"
 
 command -v jq >/dev/null 2>&1 || { echo "skip: jq not found"; exit 0; }
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
@@ -51,6 +53,7 @@ cleanup() {
     . "$ROOT/bin/fm-remote-job-lib.sh"
     fm_remote_job_stop_worker_tree "$worker_pid" || true
   fi
+  t3_fake_stop
   fm_test_remove_tree "$TMP_ROOT"
 }
 trap cleanup EXIT
@@ -1494,12 +1497,12 @@ assert_grep 'not ready' "$TMP_ROOT/spawn-rex-old-doctor.out" \
 cmp -s "$TMP_ROOT/parent-ios-before-old-rex.meta" "$PARENT/state/ios.meta" \
   || fail "the refused rex spawn rewrote the recorded route"
 
-# An explicit backend outside {herdr, rex} is refused before any remote call.
+# An explicit backend outside {herdr, rex, t3code} is refused before any remote call.
 ssh_before=$(cat "$SSH_COUNT")
 if remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend tmux >"$TMP_ROOT/spawn-tmux-backend.out" 2>&1; then
   fail "an unknown remote backend was accepted"
 fi
-assert_grep 'runs only on the herdr or rex backend' "$TMP_ROOT/spawn-tmux-backend.out" \
+assert_grep 'runs only on the herdr, rex, or t3code backend' "$TMP_ROOT/spawn-tmux-backend.out" \
   "an unknown remote backend did not fail with the backend refusal"
 [ "$(cat "$SSH_COUNT")" = "$ssh_before" ] || fail "an unknown remote backend still made a remote call"
 
@@ -1669,6 +1672,64 @@ pass "rex retirement refuses server drift and unreadable or unreachable identity
 mv -f "$TMP_ROOT/remote-ios-before-rex.meta" "$remote_route_meta"
 mv -f "$TMP_ROOT/parent-ios-before-rex.meta" "$PARENT/state/ios.meta"
 pass "a remote secondmate may run on rex with strict route validation both ways"
+
+# A remote may also run the mate as a thread on that host's own T3 Code server,
+# signed in with the remote home's own credential. The parent records the
+# thread, steers it through the remote inbox, and liveness recovery replaces a
+# failed run on that same host. The leg restores the herdr route afterwards.
+if command -v node >/dev/null 2>&1; then
+  cp "$remote_route_meta" "$TMP_ROOT/remote-ios-before-t3.meta"
+  cp "$PARENT/state/ios.meta" "$TMP_ROOT/parent-ios-before-t3.meta"
+  ln -sf "$(command -v node)" "$REMOTE_ROOT/bin/node"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$REMOTE_ROOT/bin/treehouse"
+  chmod +x "$REMOTE_ROOT/bin/treehouse"
+  t3_fake_start "$TMP_ROOT/t3-server"
+  t3_fake_case "$TMP_ROOT/t3-case" '{"projects":[],"threads":{}}'
+  t3_fake_credential "$REMOTE_HOME/config/t3code-token"
+  rm -f "$remote_route_meta"
+  remote_env "$ROOT/bin/fm-spawn.sh" ios --secondmate --backend t3code --harness claude --model claude-sonnet-5 \
+    >"$TMP_ROOT/spawn-t3.out" 2>&1 \
+    || fail "a remote t3code secondmate launch was refused: $(cat "$TMP_ROOT/spawn-t3.out")"
+  t3_thread=$(sed -n 's/^remote_t3_thread_id=//p' "$PARENT/state/ios.meta" | tail -1)
+  [ -n "$t3_thread" ] || fail "the t3code launch did not record its thread"
+  assert_grep 'remote_backend=t3code' "$PARENT/state/ios.meta" "the t3code launch did not record its backend"
+  assert_grep "remote_target=$t3_thread" "$PARENT/state/ios.meta" "the t3code launch did not record the thread as its target"
+  assert_no_grep 'backend=t3code' <(grep -v '^remote_' "$PARENT/state/ios.meta") \
+    "the parent record must not claim a local t3code endpoint"
+  assert_grep "t3_thread_id=$t3_thread" "$remote_route_meta" "the remote endpoint record did not bind the thread"
+  [ -f "$REMOTE_HOME/config/t3code-token" ] && [ ! -L "$REMOTE_HOME/config/t3code-token" ] \
+    || fail "the remote launch replaced the home's own T3 sign-in"
+  [ "$(remote_env "$ROOT/bin/fm-on.sh" ios fm-remote-secondmate-control.sh state ios)" = alive ] \
+    || fail "the t3code endpoint was not projected alive from its own host"
+  : > "$T3_FAKE_LOG"
+  remote_env "$ROOT/bin/fm-send.sh" fm-ios "Pick up the simulator queue." >"$TMP_ROOT/send-t3.out" 2>&1 \
+    || fail "a steer did not reach the remote t3code secondmate: $(cat "$TMP_ROOT/send-t3.out")"
+  grep -rlF --include='*.msg' 'Pick up the simulator queue.' "$PARENT_ROUTE_INBOX" >/dev/null 2>&1 \
+    || fail "the remote t3code steer left no durable inbox record"
+  assert_contains "$(t3_fake_calls t3_thread_send)" "\"threadId\":\"$t3_thread\"" "the remote t3code steer rang no doorbell on the thread"
+  BOOT_T3=$(remote_env "$ROOT/bin/fm-bootstrap.sh")
+  assert_not_contains "$BOOT_T3" 'SECONDMATE_LIVENESS: secondmate ios:' \
+    "the full sweep did not keep the live t3code route alive"
+  FM_T3_THREAD=$t3_thread t3_fake_set 'const t = w.threads[process.env.FM_T3_THREAD]; t.status = "failed"; t.activeRunId = null; for (const r of t.runs) r.status = "failed";'
+  [ "$(remote_env "$ROOT/bin/fm-on.sh" ios fm-remote-secondmate-control.sh state ios)" = dead ] \
+    || fail "the failed t3code run was not projected dead from its own host"
+  BOOT_T3_DEAD=$(FM_BOOTSTRAP_VERBOSE_FACTS=1 remote_env "$ROOT/bin/fm-bootstrap.sh")
+  assert_contains "$BOOT_T3_DEAD" 'secondmate ios relaunched after remote endpoint dead' \
+    "the failed t3code secondmate was not reported relaunched"$'\n'"$BOOT_T3_DEAD"
+  assert_grep 'remote_backend=t3code' "$PARENT/state/ios.meta" "recovery moved the t3code secondmate off its recorded backend"
+  t3_new_thread=$(sed -n 's/^remote_t3_thread_id=//p' "$PARENT/state/ios.meta" | tail -1)
+  [ -n "$t3_new_thread" ] && [ "$t3_new_thread" != "$t3_thread" ] || fail "recovery did not record a fresh t3code thread"
+  assert_contains "$(t3_fake_calls t3_thread_organize)" "\"threadId\":\"$t3_thread\"" "recovery did not archive the failed thread first"
+  [ "$(remote_env "$ROOT/bin/fm-on.sh" ios fm-remote-secondmate-control.sh state ios)" = alive ] \
+    || fail "the relaunched t3code endpoint did not read alive"
+  t3_fake_stop
+  rm -f "$REMOTE_ROOT/bin/node" "$REMOTE_ROOT/bin/treehouse" "$REMOTE_HOME/config/t3code-token"
+  mv -f "$TMP_ROOT/remote-ios-before-t3.meta" "$remote_route_meta"
+  mv -f "$TMP_ROOT/parent-ios-before-t3.meta" "$PARENT/state/ios.meta"
+  pass "a remote secondmate may run as a thread on its host's T3, steered and recovered there"
+else
+  echo "note: the remote t3code leg skipped: node is required for the T3 transport"
+fi
 
 # Host loss never creates a local replacement. Remove both the published ledger
 # and its parent-side cache so the structured-home read degrades explicitly;

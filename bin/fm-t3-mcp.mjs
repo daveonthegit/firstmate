@@ -3,11 +3,12 @@
 // Orchestrator V2 `/mcp` endpoint, the transport of the experimental `t3code`
 // runtime backend (docs/t3code-backend.md owns the operator contract).
 //
-// Only bin/backends/t3code.sh and the captain's own sign-in call this; agents
-// never do. Every verb opens one MCP streamable-HTTP session (protocol
-// 2025-06-18, JSON or SSE replies), proves the server is the one the
-// credential was issued by, runs the call, and prints exactly one JSON object
-// on stdout.
+// Only bin/backends/t3code.sh, the captain's own sign-in, and the remote
+// second-mate readiness and control scripts' host-credential and status
+// checks call this; agents never do. Every verb but host-credential opens one
+// MCP streamable-HTTP session (protocol 2025-06-18, JSON or SSE replies),
+// proves the server is the one the credential was issued by, and runs the
+// call; every verb prints exactly one JSON object on stdout.
 //
 // Usage:
 //   fm-t3-mcp.mjs login --access full-access [--url <origin>] [--t3 <t3-bin>] [--base-dir <t3-base-dir>] [--label <label>]
@@ -183,20 +184,30 @@
 //     when there is none; exit 6 when there are several (threadIds names
 //     them).
 //
+//   fm-t3-mcp.mjs host-credential
+//     Offline: whether the credential is this home's own sign-in to this
+//     machine's T3 server. It refuses (exit 4) a token file that is a link
+//     rather than a regular file (credential_linked: a link names another
+//     home's sign-in), any credential refusal, and an origin that is not a
+//     loopback origin (credential_not_local: the server is another machine's).
+//     Prints the origin. A remote second mate's host-local control plane and
+//     bin/fm-remote-doctor.sh gate a t3code route on it.
+//
 // Every verb accepts --token-file <path>. It defaults to
 // $FM_T3CODE_TOKEN_FILE, else ${FM_CONFIG_OVERRIDE:-$FM_HOME/config}/t3code-token,
 // with FM_HOME defaulting to this repository.
 //
-// The capability gate (every verb, login included) runs tools/list and refuses
-// unless all of REQUIRED_TOOLS and t3_environment_read are present and each
-// TOOL_FAMILIES capability is met by its current or earlier tools, then reads
-// t3_environment_read and refuses unless its environmentId equals the one
-// recorded at sign-in, so a different T3 on the same origin is never driven
-// with this credential. It also records whether t3_thread_launch's input
-// schema lists an `environment` property, the only sign a T3 build carries a
-// per-thread environment to the agent it launches, whether the server
-// lists the optional SESSION_STOP_TOOL, and whether t3_thread_update's input
-// schema lists `keepAlive`, the only sign a T3 build offers the keep-alive pin.
+// The capability gate (every verb but the offline host-credential, login
+// included) runs tools/list and refuses unless all of REQUIRED_TOOLS and
+// t3_environment_read are present and each TOOL_FAMILIES capability is met by
+// its current or earlier tools, then reads t3_environment_read and refuses
+// unless its environmentId equals the one recorded at sign-in, so a different
+// T3 on the same origin is never driven with this credential. It also records
+// whether t3_thread_launch's input schema lists an `environment` property, the
+// only sign a T3 build carries a per-thread environment to the agent it
+// launches, whether the server lists the optional SESSION_STOP_TOOL, and
+// whether t3_thread_update's input schema lists `keepAlive`, the only sign a
+// T3 build offers the keep-alive pin.
 //
 // FM_T3CODE_ARCHIVE_TIMEOUT_MS, a positive integer, replaces the 15000 ms bound
 // on the read-back that proves an archive (launch's cleanup archive, and
@@ -221,7 +232,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -693,14 +704,17 @@ function isNotFound(err) {
 // T3CODE_TELEMETRY_ENABLED false (apps/server's AnalyticsService config).
 // Only a loopback server's own process environment can show that, read from
 // the listening process on this machine; anything else reads `unknown`.
-export function telemetryState(origin, probe = probeListenerEnv) {
-  let url;
+export function isLoopbackOrigin(origin) {
   try {
-    url = new URL(origin);
+    return ["127.0.0.1", "localhost", "[::1]"].includes(new URL(origin).hostname);
   } catch {
-    return "unknown";
+    return false;
   }
-  if (!["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)) return "unknown";
+}
+
+export function telemetryState(origin, probe = probeListenerEnv) {
+  if (!isLoopbackOrigin(origin)) return "unknown";
+  const url = new URL(origin);
   const env = probe(url.port || (url.protocol === "https:" ? "443" : "80"));
   if (env === null) return "unknown";
   const m = env.match(/(?:^|\s|\0)T3CODE_TELEMETRY_ENABLED=([^\s\0]*)/);
@@ -822,6 +836,24 @@ async function status(flags) {
     telemetry,
     ...(cred.warning ? { credentialWarning: cred.warning } : {}),
   };
+}
+
+async function hostCredential(flags) {
+  const file = tokenFile(flags);
+  let linked = false;
+  try {
+    linked = lstatSync(file).isSymbolicLink();
+  } catch {
+    linked = false;
+  }
+  if (linked) {
+    throw new Refusal("credential_linked", `T3 credential ${file} is a link to another home's sign-in; this home needs its own: remove the link, then sign in on this machine with: bin/fm-t3-mcp.mjs login --access full-access --token-file ${file}`);
+  }
+  const cred = readCredential(file);
+  if (!isLoopbackOrigin(cred.origin)) {
+    throw new Refusal("credential_not_local", `T3 credential ${file} names ${cred.origin}, which is not this machine's own T3 server; sign in on this machine against its loopback origin with: bin/fm-t3-mcp.mjs login --access full-access --token-file ${file}`);
+  }
+  return { ok: true, origin: cred.origin };
 }
 
 // state: whether the thread exists, and its archive and run state. A thread
@@ -1570,6 +1602,7 @@ async function threadForRoot(flags) {
 const VERBS = {
   login,
   status,
+  "host-credential": hostCredential,
   state,
   "project-ensure": projectEnsure,
   "project-read": projectRead,

@@ -58,6 +58,7 @@ The credential, the server's origin, its environment id, and its version are wri
 A missing credential refuses with an error that names the sign-in command; an expired, revoked, or incomplete one asks the captain to sign in again, an over-readable one asks for `chmod 600` or a fresh sign-in, and one that is not valid JSON names the parse error.
 A secondmate spawned on this backend gets `config/t3code-token` as a symlink to the primary's credential file, so its own daemon and crew use the same credential without a copy of the secret, and a fresh sign-in reaches them.
 Teardown removes that link, with the rest of the T3 environment the spawn wrote into the home, before a pooled home returns to the pool.
+A [remote second mate](remote-secondmates.md#t3-code-second-mates) instead holds its own sign-in to its host's T3, which the spawn there checks and never links.
 
 ### Expiry and revocation
 
@@ -245,7 +246,7 @@ A thread's capture stays byte-identical through a long tool call, so before repo
 That deferral is itself bounded by `FM_BUSY_TURN_MAX_SECS`, measured from the latest run boundary T3 records (completion, or start while the run is still active), so a hung run still reaches the possible-wedge alert, and a missing run timestamp never defers.
 `wedge_defer_t3code_running` in `bin/fm-watch.sh` owns that consult; all other classified words keep the ordinary escalation ladder, including its declared-wait, worktree-write, and dead-record checks.
 T3 launches Claude with the `user,project,local` setting sources, so the worktree `.claude/settings.local.json` busy hooks fire as on every other backend.
-Remote secondmate backend support is defined in [`remote-secondmates.md`](remote-secondmates.md#refused-and-unsupported-launches); T3 Code remains unsupported there.
+A second mate whose home is on another host runs as a thread on that host's own T3 server; [`remote-secondmates.md`](remote-secondmates.md#t3-code-second-mates) defines its sign-in, recovery, and limits.
 
 Cleanup keeps all shared Firstmate safety checks.
 Before the slot returns to the pool, or before a secondmate home is removed, teardown interrupts any active run, archives the thread with `t3_thread_organize`, and requires T3 to read back `archived:true` with no active run, so no live thread can act in a slot another task may lease.
