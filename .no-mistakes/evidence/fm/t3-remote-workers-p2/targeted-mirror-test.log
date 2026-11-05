@@ -1,0 +1,16 @@
+ok - the host status read yields its lane to steers, state reads, and cleanup
+ok - a host's members are this home's ship and scout records that name it
+ok - one host read mirrors each placed task's complete lines into its own status stream
+ok - ingesting the same capture twice appends nothing
+ok - a done line arrives with the task's report and journal fetched first
+ok - a ship done line without a journal mirrors quietly
+ok - the process-event runner captures, applies, and acknowledges a host bundle
+ok - a quiet host window is an empty read, not a capture
+ok - a queued host operation preempts a running status poll without waiting out its window
+ok - an unreachable host produces no capture
+ok - a broken log escalates once and parks only that task
+ok - removing the broken marker and cursor resumes mirroring without duplicate lines
+ok - a record for a task no longer placed from this home is ignored
+ok - releasing tasks keeps the host source until its last member leaves
+ok - a host with no members waits locally and reports an empty read
+all fm-remote-worker-mirror tests passed

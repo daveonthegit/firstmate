@@ -1,0 +1,152 @@
+
+--- Host capture: multiplexed complete lines (synthetic worker logs, real local job worker) ---
+schema=fm-remote-worker-events.v1
+records=2
+
+schema=fm-remote-delta.v1
+task=s1
+status=delta
+path=state/s1.status
+from_offset=0
+to_offset=37
+from_prefix_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+to_prefix_sha256=4edadc7ffae09a40e6c3256b77f33f1cbcfd5bd1c5e88f68ecac10005ce0d67c
+payload_sha256=4edadc7ffae09a40e6c3256b77f33f1cbcfd5bd1c5e88f68ecac10005ce0d67c
+payload_bytes=37
+reason=
+
+working [at=1793861001]: investigate
+schema=fm-remote-delta.v1
+task=t1
+status=delta
+path=state/t1.status
+from_offset=0
+to_offset=66
+from_prefix_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+to_prefix_sha256=475b03fabce49bae678cf06b9ece463a7c8ebc0e535db20add7a9dfb697c1d2f
+payload_sha256=475b03fabce49bae678cf06b9ece463a7c8ebc0e535db20add7a9dfb697c1d2f
+payload_bytes=66
+reason=
+
+working [at=1793861000]: compile
+
+note: control byte  normalized
+
+--- Primary ingest ---
+ingested: mbp records=2 broken=0
+
+--- Primary ship stream ---
+working [at=1793861000]: compile
+note: control byte ? normalized
+
+--- Primary scout stream (partial line withheld) ---
+working [at=1793861001]: investigate
+
+--- Replay same bundle ---
+ingested: mbp records=2 broken=0
+
+--- Primary ship stream after replay (unchanged) ---
+working [at=1793861000]: compile
+note: control byte ? normalized
+
+--- Document transport outage: ingest exit=1 ---
+error: transport to mbp was unavailable while fetching the journal for s1
+
+--- Stream during outage: completion withheld ---
+working [at=1793861001]: investigate
+
+--- Retry same capture after transport restored ---
+ingested: mbp records=1 broken=0
+
+--- Transferred report ---
+# Synthetic scout report
+Finding: use both machines.
+
+--- Transferred journal ---
+# Synthetic journal
+Investigation complete.
+
+--- Completion now visible ---
+working [at=1793861001]: investigate
+incomplete now complete
+done [at=1793861002]: findings ready
+
+--- Explicit missing-report refusal fails open ---
+ingested: mbp records=1 broken=0
+
+--- Missing-report stream: completion and unkeyed note ---
+done [at=1793861003]: completed without report
+note: the scout report for no-report did not transfer from worker host mbp - file parent is unavailable: data/no-report/report.md 
+
+--- Continuity failure plus healthy sibling ---
+ingested: mbp records=2 broken=1
+
+--- Broken task escalation and recovery instructions ---
+working [at=1793861000]: compile
+note: control byte ? normalized
+blocked [key=remote-worker-continuity-t1] [at=1793884759]: worker status continuity broke for t1 on worker host mbp (truncated) at offset 66 prefix 475b03fabce4; after inspection, remove both {run-worktree}/.test-mirror-tmp/fm-remote-worker-mirror.PpwAsS/parent/state/remote-workers/mbp/t1.broken and {run-worktree}/.test-mirror-tmp/fm-remote-worker-mirror.PpwAsS/parent/state/remote-workers/mbp/t1.cursor to resume mirroring from offset 0
+
+--- Healthy sibling still flows ---
+working [at=1793861001]: investigate
+incomplete now complete
+done [at=1793861002]: findings ready
+working [at=1793861004]: sibling still active
+ingested: mbp records=1 broken=0
+
+--- Recover after removing both marker and cursor ---
+ingested: mbp records=1 broken=0
+
+--- Recovered stream: original line not duplicated ---
+working [at=1793861000]: compile
+note: control byte ? normalized
+blocked [key=remote-worker-continuity-t1] [at=1793884759]: worker status continuity broke for t1 on worker host mbp (truncated) at offset 66 prefix 475b03fabce4; after inspection, remove both {run-worktree}/.test-mirror-tmp/fm-remote-worker-mirror.PpwAsS/parent/state/remote-workers/mbp/t1.broken and {run-worktree}/.test-mirror-tmp/fm-remote-worker-mirror.PpwAsS/parent/state/remote-workers/mbp/t1.cursor to resume mirroring from offset 0
+working [at=1793861006]: recovered after inspection
+
+--- Register the per-host listener ---
+armed: remote-worker-mbp
+retired: remote-worker-mbp
+
+--- Primary stream populated by runner without manual ingest ---
+working [at=1793861001]: investigate
+incomplete now complete
+done [at=1793861002]: findings ready
+working [at=1793861004]: sibling still active
+working [at=1793861005]: next sibling update
+working [at=1793861007]: autonomous runner update
+
+--- Runner persisted receipt files ---
+.
+..
+.1.ingested
+no-report.cursor
+s1.cursor
+t1.cursor
+
+--- Queued document read while status poll is running ---
+# Synthetic journal
+Investigation complete.
+
+30-second status poll preempted; queued read elapsed=3s; source exit=75; capture bytes=0
+Quiet window source exit=75; capture bytes=0
+Injected transport loss source exit=255; capture bytes=0
+
+--- Ingest captured bundle after membership removed ---
+ingested: mbp records=1 broken=0
+
+--- Departed task stream excludes orphan event ---
+working [at=1793861001]: investigate
+incomplete now complete
+done [at=1793861002]: findings ready
+working [at=1793861004]: sibling still active
+working [at=1793861005]: next sibling update
+working [at=1793861007]: autonomous runner update
+
+--- Release first task; other member keeps source ---
+released: t1 from mbp
+
+--- Release last member; listener retires ---
+retired: remote-worker-mbp (no tasks left)
+released: no-report from mbp
+No members: source exit=75; capture bytes=0
+
+Completed local executable-interface scenarios. SSH itself was a local dispatch shim; no remote Mac or agent login was exercised.
