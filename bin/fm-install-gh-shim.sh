@@ -75,7 +75,8 @@ is_our_shim() {  # <path>
   [ -f "$1" ] && grep -qxF "$MARKER" "$1" 2>/dev/null
 }
 
-# The real gh: the first one on PATH that is not the installed wrapper.
+# The real gh: the first one on PATH that is neither the installed wrapper nor
+# any other copy of it, matching how the wrapper itself resolves gh.
 real_gh() {
   local dir candidate resolved target_resolved
   target_resolved=$(cd "$TARGET_DIR" 2>/dev/null && pwd -P)/gh || target_resolved=$TARGET
@@ -86,6 +87,7 @@ real_gh() {
     [ -f "$candidate" ] && [ -x "$candidate" ] || continue
     resolved=$(cd "$(dirname "$candidate")" 2>/dev/null && pwd -P)/gh || continue
     [ "$resolved" = "$target_resolved" ] && continue
+    is_our_shim "$resolved" && continue
     printf '%s\n' "$resolved"
     return 0
   done

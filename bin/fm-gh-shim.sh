@@ -49,8 +49,13 @@
 #     wrong identity; with one account or none there is nothing to get wrong, so
 #     the call passes through
 #
+# The real gh is the first gh on PATH that is not a copy of this wrapper, so a
+# per-task copy ahead of the machine-wide one still reaches gh itself.
+#
 # Environment: FM_GH_REAL pins the real gh, FM_GH_ACCOUNT_BIN pins the helper.
-# Both exist for tests and for recovery after a move.
+# Both exist for tests and for recovery after a move. The wrapper exports the gh
+# it resolved as FM_GH_REAL to everything it runs, and refuses an FM_GH_REAL that
+# is itself a copy of this wrapper rather than looping on it.
 # Remove the installed copy, or run bin/fm-install-gh-shim.sh --uninstall, to
 # restore plain gh everywhere.
 set -u
@@ -75,8 +80,22 @@ self_path() {
   printf '%s/%s\n' "$dir" "$base"
 }
 
-# The first gh on PATH that is not this program. Resolved physically so a
-# symlinked or relatively-invoked copy still recognizes itself.
+# Every installed copy carries this exact line, which is also what the installer
+# keys its own ownership checks on.
+SHIM_MARKER='# fm-gh-shim: installed by bin/fm-install-gh-shim.sh'
+
+# True for any copy of this wrapper, not only this one. Only the head of the file
+# is read, so checking the real gh binary stays cheap on every call.
+is_shim() {  # <path>
+  [ -f "$1" ] || return 1
+  head -c 4096 "$1" 2>/dev/null | LC_ALL=C grep -qxF "$SHIM_MARKER"
+}
+
+# The first gh on PATH that is neither this program nor another copy of it.
+# Skipping only itself let a per-task copy pick the machine-wide copy as "real",
+# which then picked the per-task copy back, and the two exec'd each other
+# forever. Resolved physically so a symlinked or relatively-invoked copy still
+# recognizes itself even with its marker edited away.
 find_real_gh() {
   local self dir candidate resolved
   self=$(self_path || true)
@@ -87,6 +106,7 @@ find_real_gh() {
     [ -f "$candidate" ] && [ -x "$candidate" ] || continue
     resolved=$(cd "$(dirname "$candidate")" 2>/dev/null && pwd -P)/gh || continue
     [ "$resolved" = "$self" ] && continue
+    is_shim "$resolved" && continue
     printf '%s\n' "$resolved"
     return 0
   done
@@ -94,13 +114,22 @@ find_real_gh() {
 }
 
 REAL=${FM_GH_REAL:-}
+if [ -n "$REAL" ] && is_shim "$REAL"; then
+  printf 'fm-gh-shim: FM_GH_REAL=%s is itself a copy of this wrapper, so it would loop; point it at the real gh or unset it\n' \
+    "$REAL" >&2
+  exit 127
+fi
 if [ -z "$REAL" ]; then
   REAL=$(find_real_gh) || {
-    printf 'fm-gh-shim: no gh found on PATH besides this wrapper (%s); remove it to restore plain gh\n' \
+    printf 'fm-gh-shim: no gh found on PATH besides copies of this wrapper (%s); remove it to restore plain gh\n' \
       "$(self_path || printf '%s' "$0")" >&2
     exit 127
   }
 fi
+# Pinned for everything this call starts, above all bin/fm-gh-account.sh's own gh
+# calls: each re-enters a wrapper through PATH, and the pin hands it straight to
+# this same real gh instead of resolving PATH again at every level.
+export FM_GH_REAL="$REAL"
 
 # An explicit credential in the environment always wins.
 if [ -n "${GH_TOKEN:-}" ] || [ -n "${GITHUB_TOKEN:-}" ]; then
