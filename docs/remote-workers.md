@@ -55,9 +55,12 @@ Register the host first, then let the primary seed its home and check it:
 
 The seed first checks the account's transport readiness with [`fm-remote-doctor.sh`](remote-secondmates.md#readiness-repair-and-the-human-steps), repairing what it can, and touches the home only once that passes.
 It then creates the home with `data/`, `state/`, `config/`, and `projects/`, writes the `.fm-worker-host` marker, sets `config/backlog-backend` to `manual` because the primary's backlog owns these tasks, writes `config/lane-capacity` and `config/project-capacity` from the values given, clones each project from its origin, copies the primary's registry line for it so its delivery mode and forge binding match, and runs `no-mistakes init` in each no-mistakes project.
-A local-only project is refused, an existing capacity declaration is never overwritten, and a second-mate home is never changed.
+An explicitly named local-only project is refused, an existing capacity declaration is never overwritten, and a second-mate home or a home marked for another worker host is never changed.
+Clone URLs must be credential-free; [the origin validator](../bin/fm-project-origin-lib.sh) owns the accepted forms, and authentication must be configured on the host.
 The doctor reports each of those facts plus the host's T3 sign-in days left and whether its T3 version and capabilities match the primary's own; with `--fix` it repairs the gaps it owns, and the rest are named with the step that closes them.
-With no project named, the doctor checks every project the primary registers that the host already clones or registers.
+If the primary has a T3 sign-in but its status cannot be read, the comparison remains unresolved, not ready.
+If neither home has a T3 sign-in, T3 checks are skipped; an existing host sign-in is still checked even when the primary has none.
+With no project named, the doctor checks every non-local-only project the primary registers that the host already clones or registers; an unresolved primary delivery posture aborts the command rather than silently omitting the project.
 No credential, token, `config/` file, or `state/` record crosses from the primary.
 [`fm-worker-host-doctor.sh`](../bin/fm-worker-host-doctor.sh) owns what is sent and its exit statuses, and [`fm-worker-host-home.sh`](../bin/fm-worker-host-home.sh) owns every check, repair, and output line on the host.
 

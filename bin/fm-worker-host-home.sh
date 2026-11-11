@@ -2,7 +2,7 @@
 # Check, and with --fix converge, the worker host home selected by the fixed
 # remote entrypoint (docs/remote-workers.md).
 #
-# Usage (reached only through bin/fm-on.sh <worker-host-id> --stdin; the
+# Usage (reached only through bin/fm-on.sh --stdin <worker-host-id>; the
 # primary's bin/fm-worker-host-doctor.sh and bin/fm-worker-host-seed.sh build
 # the manifest and send it):
 #   fm-worker-host-home.sh [--fix] < manifest
@@ -25,9 +25,10 @@
 #   host_id_b64=<worker host id>
 #   lanes=<cap>                       optional: the config/lane-capacity cap
 #   capacity=<name_b64>|<n>           optional, repeatable: config/project-capacity
+#   t3_required=0|1                  required: whether the primary has a T3 sign-in
 #   t3_version_b64=<version>          optional: the T3 version the primary runs
 #   t3_capabilities=<a,b,...>         optional: T3 capabilities the primary uses
-#   t3_note_b64=<why>                 optional: why the primary named no T3 need
+#   t3_note_b64=<why>                 optional: absent sign-in or unavailable evidence
 #   project_scope=named|present       named checks every record; present checks
 #                                     only records this home clones or registers
 #   project_count=<n>
@@ -51,7 +52,8 @@
 # that lacks it. It never touches a second-mate home, never replaces a clone
 # with another origin, never signs in to T3, and never copies a credential,
 # token, or state/ from anywhere: every sign-in on this host is the operator's
-# own step.
+# own step. A conflicting worker-host marker blocks all home repairs; project
+# registration and initialization require a freshly verified clone identity.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
