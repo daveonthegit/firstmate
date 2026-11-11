@@ -72,6 +72,7 @@ T3_CAPABILITY_NAMES="launchEnvironment sessionStop keepAlive"
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 usage() { sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 safe_id() { case "$1" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac; }
+safe_project_name() { case "$1" in ''|.|..|*/*|*[[:cntrl:]]*) return 1 ;; esac; }
 
 MODE=check
 while [ "$#" -gt 0 ]; do
@@ -154,10 +155,10 @@ EOF
   [ -z "$origin_b64" ] || origin=$(base64_decode "$origin_b64") || die "project $name origin is not valid base64"
   line=$(base64_decode "$line_b64") || die "project $name registry line is not valid base64"
   mode=$(base64_decode "$mode_b64") || die "project $name mode is not valid base64"
-  safe_id "$name" || die "a manifest project name is unsafe: $name"
+  safe_project_name "$name" || die "a manifest project name is unsafe: $name"
   [ -z "$origin" ] || fm_project_origin_credential_free "$origin" || die "project $name requires a credential-free clone URL; authenticate on the host"
   case "$mode" in no-mistakes|direct-PR) ;; *) die "project $name has a mode a worker host cannot run: $mode" ;; esac
-  case "$line" in "- $name "*) ;; *) die "project $name registry line is malformed" ;; esac
+  case "$line" in "- $name ["*|"- $name - "*|"- $name") ;; *) die "project $name registry line is malformed" ;; esac
   case "$line" in *$'\n'*) die "project $name registry line spans lines" ;; esac
   P_NAMES+=("$name")
   P_ORIGINS+=("$origin")
@@ -173,7 +174,7 @@ ${record#capacity=}
 EOF
   [ -n "$name_b64" ] && [ -z "${extra:-}" ] || die "a manifest capacity record is malformed"
   name=$(base64_decode "$name_b64") || die "a capacity project name is not valid base64"
-  safe_id "$name" || die "a capacity project name is unsafe: $name"
+  safe_project_name "$name" || die "a capacity project name is unsafe: $name"
   case "$value" in [1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;; *) die "project $name capacity is not a positive integer below 1000: $value" ;; esac
   C_NAMES+=("$name")
   C_VALUES+=("$value")
@@ -415,7 +416,7 @@ check_project_capacity() {
 
 registry_line_of() { # <name>; the home's registry line for that project, if any
   [ -f "$REG" ] || return 0
-  awk -v p="- $1 " 'index($0, p) == 1 { print; exit }' "$REG"
+  awk -v p="- $1" 'index($0, p) == 1 { rest = substr($0, length(p) + 1); if (rest == "" || rest ~ /^ \[|^ - /) { print; exit } }' "$REG"
 }
 
 project_in_scope() { # <index>
@@ -707,7 +708,7 @@ fix_clone() { # <index>
 fix_registry() { # <index>
   local name=${P_NAMES[$1]} line=${P_LINES[$1]}
   if {
-    [ ! -f "$REG" ] || awk -v p="- $name " 'index($0, p) != 1' "$REG"
+    [ ! -f "$REG" ] || awk -v p="- $name" '{ rest = substr($0, length(p) + 1); if (index($0, p) != 1 || (rest != "" && rest !~ /^ \[|^ - /)) print }' "$REG"
     printf '%s\n' "$line"
   } > "$REG.tmp.$$" && mv -f -- "$REG.tmp.$$" "$REG"; then
     fix_report "registry:$name" applied "copied the primary's record"
@@ -739,6 +740,12 @@ apply_fixes() {
   check_is_ok secondmate || return 0
   case "$(check_value home)" in ok:*|fixable:*) ;; *) return 0 ;; esac
   acquire_lock || return 0
+  check_home
+  check_secondmate
+  check_is_ok secondmate || return 0
+  case "$(check_value home)" in ok:*|fixable:*) ;; *) return 0 ;; esac
+  check_marker
+  case "$(check_value marker)" in ok:*|fixable:*) ;; *) return 0 ;; esac
   if value_is_fixable home; then
     fix_home
     real_dir "$FM_HOME" || return 0

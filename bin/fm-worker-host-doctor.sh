@@ -61,6 +61,7 @@ die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 usage() { sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 encode() { base64 | tr -d '\n'; }
 safe_id() { case "$1" in ''|*[!A-Za-z0-9._-]*) return 1 ;; esac; }
+safe_project_name() { case "$1" in ''|.|..|*/*|*[[:cntrl:]]*) return 1 ;; esac; }
 
 [ "$#" -ge 1 ] || usage
 case "$1" in -h|--help) usage ;; esac
@@ -92,7 +93,7 @@ while [ "$#" -gt 0 ]; do
       name=${1%%=*}
       origin=
       case "$1" in *=*) origin=${1#*=} ;; esac
-      safe_id "$name" || die "invalid project name: $name"
+      safe_project_name "$name" || die "invalid project name: $name"
       if [ -n "$origin" ]; then
         fm_project_origin_credential_free "$origin" || die "project $name requires a credential-free clone URL; authenticate on the host"
       fi
@@ -130,7 +131,7 @@ if [ "${#PROJECT_NAMES[@]}" -eq 0 ]; then
     while IFS= read -r name; do
       PROJECT_NAMES+=("$name")
       PROJECT_ORIGINS+=("")
-    done < <(awk '/^- / { name = $2; if (name ~ /^[A-Za-z0-9._-]+$/) print name }' "$REG")
+    done < <(awk '/^- / { sub(/^- /, ""); sub(/ \[.*$| - .*$/, ""); print }' "$REG")
   fi
 fi
 
@@ -139,6 +140,7 @@ SENT=0
 i=0
 while [ "$i" -lt "${#PROJECT_NAMES[@]}" ]; do
   project=${PROJECT_NAMES[$i]}
+  safe_project_name "$project" || die "invalid project name: $project"
   origin=${PROJECT_ORIGINS[$i]}
   i=$((i + 1))
   if ! mode_line=$(FM_HOME="$FM_HOME" FM_DATA_OVERRIDE="$DATA" "$SCRIPT_DIR/fm-project-mode.sh" "$project" 2>"$TMP/mode.err"); then
@@ -155,7 +157,7 @@ while [ "$i" -lt "${#PROJECT_NAMES[@]}" ]; do
       ;;
     *) die "project $project has an unsupported delivery mode: $mode" ;;
   esac
-  registry_line=$(awk -v p="- $project " 'index($0, p) == 1 { print; exit }' "$REG" 2>/dev/null || true)
+  registry_line=$(awk -v p="- $project" 'index($0, p) == 1 { rest = substr($0, length(p) + 1); if (rest == "" || rest ~ /^ \[|^ - /) { print; exit } }' "$REG" 2>/dev/null || true)
   [ -n "$registry_line" ] || die "project $project has no record in $REG"
   if [ -z "$origin" ] && [ -d "$PROJECTS/$project/.git" ]; then
     origin=$(git -C "$PROJECTS/$project" remote get-url origin 2>/dev/null || true)
@@ -176,7 +178,7 @@ for arg in ${CAPACITY_ARGS[@]+"${CAPACITY_ARGS[@]}"}; do
   case "$arg" in *=*) ;; *) die "--capacity takes <project>=<n>: $arg" ;; esac
   name=${arg%%=*}
   value=${arg#*=}
-  safe_id "$name" || die "invalid capacity project name: $name"
+  safe_project_name "$name" || die "invalid capacity project name: $name"
   case "$value" in [1-9]|[1-9][0-9]|[1-9][0-9][0-9]) ;; *) die "--capacity for $name must be a positive whole number below 1000: $value" ;; esac
   printf 'capacity=%s|%s\n' "$(printf '%s' "$name" | encode)" "$value" >> "$TMP/capacity"
 done

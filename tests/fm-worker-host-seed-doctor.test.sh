@@ -305,6 +305,51 @@ assert_contains "$OUT" "remote root and home must be separate" "the nested home 
 assert_absent "$REMOTE_ROOT/inroot-home" "the doctor created a home inside the code root"
 pass "a second-mate home and a home inside the code root are reported and never changed"
 
+printf '%s\n' other-host > "$HOST/.fm-worker-host"
+rm -rf "$HOST/state"
+rm -f "$HOST/config/backlog-backend" "$HOST/config/lane-capacity"
+git -C "$HOST/projects/alpha" remote remove no-mistakes
+registry_before=$(cat "$HOST/data/projects.md")
+nm_before=$(cat "$NM_LOG")
+run "$ROOT/bin/fm-worker-host-seed.sh" m1 --lanes 2 --capacity beta=3 alpha
+expect_code 1 "$RC" "a conflicting home identity must block every repair"
+assert_contains "$OUT" "check marker=human" "the home ownership conflict was not reported"
+assert_not_contains "$OUT" 'fix ' "a conflicting home was repaired"
+assert_equals other-host "$(cat "$HOST/.fm-worker-host")" "the conflicting marker was changed"
+assert_absent "$HOST/state" "layout was repaired in another host's home"
+assert_absent "$HOST/config/backlog-backend" "backlog was repaired in another host's home"
+assert_absent "$HOST/config/lane-capacity" "lane capacity was repaired in another host's home"
+assert_not_contains "$(cat "$HOST/config/project-capacity")" 'beta 3' "project capacity was repaired in another host's home"
+assert_equals "$registry_before" "$(cat "$HOST/data/projects.md")" "another host's registry was changed"
+assert_equals "$nm_before" "$(cat "$NM_LOG")" "another host's project was initialized"
+printf '%s\n' m1 > "$HOST/.fm-worker-host"
+run "$ROOT/bin/fm-worker-host-seed.sh" m1 --lanes 2 alpha
+expect_code 0 "$RC" "repairs must resume with matching ownership: $OUT"
+pass "a conflicting worker-host marker blocks every home repair"
+
+SPACE_LINE='- alpha service [direct-PR forge=forgejo] - spaced name'
+LONG_LINE='- alpha service api [direct-PR] - longer spaced name'
+printf '%s\n' "$LONG_LINE" "$SPACE_LINE" "$ALPHA_LINE" "$BETA_LINE" > "$PARENT/data/projects.md"
+run "$ROOT/bin/fm-worker-host-seed.sh" m1 --lanes 2 --capacity 'alpha service=1' --capacity 'alpha service api=2' "alpha service=$BETA_ORIGIN" "alpha service api=$BETA_ORIGIN" alpha
+expect_code 0 "$RC" "explicit spaced names and capacities must seed: $OUT"
+assert_equals "$BETA_ORIGIN" "$(git -C "$HOST/projects/alpha service" remote get-url origin)" "the spaced project was not cloned"
+assert_equals "$BETA_ORIGIN" "$(git -C "$HOST/projects/alpha service api" remote get-url origin)" "the longer spaced project was not cloned"
+assert_grep 'alpha service 1' "$HOST/config/project-capacity" "the spaced capacity was lost"
+assert_grep 'alpha service api 2' "$HOST/config/project-capacity" "the longer spaced capacity was lost"
+printf '%s\n' "$LONG_LINE" '- alpha service [no-mistakes] - drift' "$ALPHA_LINE" "$BETA_LINE" > "$HOST/data/projects.md"
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1
+expect_code 1 "$RC" "implicit discovery must detect drift in a spaced project"
+assert_contains "$OUT" 'check registry:alpha service=fixable' "the spaced project escaped discovery"
+assert_contains "$OUT" 'check registry:alpha service api=ok' "a longer prefix sibling was misidentified"
+assert_contains "$OUT" 'check registry:alpha=ok' "the short prefix sibling was misidentified"
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1 --fix
+expect_code 0 "$RC" "implicit repairs of spaced names must pass: $OUT"
+assert_equals "$LONG_LINE
+$ALPHA_LINE
+$BETA_LINE
+$SPACE_LINE" "$(cat "$HOST/data/projects.md")" "registry replacement changed a prefix sibling"
+pass "spaced project names survive seeding, capacity declarations, discovery, and registry repair"
+
 # --- T3: days left, version, and capabilities against the primary -----------------------
 
 if ! command -v node >/dev/null 2>&1; then
