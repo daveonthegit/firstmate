@@ -1,0 +1,228 @@
+Real fm-teardown CLI output captured by the fake-SSH integration driver.
+Display extraction from the retained Bash trace; transport and terminal tools are simulated, both cleanup legs and tasks-axi execute locally in disposable homes. Not second-Mac or real agent/process-reaping validation.
+
+Transcript line 203:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh t1
+worker host mbp: teardown t1 complete (window firstmate:fm-t1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt)
+worker host mbp: Backlog: t1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/data/backlog.md - move t1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF
+worker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 9s ago).
+worker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+worker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.
+worker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown t1 complete (worker host mbp)
+Backlog: t1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
+
+Transcript line 332:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh d1
+error: worker host mbp was unreachable while fetching d1\'s journal; nothing was changed on either machine - re-run cleanup'
+
+Transcript line 456:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh l1
+worker host mbp: teardown l1 complete (window firstmate:fm-l1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt)
+worker host mbp: Backlog: l1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/data/backlog.md - move l1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF
+worker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 7s ago).
+worker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+worker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.
+worker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: worker host mbp was unreachable, or whether it finished cleaning up l1 is unknown; every record here and on the host is preserved and the backlog item did not move - re-run this cleanup, which the host answers with its finished cleanup instead of repeating it'
+
+Transcript line 484:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh l1
+not fetched: l1 journal from mbp - task l1 was not placed on this worker host by a primary (no {run-worktree}/.w3-test-tmp/fm-tear
+worker host mbp: teardown l1: no task record remains on this worker host
+teardown l1 complete (worker host mbp)
+Backlog: l1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
+
+Transcript line 603:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh u1
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF
+worker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 9s ago).
+worker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+worker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.
+worker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host mbp: REFUSED: worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt has uncommitted changes.
+worker host mbp: uncommitted changes present (untracked-only leftovers)
+worker host mbp: untracked paths (up to 10):
+worker host mbp:   scratch.txt
+worker host mbp: Commit them (or get the captain\'s explicit OK to discard, then --force).
+REFUSED: worker host mbp refused to clean up u1 (exit 1); every record here is preserved and the backlog item did not move. Resolve what the host named, then re-run.'
+
+Transcript line 637:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh u1 --force
+worker host mbp: teardown u1 complete (window firstmate:fm-u1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt)
+worker host mbp: Backlog: u1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/data/backlog.md - move u1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host mbp: WARNING: watcher still down (same stale episode; last beat: 11s ago, grace 300s) - full banner already printed this episode.
+teardown u1 complete (worker host mbp)
+Backlog: u1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
+
+Transcript line 765:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh s1
+worker host mbp: teardown s1 complete (window firstmate:fm-s1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/wt)
+worker host mbp: Backlog: s1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/data/backlog.md - move s1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF
+worker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 8s ago).
+worker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+worker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.
+worker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown s1 complete (worker host mbp)
+Backlog: s1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
+
+Transcript line 1398:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh b1
+worker host mbp: teardown b1 complete (window firstmate:fm-b1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt)
+worker host mbp: Backlog: b1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/data/backlog.md - move b1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF
+worker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 10s ago).
+worker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+worker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.
+worker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: worker host mbp cleaned up b1, but its backlog item could not be moved atomically (injected backlog mutation failure); the pending close is recorded and the next session start retries it'
+
+Transcript line 1524:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh b1
+worker host mbp: teardown b1 complete (window firstmate:fm-b1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt)
+worker host mbp: Backlog: b1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/data/backlog.md - move b1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF
+worker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 10s ago).
+worker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+worker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.
+worker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: worker host mbp cleaned up b1, but its backlog item could not be moved atomically (injected backlog mutation failure); the pending retain is recorded and the next session start retries it'
+
+Transcript line 1645:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh r1
+REFUSED: task r1\'s recorded worker host route no longer matches worker host mbp\'s registry record; reconcile the record before cleanup. Nothing was changed.'
+
+Transcript line 1763:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh c1
+not fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md 
+not fetched: c1 report from mbp - file is not a non-symlink regular file: data/c1/report.md 
+REFUSED: scout task c1 has no report at {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/c1/report.md, and worker host mbp did not provide one.
+The report is the work product. Have the worker write it, or use --force after explicit discard approval.'
+
+Transcript line 1786:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh c1
+not fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md 
+fm-captain-hold: origin c1 has no completed captain-call inventory
+REFUSED: scout task c1 has not passed the captain-call completion gate.
+Inventory its report and any visual review through bin/fm-captain-hold.sh before teardown.'
+
+Transcript line 1811:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh c1
+not fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md 
+fm-captain-hold: origin c1 has no completed captain-call inventory
+REFUSED: scout task c1 has not passed the captain-call completion gate.
+Inventory its report and any visual review through bin/fm-captain-hold.sh before teardown.'
+
+Transcript line 1819:
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent
+++ FM_ROOT_OVERRIDE={run-worktree}
+++ FM_SPAWN_NO_GUARD=1
+++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims
+++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh
+++ TASKS_AXI_BACKEND=markdown
+++ {run-worktree}/bin/fm-teardown.sh c1
+not fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md 
+worker host mbp: teardown c1 complete (window firstmate:fm-c1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/wt)
+worker host mbp: Backlog: c1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/data/backlog.md - move c1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF
+worker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 18s ago).
+worker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+worker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.
+worker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+worker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown c1 complete (worker host mbp)
+Backlog: c1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'

@@ -1,0 +1,2015 @@
++ set -u
+++ dirname tests/fm-teardown-host.test.sh
++ . tests/lib.sh
+++ '[' -n '' ']'
+++ FM_TEST_LIB_SOURCED=1
+++ umask 022
++++ dirname tests/lib.sh
+++ . tests/git-config-helpers.sh
++++ export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
++++ GIT_CONFIG_GLOBAL=/dev/null
++++ GIT_CONFIG_NOSYSTEM=1
++++ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR
+++ export FM_GATE_REFUSE_BYPASS=1
+++ FM_GATE_REFUSE_BYPASS=1
+++ export FM_TEST_SEAM=1
+++ FM_TEST_SEAM=1
+++ unset FM_TASK_ID
+++ unset HERDR_ENV HERDR_PANE_ID HERDR_TAB_ID HERDR_WORKSPACE_ID HERDR_SOCKET_PATH HERDR_SESSION HERDR_BIN_PATH TERM_PROGRAM FM_BACKEND FM_HOME FM_ROOT FM_ROOT_OVERRIDE FM_STATE_OVERRIDE FM_DATA_OVERRIDE FM_CONFIG_OVERRIDE FM_PROJECTS_OVERRIDE
+++ unset TASKS_AXI_FILE TASKS_AXI_BACKEND
+++ unset REX_SESSION REX_BLOCK
+++++ dirname tests/lib.sh
++++ cd tests/..
++++ pwd
+++ ROOT={run-worktree}
++++ fm_test_tmpdir
++++ local base={run-worktree}/.w3-test-tmp physical
++++ base={run-worktree}/.w3-test-tmp
++++ '[' -n {run-worktree}/.w3-test-tmp ']'
++++ case "$base" in
+++++ CDPATH=
+++++ cd -- {run-worktree}/.w3-test-tmp
+++++ pwd -P
++++ physical={run-worktree}/.w3-test-tmp
++++ base={run-worktree}/.w3-test-tmp
++++ '[' -e {run-worktree}/.w3-test-tmp/.git ']'
++++ printf '%s\n' {run-worktree}/.w3-test-tmp
+++ FM_TEST_TMPDIR={run-worktree}/.w3-test-tmp
+++ FM_TEST_CLEANUP_DIRS=()
++++ mktemp {run-worktree}/.w3-test-tmp/.fm-test-cleanup.53650.XXXXXX
+++ FM_TEST_CLEANUP_REGISTRY={run-worktree}/.w3-test-tmp/.fm-test-cleanup.53650.vngKvC
++++ fm_test_pid_identity 53650
++++ local pid=53650
++++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp
++++ bash -c '. "$1"; fm_pid_identity "$2"' _ {run-worktree}/bin/fm-wake-lib.sh 53650
+++ FM_TEST_OWNER_IDENTITY='Wed Nov 11 15:37:17 2026     bash -x tests/fm-teardown-host.test.sh'
++++ mktemp {run-worktree}/.w3-test-tmp/.fm-test-procevent.53650.XXXXXX
+++ FM_TEST_PROCEVENT_REGISTRY={run-worktree}/.w3-test-tmp/.fm-test-procevent.53650.CDzMmr
++++ mktemp {run-worktree}/.w3-test-tmp/.fm-test-watcher.53650.XXXXXX
+++ FM_TEST_WATCHER_REGISTRY={run-worktree}/.w3-test-tmp/.fm-test-watcher.53650.yTe4HZ
+++ FM_TEST_STUB_MAX_BLOCK_SECONDS=120
+++ export FM_TEST_STUB_MAX_BLOCK_SECONDS
+++ FM_TEST_SUITE_PID=53650
+++ export FM_TEST_SUITE_PID
+++ trap fm_test_cleanup EXIT
+++ trap 'fm_test_cleanup; exit 130' INT
+++ trap 'fm_test_cleanup; exit 143' TERM
+++ trap 'fm_test_cleanup; exit 129' HUP
+++ trap 'fm_test_cleanup; exit 131' QUIT
+++ FM_TEST_ORPHAN_MAX_AGE_SECONDS=3600
+++ '[' 0 '!=' 1 ']'
+++ fm_test_reap_orphans
+++ local marker dir mtime now owner_pid owner_identity current_identity
++++ date +%s
+++ now=1794411438
+++ for marker in "$FM_TEST_TMPDIR"/fm-*/.fm-test-fixture
+++ '[' -e '{run-worktree}/.w3-test-tmp/fm-*/.fm-test-fixture' ']'
+++ continue
++ command -v tasks-axi
+++ fm_test_tmproot fm-teardown-host
+++ local prefix=fm-teardown-host root tmp_base
++++ fm_test_tmpdir
++++ local base={run-worktree}/.w3-test-tmp physical
++++ base={run-worktree}/.w3-test-tmp
++++ '[' -n {run-worktree}/.w3-test-tmp ']'
++++ case "$base" in
+++++ CDPATH=
+++++ cd -- {run-worktree}/.w3-test-tmp
+++++ pwd -P
++++ physical={run-worktree}/.w3-test-tmp
++++ base={run-worktree}/.w3-test-tmp
++++ '[' -e {run-worktree}/.w3-test-tmp/.git ']'
++++ printf '%s\n' {run-worktree}/.w3-test-tmp
+++ tmp_base={run-worktree}/.w3-test-tmp
+++ tmp_base={run-worktree}/.w3-test-tmp
++++ mktemp -d {run-worktree}/.w3-test-tmp/fm-teardown-host.XXXXXX
+++ root={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
++++ cd -P -- {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
++++ pwd -P
+++ root={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
+++ printf '%s\n%s\n' 53650 'Wed Nov 11 15:37:17 2026     bash -x tests/fm-teardown-host.test.sh'
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
++ TMP_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
++ SPAWN={run-worktree}/bin/fm-spawn.sh
++ TEARDOWN={run-worktree}/bin/fm-teardown.sh
++ fm_test_run test_two_leg_cleanup test_unreachable_host_preserves_records test_lost_answer_reruns_safely test_host_refusal_passes_through test_sibling_keeps_mirror test_retirement_waits_for_mirror test_backlog_failure_retires_mirror test_route_drift_refused test_scout_report_and_gate
++ local name kind
++ '[' 9 -gt 0 ']'
++ printf '1..%s\n' 9
+1..9
++ '[' 9 -gt 0 ']'
++ name=test_two_leg_cleanup
++ shift
+++ type -t test_two_leg_cleanup
++ kind=function
++ '[' function = function ']'
++ test_two_leg_cleanup
++ local out
++ make_case success
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/fake-ssh
++ place_ship t1
++ local out
++ make_brief t1 --mode local-only --journal
++ local id=t1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh t1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh t1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data/t1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data/t1/brief.md
++ add_item t1
++ tasks-axi add t1 'item for t1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh t1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh t1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: t1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned t1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-t1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt\nspawned t1 harness=claude kind=ship mode=local-only yolo=off window=remote:t1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/data/t1
++ printf 'what %s did\n' t1
++ printf 'working: placed\n'
+++ mirror_sources
+++ primary {run-worktree}/bin/fm-procevent.sh list
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-procevent.sh list\nSOURCE                       ADAPTER      OWNER      PENDING\nremote-worker-mbp            remote-worker none       0' remote-worker-mbp 'the fixture did not arm the mirror'
++ case "$1" in
++ :
+++ primary {run-worktree}/bin/fm-teardown.sh t1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh t1\nworker host mbp: teardown t1 complete (window firstmate:fm-t1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt)\nworker host mbp: Backlog: t1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/data/backlog.md - move t1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 9s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nteardown t1 complete (worker host mbp)\nBacklog: t1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh t1\nworker host mbp: teardown t1 complete (window firstmate:fm-t1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/wt)\nworker host mbp: Backlog: t1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/data/backlog.md - move t1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 9s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nteardown t1 complete (worker host mbp)\nBacklog: t1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.' 'teardown t1 complete (worker host mbp)' 'cleanup did not report both legs'
++ case "$1" in
++ :
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/state/t1.meta 'leg one left the host task record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/state/t1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/state/t1.remote-worker 'leg one left the host placement claim'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/host/state/t1.remote-worker ']'
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data/t1/journal.md
++ assert_equals 'what t1 did' 'what t1 did' 'the journal was not fetched before the host released its claim'
++ '[' 'what t1 did' = 'what t1 did' ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state/t1.meta 'leg two left the primary record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state/t1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state/t1.status 'leg two left the primary status'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state/t1.status ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state/t1.backlog-close 'leg two left its pending close'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state/t1.backlog-close ']'
+++ row_state t1
+++ tasks-axi show t1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals done done 'leg two did not close the backlog item'
++ '[' done = done ']'
+++ mirror_sources
+++ primary {run-worktree}/bin/fm-procevent.sh list
++ assert_not_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-procevent.sh list\nno sources registered' remote-worker-mbp 'the last member'\''s cleanup left the host mirror armed'
++ case "$1" in
++ :
++ pass 'cleanup runs the host'\''s own teardown, fetches the journal, then retires the primary records and closes the item'
++ printf 'ok - %s\n' 'cleanup runs the host'\''s own teardown, fetches the journal, then retires the primary records and closes the item'
+ok - cleanup runs the host's own teardown, fetches the journal, then retires the primary records and closes the item
++ '[' 8 -gt 0 ']'
++ name=test_unreachable_host_preserves_records
++ shift
+++ type -t test_unreachable_host_preserves_records
++ kind=function
++ '[' function = function ']'
++ test_unreachable_host_preserves_records
++ local out rc=0
++ make_case down
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/fake-ssh
++ place_ship d1
++ local out
++ make_brief d1 --mode local-only --journal
++ local id=d1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh d1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh d1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/data/d1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/data/d1/brief.md
++ add_item d1
++ tasks-axi add d1 'item for d1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh d1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh d1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: d1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned d1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-d1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/wt\nspawned d1 harness=claude kind=ship mode=local-only yolo=off window=remote:d1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/data/d1
++ printf 'what %s did\n' d1
++ printf 'working: placed\n'
+++ FM_FAKE_SSH_DOWN=1
+++ primary {run-worktree}/bin/fm-teardown.sh d1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh d1\nerror: worker host mbp was unreachable while fetching d1\'s journal; nothing was changed on either machine - re-run cleanup'
++ rc=255
++ '[' 255 -eq 255 ']'
++ assert_preserved d1 'an unreachable host'
++ assert_record_kept d1 'an unreachable host'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state/d1.meta 'an unreachable host: the primary record was removed'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state/d1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state/d1.backlog-close 'an unreachable host: a pending backlog close was recorded'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state/d1.backlog-close ']'
+++ row_state d1
+++ tasks-axi show d1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals in_flight in_flight 'an unreachable host: the backlog item moved'
++ '[' in_flight = in_flight ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state/d1.status 'an unreachable host: the primary status was retired'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state/d1.status ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/state/d1.meta 'an unreachable host lost its record'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/state/d1.meta ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/state/d1.remote-worker 'an unreachable host lost its claim'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/host/state/d1.remote-worker ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/data/d1/journal.md 'an unreachable host produced a journal'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/data/d1/journal.md ']'
++ pass 'an SSH exit 255 before the host is reached preserves every record and moves nothing'
++ printf 'ok - %s\n' 'an SSH exit 255 before the host is reached preserves every record and moves nothing'
+ok - an SSH exit 255 before the host is reached preserves every record and moves nothing
++ '[' 7 -gt 0 ']'
++ name=test_lost_answer_reruns_safely
++ shift
+++ type -t test_lost_answer_reruns_safely
++ kind=function
++ '[' function = function ']'
++ test_lost_answer_reruns_safely
++ local out rc=0
++ make_case lost
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh
++ place_ship l1
++ local out
++ make_brief l1 --mode local-only --journal
++ local id=l1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh l1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh l1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/l1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/l1/brief.md
++ add_item l1
++ tasks-axi add l1 'item for l1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh l1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh l1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: l1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned l1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-l1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt\nspawned l1 harness=claude kind=ship mode=local-only yolo=off window=remote:l1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/data/l1
++ printf 'what %s did\n' l1
++ printf 'working: placed\n'
+++ FM_FAKE_SSH_LOSE_VERB=teardown
+++ primary {run-worktree}/bin/fm-teardown.sh l1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh l1\nworker host mbp: teardown l1 complete (window firstmate:fm-l1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt)\nworker host mbp: Backlog: l1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/data/backlog.md - move l1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 7s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nerror: worker host mbp was unreachable, or whether it finished cleaning up l1 is unknown; every record here and on the host is preserved and the backlog item did not move - re-run this cleanup, which the host answers with its finished cleanup instead of repeating it'
++ rc=255
++ '[' 255 -eq 255 ']'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh l1\nworker host mbp: teardown l1 complete (window firstmate:fm-l1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/wt)\nworker host mbp: Backlog: l1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/data/backlog.md - move l1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 7s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nerror: worker host mbp was unreachable, or whether it finished cleaning up l1 is unknown; every record here and on the host is preserved and the backlog item did not move - re-run this cleanup, which the host answers with its finished cleanup instead of repeating it' 're-run this cleanup' 'the unknown outcome did not say how to repair it'
++ case "$1" in
++ :
++ assert_preserved l1 'a lost host answer'
++ assert_record_kept l1 'a lost host answer'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/l1.meta 'a lost host answer: the primary record was removed'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/l1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/l1.backlog-close 'a lost host answer: a pending backlog close was recorded'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/l1.backlog-close ']'
+++ row_state l1
+++ tasks-axi show l1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals in_flight in_flight 'a lost host answer: the backlog item moved'
++ '[' in_flight = in_flight ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/l1.status 'a lost host answer: the primary status was retired'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/l1.status ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/state/l1.meta 'the host did not finish cleanup before its answer was lost'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/host/state/l1.meta ']'
+++ mirror_sources
+++ primary {run-worktree}/bin/fm-procevent.sh list
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-procevent.sh list\nSOURCE                       ADAPTER      OWNER      PENDING\nremote-worker-mbp            remote-worker none       0' remote-worker-mbp 'a lost host answer disarmed the mirror'
++ case "$1" in
++ :
+++ primary {run-worktree}/bin/fm-teardown.sh l1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh l1\nnot fetched: l1 journal from mbp - task l1 was not placed on this worker host by a primary (no {run-worktree}/.w3-test-tmp/fm-tear\nworker host mbp: teardown l1: no task record remains on this worker host\nteardown l1 complete (worker host mbp)\nBacklog: l1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh l1\nnot fetched: l1 journal from mbp - task l1 was not placed on this worker host by a primary (no {run-worktree}/.w3-test-tmp/fm-tear\nworker host mbp: teardown l1: no task record remains on this worker host\nteardown l1 complete (worker host mbp)\nBacklog: l1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.' 'no task record remains on this worker host' 'the re-run did not reuse the host'\''s finished cleanup'
++ case "$1" in
++ :
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh l1\nnot fetched: l1 journal from mbp - task l1 was not placed on this worker host by a primary (no {run-worktree}/.w3-test-tmp/fm-tear\nworker host mbp: teardown l1: no task record remains on this worker host\nteardown l1 complete (worker host mbp)\nBacklog: l1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.' 'teardown l1 complete (worker host mbp)' 'the re-run did not finish leg two'
++ case "$1" in
++ :
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/l1.meta 'the re-run left the primary record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/l1.meta ']'
+++ row_state l1
+++ tasks-axi show l1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/backlog.md
+++ head -1
+++ sed -n 's/^  state: *//p'
++ assert_equals done done 'the re-run did not close the backlog item'
++ '[' done = done ']'
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/data/l1/journal.md
++ assert_equals 'what l1 did' 'what l1 did' 'a refused read after host cleanup lost the cached journal'
++ '[' 'what l1 did' = 'what l1 did' ']'
++ pass 'an SSH exit 255 after the host finished keeps every primary record, and a re-run finishes leg two'
++ printf 'ok - %s\n' 'an SSH exit 255 after the host finished keeps every primary record, and a re-run finishes leg two'
+ok - an SSH exit 255 after the host finished keeps every primary record, and a re-run finishes leg two
++ '[' 6 -gt 0 ']'
++ name=test_host_refusal_passes_through
++ shift
+++ type -t test_host_refusal_passes_through
++ kind=function
++ '[' function = function ']'
++ test_host_refusal_passes_through
++ local out rc=0
++ make_case unlanded
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh
++ place_ship u1
++ local out
++ make_brief u1 --mode local-only --journal
++ local id=u1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh u1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh u1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/u1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/u1/brief.md
++ add_item u1
++ tasks-axi add u1 'item for u1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh u1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh u1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: u1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned u1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-u1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt\nspawned u1 harness=claude kind=ship mode=local-only yolo=off window=remote:u1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/data/u1
++ printf 'what %s did\n' u1
++ printf 'working: placed\n'
++ printf 'unsaved\n'
+++ primary {run-worktree}/bin/fm-teardown.sh u1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh u1\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 9s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: REFUSED: worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt has uncommitted changes.\nworker host mbp: uncommitted changes present (untracked-only leftovers)\nworker host mbp: untracked paths (up to 10):\nworker host mbp:   scratch.txt\nworker host mbp: Commit them (or get the captain\'s explicit OK to discard, then --force).\nREFUSED: worker host mbp refused to clean up u1 (exit 1); every record here is preserved and the backlog item did not move. Resolve what the host named, then re-run.'
++ rc=1
++ '[' 1 -ne 0 ']'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh u1\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 9s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: REFUSED: worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt has uncommitted changes.\nworker host mbp: uncommitted changes present (untracked-only leftovers)\nworker host mbp: untracked paths (up to 10):\nworker host mbp:   scratch.txt\nworker host mbp: Commit them (or get the captain\'s explicit OK to discard, then --force).\nREFUSED: worker host mbp refused to clean up u1 (exit 1); every record here is preserved and the backlog item did not move. Resolve what the host named, then re-run.' 'worker host mbp: REFUSED' 'the host'\''s refusal was not passed through'
++ case "$1" in
++ :
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh u1\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 9s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: REFUSED: worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt has uncommitted changes.\nworker host mbp: uncommitted changes present (untracked-only leftovers)\nworker host mbp: untracked paths (up to 10):\nworker host mbp:   scratch.txt\nworker host mbp: Commit them (or get the captain\'s explicit OK to discard, then --force).\nREFUSED: worker host mbp refused to clean up u1 (exit 1); every record here is preserved and the backlog item did not move. Resolve what the host named, then re-run.' 'worker host mbp refused to clean up u1' 'the primary did not report the host refusal'
++ case "$1" in
++ :
++ assert_preserved u1 'a host refusal'
++ assert_record_kept u1 'a host refusal'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/u1.meta 'a host refusal: the primary record was removed'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/u1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/u1.backlog-close 'a host refusal: a pending backlog close was recorded'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/u1.backlog-close ']'
+++ row_state u1
+++ tasks-axi show u1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals in_flight in_flight 'a host refusal: the backlog item moved'
++ '[' in_flight = in_flight ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/u1.status 'a host refusal: the primary status was retired'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/u1.status ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/state/u1.meta 'a host refusal removed the host record'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/state/u1.meta ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/state/u1.remote-worker 'a host refusal released the host claim'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/state/u1.remote-worker ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt/scratch.txt 'a host refusal discarded the unlanded work'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt/scratch.txt ']'
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/u1/journal.md
++ assert_equals 'what u1 did' 'what u1 did' 'the refused cleanup did not fetch the initial journal'
++ '[' 'what u1 did' = 'what u1 did' ']'
++ printf 'final journal\n'
+++ primary {run-worktree}/bin/fm-teardown.sh u1 --force
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh u1 --force\nworker host mbp: teardown u1 complete (window firstmate:fm-u1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/wt)\nworker host mbp: Backlog: u1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/data/backlog.md - move u1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: WARNING: watcher still down (same stale episode; last beat: 11s ago, grace 300s) - full banner already printed this episode.\nteardown u1 complete (worker host mbp)\nBacklog: u1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/u1/journal.md
++ assert_equals 'final journal' 'final journal' 'the retry kept the stale journal instead of refreshing it'
++ '[' 'final journal' = 'final journal' ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/state/u1.meta 'the forced cleanup left the host record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/host/state/u1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/u1.meta 'the forced cleanup left the primary record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/u1.meta ']'
+++ row_state u1
+++ tasks-axi show u1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals done done 'the forced cleanup did not close the backlog item'
++ '[' done = done ']'
++ pass 'a host refusal for unlanded work passes through untouched, and only an explicit --force crosses'
++ printf 'ok - %s\n' 'a host refusal for unlanded work passes through untouched, and only an explicit --force crosses'
+ok - a host refusal for unlanded work passes through untouched, and only an explicit --force crosses
++ '[' 5 -gt 0 ']'
++ name=test_sibling_keeps_mirror
++ shift
+++ type -t test_sibling_keeps_mirror
++ kind=function
++ '[' function = function ']'
++ test_sibling_keeps_mirror
++ local out
++ make_case sibling
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/fake-ssh
++ place_ship s1
++ local out
++ make_brief s1 --mode local-only --journal
++ local id=s1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh s1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh s1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/data/s1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/data/s1/brief.md
++ add_item s1
++ tasks-axi add s1 'item for s1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh s1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh s1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: s1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned s1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-s1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/wt\nspawned s1 harness=claude kind=ship mode=local-only yolo=off window=remote:s1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/data/s1
++ printf 'what %s did\n' s1
++ printf 'working: placed\n'
++ fm_write_meta {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state/s2.meta kind=ship remote_worker_host=mbp remote_root={run-worktree} remote_home={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host remote_target=firstmate:fm-s2
++ local file={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state/s2.meta kv
++ shift
++ :
++ for kv in "$@"
++ printf '%s\n' kind=ship
++ for kv in "$@"
++ printf '%s\n' remote_worker_host=mbp
++ for kv in "$@"
++ printf '%s\n' remote_root={run-worktree}
++ for kv in "$@"
++ printf '%s\n' remote_home={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host
++ for kv in "$@"
++ printf '%s\n' remote_target=firstmate:fm-s2
+++ primary {run-worktree}/bin/fm-teardown.sh s1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh s1\nworker host mbp: teardown s1 complete (window firstmate:fm-s1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/wt)\nworker host mbp: Backlog: s1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/host/data/backlog.md - move s1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 8s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nteardown s1 complete (worker host mbp)\nBacklog: s1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state/s1.meta 'cleanup left the primary record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state/s1.meta ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state/s2.meta 'cleanup touched the sibling record'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state/s2.meta ']'
+++ mirror_sources
+++ primary {run-worktree}/bin/fm-procevent.sh list
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-procevent.sh list\nSOURCE                       ADAPTER      OWNER      PENDING\nremote-worker-mbp            remote-worker none       0' remote-worker-mbp 'cleanup disarmed a mirror the sibling still uses'
++ case "$1" in
++ :
++ pass 'cleanup releases only its own task from a host mirror other tasks still use'
++ printf 'ok - %s\n' 'cleanup releases only its own task from a host mirror other tasks still use'
+ok - cleanup releases only its own task from a host mirror other tasks still use
++ '[' 4 -gt 0 ']'
++ name=test_retirement_waits_for_mirror
++ shift
+++ type -t test_retirement_waits_for_mirror
++ kind=function
++ '[' function = function ']'
++ test_retirement_waits_for_mirror
++ local pid i
++ make_case serialization
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/fake-ssh
++ place_ship m1
++ local out
++ make_brief m1 --mode local-only --journal
++ local id=m1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh m1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh m1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/data/m1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/data/m1/brief.md
++ add_item m1
++ tasks-axi add m1 'item for m1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh m1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh m1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: m1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned m1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-m1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/wt\nspawned m1 harness=claude kind=ship mode=local-only yolo=off window=remote:m1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host/data/m1
++ printf 'what %s did\n' m1
++ printf 'working: placed\n'
++ pid=13951
++ (( i=0 ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ FM_FAKE_SSH_PAUSE_TEARDOWN=1
++ primary {run-worktree}/bin/fm-teardown.sh m1
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ sleep 0.05
++ (( i++ ))
++ (( i<600 ))
++ '[' '!' -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ break
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished 'cleanup did not complete its host leg'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/host-finished ']'
++ . {run-worktree}/bin/fm-procevent-remote-worker.sh
+++ '[' {run-worktree}/bin/fm-procevent-remote-worker.sh = tests/fm-teardown-host.test.sh ']'
+++ return 0
++ . {run-worktree}/bin/fm-wake-lib.sh
++++ d={run-worktree}/bin
++++ '[' {run-worktree}/bin '!=' {run-worktree}/bin/fm-wake-lib.sh ']'
++++ cd {run-worktree}/bin
++++ pwd
+++ FM_WAKE_LIB_DIR={run-worktree}/bin
++++ cd {run-worktree}/bin/..
++++ pwd
+++ FM_WAKE_DEFAULT_ROOT={run-worktree}
+++ FM_ROOT={run-worktree}
+++ FM_HOME={run-worktree}
+++ STATE={run-worktree}/state
+++ FM_WAKE_QUEUE={run-worktree}/state/.wake-queue
+++ FM_WAKE_QUEUE_LOCK={run-worktree}/state/.wake-queue.lock
+++ FM_LOCK_STALE_AFTER=2
+++ . {run-worktree}/bin/fm-path-lib.sh
++++ uname
+++ _FM_UNAME=Darwin
+++ mkdir -p {run-worktree}/state
+++ '[' 5 -gt 4 ']'
+++ FM_WATCHER_MATCHED_IDENTITY=
+++ FM_WATCHER_HEALTHY_PID=
+++ FM_WATCHER_HEALTHY_IDENTITY=
+++ FM_WATCHER_VERDICT_OK=false
+++ FM_WATCHER_VERDICT_REASON=stale-beacon
+++ _FM_LOCK_SELF_START_PID=
+++ _FM_LOCK_SELF_START=
+++ FM_RECOVERY_MARKER_TOKEN=
+++ FM_RECOVERY_MARKER_ACTION=none
+++ FM_RECOVERY_MARKER_WRITTEN_TOKEN=
+++ FM_WAKE_APPEND_RECOVERY_PREVIOUS_TOKEN=
+++ FM_WAKE_APPEND_RECOVERY_PUBLISHED_TOKEN=
+++ FM_RECOVERY_HELD_LOCK=
+++ FM_RECOVERY_HELD_PID=
+++ FM_RECOVERY_HANDOVER_TOKEN=
+++ FM_RECOVERY_HANDOVER_SEQ=
+++ FM_WAKE_STATUS_KEY=
+++ FM_WAKE_STATUS_HISTORICAL=false
+++ FM_WAKE_EVENT_LINE=
+++ FM_WAKE_UNREAD_LINES=
++ fm_remote_worker_with_lifecycle_lock {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state mbp hold_mirror_during_retirement
++ local state={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state host=mbp lock
++ shift 2
+++ fm_remote_worker_lifecycle_lock_path {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state mbp
+++ printf '%s/.remote-worker-lifecycle-%s.lock\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state mbp
++ lock={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++ fm_lock_acquire_wait {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++ fm_lock_try_acquire {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock marker_publish_bound= pid steal cur rc steal_owner primary_owner current
++ FM_LOCK_HELD_PID=
++ FM_LOCK_HELD_PATH=
++ FM_LOCK_OWNER_DIR=
++ FM_LOCK_RECOVERED_PID=
++ fm_lock_try_create {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock allowed_steal_owner= ownerdir
++ local FM_LOCK_PENDING_PREVIOUS_PID FM_LOCK_PENDING_PID=
++ FM_LOCK_OWNER_DIR=
++ '[' 5 -lt 4 ']'
++ FM_LOCK_PENDING_PREVIOUS_PID=13951
++ IFS=
++ read -r ownerdir
+++ fm_lock_owner_dir {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
+++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock lock_abs
++++ fm_lock_abs_path {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++++ local path={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock dir base
++++ fm_dirname_to dir {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++++ local fm_path={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++++ case "$fm_path" in
++++ fm_path={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++++ case "$fm_path" in
++++ fm_path={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state
++++ fm_path={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state
++++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state ']'
++++ '[' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state '!=' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state ']'
++++ printf -v dir %s {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state
++++ fm_basename_to base {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++++ local fm_path={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++++ case "$fm_path" in
++++ fm_path={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++++ fm_path=.remote-worker-lifecycle-mbp.lock
++++ '[' .remote-worker-lifecycle-mbp.lock '!=' .remote-worker-lifecycle-mbp.lock ']'
++++ printf -v base %s .remote-worker-lifecycle-mbp.lock
+++++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state
+++++ pwd -P
++++ dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state
++++ printf '%s/%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state .remote-worker-lifecycle-mbp.lock
+++ lock_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
+++ mktemp -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.XXXXXX
++ FM_LOCK_PENDING_PID=18515
++ wait 18515
++ FM_LOCK_PENDING_PREVIOUS_PID=18515
++ FM_LOCK_PENDING_PID=
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock ']'
++ '[' -L {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock ']'
++ fm_lock_prepare_owner {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
++ local ownerdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb mypid back
++ fm_current_pid mypid
++ local fm_pid
++ fm_pid=18513
++ case "$fm_pid" in
++ '[' 1 -gt 0 ']'
++ printf -v mypid %s 18513
++ printf '%s\n' 18513
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/pid
++ back=18513
++ '[' 18513 = 18513 ']'
++ '[' '' '!=' 18513 ']'
+++ fm_pid_start_time 18513
++ _FM_LOCK_SELF_START='Wed Nov 11 15:38:32 2026'
++ _FM_LOCK_SELF_START_PID=18513
++ '[' -z 'Wed Nov 11 15:38:32 2026' ']'
++ printf '%s\n' 'Wed Nov 11 15:38:32 2026'
++ FM_LOCK_PENDING_PID=18523
++ wait 18523
++ ln -s {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++ fm_lock_points_to_owner {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock ownerdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb actual
+++ readlink {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++ actual={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
++ '[' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb = {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb ']'
++ fm_lock_claim {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb ''
++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock ownerdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb allowed_steal_owner= mypid back
++ fm_current_pid mypid
++ local fm_pid
++ fm_pid=18513
++ case "$fm_pid" in
++ '[' 1 -gt 0 ']'
++ printf -v mypid %s 18513
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/pid
++ back=18513
++ '[' 18513 '!=' 18513 ']'
++ fm_lock_points_to_owner {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock ownerdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb actual
+++ readlink {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
++ actual={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
++ '[' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb = {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb ']'
++ fm_lock_claim_blocked_by_steal {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock ''
++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock allowed_steal_owner= steal
++ steal={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.steal
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.steal ']'
++ '[' -L {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.steal ']'
++ return 1
++ return 0
++ FM_LOCK_OWNER_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
++ return 0
++ return 0
++ trap 'fm_lock_release "$lock"' EXIT
++ hold_mirror_during_retirement
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/release-host
++ sleep 1
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/m1.status 'cleanup retired status while mirror ingestion could still run'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/m1.status ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/m1.meta 'cleanup removed membership while mirror ingestion could still run'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/m1.meta ']'
+++ fm_lock_release {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
+++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock pid current ownerdir
+++ fm_current_pid current
+++ local fm_pid
+++ fm_pid=18513
+++ case "$fm_pid" in
+++ '[' 1 -gt 0 ']'
+++ printf -v current %s 18513
+++ '[' -L {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock ']'
++++ fm_lock_link_owner {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
+++ ownerdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
+++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb ']'
++++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/pid
+++ pid=18513
+++ '[' 18513 = 18513 ']'
+++ fm_lock_points_to_owner {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
+++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock ownerdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb actual
++++ readlink {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
+++ actual={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
+++ '[' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb = {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb ']'
+++ rm -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock
+++ fm_lock_discard_owner {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
+++ local ownerdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
+++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb ']'
+++ fm_lock_clean_known_files {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
+++ local lockdir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
+++ rm -f {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/pid '{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/pid.tmp.*' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/fm-home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/pid-identity {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/pid-start {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/role {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb/watcher-path
+++ rmdir {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/.remote-worker-lifecycle-mbp.lock.owner.888CLb
+++ return 0
++ wait 13951
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/m1.meta 'cleanup did not resume after mirror release'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/m1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/m1.status 'cleanup left status after mirror release'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/m1.status ']'
++ pass 'primary retirement waits for the mirror lifecycle lock after the host leg'
++ printf 'ok - %s\n' 'primary retirement waits for the mirror lifecycle lock after the host leg'
+ok - primary retirement waits for the mirror lifecycle lock after the host leg
++ '[' 3 -gt 0 ']'
++ name=test_backlog_failure_retires_mirror
++ shift
+++ type -t test_backlog_failure_retires_mirror
++ kind=function
++ '[' function = function ']'
++ test_backlog_failure_retires_mirror
++ local transition verb out rc real_tasks
+++ command -v tasks-axi
++ real_tasks=~/.nvm/versions/node/v24.16.0/bin/tasks-axi
++ for transition in close retain
++ make_case backlog-failure-close
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/fake-ssh
++ place_ship b1
++ local out
++ make_brief b1 --mode local-only --journal
++ local id=b1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh b1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh b1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/data/b1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/data/b1/brief.md
++ add_item b1
++ tasks-axi add b1 'item for b1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh b1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh b1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: b1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned b1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-b1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt\nspawned b1 harness=claude kind=ship mode=local-only yolo=off window=remote:b1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/data/b1
++ printf 'what %s did\n' b1
++ printf 'working: placed\n'
++ verb=done
++ '[' close = retain ']'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/failing-tools {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/remote-workers/mbp
++ printf 'schema=fm-remote-worker-cursor.v1\noffset=0\nprefix_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n'
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/failing-tools/tasks-axi
++ rc=0
+++ PATH={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/failing-tools:~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+++ primary {run-worktree}/bin/fm-teardown.sh b1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh b1\nworker host mbp: teardown b1 complete (window firstmate:fm-b1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt)\nworker host mbp: Backlog: b1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/data/backlog.md - move b1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 10s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nerror: worker host mbp cleaned up b1, but its backlog item could not be moved atomically (injected backlog mutation failure); the pending close is recorded and the next session start retries it'
++ rc=1
++ '[' 1 -ne 0 ']'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh b1\nworker host mbp: teardown b1 complete (window firstmate:fm-b1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/wt)\nworker host mbp: Backlog: b1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/data/backlog.md - move b1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 10s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nerror: worker host mbp cleaned up b1, but its backlog item could not be moved atomically (injected backlog mutation failure); the pending close is recorded and the next session start retries it' 'injected backlog mutation failure' 'close did not reach the injected failure'
++ case "$1" in
++ :
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/state/b1.meta 'close did not finish the host leg'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/host/state/b1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/b1.meta 'close did not remove the primary record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/b1.meta ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/b1.backlog-close 'close lost its replayable backlog marker'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/b1.backlog-close ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/remote-workers/mbp/b1.cursor 'close failure left a cursor for a removed member'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/remote-workers/mbp/b1.cursor ']'
+++ mirror_sources
+++ primary {run-worktree}/bin/fm-procevent.sh list
++ assert_not_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-procevent.sh list\nno sources registered' remote-worker-mbp 'close failure left the unused host mirror armed'
++ case "$1" in
++ :
++ for transition in close retain
++ make_case backlog-failure-retain
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/fake-ssh
++ place_ship b1
++ local out
++ make_brief b1 --mode local-only --journal
++ local id=b1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh b1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh b1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/data/b1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/data/b1/brief.md
++ add_item b1
++ tasks-axi add b1 'item for b1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh b1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh b1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: b1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned b1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-b1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt\nspawned b1 harness=claude kind=ship mode=local-only yolo=off window=remote:b1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/data/b1
++ printf 'what %s did\n' b1
++ printf 'working: placed\n'
++ verb=done
++ '[' retain = retain ']'
++ primary {run-worktree}/bin/fm-captain-hold.sh hold b1 --reason 'Captain approval needed'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-captain-hold.sh hold b1 --reason 'Captain approval needed'
++ verb=reopen
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/failing-tools {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/remote-workers/mbp
++ printf 'schema=fm-remote-worker-cursor.v1\noffset=0\nprefix_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n'
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/failing-tools/tasks-axi
++ rc=0
+++ PATH={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/failing-tools:~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin
+++ primary {run-worktree}/bin/fm-teardown.sh b1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh b1\nworker host mbp: teardown b1 complete (window firstmate:fm-b1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt)\nworker host mbp: Backlog: b1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/data/backlog.md - move b1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 10s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nerror: worker host mbp cleaned up b1, but its backlog item could not be moved atomically (injected backlog mutation failure); the pending retain is recorded and the next session start retries it'
++ rc=1
++ '[' 1 -ne 0 ']'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh b1\nworker host mbp: teardown b1 complete (window firstmate:fm-b1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/wt)\nworker host mbp: Backlog: b1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/data/backlog.md - move b1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 10s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nerror: worker host mbp cleaned up b1, but its backlog item could not be moved atomically (injected backlog mutation failure); the pending retain is recorded and the next session start retries it' 'injected backlog mutation failure' 'retain did not reach the injected failure'
++ case "$1" in
++ :
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/state/b1.meta 'retain did not finish the host leg'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/host/state/b1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/b1.meta 'retain did not remove the primary record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/b1.meta ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/b1.backlog-close 'retain lost its replayable backlog marker'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/b1.backlog-close ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/remote-workers/mbp/b1.cursor 'retain failure left a cursor for a removed member'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/remote-workers/mbp/b1.cursor ']'
+++ mirror_sources
+++ primary {run-worktree}/bin/fm-procevent.sh list
++ assert_not_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-procevent.sh list\nno sources registered' remote-worker-mbp 'retain failure left the unused host mirror armed'
++ case "$1" in
++ :
++ pass 'failed backlog close and retain still retire the removed task'\''s mirror and cursor'
++ printf 'ok - %s\n' 'failed backlog close and retain still retire the removed task'\''s mirror and cursor'
+ok - failed backlog close and retain still retire the removed task's mirror and cursor
++ '[' 2 -gt 0 ']'
++ name=test_route_drift_refused
++ shift
+++ type -t test_route_drift_refused
++ kind=function
++ '[' function = function ']'
++ test_route_drift_refused
++ local out rc=0
++ make_case drift
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/fake-ssh
++ place_ship r1
++ local out
++ make_brief r1 --mode local-only --journal
++ local id=r1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh r1 sample --mode local-only --journal
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh r1 sample --mode local-only --journal
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/data/r1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/data/r1/brief.md
++ add_item r1
++ tasks-axi add r1 'item for r1' --kind ship --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh r1 sample --host mbp --mode local-only --yolo off --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh r1 sample --host mbp --mode local-only --yolo off --harness claude\nnotice: r1 ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain\'s standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state\nspawned r1 harness=claude kind=ship mode=local-only yolo=off window=firstmate:fm-r1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/wt\nspawned r1 harness=claude kind=ship mode=local-only yolo=off window=remote:r1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/wt host=mbp backend=tmux'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/host/data/r1
++ printf 'what %s did\n' r1
++ printf 'working: placed\n'
++ perl -0pi -e 's/home: [^)]*\)/home: \/elsewhere; added 2026-11-10)/' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/data/worker-hosts.md
++ :
+++ primary {run-worktree}/bin/fm-teardown.sh r1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh r1\nREFUSED: task r1\'s recorded worker host route no longer matches worker host mbp\'s registry record; reconcile the record before cleanup. Nothing was changed.'
++ rc=1
++ '[' 1 -ne 0 ']'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh r1\nREFUSED: task r1\'s recorded worker host route no longer matches worker host mbp\'s registry record; reconcile the record before cleanup. Nothing was changed.' 'no longer matches worker host mbp'\''s registry record' 'the drift was not named'
++ case "$1" in
++ :
++ assert_preserved r1 'a drifted route'
++ assert_record_kept r1 'a drifted route'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state/r1.meta 'a drifted route: the primary record was removed'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state/r1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state/r1.backlog-close 'a drifted route: a pending backlog close was recorded'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state/r1.backlog-close ']'
+++ row_state r1
+++ tasks-axi show r1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals in_flight in_flight 'a drifted route: the backlog item moved'
++ '[' in_flight = in_flight ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state/r1.status 'a drifted route: the primary status was retired'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state/r1.status ']'
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/ssh.log
++ assert_equals '' '' 'a drifted route still reached for the host'
++ '[' '' = '' ']'
++ pass 'cleanup refuses a placement whose route no longer matches the registry before reaching any host'
++ printf 'ok - %s\n' 'cleanup refuses a placement whose route no longer matches the registry before reaching any host'
+ok - cleanup refuses a placement whose route no longer matches the registry before reaching any host
++ '[' 1 -gt 0 ']'
++ name=test_scout_report_and_gate
++ shift
+++ type -t test_scout_report_and_gate
++ kind=function
++ '[' function = function ']'
++ test_scout_report_and_gate
++ local out rc=0
++ make_case scout
++ CASE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout
++ PARENT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent
++ HOST_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host
++ WT_DIR={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/wt
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/data {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/state {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/config {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/user-home
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/.last-watcher-beat
++ printf '%s\n' '# Backlog' '' '## In flight' '' '## Queued' '' '## Done'
++ fm_test_tasks_toml {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/.tasks.toml
++ cat
++ cat
++ printf 'claude\n'
++ printf 'manual\n'
++ :
++ printf '%s\n' 53650
++ touch {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/state/.last-watcher-beat
++ fm_git_worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/wt pooled
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/wt branch=pooled
++ fm_git_init_commit {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample init -q -b main
+++ basename {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample
++ printf '# %s\n' sample
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample add README.md
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample -c 'user.name=Firstmate Tests' -c user.email=tests@example.invalid commit -qm initial
++ fm_git_add_origin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample.origin.git
++ local repo={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample remote={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample.origin.git remote_abs
++ git clone --quiet --bare {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample.origin.git
+++ cd {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample.origin.git
+++ pwd
++ remote_abs={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample remote add origin file://{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample.origin.git
++ git -C {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/projects/sample worktree add --quiet -b pooled {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/wt
+++ make_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools
+++ local fakebin
++++ fm_fakebin {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools
++++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin
++++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin
++++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin
+++ fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin/tmux
+++ fm_fake_exit0 {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin treehouse no-mistakes gh gh-axi
+++ local fakebin={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin tool
+++ shift
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin/treehouse
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin/no-mistakes
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin/gh
+++ for tool in "$@"
+++ cat
+++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin/gh-axi
+++ printf '%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin
++ HOST_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host-tools/fakebin
++ fm_test_track_procevent_home {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent ']'
++ printf '%s\t%s\n' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims
++ cat
++ chmod +x {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh
++ make_brief c1 --scout
++ local id=c1 brief
++ shift
++ primary {run-worktree}/bin/fm-brief.sh c1 sample --scout
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent
++ FM_ROOT_OVERRIDE={run-worktree}
++ FM_SPAWN_NO_GUARD=1
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims
++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh
++ TASKS_AXI_BACKEND=markdown
++ {run-worktree}/bin/fm-brief.sh c1 sample --scout
++ brief={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/c1/brief.md
++ perl -0pi -e 's/\{TASK\}/Ship the placed sample change./; s/\{FIRSTMATE_SPEC\}/Edit README only./' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/c1/brief.md
++ add_item c1 scout
++ tasks-axi add c1 'item for c1' --kind scout --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/backlog.md
+++ primary {run-worktree}/bin/fm-spawn.sh c1 sample --scout --host mbp --harness claude
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-spawn.sh c1 sample --scout --host mbp --harness claude\nspawned c1 harness=claude kind=scout window=firstmate:fm-c1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/wt\nspawned c1 harness=claude kind=scout window=remote:c1 worktree={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/wt host=mbp backend=tmux'
+++ primary {run-worktree}/bin/fm-teardown.sh c1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh c1\nnot fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md \nnot fetched: c1 report from mbp - file is not a non-symlink regular file: data/c1/report.md \nREFUSED: scout task c1 has no report at {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/c1/report.md, and worker host mbp did not provide one.\nThe report is the work product. Have the worker write it, or use --force after explicit discard approval.'
++ rc=1
++ '[' 1 -ne 0 ']'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh c1\nnot fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md \nnot fetched: c1 report from mbp - file is not a non-symlink regular file: data/c1/report.md \nREFUSED: scout task c1 has no report at {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/c1/report.md, and worker host mbp did not provide one.\nThe report is the work product. Have the worker write it, or use --force after explicit discard approval.' 'has no report' 'the missing report was not named'
++ case "$1" in
++ :
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/state/c1.meta 'a missing report still reached the host'\''s cleanup'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/state/c1.meta ']'
++ assert_record_kept c1 'a missing report'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.meta 'a missing report: the primary record was removed'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.backlog-close 'a missing report: a pending backlog close was recorded'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.backlog-close ']'
+++ row_state c1
+++ tasks-axi show c1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals in_flight in_flight 'a missing report: the backlog item moved'
++ '[' in_flight = in_flight ']'
++ mkdir -p {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/data/c1
++ printf 'findings\n'
++ rc=0
+++ primary {run-worktree}/bin/fm-teardown.sh c1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh c1\nnot fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md \nfm-captain-hold: origin c1 has no completed captain-call inventory\nREFUSED: scout task c1 has not passed the captain-call completion gate.\nInventory its report and any visual review through bin/fm-captain-hold.sh before teardown.'
++ rc=1
++ '[' 1 -ne 0 ']'
++ assert_contains $'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh c1\nnot fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md \nfm-captain-hold: origin c1 has no completed captain-call inventory\nREFUSED: scout task c1 has not passed the captain-call completion gate.\nInventory its report and any visual review through bin/fm-captain-hold.sh before teardown.' 'captain-call completion gate' 'the inventory gate did not run here'
++ case "$1" in
++ :
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/c1/report.md
++ assert_equals findings findings 'the report was not fetched before the gate'
++ '[' findings = findings ']'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/state/c1.meta 'the inventory gate still reached the host'\''s cleanup'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/state/c1.meta ']'
++ assert_record_kept c1 'the inventory gate'
++ assert_present {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.meta 'the inventory gate: the primary record was removed'
++ '[' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.backlog-close 'the inventory gate: a pending backlog close was recorded'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.backlog-close ']'
+++ row_state c1
+++ tasks-axi show c1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals in_flight in_flight 'the inventory gate: the backlog item moved'
++ '[' in_flight = in_flight ']'
++ printf 'final findings\n'
++ rc=0
+++ primary {run-worktree}/bin/fm-teardown.sh c1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh c1\nnot fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md \nfm-captain-hold: origin c1 has no completed captain-call inventory\nREFUSED: scout task c1 has not passed the captain-call completion gate.\nInventory its report and any visual review through bin/fm-captain-hold.sh before teardown.'
++ rc=1
++ '[' 1 -ne 0 ']'
+++ cat {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/c1/report.md
++ assert_equals 'final findings' 'final findings' 'the gate retry kept the stale report instead of refreshing it'
++ '[' 'final findings' = 'final findings' ']'
++ primary {run-worktree}/bin/fm-captain-hold.sh complete c1 --none
+++ primary {run-worktree}/bin/fm-teardown.sh c1
++ out=$'++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent\n++ FM_ROOT_OVERRIDE={run-worktree}\n++ FM_SPAWN_NO_GUARD=1\n++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims\n++ FM_SSH_BIN={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/fake-ssh\n++ TASKS_AXI_BACKEND=markdown\n++ {run-worktree}/bin/fm-teardown.sh c1\nnot fetched: c1 journal from mbp - file is not a non-symlink regular file: data/c1/journal.md \nworker host mbp: teardown c1 complete (window firstmate:fm-c1, worktree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/wt)\nworker host mbp: Backlog: c1 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/data/backlog.md - move c1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nworker host mbp: ●  WATCHER DOWN - SUPERVISION IS OFF\nworker host mbp: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 18s ago).\nworker host mbp: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.\nworker host mbp: ●  This is a supervision warning only; the guarded operation WILL still run.\nworker host mbp: ●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.\nworker host mbp: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nteardown c1 complete (worker host mbp)\nBacklog: c1 is closed in {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/state/c1.meta 'leg one left the scout'\''s host record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/host/state/c1.meta ']'
++ assert_absent {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.meta 'leg two left the scout'\''s primary record'
++ '[' '!' -e {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/c1.meta ']'
+++ row_state c1
+++ tasks-axi show c1 --file {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/data/backlog.md
+++ sed -n 's/^  state: *//p'
+++ head -1
++ assert_equals done done 'leg two did not close the scout'\''s backlog item'
++ '[' done = done ']'
++ pass 'a scout'\''s report is fetched and its captain-call gate checked here before the host cleans up'
++ printf 'ok - %s\n' 'a scout'\''s report is fetched and its captain-call gate checked here before the host cleans up'
+ok - a scout's report is fetched and its captain-call gate checked here before the host cleans up
++ '[' 0 -gt 0 ']'
++ printf 'FM_TEST_COMPLETE\n'
+FM_TEST_COMPLETE
++ fm_test_cleanup
++ local d
++ fm_test_reap_watchers
++ local state lock_home $'seen=\n'
++ '[' -f {run-worktree}/.w3-test-tmp/.fm-test-watcher.53650.yTe4HZ ']'
++ IFS=
++ read -r state
++ rm -f {run-worktree}/.w3-test-tmp/.fm-test-watcher.53650.yTe4HZ
++ fm_test_reap_procevent_homes
++ local home claim_root $'seen=\n'
++ '[' -f {run-worktree}/.w3-test-tmp/.fm-test-procevent.53650.CDzMmr ']'
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/success/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/down/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/lost/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/unlanded/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/sibling/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/serialization/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-close/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/backlog-failure-retain/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/drift/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent ']'
++ case "$seen" in
++ seen+=$'{run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent\n'
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state/procevent ']'
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims ']'
++ FM_HOME={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent
++ FM_STATE_OVERRIDE={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/parent/state
++ FM_PROCEVENT_CLAIM_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/scout/claims
++ {run-worktree}/bin/fm-procevent.sh sweep-home
++ IFS=$'\t'
++ read -r home claim_root
++ rm -f {run-worktree}/.w3-test-tmp/.fm-test-procevent.53650.CDzMmr
++ for d in "${FM_TEST_CLEANUP_DIRS[@]:-}"
++ '[' -n '' ']'
++ '[' -f {run-worktree}/.w3-test-tmp/.fm-test-cleanup.53650.vngKvC ']'
++ IFS=
++ read -r d
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF ']'
++ fm_test_reap_root_processes {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
++ local root={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF chain pid pids signal i
++ '[' -n {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF ']'
++ '[' {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF '!=' / ']'
++ chain=' '
++ pid=53650
++ '[' -n 53650 ']'
++ '[' 53650 -gt 1 ']'
++ chain=' 53650 '
+++ ps -o ppid= -p 53650
+++ tr -d '[:space:]'
++ pid=53648
++ '[' -n 53648 ']'
++ '[' 53648 -gt 1 ']'
++ chain=' 53650 53648 '
+++ ps -o ppid= -p 53648
+++ tr -d '[:space:]'
++ pid=34550
++ '[' -n 34550 ']'
++ '[' 34550 -gt 1 ']'
++ chain=' 53650 53648 34550 '
+++ ps -o ppid= -p 34550
+++ tr -d '[:space:]'
++ pid=7021
++ '[' -n 7021 ']'
++ '[' 7021 -gt 1 ']'
++ chain=' 53650 53648 34550 7021 '
+++ ps -o ppid= -p 7021
+++ tr -d '[:space:]'
++ pid=1
++ '[' -n 1 ']'
++ '[' 1 -gt 1 ']'
++ for signal in TERM KILL
++ i=0
++ '[' 0 -lt 20 ']'
+++ ps -ww -eo pid=,args=
+++ FM_TEST_REAP_ROOT={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF/
+++ awk -v 'chain= 53650 53648 34550 7021 ' 'index($0, ENVIRON["FM_TEST_REAP_ROOT"]) && index(chain, " " $1 " ") == 0 { print $1 }'
++ pids=
++ '[' -n '' ']'
++ return 0
++ fm_test_remove_tree {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
++ local dir={run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
++ '[' -d {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF ']'
++ '[' '!' -L {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF ']'
++ find {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF -type d -exec chmod u+rwx '{}' +
++ rm -rf {run-worktree}/.w3-test-tmp/fm-teardown-host.jTZWaF
++ IFS=
++ read -r d
++ rm -f {run-worktree}/.w3-test-tmp/.fm-test-cleanup.53650.vngKvC
