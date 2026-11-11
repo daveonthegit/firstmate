@@ -189,7 +189,15 @@ test_spawn_renders_host_brief_and_reports_route() {
   if on_host "$CONTROL" route t1 >/dev/null 2>&1; then
     fail "route still answered after teardown"
   fi
-  pass "teardown runs the host's ordinary cleanup and releases the claim"
+  out=$(on_host "$CONTROL" teardown t1 2>&1) || fail "re-running a finished teardown failed: $out"
+  assert_contains "$out" "no task record remains on this worker host" "a finished teardown did not answer its re-run"
+  fm_write_meta "$HOST_HOME/state/x1.meta" kind=ship
+  if out=$(on_host "$CONTROL" teardown x1 2>&1); then
+    fail "teardown accepted a host task record that no primary placed"
+  fi
+  assert_contains "$out" "not placed on this worker host" "an unplaced record was not refused"
+  assert_present "$HOST_HOME/state/x1.meta" "an unplaced record was touched"
+  pass "teardown runs the host's ordinary cleanup, releases the claim, and answers a re-run without touching unplaced records"
 }
 
 test_scout_spawn_and_journal_flag() {

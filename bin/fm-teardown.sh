@@ -1531,7 +1531,8 @@ worker_host_teardown() {
     "${STATE:?}/.${ID:?}.branch-outcome-index"
   rm -rf "${STATE:?}/${ID:?}.inbox"
   if [ "$BACKLOG_CLOSED" = 1 ]; then
-    if ! fm_backlog_atomic_transition "$BACKLOG_TRANSITION" "$META" "$(fm_backlog_close_marker_path "$STATE" "$ID")" \
+    BACKLOG_CLOSE_MARKER=$(fm_backlog_close_marker_path "$STATE" "$ID") || return 1
+    if ! fm_backlog_atomic_transition "$BACKLOG_TRANSITION" "$META" "$BACKLOG_CLOSE_MARKER" \
         "$DATA" "$ID" "$STATE" "${BACKLOG_DONE_ARGS[@]+"${BACKLOG_DONE_ARGS[@]}"}"; then
       echo "error: worker host $host cleaned up $ID, but its backlog item could not be moved atomically ($FM_BACKLOG_TRANSITION_ERROR); the pending $BACKLOG_TRANSITION is recorded and the next session start retries it" >&2
       return 1
