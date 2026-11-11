@@ -9,7 +9,12 @@
 #   With a request id, answers that question through
 #   T3's pending-request respond tool; <answers-json> is a JSON object keyed by
 #   question id, e.g. '{"q1":"yes"}'.
-# The task must be recorded in this home with backend=t3code. An answer is
+# The task must be recorded in this home with backend=t3code, or be a ship or
+# scout placed on a worker host (bin/fm-task-route-lib.sh), whose read or answer
+# runs as that host's own fm-t3-answer.sh through fm-on.sh and
+# bin/fm-remote-worker-control.sh answer, with its output and exit passed
+# through. After an SSH exit 255 an answer's completion is unknown: read the
+# pending requests again before answering a second time. An answer is
 # authorized the same way any steer is: it is the supervisor's decision, never
 # the worker's own. bin/backends/t3code.sh owns the transport.
 set -eu
@@ -34,7 +39,22 @@ META="$STATE/$ID.meta"
 [ -f "$META" ] || { echo "error: no task $ID recorded in $STATE" >&2; exit 1; }
 # shellcheck source=bin/fm-task-route-lib.sh
 . "$SCRIPT_DIR/fm-task-route-lib.sh"
-fm_task_route_require_supported "$META" answer || exit 1
+fm_task_route "$META" || { printf 'error: %s\n' "$FM_TASK_ROUTE_ERROR" >&2; exit 1; }
+if [ "$FM_TASK_ROUTE" = worker-host ]; then
+  shift
+  rc=0
+  FM_HOME="$FM_HOME" "$SCRIPT_DIR/fm-on.sh" "$FM_TASK_ROUTE_HOST" \
+    fm-remote-worker-control.sh answer "$ID" "$@" < /dev/null || rc=$?
+  [ "$rc" -ne 0 ] || exit 0
+  if [ "$rc" -eq 255 ] && [ "$#" -eq 2 ]; then
+    echo "error: worker host $FM_TASK_ROUTE_HOST was unreachable or its answer was lost, so whether request $1 of $ID was answered is unknown; run bin/fm-t3-answer.sh $ID to read its pending requests before answering again" >&2
+  elif [ "$rc" -eq 255 ]; then
+    echo "error: worker host $FM_TASK_ROUTE_HOST was unreachable or its answer was lost; the pending requests of $ID could not be read" >&2
+  else
+    echo "error: worker host $FM_TASK_ROUTE_HOST refused the request for $ID (exit $rc); its reason is above" >&2
+  fi
+  exit "$rc"
+fi
 BACKEND=$(fm_backend_of_meta "$META")
 [ "$BACKEND" = t3code ] || { echo "error: $ID runs on backend=$BACKEND; only T3 Code threads have pending requests to answer" >&2; exit 1; }
 THREAD=$(fm_backend_target_of_meta "$META")

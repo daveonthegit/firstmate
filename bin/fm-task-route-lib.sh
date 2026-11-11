@@ -13,10 +13,15 @@
 #   worker-host        a ship or scout this primary placed on a worker host
 #                      (docs/remote-workers.md): the record names the host with
 #                      remote_worker_host=<id>, its remote_* keys name the
-#                      host's own home, endpoint, and copy. Supported operations
-#                      run bin/fm-remote-worker-control.sh there through
-#                      bin/fm-on.sh <id>; unsupported primary operations must
-#                      refuse rather than interpret the route locally.
+#                      host's own home, endpoint, and copy. Steer, state,
+#                      peek, lifecycle control, and answer run
+#                      bin/fm-remote-worker-control.sh there through
+#                      bin/fm-on.sh <FM_TASK_ROUTE_HOST>, never a local
+#                      backend; cleanup runs the host's own fm-teardown
+#                      there first (bin/fm-teardown.sh's worker-host
+#                      cleanup); a local spawn or relaunch, and a forced
+#                      second-mate retirement over a placed child record,
+#                      refuse through fm_task_route_require_supported.
 #   remote-secondmate  a persistent second mate on another machine: the record
 #                      names its SSH alias with remote_host=<alias>, and its
 #                      operations run bin/fm-remote-secondmate-control.sh.
@@ -74,6 +79,10 @@ fm_task_route() {  # <meta>
   return 0
 }
 
+# fm_task_route_require_supported <meta> <operation>: route the record and
+# refuse, naming the host, when it is placed on a worker host, for an entry
+# point that has no worker-host branch (today: a local spawn or relaunch,
+# and a forced second-mate retirement over a placed child record).
 fm_task_route_require_supported() {
   fm_task_route "$1" || {
     printf 'error: %s\n' "$FM_TASK_ROUTE_ERROR" >&2

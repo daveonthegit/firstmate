@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # tests/fm-task-route-lib.test.sh - the shared routing helper every per-task
 # entry point uses to tell a local task from one placed on a worker host and
-# from a remote second mate (bin/fm-task-route-lib.sh).
+# from a remote second mate (bin/fm-task-route-lib.sh). The host-leg behavior
+# of each placed-task entry point is covered by
+# tests/fm-placed-task-control.test.sh.
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -66,9 +68,8 @@ test_placed_entry_points() {
         else
           out=$(FM_HOME="$home" PATH="$tools:$PATH" bash "$ROOT/bin/fm-peek.sh" "$target" 2>&1) || rc=$?
         fi
-        [ "$rc" -ne 0 ] || fail "$verb accepted placed $kind via $target"
+        [ "$rc" -ne 0 ] || fail "$verb succeeded for placed $kind via $target with no registered host"
         assert_contains "$out" 'worker host mbp' "$verb did not identify placement via $target"
-        assert_contains "$out" 'not yet supported' "$verb did not refuse its unsupported operation"
       done
     done
     for verb in interrupt exit relaunch; do
@@ -83,9 +84,8 @@ test_placed_entry_points() {
         query) out=$(FM_HOME="$home" bash "$ROOT/bin/fm-t3-answer.sh" t 2>&1) || rc=$? ;;
         answer) out=$(FM_HOME="$home" bash "$ROOT/bin/fm-t3-answer.sh" t request '{}' 2>&1) || rc=$? ;;
       esac
-      [ "$rc" -ne 0 ] || fail "$verb accepted placed $kind"
+      [ "$rc" -ne 0 ] || fail "$verb succeeded for placed $kind with no registered host"
       assert_contains "$out" 'worker host mbp' "$verb did not identify placement"
-      assert_contains "$out" 'not yet supported' "$verb did not refuse its unsupported operation"
     done
     # Cleanup is supported through the host leg (tests/fm-teardown-host.test.sh);
     # with no registered host it refuses before any local or remote action.
@@ -95,12 +95,12 @@ test_placed_entry_points() {
     assert_contains "$out" 'worker host mbp is not resolvable' "cleanup did not name the unresolvable host"
     out=$(FM_HOME="$home" bash "$ROOT/bin/fm-crew-state.sh" t 2>&1) || fail "crew-state failed: $out"
     assert_contains "$out" 'state: unknown' 'placed current state was guessed'
-    assert_contains "$out" 'placed on worker host mbp' 'crew-state did not identify placement'
+    assert_contains "$out" 'unknown-remote: worker host mbp' 'crew-state did not identify placement'
     assert_not_contains "$out" 'worktree gone' 'a placed worker was interpreted locally'
     assert_present "$home/state/t.meta" 'cleanup removed the placed record'
     assert_absent "$home/backend.log" 'a placed operation touched the local backend'
   done
-  pass "placed ship and scout operations report their host without local actions"
+  pass "placed ship and scout operations route to their host, never a local backend, and cleanup refuses an unresolvable host"
 }
 
 fm_test_run test_routes test_refusals test_placed_entry_points
