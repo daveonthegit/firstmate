@@ -651,6 +651,7 @@ Task meta records `backend=` only for a non-default backend; an absent `backend=
 
 - A tern task additionally records `tern_session_id=`, `tern_tab_id=`, and `tern_block_id=`.
 - For hc endpoint fields and automatic-selection provenance, see [Task shape and metadata](hc-backend.md#task-shape-and-metadata).
+- For ships and scouts placed on a worker host, see [remote workers](remote-workers.md#how-it-works); the [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns their primary-side metadata keys.
 
 ### Task selectors
 

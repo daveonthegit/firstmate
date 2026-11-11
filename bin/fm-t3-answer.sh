@@ -32,6 +32,9 @@ ID=$1
 case "$ID" in ''|*[!A-Za-z0-9._-]*) echo "error: '$ID' is not a task id" >&2; exit 2 ;; esac
 META="$STATE/$ID.meta"
 [ -f "$META" ] || { echo "error: no task $ID recorded in $STATE" >&2; exit 1; }
+# shellcheck source=bin/fm-task-route-lib.sh
+. "$SCRIPT_DIR/fm-task-route-lib.sh"
+fm_task_route_require_supported "$META" answer || exit 1
 BACKEND=$(fm_backend_of_meta "$META")
 [ "$BACKEND" = t3code ] || { echo "error: $ID runs on backend=$BACKEND; only T3 Code threads have pending requests to answer" >&2; exit 1; }
 THREAD=$(fm_backend_target_of_meta "$META")

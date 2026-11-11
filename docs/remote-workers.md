@@ -9,22 +9,27 @@ The worker host runs a headless Firstmate home with its own project clones, work
 
 ## Current limits
 
-- This build provides the worker host registry, its route, the host-local leg, the status mirror, and the seed and doctor that prepare and check a host, all described below.
-- Placing a task on a host from the primary, and the primary's read, steer, and cleanup paths for it, are not wired yet, so no command here starts a remote worker on the primary's behalf and nothing arms the mirror.
-- Automatic placement by load is not built; placement will be an explicit per-task choice first.
+- This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, and placement from the primary with `fm-spawn.sh --host`, all described below.
+- The primary cannot yet read, peek at, steer, interrupt, answer, relaunch, or clean up a placed task: `fm-send`, `fm-peek`, `fm-control`, `fm-t3-answer`, and `fm-teardown` recognize its placement and explicitly refuse unsupported operations, while `fm-crew-state` reports unknown state and names the worker host; those steps run on the host itself for now.
+- Placement is an explicit per-task choice; automatic placement by load or by project is not built.
 
 ## How it works
 
-1. The primary resolves a worker host from `data/worker-hosts.md` and reaches it with [`bin/fm-on.sh`](../bin/fm-on.sh), the same SSH transport, fixed entrypoint, and remote job worker that remote second mates use.
+1. Firstmate places a ship or scout with [`bin/fm-spawn.sh`](../bin/fm-spawn.sh) `--host <id>`, which resolves the worker host from `data/worker-hosts.md` and reaches it with [`bin/fm-on.sh`](../bin/fm-on.sh), the same SSH transport, fixed entrypoint, and remote job worker that remote second mates use.
 2. Every per-task operation runs [`bin/fm-remote-worker-control.sh`](../bin/fm-remote-worker-control.sh) in the host's home.
 3. That leg runs the ordinary local scripts there: the host's own `fm-brief`, `fm-spawn`, `fm-crew-state`, `fm-send`, `fm-control`, `fm-t3-answer`, `fm-peek`, `fm-remote-file`, and `fm-teardown`.
 4. The host keeps an ordinary local task record under the same task id, plus a placement claim that marks the task as placed by a primary.
+5. The primary records the route the host returned in its own task record, moves the backlog item In flight, and arms the host's status mirror.
+
+[`bin/fm-task-route-lib.sh`](../bin/fm-task-route-lib.sh) owns route discrimination between placed tasks, local tasks, and remote second mates.
+A host at capacity defers the placement exactly as a local spawn defers, and the backlog item stays queued.
+The [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns the forwarded flags, local checks, recorded keys, and placement recovery, including a re-run after a failed mirror arm.
 
 Only the brief's `# Task` section crosses the machine boundary.
 The host re-renders the rest of the brief itself, so every path a worker is told - its status file, steering inbox, report, and journal - is a path in the host's home.
 The primary forwards the facts that shape the scaffold as explicit flags; the [controller header](../bin/fm-remote-worker-control.sh) owns that flag set and the route block it prints.
 A brief section the primary edited by hand outside `# Task` is not carried.
-The host's spawn re-validates the brief against the host's own `data/projects.md`, capacity declarations, and backend, so a host at capacity defers exactly as a local spawn does.
+The host's spawn re-validates the brief against the host's own `data/projects.md`, capacity declarations, and backend.
 
 The host leg answers only for tasks a primary placed there.
 A spawn for a task the host already holds reports the existing route instead of launching again, which makes a re-run after an unconfirmed SSH spawn safe.
@@ -33,7 +38,7 @@ Cleanup uses the host's ordinary [`fm-teardown.sh`](../bin/fm-teardown.sh), whos
 
 ## Status mirror
 
-A placed worker appends status lines to its own status file in the host's home, and the primary mirrors them into its own status file for that task, so the watcher, the open-decision fold, crew state, and the PR gates read one stream exactly as for a local worker.
+A placed worker appends status lines to its own status file in the host's home, and the primary mirrors them into its own status file for that task, so the watcher, the open-decision fold, and the PR gates read one stream exactly as for a local worker.
 The primary keeps one listener per host, not one per task, because the remote job worker serves one lane per home; that listener's host read, [`bin/fm-remote-worker-events.sh`](../bin/fm-remote-worker-events.sh), is preemptible, so a steer, state read, or cleanup for the same host never waits behind it.
 The [adapter header](../bin/fm-procevent-remote-worker.sh) owns membership, cursors, document fetch before completion (including missing-document and transport-failure handling), and recovery from broken log continuity.
 
@@ -69,6 +74,8 @@ A worker host runs its workers with every credential placed on it, so treat it a
 ## Verification
 
 [`tests/fm-remote-worker-control.test.sh`](../tests/fm-remote-worker-control.test.sh) drives the host leg against a fake worker-host home with the real brief, spawn, steer, file, and cleanup scripts.
+[`tests/fm-spawn-host.test.sh`](../tests/fm-spawn-host.test.sh) drives placement from a primary through a fake SSH into that same host leg, covering capacity deferral, a re-run after an unknown SSH result, and mirror-arm recovery under away admission limits.
+[`tests/fm-task-route-lib.test.sh`](../tests/fm-task-route-lib.test.sh) covers shared route discrimination and primary entry-point refusals without local backend actions.
 [`tests/fm-on.test.sh`](../tests/fm-on.test.sh) covers worker host routing beside remote second-mate routes.
 [`tests/fm-remote-worker-mirror.test.sh`](../tests/fm-remote-worker-mirror.test.sh) drives the status mirror through the real entrypoint, remote job worker, and process-event runner.
 [`tests/fm-worker-host-seed-doctor.test.sh`](../tests/fm-worker-host-seed-doctor.test.sh) seeds, checks, and repairs a worker host home from the primary through the real entrypoint and remote job worker, with fake T3 servers for the sign-in, version, and capability checks.

@@ -300,6 +300,13 @@ meta_value() {  # <key>
   grep "^$1=" "$META" 2>/dev/null | tail -1 | cut -d= -f2- || true
 }
 
+# shellcheck source=bin/fm-task-route-lib.sh
+. "$SCRIPT_DIR/fm-task-route-lib.sh"
+fm_task_route "$META" || emit unknown none "$FM_TASK_ROUTE_ERROR"
+if [ "$FM_TASK_ROUTE" = worker-host ]; then
+  emit unknown worker-host "placed on worker host $FM_TASK_ROUTE_HOST; current state is not yet supported"
+fi
+
 WT=$(meta_value worktree)
 KIND=$(meta_value kind)
 HARNESS=$(meta_value harness)
