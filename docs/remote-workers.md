@@ -9,8 +9,8 @@ The worker host runs a headless Firstmate home with its own project clones, work
 
 ## Current limits
 
-- This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, placement from the primary with `fm-spawn.sh --host`, and steering, state, peek, interrupt, exit, and answering of a placed task from the primary, all described below.
-- The primary cannot yet relaunch or clean up a placed task: `fm-control relaunch` and `fm-teardown` recognize its placement and refuse; cleanup runs on the host itself for now.
+- This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, placement from the primary with `fm-spawn.sh --host`, steering, state, peek, interrupt, exit, and answering of a placed task from the primary, and cleanup from the primary with `fm-teardown.sh`, all described below.
+- The primary cannot yet relaunch a placed task: `fm-control relaunch` recognizes its placement and refuses.
 - Placement is an explicit per-task choice; automatic placement by load or by project is not built.
 
 ## How it works
@@ -20,6 +20,7 @@ The worker host runs a headless Firstmate home with its own project clones, work
 3. That leg runs the ordinary local scripts there: the host's own `fm-brief`, `fm-spawn`, `fm-crew-state`, `fm-send`, `fm-control`, `fm-t3-answer`, `fm-peek`, `fm-remote-file`, and `fm-teardown`.
 4. The host keeps an ordinary local task record under the same task id, plus a placement claim that marks the task as placed by a primary.
 5. The primary records the route the host returned in its own task record, moves the backlog item In flight, and arms the host's status mirror.
+6. Cleanup on the primary runs in two legs: the host first runs its own full `fm-teardown.sh`, and only after that succeeds does the primary retire its records, release the task from the host's status mirror, and move the backlog item exactly as a local cleanup does.
 
 [`bin/fm-task-route-lib.sh`](../bin/fm-task-route-lib.sh) owns route discrimination between placed tasks, local tasks, and remote second mates.
 A host at capacity defers the placement exactly as a local spawn defers, and the backlog item stays queued.
@@ -34,7 +35,8 @@ The host's spawn re-validates the brief against the host's own `data/projects.md
 The host leg answers only for tasks a primary placed there.
 A spawn for a task the host already holds reports the existing route instead of launching again, which makes a re-run after an unconfirmed SSH spawn safe.
 The [controller header](../bin/fm-remote-worker-control.sh) owns delivery identity and retry requirements for steering.
-Cleanup uses the host's ordinary [`fm-teardown.sh`](../bin/fm-teardown.sh), whose header owns the landed-work test and force exception.
+Cleanup uses the host's ordinary [`fm-teardown.sh`](../bin/fm-teardown.sh), whose header owns the landed-work test, the force exception, and the two-leg worker-host cleanup.
+See that header's worker-host cleanup contract for document refresh, the scout completion gate, failure preservation, and safe retries after an unconfirmed host answer.
 
 ## Reaching a placed worker
 
@@ -87,7 +89,8 @@ A worker host runs its workers with every credential placed on it, so treat it a
 
 [`tests/fm-remote-worker-control.test.sh`](../tests/fm-remote-worker-control.test.sh) drives the host leg against a fake worker-host home with the real brief, spawn, steer, file, and cleanup scripts.
 [`tests/fm-spawn-host.test.sh`](../tests/fm-spawn-host.test.sh) drives placement from a primary through a fake SSH into that same host leg, covering capacity deferral, a re-run after an unknown SSH result, and mirror-arm recovery under away admission limits.
-[`tests/fm-task-route-lib.test.sh`](../tests/fm-task-route-lib.test.sh) covers shared route discrimination, the remaining cleanup refusal, and placed operations that never touch a local backend.
+[`tests/fm-teardown-host.test.sh`](../tests/fm-teardown-host.test.sh) drives two-leg cleanup through a fake SSH into that host leg, covering success, an unreachable host, a lost answer and its re-run, a host refusal for unlanded work, a drifted route, a shared mirror, and a scout's report and captain-call gate.
+[`tests/fm-task-route-lib.test.sh`](../tests/fm-task-route-lib.test.sh) covers shared route discrimination and placed operations that never touch a local backend.
 [`tests/fm-placed-task-control.test.sh`](../tests/fm-placed-task-control.test.sh) drives steering, state, peek, control, and answering of a placed task from a primary through a fake SSH into the host leg, covering a resend that reuses its delivery id and `unknown-remote` on SSH exit 255.
 [`tests/fm-on.test.sh`](../tests/fm-on.test.sh) covers worker host routing beside remote second-mate routes.
 [`tests/fm-remote-worker-mirror.test.sh`](../tests/fm-remote-worker-mirror.test.sh) drives the status mirror through the real entrypoint, remote job worker, and process-event runner.

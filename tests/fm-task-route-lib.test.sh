@@ -87,11 +87,12 @@ test_placed_entry_points() {
       [ "$rc" -ne 0 ] || fail "$verb succeeded for placed $kind with no registered host"
       assert_contains "$out" 'worker host mbp' "$verb did not identify placement"
     done
+    # Cleanup is supported through the host leg (tests/fm-teardown-host.test.sh);
+    # with no registered host it refuses before any local or remote action.
     rc=0
-    out=$(FM_HOME="$home" bash "$ROOT/bin/fm-teardown.sh" t 2>&1) || rc=$?
-    [ "$rc" -ne 0 ] || fail "cleanup accepted placed $kind"
-    assert_contains "$out" 'worker host mbp' "cleanup did not identify placement"
-    assert_contains "$out" 'not yet supported' "cleanup did not refuse its unsupported operation"
+    out=$(FM_HOME="$home" PATH="$tools:$PATH" bash "$ROOT/bin/fm-teardown.sh" t 2>&1) || rc=$?
+    [ "$rc" -ne 0 ] || fail "cleanup of placed $kind succeeded with no registered worker host"
+    assert_contains "$out" 'worker host mbp is not resolvable' "cleanup did not name the unresolvable host"
     out=$(FM_HOME="$home" bash "$ROOT/bin/fm-crew-state.sh" t 2>&1) || fail "crew-state failed: $out"
     assert_contains "$out" 'state: unknown' 'placed current state was guessed'
     assert_contains "$out" 'unknown-remote: worker host mbp' 'crew-state did not identify placement'
@@ -99,7 +100,7 @@ test_placed_entry_points() {
     assert_present "$home/state/t.meta" 'cleanup removed the placed record'
     assert_absent "$home/backend.log" 'a placed operation touched the local backend'
   done
-  pass "placed ship and scout operations route to their host, never a local backend, and cleanup still refuses"
+  pass "placed ship and scout operations route to their host, never a local backend, and cleanup refuses an unresolvable host"
 }
 
 fm_test_run test_routes test_refusals test_placed_entry_points

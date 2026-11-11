@@ -8,6 +8,7 @@
 #   fm-procevent-remote-worker.sh handle <worker-host-id> <sequence> <result-file>
 #   fm-procevent-remote-worker.sh autohandle <source-id> <sequence> <result-file>
 #   fm-procevent-remote-worker.sh members <worker-host-id>
+#   fm-procevent-remote-worker.sh fetch <worker-host-id> <task-id> <report|journal>
 #   fm-procevent-remote-worker.sh retire-task <worker-host-id> <task-id>
 #   fm-procevent-remote-worker.sh retire <worker-host-id>
 #   fm-procevent-remote-worker.sh classify <result-file>
@@ -54,10 +55,38 @@
 # `self-announcing`, because every applied line lands in a status stream the
 # watcher's signal scan already announces. With no members, `source` waits out
 # one window locally and reports it empty instead of calling the host.
-# `retire-task` drops one task's cursor and mirror records and retires the
-# host's source once it has no other members left. Placement on the primary
-# (bin/fm-spawn.sh --host) calls `arm`; primary-side cleanup does not yet call
-# `retire-task`, and docs/remote-workers.md owns current integration limits.
+# `fetch` stores one of a task's documents in this home's data/<id>/ the same
+# way, exiting 0 stored, 1 refused by the host, 2 local storage failed, or 255
+# transport unknown. `retire-task` drops one task's cursor and mirror records
+# and retires the host's source once it has no other members left. Placement
+# on the primary (bin/fm-spawn.sh --host) calls `arm`; primary-side cleanup
+# (bin/fm-teardown.sh) calls `fetch` before the host's cleanup releases its
+# claim and `retire-task` once the task record is gone.
+fm_remote_worker_lifecycle_lock_path() { printf '%s/.remote-worker-lifecycle-%s.lock\n' "$1" "$2"; }
+
+fm_remote_worker_with_lifecycle_lock() (
+  local state=$1 host=$2 lock
+  shift 2
+  lock=$(fm_remote_worker_lifecycle_lock_path "$state" "$host")
+  fm_lock_acquire_wait "$lock" || return 1
+  trap 'fm_lock_release "$lock"' EXIT
+  "$@"
+)
+
+fm_remote_worker_retire_task_locked() {
+  local state=$1 host=$2 task=$3 adapter_dir
+  adapter_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+  rm -f -- "$state/remote-workers/$host/$task.cursor" \
+    "$state/remote-workers/$host/$task.broken" "$state/.remote-worker-mirrored-$task"
+  if [ -z "$(FM_STATE_OVERRIDE="$state" "$adapter_dir/fm-procevent-remote-worker.sh" members "$host" | grep -vxF -- "$task" || true)" ]; then
+    FM_STATE_OVERRIDE="$state" "$adapter_dir/fm-procevent.sh" retire "remote-worker-$host" >/dev/null 2>&1 || true
+    printf 'retired: %s (no tasks left)\n' "remote-worker-$host"
+  fi
+  printf 'released: %s from %s\n' "$task" "$host"
+}
+
+[ "${BASH_SOURCE[0]}" = "$0" ] || return 0
+
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -79,7 +108,7 @@ JOB_PREEMPTED=76
 . "$SCRIPT_DIR/fm-task-route-lib.sh"
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
-usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 WORK_TMP=''
 cleanup_temp_paths() { rm -rf -- ${WORK_TMP:+"$WORK_TMP"}; }
@@ -104,7 +133,6 @@ cursor_path() { printf '%s/%s.cursor\n' "$(host_dir "$1")" "$2"; }
 broken_path() { printf '%s/%s.broken\n' "$(host_dir "$1")" "$2"; }
 receipt_path() { printf '%s/.%s.ingested\n' "$(host_dir "$1")" "$2"; }
 mirrored_path() { printf '%s/.remote-worker-mirrored-%s\n' "$STATE" "$1"; }
-lifecycle_lock() { printf '%s/.remote-worker-lifecycle-%s.lock\n' "$STATE" "$1"; }
 
 meta_value() { # <meta> <key>
   grep "^$2=" "$1" 2>/dev/null | tail -1 | cut -d= -f2- || true
@@ -405,7 +433,7 @@ cmd_handle_locked() { # <host> <seq> <result>
 with_lifecycle_lock() { # <host> <function> <args...>
   local host=$1 lock
   shift
-  lock=$(lifecycle_lock "$host")
+  lock=$(fm_remote_worker_lifecycle_lock_path "$STATE" "$host")
   (
     fm_lock_acquire_wait "$lock" || die "cannot lock the worker status mirror for $host"
     LOCK=$lock
@@ -421,14 +449,12 @@ cmd_autohandle() { # <source-id> <seq> <result>
   with_lifecycle_lock "$host" cmd_handle_locked "$host" "$2" "$3"
 }
 
-cmd_retire_task_locked() { # <host> <task>
-  local host=$1 task=$2
-  rm -f -- "$(cursor_path "$host" "$task")" "$(broken_path "$host" "$task")" "$(mirrored_path "$task")"
-  if [ -z "$(members "$host" | grep -vxF -- "$task" || true)" ]; then
-    "$SCRIPT_DIR/fm-procevent.sh" retire "$(source_id "$host")" >/dev/null 2>&1 || true
-    printf 'retired: %s (no tasks left)\n' "$(source_id "$host")"
-  fi
-  printf 'released: %s from %s\n' "$task" "$host"
+cmd_fetch_locked() { # <host> <task> <report|journal>
+  local rc=0
+  case "$3" in report|journal) ;; *) die "a worker document must be report or journal, not: $3" ;; esac
+  fetch_doc "$1" "$2" "$3" || rc=$?
+  [ "$rc" -ne 1 ] || printf 'not fetched: %s %s from %s - %s\n' "$2" "$3" "$1" "$FETCH_REASON" >&2
+  return "$rc"
 }
 
 case "${1:-}" in
@@ -438,7 +464,8 @@ case "${1:-}" in
   handle) shift; [ "$#" -eq 3 ] || usage; validate_host "$1"; with_lifecycle_lock "$1" cmd_handle_locked "$@" ;;
   autohandle) shift; [ "$#" -eq 3 ] || usage; cmd_autohandle "$@" ;;
   members) shift; [ "$#" -eq 1 ] || usage; validate_host "$1"; members "$1" ;;
-  retire-task) shift; [ "$#" -eq 2 ] || usage; validate_host "$1"; validate_task "$2"; with_lifecycle_lock "$1" cmd_retire_task_locked "$1" "$2" ;;
+  fetch) shift; [ "$#" -eq 3 ] || usage; validate_host "$1"; validate_task "$2"; with_lifecycle_lock "$1" cmd_fetch_locked "$@" ;;
+  retire-task) shift; [ "$#" -eq 2 ] || usage; validate_host "$1"; validate_task "$2"; with_lifecycle_lock "$1" fm_remote_worker_retire_task_locked "$STATE" "$1" "$2" ;;
   retire) shift; [ "$#" -eq 1 ] || usage; "$SCRIPT_DIR/fm-procevent.sh" retire "$(source_id "$1")" ;;
   classify) shift; [ "$#" -eq 1 ] || usage; classify_result "$1" ;;
   terminal) shift; [ "$#" -eq 1 ] || usage; exit 1 ;;

@@ -1432,24 +1432,40 @@ test_watcher_exits_on_state_teardown_during_startup() {
   # A state directory torn down and recreated at the same path just after the
   # watcher claimed its lock - before the main loop - is still a teardown: the
   # empty lock in the recreated directory was never released by a successor.
-  local dir state fakebin out pid end stopped rc
+  local dir state fakebin out pid end rc real_touch
   dir=$(make_case startup-teardown)
   state="$dir/state"
   fakebin="$dir/fakebin"
   out="$dir/watch.out"
-  PATH="$fakebin:$PATH" FM_HOME="$dir" FM_STATE_OVERRIDE="$state" FM_GUARD_GRACE=1 FM_POLL=1 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" 2>&1 &
+  real_touch=$(command -v touch)
+  # Block the synchronous pre-loop heartbeat write, after identity publication.
+  # Observing watcher-path and sending STOP raced both the remaining identity
+  # writes and the loop's separate teardown/ownership reads on a busy host.
+  # Keep the handshake outside state so deleting state cannot release it early.
+  cat > "$fakebin/touch" <<'SH'
+#!/usr/bin/env bash
+"$FM_TEST_REAL_TOUCH" "$@" || exit $?
+if [ "$#" -eq 1 ] && [ "$1" = "$FM_STATE_OVERRIDE/.last-heartbeat" ]; then
+  : > "$FM_HOME/startup.ready"
+  while [ ! -e "$FM_HOME/startup.release" ]; do
+    kill -0 "$FM_TEST_SUITE_PID" 2>/dev/null || exit 1
+    [ "$SECONDS" -lt "$FM_TEST_STUB_MAX_BLOCK_SECONDS" ] || exit 1
+    sleep 0.05
+  done
+fi
+SH
+  chmod +x "$fakebin/touch"
+  PATH="$fakebin:$PATH" FM_TEST_REAL_TOUCH="$real_touch" FM_HOME="$dir" FM_STATE_OVERRIDE="$state" FM_GUARD_GRACE=1 FM_POLL=1 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 "$WATCH" > "$out" 2>&1 &
   pid=$!
-  # watcher-path is written only after the claim, a few lines before the main
-  # loop, so pause the watcher the moment it appears.
-  stopped=0
   end=$((SECONDS + 20))
   while [ "$SECONDS" -lt "$end" ] && is_live_non_zombie "$pid"; do
-    [ -e "$state/.watch.lock/watcher-path" ] && kill -STOP "$pid" 2>/dev/null && { stopped=1; break; }
+    [ -e "$dir/startup.ready" ] && break
+    sleep 0.05
   done
-  [ "$stopped" -eq 1 ] || fail "watcher never finished claiming its lock: $(cat "$out")"
+  [ -e "$dir/startup.ready" ] || fail "watcher never reached its pre-loop heartbeat: $(cat "$out")"
   rm -rf "$state"
   mkdir -p "$state"
-  kill -CONT "$pid" 2>/dev/null || true
+  : > "$dir/startup.release"
   # wait_for_exit returns the watcher's own status, or TERMs a watcher that
   # kept running in the torn-down directory.
   rc=0

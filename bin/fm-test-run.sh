@@ -1625,6 +1625,14 @@ families_for_changed_path() {
       printf '%s\n' secondmate
       printf '%s\n' "__script__:fm-backend-t3code.test.sh"
       ;;
+    bin/fm-remote-worker-control.sh|bin/fm-procevent-remote-worker.sh)
+      # The worker-host leg and status mirror: their own drivers, plus the
+      # primary-side cleanup that calls both.
+      printf '%s\n' secondmate
+      printf '%s\n' "__script__:fm-remote-worker-control.test.sh"
+      printf '%s\n' "__script__:fm-remote-worker-mirror.test.sh"
+      printf '%s\n' "__script__:fm-teardown-host.test.sh"
+      ;;
     bin/fm-remote*|bin/fm-on.sh|bin/fm-home-seed.sh|\
     bin/fm-backlog-handoff.sh|bin/fm-backlog-receive.sh|bin/fm-procevent-remote-reply.sh|\
     bin/fm-config-inherit-lib.sh|bin/fm-config-push.sh|bin/fm-shared*|\
@@ -1756,6 +1764,7 @@ families_for_changed_path() {
     bin/fm-teardown.sh)
       printf '%s\n' pr-forge
       printf '%s\n' "__script__:fm-backend-t3code.test.sh"
+      printf '%s\n' "__script__:fm-teardown-host.test.sh"
       ;;
     bin/fm-pr-*|bin/fm-merge-local.sh|bin/fm-review-diff.sh|\
     bin/fm-x-*|bin/fm-check*|bin/fm-pipeline-spend.sh)
