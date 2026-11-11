@@ -17,7 +17,7 @@
 # server nobody else has heard of. There is no host, domain, or forge allowlist
 # here, and there must never be one.
 #
-# Accepted forms:
+# fm_project_origin_safe accepts these forms:
 #   https://[userinfo@]host[:port]/path, http://…, ssh://…, git://…
 #                                 a non-option-shaped plain host or bracketed
 #                                 IPv6 literal, an optional numeric port, and
@@ -38,6 +38,35 @@
 #   relative paths, which resolve against whatever directory git happens to
 #   be in on the other machine
 #   "/../" traversal inside a local or file: path
+#
+# fm_project_origin_credential_free adds the worker-host boundary: URI query
+# strings and fragments and non-SSH userinfo are refused. SSH URI usernames
+# contain only letters, digits, dot, underscore, or hyphen (never passwords).
+# Authentication must be configured on the cloning host, not carried in a URL.
+fm_project_origin_credential_free() {
+  local url=${1-} authority userpart
+  fm_project_origin_safe "$url" || return 1
+  case "$url" in
+    *://*)
+      authority=${url#*://}
+      authority=${authority%%/*}
+      case "$url" in *'?'*|*'#'*) return 1 ;; esac
+      case "$url" in
+        ssh://*)
+          case "$authority" in
+            *@*)
+              userpart=${authority%@*}
+              case "$userpart" in *[!A-Za-z0-9._-]*) return 1 ;; esac
+              ;;
+          esac
+          ;;
+        *) case "$authority" in *@*) return 1 ;; esac ;;
+      esac
+      ;;
+  esac
+  return 0
+}
+
 fm_project_origin_safe() { # <url>; 0 when the URL is an accepted clone URL
   local url=${1-} rest authority userpart hostpart port inner host path
 
