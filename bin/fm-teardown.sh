@@ -1506,6 +1506,7 @@ worker_host_teardown() {
   VAULT_META_SNAPSHOT=$(cat "$META" 2>/dev/null || true)
   proj_name=$(fm_meta_get "$META" remote_project)
   proj_name=${proj_name##*/}
+  # shellcheck source=bin/fm-procevent-remote-worker.sh
   . "$SCRIPT_DIR/fm-procevent-remote-worker.sh"
   fm_remote_worker_with_lifecycle_lock "$STATE" "$host" worker_host_retire_records "$host" || return 1
   fm_lock_release "$META_LOCK"
