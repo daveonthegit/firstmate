@@ -1493,7 +1493,7 @@ worker_host_teardown() {
     0) ;;
     "$TEARDOWN_LOST_SLOT_EXIT") lost_slot=1 ;;
     255)
-      echo "error: worker host $host was unreachable, or whether it finished cleaning up $ID is unknown; every record here and on the host is preserved and the backlog item did not move - re-run this cleanup, which the host answers with its finished cleanup instead of repeating it" >&2
+      echo "error: worker host $host cleanup result for $ID is unknown; host cleanup may already have completed. Nothing on the primary was retired and the backlog item did not move - safely re-run this cleanup to converge, even if the host already finished" >&2
       return 255
       ;;
     *)
