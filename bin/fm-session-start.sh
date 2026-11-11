@@ -32,7 +32,11 @@
 #                       network-free unless data/ is a git repository with a
 #                       remote; a refusal makes the session read-only and the
 #                       lock is never attempted, so no supervision owner can
-#                       treat this session as the lock holder.
+#                       treat this session as the lock holder. Because the
+#                       lease is per machine and runs first, a second session
+#                       on the holding machine still advances the epoch before
+#                       the lock refuses it; that is harmless, because the
+#                       machine holding the lease is unchanged.
 #   1. lock          - acquire the per-home session lock FIRST, before any
 #                       mutating step runs.
 #   1b. home role    - the resolved firstmate-repository role line
