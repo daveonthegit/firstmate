@@ -407,7 +407,7 @@ fm_send_resolve_worker_host() { # <meta>
   local id
   id=$(fm_send_id_from_meta "$1")
   RESOLVED_TARGET="remote:$id"
-  TARGET_BACKEND=worker-host
+  TARGET_BACKEND="worker-host"
   TARGET_META=$1
   TARGET_HARNESS=$(fm_meta_get "$1" harness)
   EXPECTED_LABEL="fm-$id"
