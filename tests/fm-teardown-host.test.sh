@@ -294,6 +294,43 @@ hold_mirror_during_retirement() {
   assert_present "$PARENT/state/m1.meta" "cleanup removed membership while mirror ingestion could still run"
 }
 
+test_backlog_failure_retires_mirror() {
+  local transition verb out rc real_tasks
+  real_tasks=$(command -v tasks-axi)
+  for transition in close retain; do
+    make_case "backlog-failure-$transition"
+    place_ship b1
+    verb=done
+    if [ "$transition" = retain ]; then
+      primary "$ROOT/bin/fm-captain-hold.sh" hold b1 --reason 'Captain approval needed' >/dev/null \
+        || fail "could not hold b1 for the captain"
+      verb=reopen
+    fi
+    mkdir -p "$CASE/failing-tools" "$PARENT/state/remote-workers/mbp"
+    printf 'schema=fm-remote-worker-cursor.v1\noffset=0\nprefix_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\n' \
+      > "$PARENT/state/remote-workers/mbp/b1.cursor"
+    cat > "$CASE/failing-tools/tasks-axi" <<SH
+#!/usr/bin/env bash
+if [ "\${1:-}" = "$verb" ] && [ "\${2:-}" = b1 ]; then
+  echo 'injected backlog mutation failure' >&2
+  exit 1
+fi
+exec "$real_tasks" "\$@"
+SH
+    chmod +x "$CASE/failing-tools/tasks-axi"
+    rc=0
+    out=$(PATH="$CASE/failing-tools:$PATH" primary "$TEARDOWN" b1 2>&1) || rc=$?
+    [ "$rc" -ne 0 ] || fail "$transition reported success despite a backlog failure: $out"
+    assert_contains "$out" 'injected backlog mutation failure' "$transition did not reach the injected failure"
+    assert_absent "$HOST_HOME/state/b1.meta" "$transition did not finish the host leg"
+    assert_absent "$PARENT/state/b1.meta" "$transition did not remove the primary record"
+    assert_present "$PARENT/state/b1.backlog-close" "$transition lost its replayable backlog marker"
+    assert_absent "$PARENT/state/remote-workers/mbp/b1.cursor" "$transition failure left a cursor for a removed member"
+    assert_not_contains "$(mirror_sources)" remote-worker-mbp "$transition failure left the unused host mirror armed"
+  done
+  pass "failed backlog close and retain still retire the removed task's mirror and cursor"
+}
+
 test_route_drift_refused() {
   local out rc=0
   make_case drift
@@ -343,4 +380,5 @@ test_scout_report_and_gate() {
 
 fm_test_run test_two_leg_cleanup test_unreachable_host_preserves_records \
   test_lost_answer_reruns_safely test_host_refusal_passes_through \
-  test_sibling_keeps_mirror test_retirement_waits_for_mirror test_route_drift_refused test_scout_report_and_gate
+  test_sibling_keeps_mirror test_retirement_waits_for_mirror test_backlog_failure_retires_mirror \
+  test_route_drift_refused test_scout_report_and_gate

@@ -1523,7 +1523,7 @@ worker_host_teardown() {
 }
 
 worker_host_retire_records() {
-  local host=$1
+  local host=$1 failed=0
   if [ "$TEARDOWN_BACKLOG_APPLIES" = 1 ]; then
     if ! fm_backlog_close_marker_write "$STATE" "$ID" "$DATA" "$TEARDOWN_META_SPAWN_GEN" \
         "${BACKLOG_TRANSITION_FLAGS[@]+"${BACKLOG_TRANSITION_FLAGS[@]}"}" \
@@ -1553,14 +1553,17 @@ worker_host_retire_records() {
     if ! fm_backlog_atomic_transition "$BACKLOG_TRANSITION" "$META" "$BACKLOG_CLOSE_MARKER" \
         "$DATA" "$ID" "$STATE" "${BACKLOG_DONE_ARGS[@]+"${BACKLOG_DONE_ARGS[@]}"}"; then
       echo "error: worker host $host cleaned up $ID, but its backlog item could not be moved atomically ($FM_BACKLOG_TRANSITION_ERROR); the pending $BACKLOG_TRANSITION is recorded and the next session start retries it" >&2
-      return 1
+      failed=1
     fi
   elif ! fm_backlog_atomic_transition remove "$META" "task record" "$STATE"; then
     echo "error: worker host $host cleaned up $ID, but its task record could not be removed ($FM_BACKLOG_TRANSITION_ERROR)" >&2
-    return 1
+    failed=1
   fi
-  fm_remote_worker_retire_task_locked "$STATE" "$host" "$ID" >/dev/null \
-    || echo "warning: could not retire $ID's status-mirror cursor for worker host $host; bin/fm-procevent-remote-worker.sh retire-task $host $ID finishes it" >&2
+  if [ ! -e "$META" ] && [ ! -L "$META" ]; then
+    fm_remote_worker_retire_task_locked "$STATE" "$host" "$ID" >/dev/null \
+      || echo "warning: could not retire $ID's status-mirror cursor for worker host $host; bin/fm-procevent-remote-worker.sh retire-task $host $ID finishes it" >&2
+  fi
+  return "$failed"
 }
 
 if [ "$TEARDOWN_ROUTE" = worker-host ]; then
