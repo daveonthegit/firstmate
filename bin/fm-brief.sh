@@ -14,8 +14,8 @@
 # charters still use a single `{TASK}` charter fill. Firstmate may adjust other
 # sections when the task genuinely deviates (e.g. working an existing external
 # PR instead of shipping a new one).
-# Usage: fm-brief.sh <task-id> <repo-name> --mode <no-mistakes|direct-PR|local-only> [--branch-prefix <prefix>] [--base-branch <branch>] [--forge <none|gerrit|forgejo|external> [--shape squash]] [--pr <auto|manual>] [--herdr-lab] [--journal]
-#        fm-brief.sh <task-id> <repo-name> --scout [--base-branch <branch>] [--herdr-lab] [--journal]
+# Usage: fm-brief.sh <task-id> <repo-name> --mode <no-mistakes|direct-PR|local-only> [--branch-prefix <prefix>] [--base-branch <branch>] [--forge <none|gerrit|forgejo|external> [--shape squash]] [--pr <auto|manual>] [--herdr-lab] [--journal] [--continue-from <old-id>]
+#        fm-brief.sh <task-id> <repo-name> --scout [--base-branch <branch>] [--herdr-lab] [--journal] [--continue-from <old-id>]
 #        fm-brief.sh <task-id> --secondmate {<project>...|--no-projects}
 #   --scout writes the scout contract instead: the deliverable is a report at
 #   data/<task-id>/report.md (no branch, no push, no PR) and the worktree is scratch.
@@ -41,6 +41,17 @@
 #   --journal includes the Work journal section even when this home has no
 #   vault of its own; a worker host passes it when the primary's brief has one
 #   (bin/fm-remote-worker-control.sh).
+#   --continue-from <old-id> scaffolds the brief of a task that continues
+#   <old-id> in a fresh thread (bin/fm-handoff.sh, which runs it). It needs the
+#   continuation record bin/fm-continuation-lib.sh owns at
+#   data/<task-id>/continuation, naming <old-id> and this brief's kind, and
+#   <old-id>'s brief with both `# Task` subsections. Those two subsections are
+#   copied verbatim, so the original ask stays the acceptance criteria and
+#   nothing is left to fill. Setup records "Continued from: <old-id>", which
+#   bin/fm-spawn.sh requires to agree with its own --continue-from; a ship's
+#   Setup also says its copy starts at the carried commit, and a
+#   `# Continuation` section after the Task points the worker at
+#   data/<task-id>/handoff.md. Refused on --secondmate.
 # For ship tasks, --mode is REQUIRED and shapes the definition of done. Firstmate
 # resolves it per task at intake (AGENTS.md section 7); data/projects.md holds the
 # captain's standing posture as context, and this script never reads it:
@@ -183,6 +194,8 @@ esac
 . "$SCRIPT_DIR/fm-dod-lib.sh"
 # shellcheck source=bin/fm-role-lib.sh
 . "$SCRIPT_DIR/fm-role-lib.sh"
+# shellcheck source=bin/fm-continuation-lib.sh
+. "$SCRIPT_DIR/fm-continuation-lib.sh"
 PAUSED_VERB=${FM_CLASSIFY_PAUSED_VERB:-$FM_CLASSIFY_PAUSED_VERB_DEFAULT}
 IFS= read -r -d '' CREWMATE_PAUSE_INSTRUCTIONS <<EOF || true
    Use \`$PAUSED_VERB: {why}\` - distinct from \`blocked:\` - when deliberately waiting for work or an external condition expected to clear on its own, including your own validation round.
@@ -241,6 +254,8 @@ UPSTREAM_CONSENT=
 UPSTREAM_CONSENT_SET=0
 PROJECT_DIR=
 PROJECT_DIR_SET=0
+CONTINUE_FROM=
+CONTINUE_FROM_SET=0
 POS=()
 want_value=
 for a in "$@"; do
@@ -257,6 +272,7 @@ for a in "$@"; do
       pr) PR_TEXT=$a; PR_TEXT_SET=1 ;;
       upstream-consent) UPSTREAM_CONSENT=$a; UPSTREAM_CONSENT_SET=1 ;;
       project) PROJECT_DIR=$a; PROJECT_DIR_SET=1 ;;
+      continue-from) CONTINUE_FROM=$a; CONTINUE_FROM_SET=1 ;;
       *) echo "error: internal parser state for --$want_value" >&2; exit 1 ;;
     esac
     want_value=
@@ -284,6 +300,8 @@ for a in "$@"; do
     --upstream-consent=*) UPSTREAM_CONSENT=${a#--upstream-consent=}; UPSTREAM_CONSENT_SET=1 ;;
     --project) want_value="project" ;;
     --project=*) PROJECT_DIR=${a#--project=}; PROJECT_DIR_SET=1 ;;
+    --continue-from) want_value="continue-from" ;;
+    --continue-from=*) CONTINUE_FROM=${a#--continue-from=}; CONTINUE_FROM_SET=1 ;;
     # yolo never reaches the worker: it is firstmate's merge authority, not a
     # brief input. Refuse it loudly so it is never silently dropped here and then
     # believed to have been recorded.
@@ -403,6 +421,32 @@ if [ "$KIND" = ship ] && [ "$MODE" != local-only ] && [ "$PROJECT_DIR_SET" -eq 1
 fi
 ID=${POS[0]}
 BRANCH="$BRANCH_PREFIX$ID"
+# A continuation copies the source task's Task subsections and names the carried
+# commit, both of which must be readable before anything is written.
+CONT_INTENT=
+CONT_SPEC=
+if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+  [ "$KIND" != secondmate ] || {
+    echo "error: --continue-from applies only to ship and scout briefs; a secondmate is never handed off" >&2
+    exit 1
+  }
+  fm_continuation_read "$DATA" "$ID" "$CONTINUE_FROM" || {
+    echo "error: --continue-from $CONTINUE_FROM: $FM_CONT_ERROR" >&2
+    exit 1
+  }
+  [ "$FM_CONT_KIND" = "$KIND" ] || {
+    echo "error: --continue-from $CONTINUE_FROM: the continuation record is for a $FM_CONT_KIND, not a $KIND brief" >&2
+    exit 1
+  }
+  CONT_SOURCE_BRIEF="$DATA/$CONTINUE_FROM/brief.md"
+  if ! fm_brief_task_heading_present "$CONT_SOURCE_BRIEF" "## Captain's intent" ||
+    ! fm_brief_task_heading_present "$CONT_SOURCE_BRIEF" "## Firstmate spec"; then
+    echo "error: --continue-from $CONTINUE_FROM: $CONT_SOURCE_BRIEF has no # Task with both ## Captain's intent and ## Firstmate spec to carry over" >&2
+    exit 1
+  fi
+  CONT_INTENT=$(fm_brief_task_heading_body "$CONT_SOURCE_BRIEF" "## Captain's intent")
+  CONT_SPEC=$(fm_brief_task_heading_body "$CONT_SOURCE_BRIEF" "## Firstmate spec")
+fi
 if ! git check-ref-format --branch "$BRANCH" >/dev/null 2>&1; then
   echo "error: --branch-prefix and task id must form a valid git branch (got '$BRANCH')" >&2
   exit 1
@@ -683,6 +727,21 @@ IFS= read -r -d '' TASK_SECTION <<'EOF' || true
 {FIRSTMATE_SPEC}
 EOF
 TASK_SECTION=${TASK_SECTION%$'\n'}
+CONTINUATION_BLOCK=
+if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+  TASK_SECTION="# Task"$'\n'"## Captain's intent"$'\n'"$CONT_INTENT"$'\n\n'"## Firstmate spec"$'\n'"$CONT_SPEC"
+  CONTINUATION_BLOCK="# Continuation
+This task continues task $CONTINUE_FROM in a fresh thread; the ask above is unchanged and remains the acceptance criteria.
+Read \`$DATA/$ID/handoff.md\` before anything else: it says why the work moved and carries the previous worker's notes on what is done, what is left, what was tried and failed, and how to verify."
+  if [ "$KIND" = ship ]; then
+    CONTINUATION_BLOCK+="
+Your copy starts at the previous worker's last commit, so its commits are already on the branch you create: build on them, never discard or rewrite them, and deliver both halves together."
+  else
+    CONTINUATION_BLOCK+="
+The previous worker's interim report is \`$DATA/$CONTINUE_FROM/report.md\`; your own report must stand alone, so carry its findings forward rather than pointing at it."
+  fi
+  CONTINUATION_BLOCK+=$'\n\n'
+fi
 
 # One shared string keeps the ship and scout infrastructure rule identical.
 # Rule 2 governs file edits, so it does not prohibit pool administration.
@@ -722,11 +781,19 @@ IFS= read -r -d '' SHARED_NO_CD_RULE <<'EOF' || true
 EOF
 SHARED_NO_CD_RULE=${SHARED_NO_CD_RULE%$'\n'}
 
-if [ -n "$BASE_BRANCH" ]; then
+if [ "$CONTINUE_FROM_SET" -eq 1 ] && [ "$KIND" = ship ]; then
+  SETUP_BASE="You are in a disposable git worktree of $REPO, at a detached HEAD on the commit carried over from an earlier task."
+  [ -z "$BASE_BRANCH" ] || SETUP_BASE+=$'\n'"Base branch: $BASE_BRANCH"
+  SETUP_BASE+=$'\n'"Continued from: $CONTINUE_FROM"
+  SETUP_BASE+=$'\n'"Carried work: branch \`$FM_CONT_BRANCH\` at commit \`$FM_CONT_HEAD\`, pushed to \`$FM_CONT_REMOTE\`."
+elif [ -n "$BASE_BRANCH" ]; then
   SETUP_BASE="You are in a disposable git worktree of $REPO, at a detached HEAD on a clean copy of its base branch.
 Base branch: $BASE_BRANCH"
 else
   SETUP_BASE="You are in a disposable git worktree of $REPO, at a detached HEAD on a clean default branch."
+fi
+if [ "$CONTINUE_FROM_SET" -eq 1 ] && [ "$KIND" = scout ]; then
+  SETUP_BASE+=$'\n'"Continued from: $CONTINUE_FROM"
 fi
 
 if [ "$KIND" = scout ]; then
@@ -740,7 +807,7 @@ You are a crewmate: an autonomous worker agent managed by firstmate. Work on you
 
 $TASK_SECTION
 
-$HERDR_SECTION
+$CONTINUATION_BLOCK$HERDR_SECTION
 
 # Setup
 $SETUP_BASE
@@ -786,7 +853,11 @@ When the report is complete, append \`done [at=<epoch>]: {one-line conclusion}\`
 If your findings reveal work that should ship (e.g. you reproduced a bug and the fix is clear), say so in the report; firstmate may promote this task in place, and you would then receive mode-specific ship instructions as a follow-up message.$SCOUT_JOURNAL_SECTION
 EOF
 append_brief_include
-echo "scaffolded: $BRIEF (scout; replace {TASK} and {FIRSTMATE_SPEC})"
+if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+  echo "scaffolded: $BRIEF (scout; continues $CONTINUE_FROM, Task copied from its brief)"
+else
+  echo "scaffolded: $BRIEF (scout; replace {TASK} and {FIRSTMATE_SPEC})"
+fi
 exit 0
 fi
 
@@ -816,7 +887,7 @@ You are a crewmate: an autonomous worker agent managed by firstmate. Work on you
 
 $TASK_SECTION
 
-$HERDR_SECTION
+$CONTINUATION_BLOCK$HERDR_SECTION
 
 # Setup
 $SETUP_BASE
@@ -865,7 +936,9 @@ A correction edits only the wrong text: do not run \`$FM_ROOT/bin/fm-ensure-agen
 $SHIP_JOURNAL_SECTION$DOD
 EOF
 append_brief_include
-if [ "$PR_TEXT" = manual ]; then
+if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+  echo "scaffolded: $BRIEF (ship, mode=$MODE; continues $CONTINUE_FROM, Task copied from its brief)"
+elif [ "$PR_TEXT" = manual ]; then
   echo "scaffolded: $BRIEF (ship, mode=$MODE pr=manual; replace {TASK} and {FIRSTMATE_SPEC})"
 elif [ "$FORGE" = none ]; then
   echo "scaffolded: $BRIEF (ship, mode=$MODE; replace {TASK} and {FIRSTMATE_SPEC})"
