@@ -24,9 +24,10 @@
 #   continuation runs on the profile firstmate resolved at this intake (for
 #   example another model or seat); flags given at request time are remembered
 #   and a later run's flags replace them.
+# Every action, including resumed FINISH and --cancel, refuses before mutation
+# when this home is a worker host or has stood down from the supervisor lease.
 # REQUEST, which changes nothing but the request record and the worker's inbox,
-# refuses when: this home is a worker host or has stood down from the
-# supervisor lease; the task has no record, is a second mate, or is placed on
+# refuses when: the task has no record, is a second mate, or is placed on
 # another machine; a ship has a recorded PR or a Gerrit or external-review forge
 # (H1 limits), no recorded branch, or no such remote in its copy; the task has an open
 # decision (answer it first); its brief lacks both `# Task` subsections; or the

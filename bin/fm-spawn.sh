@@ -52,8 +52,9 @@
 #   prefix is the captain's standing preference and the brief agreement above
 #   already guarantees the worker's instructions match the branch.
 #   --base-branch is the optional branch selected at intake for a ship or scout
-#   to start from and target instead of origin's default branch. A fresh launch
-#   resets its pooled copy to origin/<branch>, refusing when the project has no
+#   to start from and target instead of origin's default branch. Except for a
+#   ship's --continue-from (below), a fresh launch resets its pooled copy to
+#   origin/<branch>, refusing when the project has no
 #   origin or origin lacks that branch, or when the project's registered forge
 #   cannot carry it. It must agree with every Setup "Base branch:" line in the
 #   brief (bin/fm-brief.sh --base-branch writes one; other such lines are prose),
@@ -403,7 +404,9 @@
 #   set (its header owns the refusal). A secondmate runs in its own home and is
 #   not marked.
 #   Only after this isolation check, every fresh ship or scout requires a clean
-#   task worktree. When an origin configuration is detected, spawn fetches it,
+#   task worktree. A ship's --continue-from uses the carried-work check above
+#   instead of the following base selection. Otherwise, when an origin
+#   configuration is detected, spawn fetches it,
 #   resolves the current remote default branch (or uses --base-branch, described
 #   above), and resets to its tip. A home that creates the default-off
 #   config/spawn-base-primary-checkout flag (docs/configuration.md) instead
