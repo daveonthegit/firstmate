@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "threadId": "mcp:3ef01e06-a360-48ce-be80-0fac65b141b7",
+  "pendingRequestCount": 1,
+  "questions": [
+    {
+      "requestId": "runtime-request:provider:claudeAgent:provider-turn:provider-turn%3Aprovider%3AclaudeAgent%3Anative-turn%3Aturn%253Arun-attempt%253Arun%253Arun%25253Athread%25253Amcp%2525253A3ef01e06-a360-48ce-be80-0fac65b141b7%25253Aordinal%25253A1%253Aattempt%253A1:native-request:toolu_01BwigjjpDGs38gCpPG356h9:d39eccba-e9bd-4430-b1f4-372efad93921",
+      "questions": [
+        {
+          "id": "Which label should be used?",
+          "header": "Label",
+          "question": "Which label should be used?",
+          "options": [
+            {
+              "label": "Alpha",
+              "description": "Use the Alpha label"
+            },
+            {
+              "label": "Beta",
+              "description": "Use the Beta label"
+            }
+          ],
+          "multiSelect": false
+        }
+      ]
+    }
+  ],
+  "approvals": 0,
+  "signature": "q:runtime-request:provider:claudeAgent:provider-turn:provider-turn%3Aprovider%3AclaudeAgent%3Anative-turn%3Aturn%253Arun-attempt%253Arun%253Arun%25253Athread%25253Amcp%2525253A3ef01e06-a360-48ce-be80-0fac65b141b7%25253Aordinal%25253A1%253Aattempt%253A1:native-request:toolu_01BwigjjpDGs38gCpPG356h9:d39eccba-e9bd-4430-b1f4-372efad93921;a:0"
+}

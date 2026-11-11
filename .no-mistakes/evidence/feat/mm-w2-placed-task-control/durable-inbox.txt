@@ -1,0 +1,6 @@
+schema=fm-task-inbox.v1
+at=2026-11-11T15:17:48Z
+body-terminator=1
+--
+[remote-worker delivery: ee6437065c09fcb2]
+Validation only: do not run commands or edit files. Reply LAB_STEER_RECEIVED and wait.

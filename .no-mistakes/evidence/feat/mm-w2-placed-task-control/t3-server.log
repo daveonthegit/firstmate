@@ -1,0 +1,8 @@
+V2 orchestration shutdown reconciliation completed
+  {
+    terminalizedRuns: 0,
+    stoppedSessions: 2,
+    closedRequests: 1,
+    retiredEffects: 0,
+    requeuedEffects: 0
+  }

@@ -1,0 +1,42 @@
+claude
+bash-5.3$ claude
+
+Resume this session with:
+claude --resume 50889025-9cca-4fae-ad8d-85793f9d0ad7
+bash-5.3$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

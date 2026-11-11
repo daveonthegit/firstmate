@@ -1,0 +1,2 @@
+needs-decision [at=1700000000] [key=k1]: choose layout
+resolved [key=k1] [at=1794410283]: answered: Validation: choose layout B; no commands or edits.

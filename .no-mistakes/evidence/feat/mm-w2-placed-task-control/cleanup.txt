@@ -1,0 +1,4 @@
+Isolated homes .t, .w and .p removed.
+Private tmux server kill: exit 0 (local-cli-transcript.log).
+T3 threads archived with activeRunId:null; server awaited with exit 130 after SIGTERM.
+Remaining processes referencing isolated roots: 0

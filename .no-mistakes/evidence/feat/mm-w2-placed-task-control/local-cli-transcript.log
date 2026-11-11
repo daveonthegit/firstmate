@@ -1,0 +1,376 @@
+$ bin/fm-lab-home.sh create {run-worktree}/.w
+{run-worktree}/.w
+
+exit=0
+
+$ bin/fm-lab-home.sh create {run-worktree}/.p
+{run-worktree}/.p
+
+exit=0
+
+$ tmux -L fm-lab new-session -d -s primary -n primary -x 140 -y 42 -c {run-worktree} -e FM_HOME={run-worktree}/.w claude
+
+exit=0
+
+$ tmux -L fm-lab new-window -t primary: -n fm-t1 -c {run-worktree} -e FM_HOME={run-worktree}/.w -e FM_TASK_INBOX={run-worktree}/.w/state/t1.inbox bash
+
+exit=0
+
+$ tmux -L fm-lab send-keys -t primary:fm-t1 claude Enter
+
+exit=0
+
+$ tmux -L fm-lab capture-pane -p -t primary:fm-t1 -S -120
+
+ ▐▛███▛█   Claude Code v2.1.322
+▝▜██████▀  Opus 5.5 · Claude Team
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/747da666653e/01M75JFWHGAPG7X7HQN8KMY046
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                                                                        ◐ medium · /effort
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Try "how do I log an error?"
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  main 5h 80% wk 81%  ·  bgmedia 5h 100% wk 0%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 2 agents
+
+exit=0
+
+$ bin/fm-crew-state.sh t1
+state: unknown · source: pane · on worker host mbp · harness state unavailable (unknown missing)
+
+exit=0
+
+$ bin/fm-peek.sh fm-t1 500
+
+ ▐▛███▛█   Claude Code v2.1.322
+▝▜██████▀  Opus 5.5 · Claude Team
+ ▝▝   ▝▝   ~/.no-mistakes/worktrees/747da666653e/01M75JFWHGAPG7X7HQN8KMY046
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                                                                        ◐ medium · /effort
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Try "how do I log an error?"
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  main 5h 80% wk 81%  ·  bgmedia 5h 100% wk 0%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 2 agents
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 11s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 12s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+exit=0
+
+$ bin/fm-send.sh t1 Validation only: do not run commands or edit files. Reply LAB_STEER_RECEIVED and wait.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+WARNING: watcher still down (same stale episode; last beat: 13s ago, grace 300s) - full banner already printed this episode.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.w
+WARNING: watcher still down (same stale episode; last beat: 13s ago, grace 300s) - full banner already printed this episode.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.w
+WARNING: watcher still down (same stale episode; last beat: 15s ago, grace 300s) - full banner already printed this episode.
+
+exit=0
+
+$ bin/fm-send.sh t1 --resolve-key k1 Validation: choose layout B; no commands or edits.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+WARNING: watcher still down (same stale episode; last beat: 18s ago, grace 300s) - full banner already printed this episode.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.w
+WARNING: watcher still down (same stale episode; last beat: 19s ago, grace 300s) - full banner already printed this episode.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.w
+WARNING: watcher still down (same stale episode; last beat: 22s ago, grace 300s) - full banner already printed this episode.
+error: steer to t1 on worker host mbp is unconfirmed (delivery-id=f1b3a3efed48de27; the host was unreachable or its answer was lost, so whether the record landed is unknown). Resend only with the same delivery id, which lands on the same host inbox record:
+FM_HOME={run-worktree}/.p FM_SEND_PLACED_DELIVERY_ID=f1b3a3efed48de27 {run-worktree}/bin/fm-send.sh t1 --resolve-key k1 Validation:\ choose\ layout\ B\;\ no\ commands\ or\ edits.
+
+exit=3
+
+$ bash -c FM_HOME={run-worktree}/.p FM_SEND_PLACED_DELIVERY_ID=f1b3a3efed48de27 {run-worktree}/bin/fm-send.sh t1 --resolve-key k1 Validation:\ choose\ layout\ B\;\ no\ commands\ or\ edits.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+WARNING: watcher still down (same stale episode; last beat: 24s ago, grace 300s) - full banner already printed this episode.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.w
+WARNING: watcher still down (same stale episode; last beat: 24s ago, grace 300s) - full banner already printed this episode.
+
+exit=0
+
+$ bin/fm-send.sh t1 --key Escape
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+WARNING: watcher still down (same stale episode; last beat: 29s ago, grace 300s) - full banner already printed this episode.
+error: key 'Escape' not sent: task t1 is placed on worker host mbp, whose host leg takes no raw keys; use bin/fm-control.sh t1 interrupt to stop its turn
+
+exit=1
+
+$ bin/fm-send.sh t1 bad id
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+WARNING: watcher still down (same stale episode; last beat: 29s ago, grace 300s) - full banner already printed this episode.
+error: FM_SEND_PLACED_DELIVERY_ID must be the 16 lowercase hex characters an unconfirmed send printed
+
+exit=1
+
+$ bin/fm-control.sh t1 relaunch --note not supported
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+error: task t1 is placed on worker host mbp, whose host leg offers only interrupt and exit; relaunch is not supported for a placed task, so nothing was sent
+
+exit=1
+
+$ bin/fm-crew-state.sh t1
+state: unknown · source: worker-host · unknown-remote: worker host mbp unreachable or its answer was lost (not proof of death)
+
+exit=0
+
+$ bin/fm-peek.sh t1
+WARNING: watcher still down (same stale episode; last beat: 30s ago, grace 300s) - full banner already printed this episode.
+error: could not read the pane of t1 on worker host mbp (host unreachable or its answer was lost; the worker is not thereby dead)
+
+exit=1
+
+$ bin/fm-control.sh t1 interrupt
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+error: worker host mbp was unreachable or its answer was lost, so whether interrupt reached task t1 is unknown; read its state with bin/fm-crew-state.sh t1 before repeating it
+
+exit=1
+
+$ bin/fm-control.sh t1 exit
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+error: worker host mbp was unreachable or its answer was lost, so whether exit reached task t1 is unknown; read its state with bin/fm-crew-state.sh t1 before repeating it
+
+exit=1
+
+$ bin/fm-t3-answer.sh t1 req-1 {"q1":"yes"}
+error: worker host mbp was unreachable or its answer was lost, so whether request req-1 of t1 was answered is unknown; run bin/fm-t3-answer.sh t1 to read its pending requests before answering again
+
+exit=255
+
+$ bin/fm-t3-answer.sh t1
+error: t1 runs on backend=tmux; only T3 Code threads have pending requests to answer
+error: worker host mbp refused the request for t1 (exit 1); its reason is above
+
+exit=1
+
+$ tmux -L fm-lab capture-pane -p -t primary:fm-t1 -S -120
+  ⎿  Updated .w/transport.log (+1 -0)
+      2  ['fm-remote-worker-control.sh', 'capture', 't1', '100']
+      3  ['fm-remote-worker-control.sh', 'send-stdin', 't1', 'ee6437065c09fcb2']
+      4  ['fm-remote-worker-control.sh', 'send-stdin', 't1', 'ee6437065c09fcb2']
+      5 +['fm-remote-worker-control.sh', 'send-stdin', 't1', 'f1b3a3efed48de27']
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the
+     command)
+  ⎿  Allowed by auto mode
+
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read and act on each in numeric order,
+  then mv each into its handled/.
+
+  Ran 1 shell command
+
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read and act on each in numeric order,
+  then mv each into its handled/.
+
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read and act on each in numeric order,
+  then mv each into its handled/.
+
+  Ran 2 shell commands
+
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read and act on each in numeric order,
+  then mv each into its handled/.
+
+  Ran 1 shell command
+
+⏺ LAB_STEER_RECEIVED
+
+  I've handled both steering messages in order. I moved each one into the handled folder, and the inbox is now empty.
+  - Message 001: I've replied LAB_STEER_RECEIVED above. I'm now waiting as instructed.
+  - Message 002: I chose layout B and didn't run any commands or edit any files.
+
+  The only commands I ran were the ones that read and file the inbox messages. I'm idle until the next instruction.
+
+✻ Sautéed for 18s · done 10:18 AM
+                                      tmux focus-events off · add 'set -g focus-events on' to ~/.tmux.conf and reattach for focus tracking
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  main 5h 80% wk 81%  ·  bgmedia 5h 100% wk 0%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 2 agents
+
+exit=0
+
+$ bin/fm-control.sh t1 interrupt
+interrupt-delivered t1 harness=claude backend=tmux verified=agent-alive cancel=unconfirmed
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.w
+
+exit=0
+
+INTERRUPT_RESULT=0
+
+$ tmux -L fm-lab capture-pane -p -t primary:fm-t1 -S -120
+  ⎿  Updated .w/transport.log (+1 -0)
+      2  ['fm-remote-worker-control.sh', 'capture', 't1', '100']
+      3  ['fm-remote-worker-control.sh', 'send-stdin', 't1', 'ee6437065c09fcb2']
+      4  ['fm-remote-worker-control.sh', 'send-stdin', 't1', 'ee6437065c09fcb2']
+      5 +['fm-remote-worker-control.sh', 'send-stdin', 't1', 'f1b3a3efed48de27']
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the
+     command)
+  ⎿  Allowed by auto mode
+
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read and act on each in numeric order,
+  then mv each into its handled/.
+
+  Ran 1 shell command
+
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read and act on each in numeric order,
+  then mv each into its handled/.
+
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read and act on each in numeric order,
+  then mv each into its handled/.
+
+  Ran 2 shell commands
+
+❯ : Firstmate instruction waiting: list "$FM_TASK_INBOX"/*.msg in your 't1.inbox' steering inbox, read and act on each in numeric order,
+  then mv each into its handled/.
+
+  Ran 1 shell command
+
+⏺ LAB_STEER_RECEIVED
+
+  I've handled both steering messages in order. I moved each one into the handled folder, and the inbox is now empty.
+  - Message 001: I've replied LAB_STEER_RECEIVED above. I'm now waiting as instructed.
+  - Message 002: I chose layout B and didn't run any commands or edit any files.
+
+  The only commands I ran were the ones that read and file the inbox messages. I'm idle until the next instruction.
+
+✻ Sautéed for 18s · done 10:18 AM
+                                      tmux focus-events off · add 'set -g focus-events on' to ~/.tmux.conf and reattach for focus tracking
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  main 5h 80% wk 81%  ·  bgmedia 5h 100% wk 0%
+  ⏵⏵ auto mode on (shift+tab to cycle) · ← 2 agents
+
+exit=0
+
+$ bin/fm-control.sh t1 exit
+stopped t1 harness=claude backend=tmux endpoint=primary:fm-t1 worktree={run-worktree}
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.p
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.w
+
+exit=0
+
+EXIT_RESULT=0
+
+$ tmux -L fm-lab capture-pane -p -t primary:fm-t1 -S -120
+claude
+bash-5.3$ claude
+
+Resume this session with:
+claude --resume 50889025-9cca-4fae-ad8d-85793f9d0ad7
+bash-5.3$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+exit=0
+
+$ tmux -L fm-lab kill-server
+
+exit=0

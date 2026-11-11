@@ -1,0 +1,39 @@
+
+### tests/fm-placed-task-control.test.sh
+1..6
+ok - a steer to a placed worker writes one host inbox record under a supervisor-minted delivery id
+ok - a plain rerun is a new steer with a new delivery id
+ok - a raw key to a placed worker is refused with the control-plane pointer
+ok - an ssh 255 after the host wrote the record retries once with the same delivery id and lands once
+ok - an unconfirmed steer exits 3 and prints a resend that reuses its delivery id
+ok - the resend lands on the same host record and closes the decision on the supervisor
+ok - a malformed reused delivery id is refused before anything is sent
+ok - crew-state relays the host's own one-line reading for a placed worker
+ok - an ssh exit 255 or host refusal reads unknown-remote, never dead or local
+ok - peek reads the host pane through the host leg and names an unreachable host
+ok - interrupt and exit run on the host leg, ssh 255 is unknown, and relaunch is refused locally
+ok - pending-request reads and answers run on the host leg and report a lost answer as unknown
+FM_TEST_COMPLETE
+
+### tests/fm-task-route-lib.test.sh
+1..3
+ok - the helper routes local, placed, and remote second-mate records by their recorded keys
+ok - the helper refuses contradictory, unsafe, missing, and symlinked records
+ok - placed ship and scout operations route to their host, never a local backend, and cleanup still refuses
+FM_TEST_COMPLETE
+
+### tests/fm-remote-worker-control.test.sh
+ok - spawn renders the brief on the host, fills the primary's # Task, launches, and reports the route
+ok - a repeated spawn of a placed task is idempotent and launches nothing
+ok - route and state answer for a placed task with the ordinary one-line crew state
+ok - delivery tokens distinguish new steers from pending and acknowledged retries
+WARNING: watcher still down (same stale episode; last beat: 24s ago, grace 300s) - full banner already printed this episode.
+WARNING: watcher still down (same stale episode; last beat: 24s ago, grace 300s) - full banner already printed this episode.
+ok - capture bounds successful output without hiding endpoint failures
+ok - file returns only the task's report, journal, or brief
+ok - control refuses relaunch for a remote worker
+ok - teardown runs the host's ordinary cleanup and releases the claim
+ok - a scout spawn renders the host's report path and the forwarded journal section
+ok - the host leg refuses unsupported flags, missing clones, empty bodies, unplaced tasks, and unprepared homes
+ok - a host at capacity defers with exit 75 and leaves no claim or brief behind
+all fm-remote-worker-control tests passed

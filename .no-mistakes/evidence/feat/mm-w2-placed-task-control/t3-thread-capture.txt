@@ -1,0 +1,6 @@
+[user_message/completed] Validation only. Do not execute commands or modify files. You MUST call the native AskUserQuestion tool now with one question: Which label should be used? Offer Alpha and Beta as the two options. After the user answers, reply exactly LABEL_BETA_CONFIRMED if they selected Beta. Do not answer the question yourself or put it only in prose.
+[dynamic_tool/completed] { "toolName": "AskUserQuestion", "input": { "questions": [ { "question": "Which label should be used?", "header": "Label", "multiSelect": false, "options": [ { "label": "Alpha", "description": "Use the Alpha label" }, { "label": "Beta", "description": "Use the Beta label" } ] } ] }, "output": { "questions": [ { "question": "Which label should be used?", "header": "Label", "options": [ {
+[user_input_request/completed] [ { "id": "Which label should be used?", "header": "Label", "question": "Which label should be used?", "options": [ { "label": "Alpha", "description": "Use the Alpha label" }, { "label": "Beta", "description": "Use the Beta label" } ], "multiSelect": false } ]
+[assistant_message/completed] LABEL_BETA_CONFIRMED
+[checkpoint/completed] []
+t3code: status=completed run=none
