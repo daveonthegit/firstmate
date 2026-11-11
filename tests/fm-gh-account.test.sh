@@ -17,6 +17,8 @@ set -u
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
+# shellcheck source=bin/fm-timeout-lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/../bin/fm-timeout-lib.sh"
 
 GHA="$ROOT/bin/fm-gh-account.sh"
 SPAWN="$ROOT/bin/fm-spawn.sh"
@@ -966,6 +968,64 @@ test_shim_refuses_rather_than_guessing() {
   pass "an undeterminable account is refused, and an unreachable helper refuses only when a wrong account is possible"
 }
 
+# A lane's own copy of the wrapper sits ahead of the machine-wide copy on PATH.
+# Each copy must recognize the other as a wrapper rather than as the real gh, or
+# the two exec each other forever - for "auth status", for repository work, and
+# for the account helper's own gh calls made through that same PATH. No
+# FM_GH_REAL and no FM_GH_ACCOUNT_BIN here: both installed copies resolve the
+# real gh and the helper on their own, exactly as they do in a lane.
+test_shim_copies_on_path_reach_the_real_gh() {
+  local rec lane machine target out status row label args want
+  local -a rows
+  rec=$(new_case shim-two-copies git@github.com:BG-Media-LLC/vsl-funnel.git)
+  read_case "$rec"
+  lane="$CASE_DIR/lane-bin"
+  machine="$CASE_DIR/machine-bin"
+  for target in "$lane" "$machine"; do
+    out=$(PATH="$FAKEBIN:$PATH" FM_GH_SHIM_ALLOW_LINKED_WORKTREE=1 "$INSTALLER" --target "$target" 2>&1)
+    expect_code 0 "$?" "install into $target failed: $out"
+  done
+
+  out=$(PATH="$lane:$machine:$FAKEBIN:$PATH" "$INSTALLER" --check --target "$lane" 2>&1)
+  assert_contains "$out" "real gh: $FAKEBIN/gh" "--check reported another wrapper copy as the real gh"
+
+  rows=(
+    "auth status|auth status|active"
+    "explicit --repo|pr list --repo daveonthegit/Kyarafit|daveonthegit"
+    "working directory, found by probe|pr list|daveonthegit"
+  )
+  for row in "${rows[@]}"; do
+    IFS='|' read -r label args want <<EOF
+$row
+EOF
+    : > "$LOG"
+    # shellcheck disable=SC2086  # args is an intentional word-split arg list
+    out=$( cd "$REPO_DIR" && fm_run_timed 20 env FM_CONFIG_OVERRIDE="$CASE_DIR/config" \
+        FM_FAKE_GH_ACCOUNTS='daveonthegit davidx-secco' \
+        FM_FAKE_GH_ACCESS='daveonthegit=50 davidx-secco=10' FM_FAKE_GH_LOG="$LOG" \
+        PATH="$lane:$machine:$FAKEBIN:$PATH" "$lane/gh" $args 2>&1 )
+    status=$?
+    fm_timed_out "$status" && fail "$label: wrapper copies on PATH never reached the real gh (looped)"
+    expect_code 0 "$status" "$label: should reach the real gh: $out"
+    assert_grep "gh $args" "$LOG" "$label: the call never reached the real gh"
+    if [ "$want" = active ]; then
+      assert_no_grep 'AS ' "$LOG" "$label: an account command was keyed"
+    else
+      assert_ran_as "$want" "$label"
+    fi
+  done
+  assert_no_violations "wrapper copies on PATH"
+
+  # A pin pointing back at a wrapper copy is refused rather than looped on.
+  out=$( cd "$REPO_DIR" && fm_run_timed 20 env FM_GH_REAL="$machine/gh" FM_FAKE_GH_LOG="$LOG" \
+      PATH="$lane:$machine:$FAKEBIN:$PATH" "$lane/gh" auth status 2>&1 )
+  status=$?
+  fm_timed_out "$status" && fail "an FM_GH_REAL naming a wrapper copy looped"
+  [ "$status" -ne 0 ] || fail "an FM_GH_REAL naming a wrapper copy was accepted"
+  assert_contains "$out" "itself a copy of this wrapper" "the FM_GH_REAL refusal is not explained"
+  pass "wrapper copies stacked on PATH reach the real gh, including the helper's own gh calls"
+}
+
 # Installing is reversible and never touches a gh this repo did not write.
 test_installer_is_reversible_and_careful() {
   local rec target out installed status
@@ -1044,6 +1104,7 @@ test_shim_never_overrides_an_explicit_credential
 test_shim_runs_repository_work_as_its_own_account
 test_shim_keys_off_every_named_repository
 test_shim_refuses_rather_than_guessing
+test_shim_copies_on_path_reach_the_real_gh
 test_installer_is_reversible_and_careful
 
 echo "# all fm-gh-account tests passed"
