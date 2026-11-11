@@ -514,9 +514,12 @@ fm_session_lock_anchor_pid() {
 # bin/fm-lock.sh's ordinary stale-owner path, which refreshes line 1, rather than
 # silently owned with a dead anchor. A missing lock, a malformed lock, a lock
 # held by a harness outside this ancestry under another (or no) session id, or
-# an ancestry that cannot be resolved all fail closed.
+# an ancestry that cannot be resolved all fail closed. A home stood down from
+# the machine-wide supervisor lease owns nothing, so every owner check here
+# stands down with it (bin/fm-supervisor-lease.sh owns the stand-down record).
 fm_session_lock_owned_by_self() {
   local state=$1 lock_pid pids
+  [ ! -e "$state/.supervisor-lease-lost" ] || return 1
   lock_pid=$(cat "$state/.lock" 2>/dev/null || true)
   fm_session_pid_valid "$lock_pid" || return 1
   pids=$(fm_harness_ancestry_pids) || return 1

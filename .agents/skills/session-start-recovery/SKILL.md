@@ -13,6 +13,7 @@ Every network check a session start owes - GitHub auth, the T3 supervisor keep-a
 The locked startup inactive-outcome scan joins that worker so a slow local current-state read cannot block the digest; its findings use the ordinary durable wake queue.
 
 1. **Lock** - acquires the per-home session lock first, before anything mutates shared state, then starts the deferred startup stage above.
+   When `data/` is a git repository with a remote, the [supervisor lease](../../../docs/configuration.md#supervisor-lease-datasupervisorlease) is acquired just before it; a `SUPERVISOR LEASE` refusal means another machine supervises this fleet, so the lock is never attempted and the session stays read-only like a refused lock.
 2. **Bootstrap** - detect-only checks (tool/version problems, the worktree-tangle check, harness override, dispatch-profile validation, backlog-backend status) always run, but routine confirmations stay silent by default.
    When the lock could not be acquired, the worktree-tangle check uses read-only advisory wording without a checkout repair command.
    Home-local stale Herdr projection cleanup and the seven bootstrap MUTATING sweeps - same-home backlog reconciliation, fleet sync, secondmate convergence, secondmate liveness, pending remote handoff retry, the T3 supervisor keep-alive pin, and Relay artifact writes - run only when this session actually holds the lock from step 1; the five network ones among them run in the deferred stage rather than in this section.

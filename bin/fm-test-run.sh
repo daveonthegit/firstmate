@@ -353,7 +353,7 @@ family_for_basename() {
     fm-backlog-atomicity.test.sh|\
     fm-bootstrap.test.sh|fm-bootstrap-network-parallel.test.sh|fm-fleet-sync.test.sh|fm-gate-refuse.test.sh|fm-gotmp.test.sh|\
     fm-session-start.test.sh|fm-sessionstart-nudge.test.sh|fm-startup-network.test.sh|\
-    fm-tangle-guard.test.sh|fm-update.test.sh)
+    fm-supervisor-lease.test.sh|fm-tangle-guard.test.sh|fm-update.test.sh)
       printf '%s\n' session-bootstrap
       ;;
     fm-afk-pi-herdr-return-e2e.test.sh|\
@@ -928,6 +928,7 @@ tests/fm-supervision-host-hook.test.sh 403793
 tests/fm-supervision-host-live-e2e.test.sh 75
 tests/fm-supervision-host-park.test.sh 329326
 tests/fm-supervision-host.test.sh 435581
+tests/fm-supervisor-lease.test.sh 15000
 tests/fm-tangle-guard.test.sh 8501
 tests/fm-task-delivery.test.sh 32789
 tests/fm-task-inbox.test.sh 31965
@@ -1628,7 +1629,7 @@ families_for_changed_path() {
       ;;
     bin/fm-session-start.sh|bin/fm-fleet-sync.sh|\
     bin/fm-sessionstart-nudge.sh|bin/fm-startup-network.sh|bin/fm-tangle*|bin/fm-update.sh|\
-    bin/fm-gate-refuse*|bin/fm-lock*)
+    bin/fm-gate-refuse*|bin/fm-lock*|bin/fm-supervisor-lease*)
       printf '%s\n' session-bootstrap
       ;;
     bin/fm-bootstrap.sh)
