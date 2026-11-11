@@ -1,0 +1,27 @@
+=== real Claude primary: start host A ===
+BEFORE TAKEOVER: real harness owns the session lock
+26566
+host=mac-primary epoch=1 since=2026-11-11T03:56:20Z by=session-26566
+=== competing home B session start must stay read-only and take no lock ===
+●  READ-ONLY SESSION - THIS MACHINE DOES NOT HOLD THE SUPERVISOR LEASE
+Competing home has no session lock
+=== explicit B takeover then A records push ===
+supervisor-lease: stolen: held by this machine at epoch 2
+supervisor-lease: STOOD DOWN: the lease moved to host=mac-secondary epoch=2 since=2026-11-11T03:56:24Z by=session-26566
+supervisor-lease: this session no longer holds the supervisor lease and is now read-only: do not spawn, steer, merge, or drain
+Push after takeover exit=1
+AFTER TAKEOVER: harness is still alive but no longer owns supervision
+the lease moved to host=mac-secondary epoch=2 since=2026-11-11T03:56:24Z by=session-26566 at=2026-11-11T03:56:25Z
+1794369385	1	check	supervisor-lease-lost	supervisor lease lost: the lease moved to host=mac-secondary epoch=2 since=2026-11-11T03:56:24Z by=session-26566 - this session stood down to read-only
+host=mac-secondary epoch=2 since=2026-11-11T03:56:24Z by=session-26566
+state=done
+pid=28976
+started=1794369382
+finished=1794369384
+rc=0
+locked=1
+phases=probe,sweeps
+generation=1794369382.28792.27698
+lock_pid=26566
+report_published=1
+REAL PRIMARY SCENARIO COMPLETE

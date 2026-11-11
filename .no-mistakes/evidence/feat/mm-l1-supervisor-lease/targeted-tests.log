@@ -1,0 +1,14 @@
+1..12
+ok - a home whose data/ is not a git repository with a remote gets no lease, no output, and no refusal
+ok - the second home refuses while the first holds the lease and records a stand-down
+ok - a rejected records push stands the session down, queues a wake, and blocks further pushes
+ok - release then acquire moves the lease to the other home at the next epoch
+ok - steal needs the owner flag and bumps the epoch past every epoch seen
+ok - an unreachable remote continues only for the recorded holder, and an offline steal publishes later
+ok - a context rebuild confirms without writing and never re-takes a released lease
+ok - a worker-host home refuses the supervisor lease
+ok - configured and fallback identities cannot publish the free-record sentinel
+ok - every mutating verb refuses multiple remotes even with an upstream
+ok - release and steal failures revoke supervision, including uncertain release delivery
+ok - fm-lock.sh refuses the session lock while the home is stood down
+FM_TEST_COMPLETE

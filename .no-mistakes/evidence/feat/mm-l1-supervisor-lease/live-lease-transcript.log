@@ -1,0 +1,241 @@
+=== competing acquisition, release, steal and context rebuild ===
++ FM_HOME={run-worktree}/.validation/world/transfer/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
++ FM_HOME={run-worktree}/.validation/world/transfer/b bin/fm-supervisor-lease.sh acquire (expected exit 1)
+supervisor-lease: refused: the lease is held by mac-a at epoch 1 since 2026-11-11T03:52:13Z
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
+REMOTE RECORD:
+host=mac-a epoch=1 since=2026-11-11T03:52:13Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/transfer/b bin/fm-supervisor-lease.sh steal (expected exit 2)
+supervisor-lease: refused: steal takes the lease from whoever holds it and needs the owner's explicit word: steal --owner-approved
+exit=2
++ FM_HOME={run-worktree}/.validation/world/transfer/b bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 0)
+supervisor-lease: stolen: held by this machine at epoch 2
+exit=0
+REMOTE RECORD:
+host=mac-b epoch=2 since=2026-11-11T03:52:14Z by=session-50698
+host=mac-b epoch=2 since=2026-11-11T03:52:14Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/transfer/a bin/fm-supervisor-lease.sh acquire --reemit (expected exit 1)
+supervisor-lease: refused: the lease is held by mac-b at epoch 2 since 2026-11-11T03:52:14Z
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
++ FM_HOME={run-worktree}/.validation/world/transfer/b bin/fm-supervisor-lease.sh release (expected exit 0)
+supervisor-lease: released at epoch 3; this home has stood down
+exit=0
+REMOTE RECORD:
+host=none epoch=3 since=2026-11-11T03:52:14Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/transfer/b bin/fm-supervisor-lease.sh acquire --reemit (expected exit 1)
+supervisor-lease: refused: this home stood down (released at epoch 3 at=2026-11-11T03:52:14Z); a context rebuild never re-takes the lease
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
++ FM_HOME={run-worktree}/.validation/world/transfer/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 4
+exit=0
++ FM_HOME={run-worktree}/.validation/world/transfer/a bin/fm-supervisor-lease.sh status (expected exit 0)
+supervisor-lease: mode: active (remote origin, branch main -> main)
+supervisor-lease: machine: mac-a
+supervisor-lease: local: host=mac-a epoch=4 since=2026-11-11T03:52:15Z by=session-50698
+supervisor-lease: last seen on remote: host=mac-a epoch=4 since=2026-11-11T03:52:15Z by=session-50698
+exit=0
+REMOTE RECORD:
+host=mac-a epoch=4 since=2026-11-11T03:52:15Z by=session-50698
+=== rejected records push revokes supervision and queues wake ===
++ FM_HOME={run-worktree}/.validation/world/push/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
++ FM_HOME={run-worktree}/.validation/world/push/a bin/fm-supervisor-lease.sh push (expected exit 1)
+supervisor-lease: STOOD DOWN: the records push was rejected ([remote rejected] (pre-receive hook declined))
+supervisor-lease: this session no longer holds the supervisor lease and is now read-only: do not spawn, steer, merge, or drain
+exit=1
+error: this home stood down from the supervisor lease (the records push was rejected ([remote rejected] (pre-receive hook declined)) at=2026-11-11T03:52:16Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+1794369136	1	check	supervisor-lease-lost	supervisor lease lost: the records push was rejected ([remote rejected] (pre-receive hook declined)) - this session stood down to read-only
++ FM_HOME={run-worktree}/.validation/world/push/a bin/fm-supervisor-lease.sh push (expected exit 1)
+supervisor-lease: refused: this home already stood down (the records push was rejected ([remote rejected] (pre-receive hook declined)) at=2026-11-11T03:52:16Z); no records push
+exit=1
+REMOTE RECORD:
+host=mac-a epoch=1 since=2026-11-11T03:52:15Z by=session-50698
+=== successful records push preserves lease bytes ===
++ FM_HOME={run-worktree}/.validation/world/unchanged/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
++ FM_HOME={run-worktree}/.validation/world/unchanged/a bin/fm-supervisor-lease.sh push (expected exit 0)
+supervisor-lease: pushed: records at c065b7e with the lease at epoch 1
+exit=0
+REMOTE RECORD:
+host=mac-a epoch=1 since=2026-11-11T03:52:16Z by=session-50698
+synthetic records
+synthetic progress
+=== remote unavailable: holder only, explicit offline override ===
++ FM_HOME={run-worktree}/.validation/world/offline/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
++ FM_HOME={run-worktree}/.validation/world/offline/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: UNCONFIRMED: the records remote is unreachable (and the repository exists.)
+supervisor-lease: held by this machine at epoch 1 per the local copy; nothing newer was seen
+exit=0
++ FM_HOME={run-worktree}/.validation/world/offline/b bin/fm-supervisor-lease.sh acquire (expected exit 1)
+supervisor-lease: refused: the records remote is unreachable (and the repository exists.) and the local copy does not show this machine holding the lease; only fm-supervisor-lease.sh steal --owner-approved overrides this
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
++ FM_HOME={run-worktree}/.validation/world/offline/a bin/fm-supervisor-lease.sh push (expected exit 3)
+supervisor-lease: deferred: the records remote is unreachable (and the repository exists.); commits stay local until the next push
+exit=3
++ FM_HOME={run-worktree}/.validation/world/offline/b bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 0)
+supervisor-lease: UNCONFIRMED: stolen locally at epoch 2, but the records remote is unreachable (and the repository exists.); the next acquire or push publishes it
+exit=0
++ FM_HOME={run-worktree}/.validation/world/offline/b bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 3
+exit=0
+REMOTE RECORD:
+host=mac-b epoch=3 since=2026-11-11T03:52:18Z by=session-50698
+=== guards: reserved identity, worker role, ambiguous remote, off home ===
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh acquire (expected exit 1)
+supervisor-lease: refused: config/machine-id must be one [A-Za-z0-9._-] token other than none
+supervisor-lease: refused: this machine's id is unknown
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 1)
+supervisor-lease: refused: config/machine-id must be one [A-Za-z0-9._-] token other than none
+exit=1
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh acquire (expected exit 1)
+supervisor-lease: refused: this is a worker-host home (.fm-worker-host), which never supervises
+exit=1
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 1)
+supervisor-lease: refused: this is a worker-host home (.fm-worker-host), which never supervises
+exit=1
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh push (expected exit 1)
+supervisor-lease: refused: this is a worker-host home (.fm-worker-host), which never pushes records
+exit=1
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh acquire (expected exit 1)
+supervisor-lease: refused: data/ must have exactly one records remote
+supervisor-lease: refused: the records repository cannot be resolved
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh release (expected exit 1)
+supervisor-lease: refused: data/ must have exactly one records remote
+supervisor-lease: refused: the records repository cannot be resolved
+exit=1
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh push (expected exit 1)
+supervisor-lease: refused: data/ must have exactly one records remote
+supervisor-lease: refused: the records repository cannot be resolved
+exit=1
++ FM_HOME={run-worktree}/.validation/world/guards/a bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 1)
+supervisor-lease: refused: data/ must have exactly one records remote
+supervisor-lease: refused: the records repository cannot be resolved
+exit=1
++ FM_HOME={run-worktree}/.validation/world/off bin/fm-supervisor-lease.sh acquire (expected exit 0)
+exit=0
++ FM_HOME={run-worktree}/.validation/world/off bin/fm-supervisor-lease.sh status (expected exit 0)
+supervisor-lease: mode: off (data/ is not a git repository with a remote)
+exit=0
+=== lifecycle races and uncertain release delivery (real Git hooks) ===
++ FM_HOME={run-worktree}/.validation/world/release-moved/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
++ FM_HOME={run-worktree}/.validation/world/release-moved/b bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 0)
+supervisor-lease: stolen: held by this machine at epoch 2
+exit=0
+FAULT=moved VERB=release
++ FM_HOME={run-worktree}/.validation/world/release-moved/a bin/fm-supervisor-lease.sh release (expected exit 1)
+supervisor-lease: refused: the lease is not held by this machine (it reads host=mac-b epoch=2 since=2026-11-11T03:52:20Z by=session-50698)
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
+error: this home stood down from the supervisor lease (refused: the lease is not held by this machine (it reads host=mac-b epoch=2 since=2026-11-11T03:52:20Z by=session-50698) at=2026-11-11T03:52:20Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+REMOTE RECORD:
+host=mac-b epoch=2 since=2026-11-11T03:52:20Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/release-race/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
+FAULT=race VERB=release
++ FM_HOME={run-worktree}/.validation/world/release-race/a bin/fm-supervisor-lease.sh release (expected exit 1)
+supervisor-lease: refused: the release push was not confirmed ([remote rejected] (incorrect old value provided)); the move has not started
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
+error: this home stood down from the supervisor lease (refused: the release push was not confirmed ([remote rejected] (incorrect old value provided)); the move has not started at=2026-11-11T03:52:22Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+REMOTE RECORD:
+host=mac-b epoch=2 since=2026-11-11T03:52:22Z by=session-50698
+host=mac-b epoch=2 since=2026-11-11T03:52:22Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/release-rejected/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
+FAULT=rejected VERB=release
++ FM_HOME={run-worktree}/.validation/world/release-rejected/a bin/fm-supervisor-lease.sh release (expected exit 1)
+supervisor-lease: refused: the release push was not confirmed ([remote rejected] (pre-receive hook declined)); the move has not started
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
+error: this home stood down from the supervisor lease (refused: the release push was not confirmed ([remote rejected] (pre-receive hook declined)); the move has not started at=2026-11-11T03:52:23Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+REMOTE RECORD:
+host=mac-a epoch=1 since=2026-11-11T03:52:22Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/release-adoption/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
+FAULT=adoption VERB=release
++ FM_HOME={run-worktree}/.validation/world/release-adoption/a bin/fm-supervisor-lease.sh release (expected exit 1)
+fatal: update_ref failed for ref 'refs/heads/main': cannot lock ref 'refs/heads/main': Unable to create '{run-worktree}/.validation/world/release-adoption/a/data/.git/refs/heads/main.lock': File exists.
+
+Another git process seems to be running in this repository, or the lock file may be stale
+supervisor-lease: refused: the release was pushed but data/ could not be updated
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
+error: this home stood down from the supervisor lease (refused: the release was pushed but data/ could not be updated at=2026-11-11T03:52:24Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+REMOTE RECORD:
+host=none epoch=2 since=2026-11-11T03:52:24Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/release-timeout/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
+FAULT=timeout VERB=release
++ FM_HOME={run-worktree}/.validation/world/release-timeout/a bin/fm-supervisor-lease.sh release (expected exit 1)
+supervisor-lease: refused: the release push was not confirmed (no answer within 1s); the move has not started
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
+error: this home stood down from the supervisor lease (refused: the release push was not confirmed (no answer within 1s); the move has not started at=2026-11-11T03:52:27Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+REMOTE RECORD:
+host=none epoch=2 since=2026-11-11T03:52:25Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/steal-race/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
+FAULT=race VERB=steal
++ FM_HOME={run-worktree}/.validation/world/steal-race/a bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 1)
+supervisor-lease: refused: the steal push was rejected ([remote rejected] (incorrect old value provided)); the records moved meanwhile - run steal again
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
+error: this home stood down from the supervisor lease (refused: the steal push was rejected ([remote rejected] (incorrect old value provided)); the records moved meanwhile - run steal again at=2026-11-11T03:52:33Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+REMOTE RECORD:
+host=mac-b epoch=2 since=2026-11-11T03:52:33Z by=session-50698
+host=mac-b epoch=2 since=2026-11-11T03:52:33Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/steal-rejected/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
+FAULT=rejected VERB=steal
++ FM_HOME={run-worktree}/.validation/world/steal-rejected/a bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 1)
+supervisor-lease: refused: the steal push was rejected ([remote rejected] (pre-receive hook declined)); the records moved meanwhile - run steal again
+supervisor-lease: this home does not hold the supervisor lease; stay read-only
+exit=1
+error: this home stood down from the supervisor lease (refused: the steal push was rejected ([remote rejected] (pre-receive hook declined)); the records moved meanwhile - run steal again at=2026-11-11T03:52:34Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+REMOTE RECORD:
+host=mac-a epoch=1 since=2026-11-11T03:52:34Z by=session-50698
++ FM_HOME={run-worktree}/.validation/world/steal-adoption/a bin/fm-supervisor-lease.sh acquire (expected exit 0)
+supervisor-lease: held by this machine at epoch 1
+exit=0
+FAULT=adoption VERB=steal
++ FM_HOME={run-worktree}/.validation/world/steal-adoption/a bin/fm-supervisor-lease.sh steal --owner-approved (expected exit 1)
+fatal: update_ref failed for ref 'refs/heads/main': cannot lock ref 'refs/heads/main': Unable to create '{run-worktree}/.validation/world/steal-adoption/a/data/.git/refs/heads/main.lock': File exists.
+
+Another git process seems to be running in this repository, or the lock file may be stale
+supervisor-lease: refused: could not update data/ with the steal commit
+exit=1
+error: this home stood down from the supervisor lease (steal attempted at=2026-11-11T03:52:35Z); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)
+lock exit=1
+REMOTE RECORD:
+host=mac-a epoch=2 since=2026-11-11T03:52:35Z by=session-50698
+ALL LIVE CLI SCENARIOS COMPLETED
