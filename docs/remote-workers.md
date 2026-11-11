@@ -46,7 +46,7 @@ The primary's ordinary per-task commands recognize a placed task and run the mat
 - [`fm-control.sh`](../bin/fm-control.sh) runs `interrupt` and `exit` through `control`, and refuses `relaunch`.
 - [`fm-t3-answer.sh`](../bin/fm-t3-answer.sh) reads and answers a T3 worker's pending questions through `answer`.
 
-An SSH exit 255 means the host's result is unknown, so each command reports it as unknown rather than as success or failure, and names the safe next step.
+An SSH exit 255 leaves the remote outcome unknown; the linked command headers own each operation's reporting and recovery contract.
 
 ## Status mirror
 
