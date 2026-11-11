@@ -36,7 +36,9 @@
 # the sidecar, as for a line 1 in the ancestry, and a later acquisition
 # re-anchors.
 #
-# Usage: fm-lock.sh           acquire; exit 1 unless ownership is verified
+# Usage: fm-lock.sh           acquire; exit 1 unless ownership is verified,
+#                             and always while the home is stood down from
+#                             the supervisor lease (bin/fm-supervisor-lease.sh)
 #        fm-lock.sh status    print holder and liveness; always exits 0.
 #                             A held lock is not proof the holder is consuming
 #                             wakes. Machine-readable lock fields live on
@@ -68,7 +70,18 @@ if [ "${1:-}" = "status" ]; then
     held) echo "lock: held by live harness pid $FM_LOCK_INSPECT_PID" ;;
     *) echo "lock: stale (pid $FM_LOCK_INSPECT_PID dead or not a harness)" ;;
   esac
+  if [ -f "$STATE/.supervisor-lease-lost" ]; then
+    echo "lock: refused while this home is stood down from the supervisor lease ($(head -n 1 "$STATE/.supervisor-lease-lost" 2>/dev/null))"
+  fi
   exit 0
+fi
+
+# A home stood down from the machine-wide supervisor lease must not take the
+# session lock again until a full session start re-acquires the lease
+# (bin/fm-supervisor-lease.sh owns the stand-down record).
+if [ -f "$STATE/.supervisor-lease-lost" ]; then
+  echo "error: this home stood down from the supervisor lease ($(head -n 1 "$STATE/.supervisor-lease-lost" 2>/dev/null)); operate read-only until a session start re-acquires it (bin/fm-supervisor-lease.sh status)" >&2
+  exit 1
 fi
 
 me=$(fm_session_lock_anchor_pid) || {

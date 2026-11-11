@@ -13,6 +13,7 @@ Start with the directory layout, then use the setting reference for the behavior
 | Backlog, preferences, and memory | [Backlog backend](#backlog-backend-taskstoml--configbacklog-backend), [captain preferences](#captain-preferences-datacaptainmd--datacaptain-sharedmd), [external memory tiers](#external-memory-tiers-memory-layering-section), [record export](#record-export-configrecord-export-root), and [startup memory budget](#startup-memory-budget-configstartup-memory-budget) |
 | Supervision and presentation | [Pi supervision branch](#pi-supervision-branch), [supervision host](#supervision-host-configsupervision-host), [Codex native Stop park](#codex-native-stop-park-configcodex-stop-park), [warm-cache compaction](#warm-cache-compaction-configwarm-compact), and [Calm preference](#calm-preference-configcalm) |
 | Persistent secondmates | [Secondmate routes](#secondmate-routes-datasecondmatesmd) |
+| Sharing one fleet's records between machines | [Supervisor lease](#supervisor-lease-datasupervisorlease) |
 | Review bots on owned GitHub pull requests | [Contribution review bots](#contribution-review-bots-configcontribution-review-bots) |
 | Per-run overrides and tuning | [Environment variables](#environment-variables) |
 
@@ -97,6 +98,7 @@ Each effective `FM_HOME` contains private operational directories.
 - Captain preferences and optional shared captain preferences.
 - Learnings, backlog, briefs, scout reports, optional task status archives, and the optional per-task no-mistakes pipeline-spend ledger.
 - Explicitly installed content-addressed extension packages under `data/extensions/packages/`.
+- The optional [supervisor lease](#supervisor-lease-datasupervisorlease), only when `data/` is a git repository with a remote.
 
 `state/` holds runtime records:
 
@@ -132,6 +134,8 @@ Untracked files and directories whose names begin with `scratchpad` are also git
 
 - `bin/fm-session-start.sh`'s header is the single owner of session-start ordering, composed commands, digest contents, and the digest's startup mechanism.
 
+- `bin/fm-supervisor-lease.sh`'s header owns the machine-wide lease that session start acquires before the session lock.
+
 - `bin/fm-startup-network.sh`'s header owns the deferred startup stage, including its state files and the safety argument for running its checks later.
 
 - `docs/sessionstart-nudge.md` owns the native session-open adapter tiers that run or nudge the digest command, and the source routing between them.
@@ -139,6 +143,20 @@ Untracked files and directories whose names begin with `scratchpad` are also git
 - `AGENTS.md` retains the run-once and read-once operator rules, lock-refusal safety, installation consent, and direct-report recovery boundaries because those facts apply at every session start.
 
 - Ordinary dead-direct-report recovery is owned by `stuck-crewmate-recovery`, while persistent-secondmate recovery is owned by `secondmate-provisioning`.
+
+## Supervisor lease (data/supervisor.lease)
+
+The session lock only stops two sessions on one machine, so a home whose records are shared between machines also needs a supervisor lease.
+The lease applies only when `data/` is itself the top of a git repository that has a remote; every other home, including one whose `data/` merely sits inside the Firstmate checkout, has no lease and starts exactly as before.
+For such a records repository, `data/supervisor.lease` names the machine that may supervise, with an epoch that grows on every change.
+Session start acquires it before the session lock, and a machine that cannot acquire it stays read-only without taking the lock.
+The remote's refusal of a non-fast-forward push decides which machine wins, so no other service is involved.
+
+A machine is identified by `config/machine-id` (one token of letters, digits, `.`, `_`, or `-`) when present, and otherwise by its macOS local host name or its short host name.
+A worker-host home, marked by `.fm-worker-host`, never holds the lease.
+`bin/fm-supervisor-lease.sh` adds `status`, `release` (hand the lease off before moving the supervisor), `steal --owner-approved` (only on the owner's explicit word), and `push` (the records push for a running session, which stands the session down when the push is rejected or the lease moved).
+While a home is stood down, `bin/fm-lock.sh` refuses the session lock and no supervision owner treats the session as the lock holder, until a later session start re-acquires the lease.
+The [`bin/fm-supervisor-lease.sh` header](../bin/fm-supervisor-lease.sh) owns the record format, the remote and branch it uses, the unreachable-remote rule, the stand-down record, exit codes, and `FM_SUPERVISOR_LEASE_TIMEOUT`.
 
 ## Orchestrator behavior (AGENTS.md)
 
