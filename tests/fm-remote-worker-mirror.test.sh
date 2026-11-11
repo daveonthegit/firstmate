@@ -67,8 +67,8 @@ primary() {
 
 place() { # <task> <kind>: a placed task on both sides
   : > "$HOST/state/$1.remote-worker"
-  fm_write_meta "$PARENT/state/$1.meta" "kind=$2" "remote_host=remote-mac" \
-    "remote_worker_host=mbp" "remote_root=$ROOT" "remote_home=$HOST"
+  fm_write_meta "$PARENT/state/$1.meta" "kind=$2" "remote_worker_host=mbp" \
+    "remote_root=$ROOT" "remote_home=$HOST"
 }
 
 SEQ=0
@@ -219,14 +219,14 @@ pass "removing the broken marker and cursor resumes mirroring without duplicate 
 # A record for a task this home no longer holds is ignored.
 rm -f "$PARENT/state/s1.meta"
 printf 'working [at=1793860006]: orphan line\n' >> "$HOST/state/s1.status"
-fm_write_meta "$PARENT/state/s1.meta" "kind=scout" "remote_host=remote-mac" "remote_worker_host=mbp"
+fm_write_meta "$PARENT/state/s1.meta" "kind=scout" "remote_worker_host=mbp"
 capture || fail "the membership read failed: $(cat "$TMP_ROOT/source.err")"
 rm -f "$PARENT/state/s1.meta"
 out=$(primary "$ADAPTER" ingest mbp "$RESULT") || fail "handle with a departed member failed: $out"
 assert_not_contains "$(cat "$PARENT/state/s1.status")" "orphan line" "a departed task's record was mirrored"
 pass "a record for a task no longer placed from this home is ignored"
 
-fm_write_meta "$PARENT/state/s1.meta" "kind=scout" "remote_host=remote-mac" "remote_worker_host=mbp"
+fm_write_meta "$PARENT/state/s1.meta" "kind=scout" "remote_worker_host=mbp"
 out=$(primary "$ADAPTER" retire-task mbp t1) || fail "retire-task failed: $out"
 assert_absent "$PARENT/state/remote-workers/mbp/t1.cursor" "retire-task left the cursor"
 assert_not_contains "$out" "no tasks left" "the source was retired while a member remained"

@@ -55,9 +55,9 @@
 # watcher's signal scan already announces. With no members, `source` waits out
 # one window locally and reports it empty instead of calling the host.
 # `retire-task` drops one task's cursor and mirror records and retires the
-# host's source once it has no other members left. Primary-side placement and
-# cleanup do not yet call this adapter; docs/remote-workers.md owns current
-# integration limits.
+# host's source once it has no other members left. Placement on the primary
+# (bin/fm-spawn.sh --host) calls `arm`; primary-side cleanup does not yet call
+# `retire-task`, and docs/remote-workers.md owns current integration limits.
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

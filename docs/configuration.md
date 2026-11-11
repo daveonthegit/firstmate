@@ -632,6 +632,7 @@ Task meta records `backend=` only for a non-default backend; an absent `backend=
 
 - A tern task additionally records `tern_session_id=`, `tern_tab_id=`, and `tern_block_id=`.
 - For hc endpoint fields and automatic-selection provenance, see [Task shape and metadata](hc-backend.md#task-shape-and-metadata).
+- A ship or scout placed on a worker host records `remote_worker_host=`, `remote_root=`, `remote_home=`, `remote_backend=`, `remote_target=`, `remote_worktree=`, and `remote_project=` instead of a local backend endpoint, `worktree=`, and `project=`, with `window=remote:<id>` as a placeholder; [remote workers](remote-workers.md#how-it-works) owns that record.
 
 ### Task selectors
 

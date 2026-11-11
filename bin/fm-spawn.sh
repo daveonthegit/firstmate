@@ -4,6 +4,7 @@
 # Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--backend <name>] --secondmate
+#        fm-spawn.sh <task-id> <project> {--mode <mode> --yolo <on|off>|--scout} --host <worker-host-id> [--branch-prefix <prefix>] [--base-branch <branch>] [--upstream-consent <scope>] [--harness <name>] [--model <name>] [--effort <level>] [--backend <name>]
 #   --mode and --yolo are this task's delivery contract, REQUIRED for every ship
 #   spawn and refused on --scout and --secondmate spawns. Firstmate resolves both
 #   per task at intake (AGENTS.md section 7); data/projects.md holds the captain's
@@ -60,6 +61,31 @@
 #   base_branch= in state/<id>.meta, which a relaunch reuses and later review and
 #   cleanup read; it is refused on secondmates and relaunches, and without it
 #   nothing changes.
+#   --host <worker-host-id> places a fresh ship or scout on a worker host named
+#   in data/worker-hosts.md instead of launching it here (docs/remote-workers.md).
+#   Only the brief's `# Task` body crosses over, with the flags that shape the
+#   host's scaffold: the delivery flags above, the brief's recorded forge,
+#   shape, and pr tokens, --herdr-lab when the brief carries the Herdr
+#   isolation contract, --journal when it has a Work journal section, and any
+#   explicit harness, model, effort, and backend. The host's own fm-spawn
+#   re-validates that brief against its own project registry, capacity, and
+#   backend; here only the brief's Task, Delivery contract, Ship branch, Base
+#   branch, and upstream-consent agreement, the dispatch-profile harness
+#   backstop, and the backlog preflight run, and no local backend, capacity,
+#   worktree, or launch brief is touched. The record here names the host and
+#   the route it returned (remote_worker_host=, remote_root=, remote_home=,
+#   remote_backend=, remote_target=, remote_worktree=, remote_project=), never
+#   remote_host= nor a local worktree= or project=, so this machine's capacity
+#   does not count it (bin/fm-task-route-lib.sh owns telling it apart). The
+#   backlog item then moves In flight as for a local spawn, and the host's
+#   status mirror (bin/fm-procevent-remote-worker.sh arm) is armed. A host at
+#   capacity exits 75 and leaves the item queued. Exit 255 records nothing and
+#   leaves the item queued; re-running the same spawn is safe because the host
+#   answers a task it already holds with that worker's route, and the same
+#   re-run finishes a placement whose record, backlog move, or mirror arm
+#   failed after the host launched. --relaunch, --secondmate, --account,
+#   --hermes-profile, --herdr-resume-lock-wait, and a raw launch command are
+#   refused with --host.
 #   Ship/scout launches always put fm-dod-lib.sh's current worker role scope
 #   first in the private launch-brief overlay, including the exact task-owned
 #   steering inbox. This never rewrites a project's instruction files or a
@@ -989,6 +1015,10 @@ fm_backlog_directory_present "$STATE" "state directory" || {
 . "$SCRIPT_DIR/fm-worker-account-lib.sh"
 # shellcheck source=bin/fm-omp-profile-lib.sh
 . "$SCRIPT_DIR/fm-omp-profile-lib.sh"
+# shellcheck source=bin/fm-worker-host-lib.sh
+. "$SCRIPT_DIR/fm-worker-host-lib.sh"
+# shellcheck source=bin/fm-task-route-lib.sh
+. "$SCRIPT_DIR/fm-task-route-lib.sh"
 # Fail closed before any fleet mutation: a no-mistakes gate agent must never spawn
 # a direct report (see bin/fm-gate-refuse-lib.sh).
 fm_refuse_if_gate_agent
@@ -1022,6 +1052,8 @@ UPSTREAM_CONSENT_SET=0
 TRACEPARENT_SET=0
 ACCOUNT_ARG=
 ACCOUNT_SET=0
+HOST_ARG=
+HOST_SET=0
 RELAUNCH=0
 # Opt-in only: exact-resume presentation-order lock waits instead of refusing.
 # Absent/unset keeps upstream refuse-on-contention. See header.
@@ -1084,6 +1116,10 @@ for a in "$@"; do
     account)
       ACCOUNT_ARG=$a
       ACCOUNT_SET=1
+      ;;
+    host)
+      HOST_ARG=$a
+      HOST_SET=1
       ;;
     *)
       echo "error: internal parser state for --$want_value" >&2
@@ -1161,6 +1197,11 @@ for a in "$@"; do
     ACCOUNT_ARG=${a#--account=}
     ACCOUNT_SET=1
     ;;
+  --host) want_value=host ;;
+  --host=*)
+    HOST_ARG=${a#--host=}
+    HOST_SET=1
+    ;;
   *) POS+=("$a") ;;
   esac
 done
@@ -1218,6 +1259,28 @@ fi
   echo "error: --account applies to ships and scouts; secondmate ${POS[0]:-} launches on its own config/secondmate-accounts/<id>/claude-account pin" >&2
   exit 1
 }
+# --host places a fresh ship or scout on a worker host, whose own spawn owns
+# every launch axis this home cannot forward (spawn_worker_host below).
+if [ "$HOST_SET" -eq 1 ]; then
+  case "$HOST_ARG" in
+  '' | -* | *[!A-Za-z0-9._-]*)
+    echo "error: --host requires a worker host id from data/worker-hosts.md (got '$HOST_ARG')" >&2
+    exit 1
+    ;;
+  esac
+  [ "$KIND" != secondmate ] || {
+    echo "error: --host places a ship or scout on a worker host; a remote secondmate's host is its data/secondmates.md route" >&2
+    exit 1
+  }
+  [ "$RELAUNCH" -eq 0 ] || {
+    echo "error: --host applies to a fresh spawn; a placed task keeps the worker host it was placed on" >&2
+    exit 1
+  }
+  [ "$ACCOUNT_SET" -eq 0 ] && [ "$HERMES_PROFILE_SET" -eq 0 ] && [ "$HERDR_RESUME_LOCK_WAIT" -eq 0 ] || {
+    echo "error: --account, --hermes-profile, and --herdr-resume-lock-wait are not forwarded to a worker host; its own home configures them" >&2
+    exit 1
+  }
+fi
 # A parent-delivered carrier replaces this home's own resolution, so it is
 # refused unless it is a secondmate spawn carrying a strictly valid W3C value.
 # Nothing else may reach the pane's TRACEPARENT export.
@@ -1709,6 +1772,311 @@ spawn_remote_secondmate() {
   [ ! -e "$CONFIG/fleet-ledger" ] || FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE FM_CONFIG_OVERRIDE=$CONFIG "$SCRIPT_DIR/fm-fleet-ledger.sh" dispatched "$id" secondmate "" "$harness" "${model#-}" || true
   echo "spawned $id harness=$harness kind=secondmate mode=secondmate yolo=off window=remote:$id worktree=$home remote=$host backend=$remote_backend"
   return 0
+}
+
+# Backlog preflight (bin/fm-backlog-transition-lib.sh), shared by a local spawn
+# and a worker-host placement. The spawn is about to become the sole owner of
+# the row's In-flight transition, so prove the row is transitionable BEFORE any
+# endpoint, worktree, or record exists: a refusal here costs nothing to unwind,
+# while the same refusal after publication would strand a live worker. The
+# authoritative mutation still runs under the meta lock later.
+spawn_backlog_preflight() {
+  BACKLOG_TRANSITION=0
+  BACKLOG_ROW_STATE=
+  if fm_backlog_transition_applies "$CONFIG" "$DATA" "$KIND"; then
+    BACKLOG_TRANSITION=1
+    if fm_backlog_row_probe "$DATA" "$ID"; then
+      BACKLOG_ROW_STATE=$FM_BACKLOG_ROW_STATE
+    elif [ "$FM_BACKLOG_ROW_RESULT" = not_found ]; then
+      echo "error: task $ID has no backlog item in this home, so dispatching it would leave a worker no record owns; add it first (bin/fm-tasks-axi.sh add $ID '<title>' --kind $KIND) and re-run" >&2
+      exit 1
+    else
+      echo "error: task $ID's backlog item could not be read before dispatch ($FM_BACKLOG_ROW_ERROR)" >&2
+      exit 1
+    fi
+    spawn_preflight_actor=$(fm_lease_actor) || exit "$FM_LEASE_REFUSE_EXIT"
+    if [ "$RELAUNCH" -ne 1 ] && [ "$spawn_preflight_actor" = branch ] && fm_lease_away_relocated; then
+      if [ "$BACKLOG_ROW_STATE" != "queued no no" ]; then
+        echo "error: spawn refused - the supervision branch under the away-posture record may dispatch only queued unblocked work (already queued, or filed by the branch from the captain's away words); task $ID has no dispatchable backlog item in this home" >&2
+        exit 1
+      fi
+    elif ! fm_backlog_row_dispatchable "$BACKLOG_ROW_STATE"; then
+      echo "error: this home's backlog item $ID is not dispatchable in state $BACKLOG_ROW_STATE; refusing before creating its endpoint or local copy" >&2
+      exit 1
+    fi
+  else
+    BACKLOG_GATE_STATUS=$?
+    if [ "$BACKLOG_GATE_STATUS" -eq 2 ]; then
+      echo "error: task $ID cannot be dispatched because its backlog data directory is inaccessible: $DATA ($FM_BACKLOG_TRANSITION_ERROR)" >&2
+      exit 1
+    fi
+  fi
+}
+# Read one key from the host leg's route block (the last line wins).
+worker_host_route_value() {  # <route> <key>
+  printf '%s\n' "$1" | sed -n "s/^$2=//p" | tail -1
+}
+
+# --host (the header owns the contract): place this fresh ship or scout through
+# the host leg's spawn, after the task-set lock and before any local backend,
+# capacity, worktree, or launch-brief step, then exit.
+spawn_worker_host() {
+  local proj_name harness brief body_file err_file out rc=0 meta tmp existing_target
+  local brief_mode brief_branch brief_consent brief_forge brief_shape brief_pr address_line
+  local route_kind route_backend route_target route_worktree route_project route_harness
+  local route_model route_effort route_branch route_base value key commit_rc
+  local -a host_args
+  [ "${#POS[@]}" -ge 2 ] && [ "${#POS[@]}" -le 3 ] || {
+    echo "error: --host takes <task-id> <project> [harness]" >&2
+    exit 2
+  }
+  proj_name=${POS[1]%/}
+  proj_name=${proj_name##*/}
+  case "$proj_name" in
+  '' | -* | .* | *[!A-Za-z0-9._-]*)
+    echo "error: --host needs a project named by its registered clone directory (got '${POS[1]}')" >&2
+    exit 1
+    ;;
+  esac
+  harness=${HARNESS_ARG:-${POS[2]:-}}
+  if [ -z "$harness" ] && [ -f "$CONFIG/crew-dispatch.json" ]; then
+    echo "error: config/crew-dispatch.json is active - pass an explicit harness resolved from the dispatch rules (the consultation backstop, so the rules are never silently skipped)." >&2
+    exit 1
+  fi
+  case "$harness" in
+  *[!A-Za-z0-9._-]*)
+    echo "error: --host forwards only a named harness adapter, never a raw launch command: $harness" >&2
+    exit 1
+    ;;
+  esac
+  rc=0
+  worker_host_lookup "$DATA" "$HOST_ARG" || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    echo "error: no worker host '$HOST_ARG' is registered in $(worker_host_registry_path "$DATA"); register it there first (docs/remote-workers.md)" >&2
+    exit 1
+  elif [ "$rc" -ne 0 ]; then
+    echo "error: --host $HOST_ARG cannot be resolved: $WORKER_HOST_ERROR" >&2
+    exit 1
+  fi
+
+  brief="$DATA/$ID/brief.md"
+  [ -f "$brief" ] || {
+    echo "error: task $ID has no brief at $brief" >&2
+    exit 1
+  }
+  if fm_brief_task_placeholders_present "$brief"; then
+    echo "error: $brief still contains {TASK} or {FIRSTMATE_SPEC}; fill ## Captain's intent and ## Firstmate spec before spawn" >&2
+    exit 1
+  fi
+  if ! fm_brief_task_content_valid "$brief"; then
+    echo "error: $brief must contain nonempty ## Captain's intent and ## Firstmate spec subsections (or a nonempty legacy # Task body) before spawn" >&2
+    exit 1
+  fi
+  if address_line=$(fm_brief_intent_address_line "$brief"); then
+    echo "error: $brief ## Captain's intent has an operator-address line: $address_line; write the captain's actual words without a Captain label or address before spawn" >&2
+    exit 1
+  fi
+  if [ "$BASE_BRANCH_SET" -eq 1 ]; then
+    if ! fm_brief_base_branches "$brief" >/dev/null || fm_brief_base_branches "$brief" | grep -vxF -- "$BASE_BRANCH" >/dev/null; then
+      echo "error: $brief must record Base branch: $BASE_BRANCH and no other Base branch line to spawn with --base-branch $BASE_BRANCH" >&2
+      exit 1
+    fi
+  elif fm_brief_base_branches "$brief" >/dev/null; then
+    echo "error: $brief records a Base branch line but the spawn has no --base-branch" >&2
+    exit 1
+  fi
+
+  host_args=()
+  if [ "$KIND" = scout ]; then
+    host_args+=(--scout)
+  else
+    brief_mode=$(sed -n 's/^Delivery contract: mode=\([^ ]*\).*$/\1/p' "$brief" | head -n 1)
+    brief_branch=$(sed -n 's/^Ship branch: //p' "$brief" | head -n 1)
+    brief_consent=$(sed -n 's/^Delivery contract: mode=[^ ]*.*[[:space:]]upstream-consent=\([^ ]*\).*$/\1/p' "$brief" | head -n 1)
+    brief_forge=$(sed -n 's/^Delivery contract: mode=[^ ]*.*[[:space:]]forge=\([^ ]*\).*$/\1/p' "$brief" | head -n 1)
+    brief_shape=$(sed -n 's/^Delivery contract: mode=[^ ]*.*[[:space:]]shape=\([^ ]*\).*$/\1/p' "$brief" | head -n 1)
+    brief_pr=$(sed -n 's/^Delivery contract: mode=[^ ]*.*[[:space:]]pr=\([^ ]*\).*$/\1/p' "$brief" | head -n 1)
+    if [ -n "$brief_mode" ] && [ "$brief_mode" != "$MODE" ]; then
+      echo "error: delivery mismatch for $ID: the brief says mode=$brief_mode but this spawn passed --mode $MODE" >&2
+      exit 1
+    fi
+    if [ -n "$brief_branch" ] && [ "$brief_branch" != "$BRANCH" ]; then
+      echo "error: branch mismatch for $ID: the brief says branch=$brief_branch but this spawn selected branch=$BRANCH" >&2
+      exit 1
+    fi
+    if [ "$brief_consent" != "$UPSTREAM_CONSENT" ]; then
+      echo "error: upstream-consent mismatch for $ID: $brief records upstream-consent=${brief_consent:-none} but this spawn passed ${UPSTREAM_CONSENT:-none}" >&2
+      exit 1
+    fi
+    host_args+=(--mode "$MODE" --yolo "$YOLO")
+    [ "$BRANCH_PREFIX_SET" -eq 0 ] || host_args+=(--branch-prefix "$BRANCH_PREFIX")
+    [ -z "$UPSTREAM_CONSENT" ] || host_args+=(--upstream-consent "$UPSTREAM_CONSENT")
+    [ -z "$brief_forge" ] || [ "$brief_forge" = none ] || host_args+=(--forge "$brief_forge")
+    [ -z "$brief_shape" ] || host_args+=(--shape "$brief_shape")
+    [ -z "$brief_pr" ] || [ "$brief_pr" = auto ] || host_args+=(--pr "$brief_pr")
+  fi
+  [ "$BASE_BRANCH_SET" -eq 0 ] || host_args+=(--base-branch "$BASE_BRANCH")
+  ! grep -Fq '# Herdr isolation - HARD SAFETY CONTRACT' "$brief" || host_args+=(--herdr-lab)
+  ! fm_brief_heading_present "$brief" "# Work journal" || host_args+=(--journal)
+  [ -z "$harness" ] || host_args+=(--harness "$harness")
+  [ -z "$MODEL" ] || host_args+=(--model "$MODEL")
+  [ -z "$EFFORT" ] || host_args+=(--effort "$EFFORT")
+  [ "$BACKEND_SET" -eq 0 ] || host_args+=(--backend "$BACKEND_ARG")
+
+  spawn_backlog_preflight
+  SPAWN_TASK_LOCK="$STATE/.spawn-$ID.lock"
+  fm_lock_try_acquire "$SPAWN_TASK_LOCK" || {
+    echo "error: another spawn is already creating task $ID" >&2
+    exit 1
+  }
+  SPAWN_TASK_LOCK_HELD=1
+  meta="$STATE/$ID.meta"
+  SPAWN_META_LOCK=$(fm_meta_lock_path "$meta") || exit 1
+  fm_lock_acquire_wait "$SPAWN_META_LOCK"
+  SPAWN_META_LOCK_HELD=1
+  if [ -e "$STATE/$ID.backlog-close" ] || [ -L "$STATE/$ID.backlog-close" ]; then
+    echo "error: task $ID has a pending authoritative backlog close at $STATE/$ID.backlog-close; finish or repair that close before dispatching a new worker" >&2
+    exit 1
+  fi
+  # A record already here is only this same placement, left by a run whose
+  # backlog move or mirror arm failed after publication; re-running finishes it.
+  existing_target=
+  if [ -e "$meta" ] || [ -L "$meta" ]; then
+    if ! fm_task_route "$meta" || [ "$FM_TASK_ROUTE" != worker-host ] || [ "$FM_TASK_ROUTE_HOST" != "$HOST_ARG" ] ||
+      [ "$(fm_meta_get "$meta" kind)" != "$KIND" ]; then
+      echo "error: task $ID already has a task record that is not a $KIND placed on worker host $HOST_ARG; refusing to place it again" >&2
+      exit 1
+    fi
+    existing_target=$(fm_meta_get "$meta" remote_target)
+  fi
+
+  body_file=$(mktemp "${TMPDIR:-/tmp}/fm-spawn-host-task.XXXXXX") || exit 1
+  err_file=$(mktemp "${TMPDIR:-/tmp}/fm-spawn-host-err.XXXXXX") || {
+    rm -f -- "$body_file"
+    exit 1
+  }
+  if ! fm_brief_heading_body "$brief" "# Task" > "$body_file"; then
+    rm -f -- "$body_file" "$err_file"
+    echo "error: could not read the # Task section of $brief" >&2
+    exit 1
+  fi
+  rc=0
+  out=$("$SCRIPT_DIR/fm-on.sh" --stdin "$HOST_ARG" fm-remote-worker-control.sh spawn "$ID" "$proj_name" \
+    "${host_args[@]}" < "$body_file" 2> "$err_file") || rc=$?
+  [ ! -s "$err_file" ] || cat "$err_file" >&2
+  rm -f -- "$body_file" "$err_file"
+  if [ "$rc" -eq "$FM_PROJECT_CAPACITY_DEFER_EXIT" ]; then
+    echo "deferred: worker host $HOST_ARG has no free place for project $proj_name; task $ID was not placed and its backlog item stays queued - dispatch it again once that host has room" >&2
+    exit "$FM_PROJECT_CAPACITY_DEFER_EXIT"
+  fi
+  if [ "$rc" -eq 255 ]; then
+    echo "error: worker host $HOST_ARG ($WORKER_HOST_HOST) was unreachable, or whether it launched $ID is unknown; nothing was recorded here and its backlog item stays queued - re-run this same spawn, which the host answers with any worker it already launched instead of launching a second one" >&2
+    exit 255
+  fi
+  if [ "$rc" -ne 0 ]; then
+    [ -z "$out" ] || printf '%s\n' "$out" >&2
+    echo "error: worker host $HOST_ARG refused to place $ID (exit $rc); nothing was recorded here" >&2
+    exit "$rc"
+  fi
+
+  route_kind=$(worker_host_route_value "$out" kind)
+  route_backend=$(worker_host_route_value "$out" backend)
+  route_target=$(worker_host_route_value "$out" target)
+  route_worktree=$(worker_host_route_value "$out" worktree)
+  route_project=$(worker_host_route_value "$out" project)
+  route_harness=$(worker_host_route_value "$out" harness)
+  route_model=$(worker_host_route_value "$out" model)
+  route_effort=$(worker_host_route_value "$out" effort)
+  route_branch=$(worker_host_route_value "$out" branch)
+  route_base=$(worker_host_route_value "$out" base_branch)
+  value=ok
+  [ "$(worker_host_route_value "$out" schema)" = fm-remote-worker-control.v1 ] || value="schema"
+  [ "$(worker_host_route_value "$out" task)" = "$ID" ] || value="task"
+  [ "$route_kind" = "$KIND" ] || value="kind"
+  [ -n "$route_backend" ] && [ -n "$route_target" ] && [ -n "$route_worktree" ] || value="endpoint"
+  [ "$BACKEND_SET" -eq 0 ] || [ "$route_backend" = "$BACKEND_ARG" ] || value="backend"
+  [ -z "$harness" ] || [ "$route_harness" = "$harness" ] || value="harness"
+  if [ "$KIND" = ship ]; then
+    [ "$(worker_host_route_value "$out" mode)" = "$MODE" ] && [ "$(worker_host_route_value "$out" yolo)" = "$YOLO" ] || value="delivery"
+  fi
+  [ -z "$existing_target" ] || [ "$existing_target" = "$route_target" ] || value="existing endpoint"
+  for key in "$route_backend" "$route_target" "$route_worktree" "$route_project" "$route_harness" \
+    "$route_model" "$route_effort" "$route_branch" "$route_base"; do
+    case "$key" in *[[:cntrl:]]*) value="control character" ;; esac
+  done
+  if [ "$value" != ok ]; then
+    printf '%s\n' "$out" >&2
+    echo "error: worker host $HOST_ARG returned a route for $ID that does not match this placement ($value); nothing was recorded here - inspect it with bin/fm-on.sh $HOST_ARG fm-remote-worker-control.sh route $ID" >&2
+    exit 1
+  fi
+
+  if [ -z "$existing_target" ]; then
+    tmp="$meta.tmp.$$"
+    {
+      echo "window=remote:$ID"
+      echo "endpoint_task_id=$ID"
+      echo "harness=$route_harness"
+      echo "kind=$KIND"
+      if [ "$KIND" = ship ]; then
+        echo "mode=$MODE"
+        echo "yolo=$YOLO"
+        echo "branch=$route_branch"
+        [ -z "$UPSTREAM_CONSENT" ] || echo "upstream_consent=$UPSTREAM_CONSENT"
+      fi
+      [ -z "$route_base" ] || echo "base_branch=$route_base"
+      echo "model=$route_model"
+      echo "effort=$route_effort"
+      echo "spawn_gen=s$(date +%s).${BASHPID:-$$}.$RANDOM"
+      echo "remote_worker_host=$HOST_ARG"
+      echo "remote_root=$WORKER_HOST_ROOT"
+      echo "remote_home=$WORKER_HOST_HOME"
+      echo "remote_backend=$route_backend"
+      echo "remote_target=$route_target"
+      echo "remote_worktree=$route_worktree"
+      echo "remote_project=$route_project"
+    } > "$tmp"
+    if ! fm_backlog_atomic_transition publish "$tmp" "$meta" "task record" "$STATE"; then
+      rm -f -- "$tmp"
+      echo "error: worker host $HOST_ARG launched $ID, but its task record could not be published here ($FM_BACKLOG_TRANSITION_ERROR); re-run this same spawn to record the existing worker" >&2
+      exit 1
+    fi
+  fi
+  if [ "$BACKLOG_TRANSITION" = 1 ]; then
+    commit_rc=0
+    FM_TASKS_AXI_TIMEOUT=${FM_TASKS_AXI_TIMEOUT:-30} \
+      fm_backlog_atomic_transition dispatch "$meta" "$DATA" "$ID" "$STATE" || commit_rc=$?
+    if [ "$commit_rc" -ne 0 ]; then
+      commit_rc=0
+      FM_TASKS_AXI_TIMEOUT=${FM_TASKS_AXI_TIMEOUT:-30} \
+        fm_backlog_atomic_transition dispatch "$meta" "$DATA" "$ID" "$STATE" || commit_rc=$?
+    fi
+    if [ "$commit_rc" -ne 0 ]; then
+      # The record goes with the failed move, so a record still means In
+      # flight; the worker keeps running on the host and a re-run records it.
+      fm_backlog_atomic_transition remove "$meta" "provisional task record" "$STATE" ||
+        echo "error: the provisional record $meta could not be removed ($FM_BACKLOG_TRANSITION_ERROR)" >&2
+      echo "error: worker host $HOST_ARG launched $ID, but its backlog item could not be moved to In flight; fix the backlog and re-run this same spawn, which records the existing worker instead of launching another" >&2
+      exit "$commit_rc"
+    fi
+  fi
+  SPAWN_META_LOCK_HELD=0
+  fm_lock_release "$SPAWN_META_LOCK" || true
+  SPAWN_TASK_LOCK_HELD=0
+  fm_lock_release "$SPAWN_TASK_LOCK" || true
+  if [ "$SPAWN_TASK_SET_LOCK_HELD" = 1 ]; then
+    SPAWN_TASK_SET_LOCK_HELD=0
+    fm_lock_release "$SPAWN_TASK_SET_LOCK" || true
+  fi
+  "$SCRIPT_DIR/fm-home-summary-refresh.sh" --best-effort || true
+  if ! "$SCRIPT_DIR/fm-procevent-remote-worker.sh" arm "$HOST_ARG" >/dev/null; then
+    echo "error: $ID is placed on worker host $HOST_ARG and recorded here, but its status mirror could not be armed; re-run this same spawn, or bin/fm-procevent-remote-worker.sh arm $HOST_ARG" >&2
+    exit 1
+  fi
+  [ ! -e "$CONFIG/fleet-ledger" ] || FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE FM_CONFIG_OVERRIDE=$CONFIG "$SCRIPT_DIR/fm-fleet-ledger.sh" dispatched "$ID" "$KIND" "$proj_name" "$route_harness" "$route_model" || true
+  value=
+  [ "$KIND" != ship ] || value=" mode=$MODE yolo=$YOLO"
+  echo "spawned $ID harness=$route_harness kind=$KIND$value window=remote:$ID worktree=$route_worktree host=$HOST_ARG backend=$route_backend"
+  exit 0
 }
 
 BACKEND=
@@ -2240,6 +2608,7 @@ if [ "${#POS[@]}" -gt 0 ] && [ "${POS[0]}" != "$idpart" ] && case "$idpart" in *
   [ "$BASE_BRANCH_SET" -eq 0 ] || shared_args+=(--base-branch "$BASE_BRANCH")
   [ "$HERDR_RESUME_LOCK_WAIT" -eq 0 ] || shared_args+=(--herdr-resume-lock-wait)
   [ "$ACCOUNT_SET" -eq 0 ] || shared_args+=(--account "$ACCOUNT_ARG")
+  [ "$HOST_SET" -eq 0 ] || shared_args+=(--host "$HOST_ARG")
   for pair in "${POS[@]}"; do
     case "$pair" in
     *=*) : ;;
@@ -2430,6 +2799,9 @@ if [ "$KIND" = secondmate ]; then
     remote_spawn_rc=$?
   fi
   [ "$remote_spawn_rc" -eq 3 ] || exit "$remote_spawn_rc"
+fi
+if [ "$HOST_SET" -eq 1 ]; then
+  spawn_worker_host
 fi
 # Backend selection (data/fm-backend-design-d7): explicit --backend, else
 # FM_BACKEND env, else config/backend, else runtime auto-detection, else
@@ -4978,41 +5350,9 @@ herdr_projection_existing_meta_allows_flat() { # <meta>
   esac
 }
 
-# Backlog preflight (bin/fm-backlog-transition-lib.sh). This spawn is about to
-# become the sole owner of the row's In-flight transition, so prove the row is
-# transitionable BEFORE any endpoint, worktree, or record exists: a refusal here
-# costs nothing to unwind, while the same refusal after publication would strand
-# a live pane. The authoritative mutation still runs under the meta lock below.
-BACKLOG_TRANSITION=0
-BACKLOG_ROW_STATE=
-if fm_backlog_transition_applies "$CONFIG" "$DATA" "$KIND"; then
-  BACKLOG_TRANSITION=1
-  if fm_backlog_row_probe "$DATA" "$ID"; then
-    BACKLOG_ROW_STATE=$FM_BACKLOG_ROW_STATE
-  elif [ "$FM_BACKLOG_ROW_RESULT" = not_found ]; then
-    echo "error: task $ID has no backlog item in this home, so dispatching it would leave a worker no record owns; add it first (bin/fm-tasks-axi.sh add $ID '<title>' --kind $KIND) and re-run" >&2
-    exit 1
-  else
-    echo "error: task $ID's backlog item could not be read before dispatch ($FM_BACKLOG_ROW_ERROR)" >&2
-    exit 1
-  fi
-  spawn_preflight_actor=$(fm_lease_actor) || exit "$FM_LEASE_REFUSE_EXIT"
-  if [ "$RELAUNCH" -ne 1 ] && [ "$spawn_preflight_actor" = branch ] && fm_lease_away_relocated; then
-    if [ "$BACKLOG_ROW_STATE" != "queued no no" ]; then
-      echo "error: spawn refused - the supervision branch under the away-posture record may dispatch only queued unblocked work (already queued, or filed by the branch from the captain's away words); task $ID has no dispatchable backlog item in this home" >&2
-      exit 1
-    fi
-  elif ! fm_backlog_row_dispatchable "$BACKLOG_ROW_STATE"; then
-    echo "error: this home's backlog item $ID is not dispatchable in state $BACKLOG_ROW_STATE; refusing before creating its endpoint or local copy" >&2
-    exit 1
-  fi
-else
-  BACKLOG_GATE_STATUS=$?
-  if [ "$BACKLOG_GATE_STATUS" -eq 2 ]; then
-    echo "error: task $ID cannot be dispatched because its backlog data directory is inaccessible: $DATA ($FM_BACKLOG_TRANSITION_ERROR)" >&2
-    exit 1
-  fi
-fi
+# Backlog preflight (spawn_backlog_preflight above), before any endpoint,
+# worktree, or record exists.
+spawn_backlog_preflight
 
 if [ "$SPAWN_META_LOCK_HELD" != 1 ]; then
   SPAWN_META_LOCK=$(fm_meta_lock_path "$STATE/$ID.meta") || exit 1
