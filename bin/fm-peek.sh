@@ -23,8 +23,16 @@ STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 RAW_TARGET=$1
 N=${2:-40}
 
+# shellcheck source=bin/fm-task-route-lib.sh
+. "$SCRIPT_DIR/fm-task-route-lib.sh"
 REMOTE_META=$(fm_backend_meta_for_selector "$RAW_TARGET" "$STATE" 2>/dev/null || true)
-if [ -n "$REMOTE_META" ] && [ -n "$(fm_meta_get "$REMOTE_META" remote_host)" ]; then
+if [ -z "$REMOTE_META" ]; then
+  REMOTE_META=$(fm_backend_meta_for_window "$RAW_TARGET" "$STATE" 2>/dev/null || true)
+fi
+if [ -n "$REMOTE_META" ]; then
+  fm_task_route_require_supported "$REMOTE_META" peek || exit 1
+fi
+if [ -n "$REMOTE_META" ] && [ "$FM_TASK_ROUTE" = remote-secondmate ]; then
   REMOTE_ID=${REMOTE_META##*/}
   REMOTE_ID=${REMOTE_ID%.meta}
   REMOTE_HOST=$(fm_meta_get "$REMOTE_META" remote_host)

@@ -1795,7 +1795,7 @@ spawn_backlog_preflight() {
       exit 1
     fi
     spawn_preflight_actor=$(fm_lease_actor) || exit "$FM_LEASE_REFUSE_EXIT"
-    if [ "$RELAUNCH" -ne 1 ] && [ "$spawn_preflight_actor" = branch ] && fm_lease_away_relocated; then
+    if [ "${1:-0}" -ne 1 ] && [ "$RELAUNCH" -ne 1 ] && [ "$spawn_preflight_actor" = branch ] && fm_lease_away_relocated; then
       if [ "$BACKLOG_ROW_STATE" != "queued no no" ]; then
         echo "error: spawn refused - the supervision branch under the away-posture record may dispatch only queued unblocked work (already queued, or filed by the branch from the captain's away words); task $ID has no dispatchable backlog item in this home" >&2
         exit 1
@@ -1923,7 +1923,6 @@ spawn_worker_host() {
   [ -z "$EFFORT" ] || host_args+=(--effort "$EFFORT")
   [ "$BACKEND_SET" -eq 0 ] || host_args+=(--backend "$BACKEND_ARG")
 
-  spawn_backlog_preflight
   SPAWN_TASK_LOCK="$STATE/.spawn-$ID.lock"
   fm_lock_try_acquire "$SPAWN_TASK_LOCK" || {
     echo "error: another spawn is already creating task $ID" >&2
@@ -1948,6 +1947,19 @@ spawn_worker_host() {
       exit 1
     fi
     existing_target=$(fm_meta_get "$meta" remote_target)
+    if [ -z "$existing_target" ] ||
+      [ "$(fm_meta_get "$meta" remote_root)" != "$WORKER_HOST_ROOT" ] ||
+      [ "$(fm_meta_get "$meta" remote_home)" != "$WORKER_HOST_HOME" ]; then
+      echo "error: task $ID has an incomplete or changed worker host route; refusing placement recovery" >&2
+      exit 1
+    fi
+  fi
+  if [ -n "$existing_target" ]; then
+    spawn_backlog_preflight 1
+  else
+    spawn_refuse_if_away_spend_cap
+    spawn_require_relocated_queued_work
+    spawn_backlog_preflight
   fi
 
   body_file=$(mktemp "${TMPDIR:-/tmp}/fm-spawn-host-task.XXXXXX") || exit 1
@@ -2703,10 +2715,7 @@ spawn_refuse_if_away_spend_cap() {
 # records, counted by that script's own `live-workers`, which is also the count
 # its entry records as the cap. A relaunch replaces a worker that already
 # counts, and a secondmate is a persistent home rather than spend, so both are
-# exempt. Checked before any endpoint, worktree, or record
-# exists, so a refusal costs nothing to unwind; rechecked after the task-set
-# lock so two fresh spawns cannot both publish from a stale count.
-spawn_refuse_if_away_spend_cap
+# exempt.
 spawn_require_relocated_queued_work() {
   local actor
   [ "$RELAUNCH" -ne 1 ] || return 0
@@ -2789,6 +2798,11 @@ if [ "$RELAUNCH" -eq 0 ]; then
     exit 1
   fi
   SPAWN_TASK_SET_LOCK_HELD=1
+fi
+if [ "$HOST_SET" -eq 1 ]; then
+  spawn_worker_host
+fi
+if [ "$RELAUNCH" -eq 0 ]; then
   spawn_refuse_if_away_spend_cap
   spawn_require_relocated_queued_work
 fi
@@ -2799,9 +2813,6 @@ if [ "$KIND" = secondmate ]; then
     remote_spawn_rc=$?
   fi
   [ "$remote_spawn_rc" -eq 3 ] || exit "$remote_spawn_rc"
-fi
-if [ "$HOST_SET" -eq 1 ]; then
-  spawn_worker_host
 fi
 # Backend selection (data/fm-backend-design-d7): explicit --backend, else
 # FM_BACKEND env, else config/backend, else runtime auto-detection, else

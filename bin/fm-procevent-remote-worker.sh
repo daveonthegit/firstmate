@@ -75,6 +75,8 @@ JOB_PREEMPTED=76
 . "$SCRIPT_DIR/fm-wake-lib.sh"
 # shellcheck source=bin/fm-classify-lib.sh
 . "$SCRIPT_DIR/fm-classify-lib.sh"
+# shellcheck source=bin/fm-task-route-lib.sh
+. "$SCRIPT_DIR/fm-task-route-lib.sh"
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
@@ -113,7 +115,8 @@ members() { # <host>
   local host=$1 meta id kind
   for meta in "$STATE"/*.meta; do
     [ -f "$meta" ] && [ ! -L "$meta" ] || continue
-    [ "$(meta_value "$meta" remote_worker_host)" = "$host" ] || continue
+    fm_task_route "$meta" || continue
+    [ "$FM_TASK_ROUTE" = worker-host ] && [ "$FM_TASK_ROUTE_HOST" = "$host" ] || continue
     kind=$(meta_value "$meta" kind)
     case "${kind:-ship}" in ship|scout) ;; *) continue ;; esac
     id=${meta##*/}

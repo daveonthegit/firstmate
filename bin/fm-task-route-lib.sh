@@ -71,3 +71,14 @@ fm_task_route() {  # <meta>
   fi
   return 0
 }
+
+fm_task_route_require_supported() {
+  fm_task_route "$1" || {
+    printf 'error: %s\n' "$FM_TASK_ROUTE_ERROR" >&2
+    return 1
+  }
+  if [ "$FM_TASK_ROUTE" = worker-host ]; then
+    printf 'error: task placed on worker host %s; %s is not yet supported\n' "$FM_TASK_ROUTE_HOST" "$2" >&2
+    return 1
+  fi
+}

@@ -89,6 +89,8 @@ pass "the host status read yields its lane to steers, state reads, and cleanup"
 place t1 ship
 place s1 scout
 fm_write_meta "$PARENT/state/local.meta" "kind=ship"
+fm_write_meta "$PARENT/state/contradictory.meta" "kind=ship" "remote_worker_host=mbp" "remote_host=other"
+fm_write_meta "$PARENT/state/unsafe.meta" "kind=scout" "remote_worker_host=../mbp"
 out=$(primary "$ADAPTER" members mbp | sort | tr '\n' ' ')
 assert_equals "s1 t1 " "$out" "members are the task records placed on that host"
 pass "a host's members are this home's ship and scout records that name it"

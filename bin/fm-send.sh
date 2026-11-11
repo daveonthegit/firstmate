@@ -383,6 +383,9 @@ $(fm_backend_tmux_foreground_pids "$RESOLVED_TARGET" 2>/dev/null || true)
 EOF
 }
 
+# shellcheck source=bin/fm-task-route-lib.sh
+. "$SCRIPT_DIR/fm-task-route-lib.sh"
+
 fm_send_resolve_target() { # <raw-target>
   local raw=$1 meta pane_meta target backend assumed colons id session hint
 
@@ -398,7 +401,8 @@ fm_send_resolve_target() { # <raw-target>
 
   meta=$(fm_backend_meta_for_selector "$raw" "$STATE" 2>/dev/null || true)
   if [ -n "$meta" ]; then
-    if [ -n "$(fm_meta_get "$meta" remote_host)" ]; then
+    fm_task_route_require_supported "$meta" send || return 1
+    if [ "$FM_TASK_ROUTE" = remote-secondmate ]; then
       id=$(fm_send_id_from_meta "$meta")
       RESOLVED_TARGET="remote:$id"
       TARGET_BACKEND=remote
@@ -451,6 +455,7 @@ fm_send_resolve_target() { # <raw-target>
 
   meta=$(fm_backend_meta_for_window "$raw" "$STATE" 2>/dev/null || true)
   if [ -n "$meta" ]; then
+    fm_task_route_require_supported "$meta" send || return 1
     target=$(fm_backend_target_of_meta "$meta")
     if [ -z "$target" ]; then
       echo "error: no backend target recorded in $meta (tried explicit target '$raw' via recorded window/terminal; backend=from-meta)" >&2

@@ -98,7 +98,7 @@ home=\$(decode "\$5")
 argv=()
 while IFS= read -r -d '' arg; do argv+=("\$arg"); done < <(decode "\$6")
 rc=0
-env -u FM_TRACE_CONTEXT -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE \\
+env -u FM_SUPERVISION_ACTOR -u FM_TRACE_CONTEXT -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE \\
   -u FM_PROJECTS_OVERRIDE -u FM_PROCEVENT_CLAIM_ROOT FM_ROOT_OVERRIDE='' FM_HOME="\$home" \\
   HOME="$HOST_HOME/user-home" CLAUDE_CONFIG_DIR='' FM_SPAWN_NO_GUARD=1 FM_GH_ACCOUNT=none \\
   FM_FAKE_PANE_PATH="$WT_DIR" TMUX="fake,1,0" PATH="$HOST_BIN:\$PATH" \\
@@ -248,25 +248,56 @@ test_unknown_host_refused() {
 }
 
 test_failed_mirror_arm_keeps_record_and_reruns() {
-  local out rc=0
-  make_case arm
+  local out rc cap
+  for cap in 1 2; do
+  rc=0
+  make_case "arm-$cap"
+  cat > "$PARENT/state/.afk-contract" <<EOF
+version: 2
+entered: 2026-11-10T01:00:00Z
+entered_epoch: 1794272400
+expected_return: -
+reach_channels: none
+reach_announced: No phone channel is configured.
+spend_max_concurrent_workers: $cap
+confirmed: 2026-11-10T01:00:00Z
+confirmed_epoch: 1794272400
+words: |-
+  Continue queued work.
+EOF
+  primary "$ROOT/bin/fm-afk-contract.sh" validate || fail 'invalid away fixture'
   make_brief a1 --mode local-only
   add_item a1
   # A regular file where the process-event state root belongs makes arming fail.
   : > "$PARENT/state/procevent"
-  out=$(primary "$SPAWN" a1 sample --host mbp --mode local-only --yolo off --harness claude 2>&1) || rc=$?
+  out=$(FM_SUPERVISION_ACTOR=branch primary "$SPAWN" a1 sample --host mbp --mode local-only --yolo off --harness claude 2>&1) || rc=$?
   [ "$rc" -ne 0 ] || fail "a placement whose mirror could not be armed reported success: $out"
   assert_contains "$out" "status mirror could not be armed" "the arm failure was not named"
   assert_equals firstmate:fm-a1 "$(meta_value a1 remote_target)" "the arm failure lost the placed record"
   assert_equals in_flight "$(row_state a1)" "the arm failure moved the backlog item back"
+  make_brief a2 --mode local-only
+  add_item a2
+  if [ "$cap" -eq 2 ]; then
+    tasks-axi start a2 --file "$PARENT/data/backlog.md" >/dev/null || fail 'could not stage In flight item'
+  fi
+  rc=0
+  out=$(FM_SUPERVISION_ACTOR=branch primary "$SPAWN" a2 sample --host mbp --mode local-only --yolo off --harness claude 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] || fail "new work bypassed away admission with cap $cap"
+  if [ "$cap" -eq 1 ]; then
+    assert_contains "$out" 'caps concurrent workers at 1' 'new work bypassed the spend cap'
+  else
+    assert_contains "$out" 'only queued unblocked work' 'new work bypassed queued-only admission'
+  fi
+  assert_absent "$PARENT/state/a2.meta" 'refused new work published a record'
   rm -f "$PARENT/state/procevent"
-  out=$(primary "$SPAWN" a1 sample --host mbp --mode local-only --yolo off --harness claude 2>&1) \
+  out=$(FM_SUPERVISION_ACTOR=branch primary "$SPAWN" a1 sample --host mbp --mode local-only --yolo off --harness claude 2>&1) \
     || fail "re-running after a failed arm failed: $out"
   assert_contains "$out" "already placed" "the re-run did not reuse the host's existing worker"
   assert_equals 1 "$(new_windows)" "the re-run launched a second worker"
   out=$(primary "$ROOT/bin/fm-procevent.sh" list 2>&1) || fail "procevent list failed: $out"
   assert_contains "$out" "remote-worker-mbp" "the re-run did not arm the host's status mirror"
-  pass "a failed mirror arm keeps the placed record In flight, and re-running the spawn arms it"
+  done
+  pass "away recovery finishes existing placement at or below the cap without admitting new work"
 }
 
 fm_test_run test_successful_placement test_capacity_deferral_stays_queued \

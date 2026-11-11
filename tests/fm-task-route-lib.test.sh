@@ -47,4 +47,55 @@ test_refusals() {
   pass "the helper refuses contradictory, unsafe, missing, and symlinked records"
 }
 
-fm_test_run test_routes test_refusals
+test_placed_entry_points() {
+  local home="$TMP_ROOT/primary" tools out rc kind target verb
+  mkdir -p "$home/state" "$home/config" "$home/data"
+  printf '%s\n' "$$" > "$home/state/.lock"
+  printf 'manual\n' > "$home/config/backlog-backend"
+  tools=$(fm_fakebin "$TMP_ROOT/tools")
+  printf '#!/usr/bin/env bash\nprintf "backend touched\\n" >> "%s"\nexit 99\n' "$home/backend.log" > "$tools/tmux"
+  chmod +x "$tools/tmux"
+  for kind in ship scout; do
+    fm_write_meta "$home/state/t.meta" "kind=$kind" "remote_worker_host=mbp" \
+      "window=remote:t" "remote_backend=t3code" "remote_target=thread-1"
+    for target in t fm-t remote:t; do
+      for verb in send peek; do
+        rc=0
+        if [ "$verb" = send ]; then
+          out=$(FM_HOME="$home" PATH="$tools:$PATH" bash "$ROOT/bin/fm-send.sh" "$target" hello 2>&1) || rc=$?
+        else
+          out=$(FM_HOME="$home" PATH="$tools:$PATH" bash "$ROOT/bin/fm-peek.sh" "$target" 2>&1) || rc=$?
+        fi
+        [ "$rc" -ne 0 ] || fail "$verb accepted placed $kind via $target"
+        assert_contains "$out" 'worker host mbp' "$verb did not identify placement via $target"
+        assert_contains "$out" 'not yet supported' "$verb did not refuse its unsupported operation"
+      done
+    done
+    for verb in interrupt exit relaunch; do
+      rc=0
+      out=$(FM_HOME="$home" bash "$ROOT/bin/fm-control.sh" t "$verb" 2>&1) || rc=$?
+      [ "$rc" -ne 0 ] || fail "control $verb accepted placed $kind"
+      assert_contains "$out" 'worker host mbp' "control $verb did not identify placement"
+    done
+    for verb in query answer cleanup; do
+      rc=0
+      case "$verb" in
+        query) out=$(FM_HOME="$home" bash "$ROOT/bin/fm-t3-answer.sh" t 2>&1) || rc=$? ;;
+        answer) out=$(FM_HOME="$home" bash "$ROOT/bin/fm-t3-answer.sh" t request '{}' 2>&1) || rc=$? ;;
+        cleanup) out=$(FM_HOME="$home" bash "$ROOT/bin/fm-teardown.sh" t 2>&1) || rc=$? ;;
+      esac
+      [ "$rc" -ne 0 ] || fail "$verb accepted placed $kind"
+      assert_contains "$out" 'worker host mbp' "$verb did not identify placement"
+      assert_contains "$out" 'not yet supported' "$verb did not refuse its unsupported operation"
+    done
+    out=$(FM_HOME="$home" bash "$ROOT/bin/fm-crew-state.sh" t 2>&1) || fail "crew-state failed: $out"
+    assert_contains "$out" 'state: unknown' 'placed current state was guessed'
+    assert_contains "$out" 'placed on worker host mbp' 'crew-state did not identify placement'
+    assert_not_contains "$out" 'worktree gone' 'a placed worker was interpreted locally'
+    assert_present "$home/state/t.meta" 'cleanup removed the placed record'
+    assert_absent "$home/backend.log" 'a placed operation touched the local backend'
+  done
+  pass "placed ship and scout operations report their host without local actions"
+}
+
+fm_test_run test_routes test_refusals test_placed_entry_points
