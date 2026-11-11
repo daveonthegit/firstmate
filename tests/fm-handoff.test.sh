@@ -141,14 +141,16 @@ test_brief_continue_from_copies_the_task_and_records_the_source() {
   write_brief "$case_dir" old-b1 ship
   head=0123456789abcdef0123456789abcdef01234567
 
-  out=$(FM_HOME="$home" "$BRIEF" new-b1 project --mode no-mistakes --continue-from old-b1 2>&1)
-  [ $? -ne 0 ] || fail "a continuation brief scaffolded without a continuation record"
+  if out=$(FM_HOME="$home" "$BRIEF" new-b1 project --mode no-mistakes --continue-from old-b1 2>&1); then
+    fail "a continuation brief scaffolded without a continuation record"
+  fi
   assert_contains "$out" "no continuation record" "the missing record was not named"
 
   out=$(FM_HOME="$home" bash -c '. "$1/bin/fm-continuation-lib.sh"; fm_continuation_write "$2" new-b1 old-b1 ship origin fm/old-b1 "$3" || { echo "$FM_CONT_ERROR"; exit 1; }' _ "$ROOT" "$home/data" "$head") ||
     fail "could not write a continuation record: $out"
-  out=$(FM_HOME="$home" "$BRIEF" new-b1 project --scout --continue-from old-b1 2>&1)
-  [ $? -ne 0 ] || fail "a scout brief accepted a ship continuation record"
+  if out=$(FM_HOME="$home" "$BRIEF" new-b1 project --scout --continue-from old-b1 2>&1); then
+    fail "a scout brief accepted a ship continuation record"
+  fi
   assert_contains "$out" "is for a ship" "the kind mismatch was not named"
 
   out=$(FM_HOME="$home" "$BRIEF" new-b1 project --mode no-mistakes --base-branch release --continue-from old-b1 2>&1) ||
@@ -191,13 +193,15 @@ test_spawn_continue_from_starts_at_the_carried_commit() {
   [ "$status" -ne 0 ] || fail "a continuation brief spawned without --continue-from"
   assert_contains "$out" "has no --continue-from" "the missing flag was not named"
 
-  out=$(in_case "$case_dir" "$case_dir/wt2" "$ROOT/bin/fm-spawn.sh" "$id" "$case_dir/project" --mode direct-PR --yolo off --continue-from old-s1 --host m1)
-  [ $? -ne 0 ] || fail "--continue-from was accepted with --host"
+  if out=$(in_case "$case_dir" "$case_dir/wt2" "$ROOT/bin/fm-spawn.sh" "$id" "$case_dir/project" --mode direct-PR --yolo off --continue-from old-s1 --host m1); then
+    fail "--continue-from was accepted with --host"
+  fi
 
   git -C "$case_dir/project" "${GIT_ID[@]}" commit -q --allow-empty -m moved
   git -C "$case_dir/project" push --quiet origin HEAD:refs/heads/fm/old-s1 --force
-  out=$(in_case "$case_dir" "$case_dir/wt2" "$ROOT/bin/fm-spawn.sh" "$id" "$case_dir/project" --mode direct-PR --yolo off --continue-from old-s1)
-  [ $? -ne 0 ] || fail "spawn continued from a carried branch that no longer points at the carried commit"
+  if out=$(in_case "$case_dir" "$case_dir/wt2" "$ROOT/bin/fm-spawn.sh" "$id" "$case_dir/project" --mode direct-PR --yolo off --continue-from old-s1); then
+    fail "spawn continued from a carried branch that no longer points at the carried commit"
+  fi
   assert_contains "$out" "not the carried commit" "the moved branch was not named"
   [ ! -e "$home/state/$id.meta" ] || fail "a refused continuation published a task record"
 
@@ -289,7 +293,7 @@ test_ship_handoff_end_to_end() {
   expect_code 0 "$status" "the hand-off should finish"$'\n'"$out"
   assert_contains "$out" "handed-off: old-e1 -> old-e1-c2 on local" "the hand-off was not reported"
   [ ! -e "$home/state/old-e1.meta" ] || fail "the old task was not cleaned up"
-  [ "$(row_field "$case_dir" old-e1 state)" = done ] || fail "the old backlog item is not closed"
+  [ "$(row_field "$case_dir" old-e1 state)" = "done" ] || fail "the old backlog item is not closed"
   backlog "$case_dir" show old-e1 --full | grep -F 'continued as old-e1-c2 on local' >/dev/null ||
     fail "the old backlog item does not say what it continued as"
   [ "$(row_field "$case_dir" old-e1-c2 state)" = in_flight ] || fail "the continuation's backlog item is not in flight"
