@@ -191,7 +191,7 @@ test_two_leg_cleanup() {
   assert_absent "$PARENT/state/t1.meta" "leg two left the primary record"
   assert_absent "$PARENT/state/t1.status" "leg two left the primary status"
   assert_absent "$PARENT/state/t1.backlog-close" "leg two left its pending close"
-  assert_equals done "$(row_state t1)" "leg two did not close the backlog item"
+  assert_equals "done" "$(row_state t1)" "leg two did not close the backlog item"
   assert_not_contains "$(mirror_sources)" "remote-worker-mbp" "the last member's cleanup left the host mirror armed"
   pass "cleanup runs the host's own teardown, fetches the journal, then retires the primary records and closes the item"
 }
@@ -223,7 +223,7 @@ test_lost_answer_reruns_safely() {
   assert_contains "$out" "no task record remains on this worker host" "the re-run did not reuse the host's finished cleanup"
   assert_contains "$out" "teardown l1 complete (worker host mbp)" "the re-run did not finish leg two"
   assert_absent "$PARENT/state/l1.meta" "the re-run left the primary record"
-  assert_equals done "$(row_state l1)" "the re-run did not close the backlog item"
+  assert_equals "done" "$(row_state l1)" "the re-run did not close the backlog item"
   assert_equals "what l1 did" "$(cat "$PARENT/data/l1/journal.md")" "a refused read after host cleanup lost the cached journal"
   pass "an SSH exit 255 after the host finished keeps every primary record, and a re-run finishes leg two"
 }
@@ -247,7 +247,7 @@ test_host_refusal_passes_through() {
   assert_equals "final journal" "$(cat "$PARENT/data/u1/journal.md")" "the retry kept the stale journal instead of refreshing it"
   assert_absent "$HOST_HOME/state/u1.meta" "the forced cleanup left the host record"
   assert_absent "$PARENT/state/u1.meta" "the forced cleanup left the primary record"
-  assert_equals done "$(row_state u1)" "the forced cleanup did not close the backlog item"
+  assert_equals "done" "$(row_state u1)" "the forced cleanup did not close the backlog item"
   pass "a host refusal for unlanded work passes through untouched, and only an explicit --force crosses"
 }
 
@@ -300,7 +300,7 @@ test_backlog_failure_retires_mirror() {
   for transition in close retain; do
     make_case "backlog-failure-$transition"
     place_ship b1
-    verb=done
+    verb="done"
     if [ "$transition" = retain ]; then
       primary "$ROOT/bin/fm-captain-hold.sh" hold b1 --reason 'Captain approval needed' >/dev/null \
         || fail "could not hold b1 for the captain"
@@ -374,7 +374,7 @@ test_scout_report_and_gate() {
   out=$(primary "$TEARDOWN" c1 2>&1) || fail "a scout with its report and inventory was not cleaned up: $out"
   assert_absent "$HOST_HOME/state/c1.meta" "leg one left the scout's host record"
   assert_absent "$PARENT/state/c1.meta" "leg two left the scout's primary record"
-  assert_equals done "$(row_state c1)" "leg two did not close the scout's backlog item"
+  assert_equals "done" "$(row_state c1)" "leg two did not close the scout's backlog item"
   pass "a scout's report is fetched and its captain-call gate checked here before the host cleans up"
 }
 
