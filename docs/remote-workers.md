@@ -36,7 +36,7 @@ The host leg answers only for tasks a primary placed there.
 A spawn for a task the host already holds reports the existing route instead of launching again, which makes a re-run after an unconfirmed SSH spawn safe.
 The [controller header](../bin/fm-remote-worker-control.sh) owns delivery identity and retry requirements for steering.
 Cleanup uses the host's ordinary [`fm-teardown.sh`](../bin/fm-teardown.sh), whose header owns the landed-work test, the force exception, and the two-leg worker-host cleanup.
-The primary fetches the journal, and a scout's report, before the host's cleanup releases its placement claim, and checks a scout's captain-call gate itself, because those calls live only in the primary's backlog.
+On every cleanup attempt the primary refreshes the journal, and a scout's report, while the host's placement claim allows reads, retains cached copies when reads are refused after host cleanup, and checks a scout's captain-call gate itself, because those calls live only in the primary's backlog.
 An unreachable host, an unconfirmed answer, or a host refusal for unlanded work preserves every record on both machines and moves nothing; the primary forwards `--force` only when its own caller passed it.
 A host whose cleanup already finished answers a re-run with no remaining task record, so re-running the same cleanup after an unconfirmed answer is safe.
 

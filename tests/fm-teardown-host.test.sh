@@ -105,6 +105,10 @@ env -u FM_SUPERVISION_ACTOR -u FM_TRACE_CONTEXT -u FM_STATE_OVERRIDE -u FM_DATA_
   HOME="$HOST_HOME/user-home" CLAUDE_CONFIG_DIR='' FM_SPAWN_NO_GUARD=1 FM_GH_ACCOUNT=none \\
   FM_FAKE_PANE_PATH="$WT_DIR" TMUX="fake,1,0" PATH="$HOST_BIN:\$PATH" \\
   "\$root/bin/\${argv[0]}" "\${argv[@]:1}" || rc=\$?
+if [ "\${FM_FAKE_SSH_PAUSE_TEARDOWN:-}" = 1 ] && [ "\${argv[1]:-}" = teardown ]; then
+  touch "$CASE/host-finished"
+  while [ ! -f "$CASE/release-host" ]; do sleep 0.05; done
+fi
 [ -z "\${FM_FAKE_SSH_LOSE_VERB:-}" ] || [ "\${argv[1]:-}" != "\$FM_FAKE_SSH_LOSE_VERB" ] || exit 255
 exit "\$rc"
 SH
@@ -220,6 +224,7 @@ test_lost_answer_reruns_safely() {
   assert_contains "$out" "teardown l1 complete (worker host mbp)" "the re-run did not finish leg two"
   assert_absent "$PARENT/state/l1.meta" "the re-run left the primary record"
   assert_equals done "$(row_state l1)" "the re-run did not close the backlog item"
+  assert_equals "what l1 did" "$(cat "$PARENT/data/l1/journal.md")" "a refused read after host cleanup lost the cached journal"
   pass "an SSH exit 255 after the host finished keeps every primary record, and a re-run finishes leg two"
 }
 
@@ -236,7 +241,10 @@ test_host_refusal_passes_through() {
   assert_present "$HOST_HOME/state/u1.meta" "a host refusal removed the host record"
   assert_present "$HOST_HOME/state/u1.remote-worker" "a host refusal released the host claim"
   assert_present "$WT_DIR/scratch.txt" "a host refusal discarded the unlanded work"
+  assert_equals "what u1 did" "$(cat "$PARENT/data/u1/journal.md")" "the refused cleanup did not fetch the initial journal"
+  printf 'final journal\n' > "$HOST_HOME/data/u1/journal.md"
   out=$(primary "$TEARDOWN" u1 --force 2>&1) || fail "a forced cleanup did not forward --force: $out"
+  assert_equals "final journal" "$(cat "$PARENT/data/u1/journal.md")" "the retry kept the stale journal instead of refreshing it"
   assert_absent "$HOST_HOME/state/u1.meta" "the forced cleanup left the host record"
   assert_absent "$PARENT/state/u1.meta" "the forced cleanup left the primary record"
   assert_equals done "$(row_state u1)" "the forced cleanup did not close the backlog item"
@@ -256,6 +264,34 @@ test_sibling_keeps_mirror() {
   assert_present "$PARENT/state/s2.meta" "cleanup touched the sibling record"
   assert_contains "$(mirror_sources)" "remote-worker-mbp" "cleanup disarmed a mirror the sibling still uses"
   pass "cleanup releases only its own task from a host mirror other tasks still use"
+}
+
+test_retirement_waits_for_mirror() {
+  local pid i
+  make_case serialization
+  place_ship m1
+  FM_FAKE_SSH_PAUSE_TEARDOWN=1 primary "$TEARDOWN" m1 > "$CASE/cleanup.out" 2>&1 &
+  pid=$!
+  for ((i=0; i<600; i++)); do
+    [ ! -f "$CASE/host-finished" ] || break
+    sleep 0.05
+  done
+  assert_present "$CASE/host-finished" "cleanup did not complete its host leg"
+  . "$ROOT/bin/fm-procevent-remote-worker.sh"
+  . "$ROOT/bin/fm-wake-lib.sh"
+  fm_remote_worker_with_lifecycle_lock "$PARENT/state" mbp hold_mirror_during_retirement \
+    || fail "could not exercise mirror serialization"
+  wait "$pid" || fail "cleanup failed after mirror release: $(cat "$CASE/cleanup.out")"
+  assert_absent "$PARENT/state/m1.meta" "cleanup did not resume after mirror release"
+  assert_absent "$PARENT/state/m1.status" "cleanup left status after mirror release"
+  pass "primary retirement waits for the mirror lifecycle lock after the host leg"
+}
+
+hold_mirror_during_retirement() {
+  touch "$CASE/release-host"
+  sleep 1
+  assert_present "$PARENT/state/m1.status" "cleanup retired status while mirror ingestion could still run"
+  assert_present "$PARENT/state/m1.meta" "cleanup removed membership while mirror ingestion could still run"
 }
 
 test_route_drift_refused() {
@@ -292,6 +328,11 @@ test_scout_report_and_gate() {
   assert_equals findings "$(cat "$PARENT/data/c1/report.md" 2>/dev/null)" "the report was not fetched before the gate"
   assert_present "$HOST_HOME/state/c1.meta" "the inventory gate still reached the host's cleanup"
   assert_record_kept c1 "the inventory gate"
+  printf 'final findings\n' > "$HOST_HOME/data/c1/report.md"
+  rc=0
+  out=$(primary "$TEARDOWN" c1 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] || fail "a scout without inventory was cleaned up on retry: $out"
+  assert_equals "final findings" "$(cat "$PARENT/data/c1/report.md")" "the gate retry kept the stale report instead of refreshing it"
   primary "$ROOT/bin/fm-captain-hold.sh" complete c1 --none >/dev/null 2>&1 || fail "could not complete c1's inventory"
   out=$(primary "$TEARDOWN" c1 2>&1) || fail "a scout with its report and inventory was not cleaned up: $out"
   assert_absent "$HOST_HOME/state/c1.meta" "leg one left the scout's host record"
@@ -302,4 +343,4 @@ test_scout_report_and_gate() {
 
 fm_test_run test_two_leg_cleanup test_unreachable_host_preserves_records \
   test_lost_answer_reruns_safely test_host_refusal_passes_through \
-  test_sibling_keeps_mirror test_route_drift_refused test_scout_report_and_gate
+  test_sibling_keeps_mirror test_retirement_waits_for_mirror test_route_drift_refused test_scout_report_and_gate

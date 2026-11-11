@@ -209,9 +209,8 @@
 # (bin/fm-task-route-lib.sh's worker-host route, docs/remote-workers.md) has no
 # endpoint, copy, or process on this machine, so it skips every local step
 # above and runs in two legs under the same control and metadata locks.
-# First the task's journal, and a scout's report, are fetched into data/<id>/
-# when not already here, because the host answers document reads only while
-# its placement claim exists. A scout without --force then needs that report
+# Each attempt refreshes the task's journal, and a scout's report, in data/<id>/ while the host's placement claim allows reads, retaining cached copies when reads are refused after host cleanup.
+# A scout without --force then needs that report
 # and the captain-call completion gate here, as locally; the host's own cleanup
 # still requires its report but skips that gate for a task a primary placed
 # there, since the inventory lives only in this backlog. Leg one runs the host's own
@@ -1436,7 +1435,6 @@ worker_host_teardown() {
   # successful host leg releases that claim, so documents come across first.
   for which in journal report; do
     [ "$which" = journal ] || [ "$KIND" = scout ] || continue
-    [ ! -f "$DATA/$ID/$which.md" ] || continue
     rc=0
     "$SCRIPT_DIR/fm-procevent-remote-worker.sh" fetch "$host" "$ID" "$which" || rc=$?
     case "$rc" in
@@ -1500,10 +1498,33 @@ worker_host_teardown() {
       ;;
   esac
 
-  # Leg two: the host copy is gone, so retire this home's records exactly as a
-  # local cleanup does once its own copy is returned.
+  BACKLOG_CLOSED=$TEARDOWN_BACKLOG_APPLIES
+  VAULT_META_SNAPSHOT=$(cat "$META" 2>/dev/null || true)
+  proj_name=$(fm_meta_get "$META" remote_project)
+  proj_name=${proj_name##*/}
+  . "$SCRIPT_DIR/fm-procevent-remote-worker.sh"
+  fm_remote_worker_with_lifecycle_lock "$STATE" "$host" worker_host_retire_records "$host" || return 1
+  fm_lock_release "$META_LOCK"
+  META_LOCK_HELD=0
+  if [ "$KIND" = ship ] && [ "$MODE" != local-only ] && [ -n "$proj_name" ] && [ -d "$FM_HOME/projects/$proj_name" ]; then
+    "$FM_ROOT/bin/fm-fleet-sync.sh" "$proj_name" || true
+  fi
+  "$SCRIPT_DIR/fm-home-summary-refresh.sh" --best-effort || true
+  if [ "$lost_slot" = 1 ]; then
+    echo "teardown $ID finished its cleanup on worker host $host and removed its task record here, but the host's returned pool slot did not come back clean (see the host's warning above); clear those paths on the host so its pool can reuse the slot" >&2
+  else
+    echo "teardown $ID complete (worker host $host)"
+  fi
+  backlog_refresh_reminder
+  printf '%s\n' "$VAULT_META_SNAPSHOT" \
+    | FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
+      "$FM_ROOT/bin/fm-vault.sh" journal "$ID" --meta - 2>&1 || true
+  [ "$lost_slot" = 0 ] || return "$TEARDOWN_LOST_SLOT_EXIT"
+}
+
+worker_host_retire_records() {
+  local host=$1
   if [ "$TEARDOWN_BACKLOG_APPLIES" = 1 ]; then
-    BACKLOG_CLOSED=1
     if ! fm_backlog_close_marker_write "$STATE" "$ID" "$DATA" "$TEARDOWN_META_SPAWN_GEN" \
         "${BACKLOG_TRANSITION_FLAGS[@]+"${BACKLOG_TRANSITION_FLAGS[@]}"}" \
         "${BACKLOG_DONE_ARGS[@]+"${BACKLOG_DONE_ARGS[@]}"}"; then
@@ -1522,9 +1543,6 @@ worker_host_teardown() {
   [ ! -e "$CONFIG/fleet-ledger" ] || FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE FM_CONFIG_OVERRIDE=$CONFIG "$SCRIPT_DIR/fm-fleet-ledger.sh" cleaned_up "$ID" || true
   teardown_retire_status "$STATE" "$ID" || return 1
   fm_wake_queue_prune_task "$STATE" "$ID" "$(fm_meta_get "$META" window)" 2>/dev/null || true
-  VAULT_META_SNAPSHOT=$(cat "$META" 2>/dev/null || true)
-  proj_name=$(fm_meta_get "$META" remote_project)
-  proj_name=${proj_name##*/}
   rm -f "${STATE:?}/${ID:?}.turn-ended" "${STATE:?}/${ID:?}.progress" \
     "$(fm_wake_signal_seen_path "$STATE" "$STATE/$ID.turn-ended")" \
     "${STATE:?}/${ID:?}.reconcile-nudged" "${STATE:?}/${ID:?}.pr-register-refused" \
@@ -1541,26 +1559,8 @@ worker_host_teardown() {
     echo "error: worker host $host cleaned up $ID, but its task record could not be removed ($FM_BACKLOG_TRANSITION_ERROR)" >&2
     return 1
   fi
-  fm_lock_release "$META_LOCK"
-  META_LOCK_HELD=0
-  # With the record gone the task is no longer a mirror member, so a capture
-  # still in flight skips it; retiring its cursor now cannot race an ingest.
-  "$SCRIPT_DIR/fm-procevent-remote-worker.sh" retire-task "$host" "$ID" >/dev/null \
+  fm_remote_worker_retire_task_locked "$STATE" "$host" "$ID" >/dev/null \
     || echo "warning: could not retire $ID's status-mirror cursor for worker host $host; bin/fm-procevent-remote-worker.sh retire-task $host $ID finishes it" >&2
-  if [ "$KIND" = ship ] && [ "$MODE" != local-only ] && [ -n "$proj_name" ] && [ -d "$FM_HOME/projects/$proj_name" ]; then
-    "$FM_ROOT/bin/fm-fleet-sync.sh" "$proj_name" || true
-  fi
-  "$SCRIPT_DIR/fm-home-summary-refresh.sh" --best-effort || true
-  if [ "$lost_slot" = 1 ]; then
-    echo "teardown $ID finished its cleanup on worker host $host and removed its task record here, but the host's returned pool slot did not come back clean (see the host's warning above); clear those paths on the host so its pool can reuse the slot" >&2
-  else
-    echo "teardown $ID complete (worker host $host)"
-  fi
-  backlog_refresh_reminder
-  printf '%s\n' "$VAULT_META_SNAPSHOT" \
-    | FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
-      "$FM_ROOT/bin/fm-vault.sh" journal "$ID" --meta - 2>&1 || true
-  [ "$lost_slot" = 0 ] || return "$TEARDOWN_LOST_SLOT_EXIT"
 }
 
 if [ "$TEARDOWN_ROUTE" = worker-host ]; then
