@@ -25,10 +25,8 @@
 # otherwise macOS's LocalHostName (stable across networks, unlike hostname);
 # otherwise `hostname -s`.
 #
-# REMOTE AND BRANCH. data/ must be on a branch. The remote is that branch's
-# configured upstream remote, else the repository's only remote; several
-# remotes and no upstream is refused as ambiguous. The remote branch is the
-# upstream's merge ref, else the same branch name.
+# REMOTE AND BRANCH. data/ must be on a branch with exactly one remote.
+# The remote branch is the upstream's merge ref, else the same branch name.
 #
 # Usage:
 #   fm-supervisor-lease.sh status
@@ -117,8 +115,8 @@ machine_id() {
   if [ -f "$CONFIG/machine-id" ]; then
     id=$(head -n 1 "$CONFIG/machine-id" 2>/dev/null | tr -d '[:space:]')
     case "$id" in
-      ''|*[!A-Za-z0-9._-]*)
-        say "refused: config/machine-id is not one [A-Za-z0-9._-] token" >&2
+      ''|none|*[!A-Za-z0-9._-]*)
+        say "refused: config/machine-id must be one [A-Za-z0-9._-] token other than none" >&2
         return 1
         ;;
     esac
@@ -130,7 +128,9 @@ machine_id() {
   fi
   [ -n "$id" ] || id=$(hostname -s 2>/dev/null || hostname 2>/dev/null || true)
   id=$(printf '%s' "$id" | tr -c 'A-Za-z0-9._-' '-')
-  [ -n "$id" ] || { say "refused: cannot determine this machine's id; write config/machine-id" >&2; return 1; }
+  case "$id" in
+    ''|none) say "refused: cannot determine a non-reserved machine id; write config/machine-id" >&2; return 1 ;;
+  esac
   printf '%s\n' "$id"
 }
 
@@ -169,15 +169,12 @@ resolve_repo() {
     say "refused: data/ is not on a branch, so the records branch is unknown"
     return 1
   }
-  REMOTE=$(g config --get "branch.$BRANCH.remote" 2>/dev/null || true)
-  if [ -z "$REMOTE" ]; then
-    count=$(printf '%s\n' "$remotes" | grep -c .)
-    if [ "$count" -ne 1 ]; then
-      say "refused: data/ has several remotes and branch '$BRANCH' has no upstream, so the records remote is ambiguous"
-      return 1
-    fi
-    REMOTE=$remotes
+  count=$(printf '%s\n' "$remotes" | grep -c .)
+  if [ "$count" -ne 1 ]; then
+    say "refused: data/ must have exactly one records remote"
+    return 1
   fi
+  REMOTE=$remotes
   merge=$(g config --get "branch.$BRANCH.merge" 2>/dev/null || true)
   REMOTE_BRANCH=${merge#refs/heads/}
   [ -n "$REMOTE_BRANCH" ] || REMOTE_BRANCH=$BRANCH
@@ -467,23 +464,22 @@ cmd_release() {
   fi
   me=$(machine_id) || exit 1
   fetch_remote || { say "refused: the records remote is unreachable ($FETCH_ERR); a release must reach it"; exit 1; }
-  fast_forward || exit 1
+  fast_forward || refuse "records could not be fast-forwarded"
   head=$(g rev-parse --verify --quiet HEAD 2>/dev/null || true)
   text=$(lease_at HEAD)
-  parse_lease "$text" || { say "refused: the lease record is malformed: $text"; exit 1; }
+  parse_lease "$text" || refuse "the lease record is malformed: $text"
   if [ "$L_HOST" != "$me" ]; then
-    say "refused: the lease is not held by this machine (it reads $(describe "$text"))"
-    exit 1
+    refuse "the lease is not held by this machine (it reads $(describe "$text"))"
   fi
   text=$(lease_line none $((L_EPOCH + 1)))
   new=$(make_commit "$head" "$text" "supervisor lease: $me releases at epoch $((L_EPOCH + 1))") \
     || { say "refused: could not write the release commit"; exit 1; }
+  record_stand_down "release attempted at epoch $((L_EPOCH + 1))"
   push_commit "$new" && rc=0 || rc=$?
   if [ "$rc" -ne 0 ]; then
-    say "refused: the release push was not accepted ($PUSH_ERR); the lease is unchanged and the move has not started"
-    exit 1
+    refuse "the release push was not confirmed ($PUSH_ERR); the move has not started"
   fi
-  adopt_commit "$new" "$head" "$text" || { say "refused: the release was pushed but data/ could not be updated"; exit 1; }
+  adopt_commit "$new" "$head" "$text" || refuse "the release was pushed but data/ could not be updated"
   record_stand_down "released at epoch $((L_EPOCH + 1))"
   say "released at epoch $((L_EPOCH + 1)); this home has stood down"
   exit 0
@@ -506,7 +502,8 @@ cmd_steal() {
     # Build on the last-seen remote records, so the steal can publish later.
     REMOTE_TIP=$(g rev-parse --verify --quiet "$TRACK^{commit}" 2>/dev/null || true)
   fi
-  fast_forward || exit 1
+  record_stand_down "steal attempted"
+  fast_forward || refuse "records could not be fast-forwarded"
   head=$(g rev-parse --verify --quiet HEAD 2>/dev/null || true)
   text=$(lease_at HEAD)
   parse_lease "$text" || L_EPOCH=0
@@ -519,8 +516,7 @@ cmd_steal() {
   if [ "$reachable" -eq 1 ]; then
     push_commit "$new" && rc=0 || rc=$?
     if [ "$rc" -eq 1 ]; then
-      say "refused: the steal push was rejected ($PUSH_ERR); the records moved meanwhile - run steal again"
-      exit 1
+      refuse "the steal push was rejected ($PUSH_ERR); the records moved meanwhile - run steal again"
     fi
     [ "$rc" -eq 0 ] || reachable=0
   fi

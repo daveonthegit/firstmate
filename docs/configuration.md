@@ -152,7 +152,7 @@ For such a records repository, `data/supervisor.lease` names the machine that ma
 Session start acquires it before the session lock, and a machine that cannot acquire it stays read-only without taking the lock.
 The remote's refusal of a non-fast-forward push decides which machine wins, so no other service is involved.
 
-A machine is identified by `config/machine-id` (one token of letters, digits, `.`, `_`, or `-`) when present, and otherwise by its macOS local host name or its short host name.
+A machine is identified by `config/machine-id` (one token of letters, digits, `.`, `_`, or `-`, excluding the reserved value `none`) when present, and otherwise by its macOS local host name or its short host name. The fallback identity also must not be `none`.
 A worker-host home, marked by `.fm-worker-host`, never holds the lease.
 `bin/fm-supervisor-lease.sh` adds `status`, `release` (hand the lease off before moving the supervisor), `steal --owner-approved` (only on the owner's explicit word), and `push` (the records push for a running session, which stands the session down when the push is rejected or the lease moved).
 While a home is stood down, `bin/fm-lock.sh` refuses the session lock and no supervision owner treats the session as the lock holder, until a later session start re-acquires the lease.

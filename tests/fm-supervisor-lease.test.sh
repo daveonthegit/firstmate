@@ -278,6 +278,123 @@ test_worker_host_refuses() {
   pass "a worker-host home refuses the supervisor lease"
 }
 
+test_reserved_identity_refuses() {
+  local w source verb out status before
+  for source in config localhost hostname; do
+    w=$(new_pair "reserved-$source")
+    before=$(git -C "$w/remote.git" rev-parse main)
+    mkdir -p "$w/tools"
+    printf '#!/bin/sh\nprintf "none\\n"\n' > "$w/tools/scutil"
+    cp "$w/tools/scutil" "$w/tools/hostname"
+    chmod +x "$w/tools/scutil" "$w/tools/hostname"
+    if [ "$source" = hostname ]; then
+      printf '#!/bin/sh\nexit 1\n' > "$w/tools/scutil"
+    fi
+    if [ "$source" = config ]; then
+      printf 'none\n' > "$w/a/config/machine-id"
+    else
+      rm "$w/a/config/machine-id"
+    fi
+    for verb in acquire steal; do
+      status=0
+      if [ "$verb" = steal ]; then
+        out=$(PATH="$w/tools:$PATH" lease "$w/a" steal --owner-approved) || status=$?
+      else
+        out=$(PATH="$w/tools:$PATH" lease "$w/a" acquire) || status=$?
+      fi
+      expect_code 1 "$status" "$verb with reserved $source identity"
+      assert_equals "$before" "$(git -C "$w/remote.git" rev-parse main)" "reserved identity changed the remote"
+      [ ! -e "$w/a/data/supervisor.lease" ] || fail "reserved identity published a lease"
+    done
+  done
+  pass "configured and fallback identities cannot publish the free-record sentinel"
+}
+
+test_multiple_remotes_refuse() {
+  local w verb out status before
+  w=$(new_pair multiple-remotes)
+  before=$(git -C "$w/remote.git" rev-parse main)
+  git -C "$w/a/data" remote add extra "$w/remote.git"
+  for verb in acquire release push steal; do
+    status=0
+    if [ "$verb" = steal ]; then
+      out=$(lease "$w/a" steal --owner-approved) || status=$?
+    else
+      out=$(lease "$w/a" "$verb") || status=$?
+    fi
+    expect_code 1 "$status" "$verb with two remotes and an upstream"
+    assert_contains "$out" "exactly one records remote" "multiple remotes were accepted"
+    assert_equals "$before" "$(git -C "$w/remote.git" rev-parse main)" "ambiguous remote was written"
+  done
+  pass "every mutating verb refuses multiple remotes even with an upstream"
+}
+
+test_release_and_steal_failures_stand_down() {
+  local w verb scenario out status
+  local -a args
+  for verb in release steal; do
+    args=("$verb")
+    [ "$verb" != steal ] || args+=(--owner-approved)
+    for scenario in moved diverged race rejected timeout adoption; do
+      if [ "$verb" = steal ] && { [ "$scenario" = moved ] || [ "$scenario" = timeout ]; }; then
+        continue
+      fi
+      w=$(new_pair "$verb-$scenario")
+      lease "$w/a" acquire >/dev/null || fail "first acquire failed"
+      case "$scenario" in
+        moved|diverged)
+          lease "$w/b" steal --owner-approved >/dev/null || fail "other home steal failed"
+          if [ "$scenario" = diverged ]; then
+            printf 'work\n' >> "$w/a/data/README.md"
+            git -C "$w/a/data" commit -qam "local records"
+          fi
+          ;;
+        rejected)
+          printf '#!/bin/sh\nexit 1\n' > "$w/remote.git/hooks/pre-receive"
+          chmod +x "$w/remote.git/hooks/pre-receive"
+          ;;
+      esac
+      mkdir -p "$w/tools"
+      cat > "$w/tools/git" <<'WRAPPER'
+#!/usr/bin/env bash
+if [ "${3:-}" = push ]; then
+  case "$TEST_SCENARIO" in
+    race)
+      FM_HOME="$TEST_WORLD/b" PATH="$TEST_ORIGINAL_PATH" bash "$TEST_LEASE" steal --owner-approved >&2 || exit 1
+      ;;
+    timeout)
+      "$TEST_REAL_GIT" "$@" >&2 || exit 1
+      exit 124
+      ;;
+  esac
+fi
+if [ "$TEST_SCENARIO" = adoption ] && [ "${3:-}" = update-ref ] && [ "${4:-}" = refs/heads/main ]; then
+  exit 1
+fi
+exec "$TEST_REAL_GIT" "$@"
+WRAPPER
+      chmod +x "$w/tools/git"
+      status=0
+      out=$(TEST_SCENARIO="$scenario" TEST_WORLD="$w" TEST_LEASE="$LEASE" \
+        TEST_REAL_GIT="$(command -v git)" TEST_ORIGINAL_PATH="$PATH" PATH="$w/tools:$PATH" \
+        lease "$w/a" "${args[@]}") || status=$?
+      expect_code 1 "$status" "$verb after $scenario"
+      [ -f "$w/a/state/.supervisor-lease-lost" ] || fail "$verb after $scenario left supervision active: $out"
+      status=0
+      out=$(FM_HOME="$w/a" bash "$LOCK" 2>&1) || status=$?
+      expect_code 1 "$status" "session lock after $verb $scenario"
+      if [ "$verb" = release ] && { [ "$scenario" = timeout ] || [ "$scenario" = adoption ]; }; then
+        assert_contains "$(remote_lease "$w")" "host=none epoch=2" "release did not reach the remote"
+        lease "$w/b" acquire >/dev/null || fail "other home could not acquire after release"
+      fi
+      if [ "$scenario" = race ]; then
+        assert_contains "$(remote_lease "$w")" "host=m-b epoch=2" "racing takeover did not win"
+      fi
+    done
+  done
+  pass "release and steal failures revoke supervision, including uncertain release delivery"
+}
+
 test_lock_refuses_while_stood_down() {
   local w out status
   w=$(new_pair lock)
@@ -302,4 +419,7 @@ fm_test_run \
   test_unreachable_remote \
   test_reemit_never_writes_or_retakes \
   test_worker_host_refuses \
+  test_reserved_identity_refuses \
+  test_multiple_remotes_refuse \
+  test_release_and_steal_failures_stand_down \
   test_lock_refuses_while_stood_down
