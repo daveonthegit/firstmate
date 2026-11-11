@@ -77,17 +77,22 @@ test_placed_entry_points() {
       [ "$rc" -ne 0 ] || fail "control $verb accepted placed $kind"
       assert_contains "$out" 'worker host mbp' "control $verb did not identify placement"
     done
-    for verb in query answer cleanup; do
+    for verb in query answer; do
       rc=0
       case "$verb" in
         query) out=$(FM_HOME="$home" bash "$ROOT/bin/fm-t3-answer.sh" t 2>&1) || rc=$? ;;
         answer) out=$(FM_HOME="$home" bash "$ROOT/bin/fm-t3-answer.sh" t request '{}' 2>&1) || rc=$? ;;
-        cleanup) out=$(FM_HOME="$home" bash "$ROOT/bin/fm-teardown.sh" t 2>&1) || rc=$? ;;
       esac
       [ "$rc" -ne 0 ] || fail "$verb accepted placed $kind"
       assert_contains "$out" 'worker host mbp' "$verb did not identify placement"
       assert_contains "$out" 'not yet supported' "$verb did not refuse its unsupported operation"
     done
+    # Cleanup is supported through the host leg (tests/fm-teardown-host.test.sh);
+    # with no registered host it refuses before any local or remote action.
+    rc=0
+    out=$(FM_HOME="$home" PATH="$tools:$PATH" bash "$ROOT/bin/fm-teardown.sh" t 2>&1) || rc=$?
+    [ "$rc" -ne 0 ] || fail "cleanup of placed $kind succeeded with no registered worker host"
+    assert_contains "$out" 'worker host mbp is not resolvable' "cleanup did not name the unresolvable host"
     out=$(FM_HOME="$home" bash "$ROOT/bin/fm-crew-state.sh" t 2>&1) || fail "crew-state failed: $out"
     assert_contains "$out" 'state: unknown' 'placed current state was guessed'
     assert_contains "$out" 'placed on worker host mbp' 'crew-state did not identify placement'

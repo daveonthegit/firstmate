@@ -205,6 +205,31 @@
 # leased home releases its durable treehouse lease so the pool slot is freed,
 # never left leased forever. If the treehouse return fails, teardown leaves the
 # leased home and state in place instead of hiding a still-held lease.
+# Worker-host cleanup: a ship or scout this home placed on a worker host
+# (bin/fm-task-route-lib.sh's worker-host route, docs/remote-workers.md) has no
+# endpoint, copy, or process on this machine, so it skips every local step
+# above and runs in two legs under the same control and metadata locks.
+# First the task's journal, and a scout's report, are fetched into data/<id>/
+# when not already here, because the host answers document reads only while
+# its placement claim exists. A scout without --force then needs that report
+# and the captain-call completion gate here, as locally; the host's own cleanup
+# still requires its report but skips that gate for a task a primary placed
+# there, since the inventory lives only in this backlog. Leg one runs the host's own
+# full fm-teardown through bin/fm-remote-worker-control.sh `teardown`, with
+# --force only when this caller passed it: the host's landed-work test, thread
+# archive, process reaper, and copy return. Only after leg one exits 0 (or 4,
+# a returned slot lost on the host, reported here as exit 4) does leg two
+# record the pending backlog transition, retire this home's status, records,
+# and volatile state, and land the backlog close or captain-held retain
+# exactly as a local cleanup does; the task's status-mirror cursor is retired
+# once its record is gone, so no capture still in flight can ingest it.
+# Before leg one, the recorded remote_root= and remote_home= must still match
+# the host's data/worker-hosts.md record. An SSH exit 255, a host refusal
+# (passed through, never bypassed), or any other leg-one failure preserves
+# every record on both machines and moves nothing. A host whose cleanup already
+# finished answers a re-run with "no task record remains", so re-running after
+# an unconfirmed answer completes leg two instead of repeating leg one.
+#
 # Usage: fm-teardown.sh <task-id> [--force] [--legacy-record]
 #   --force skips ordinary-task dirty and landed-work checks, skips scout report
 #   checks, and discards secondmate child work for kind=secondmate. Only use it
@@ -567,6 +592,8 @@ fm_lease_guard "$ID" "teardown (fm-teardown)"
 META="$STATE/$ID.meta"
 # shellcheck source=bin/fm-task-route-lib.sh
 . "$SCRIPT_DIR/fm-task-route-lib.sh"
+# shellcheck source=bin/fm-worker-host-lib.sh
+. "$SCRIPT_DIR/fm-worker-host-lib.sh"
 TREEHOUSE_PROJECT_LOCK=
 TREEHOUSE_PROJECT_LOCK_HELD=0
 TREEHOUSE_SLOT_LOCK_REQUIRED=0
@@ -665,7 +692,9 @@ fm_backlog_record_present "$META" "task record" "$STATE" || {
   echo "error: teardown refused after locking: $FM_BACKLOG_TRANSITION_ERROR" >&2
   exit 1
 }
-fm_task_route_require_supported "$META" cleanup || exit 1
+fm_task_route "$META" || { printf 'error: %s\n' "$FM_TASK_ROUTE_ERROR" >&2; exit 1; }
+TEARDOWN_ROUTE=$FM_TASK_ROUTE
+TEARDOWN_ROUTE_HOST=$FM_TASK_ROUTE_HOST
 TEARDOWN_META_KIND=$(fm_meta_get "$META" kind)
 [ -n "$TEARDOWN_META_KIND" ] || TEARDOWN_META_KIND=ship
 # Retiring a persistent secondmate is main's alone in both postures; the kind
@@ -1260,6 +1289,283 @@ if [ "$remote_teardown_rc" -eq 0 ] || [ "$remote_teardown_rc" -eq "$TEARDOWN_LOS
 fi
 [ "$remote_teardown_rc" -eq 3 ] || exit "$remote_teardown_rc"
 
+# Record-retirement helpers shared by the worker-host cleanup below and the
+# local sequence after it, so both are defined before either runs.
+retire_busy_state() {
+  local state_dir=$1 id=$2 gen=${3:-}
+  # A remote secondmate's host-local route record lives inside the home that
+  # teardown has already removed, taking its busy records with it.
+  [ -d "$state_dir" ] || return 0
+  if [ -n "$gen" ]; then
+    "$SCRIPT_DIR/fm-busy-event.sh" retire "$state_dir" "$id" --gen "$gen"
+  elif [ -f "$state_dir/$id.busy-gen" ]; then
+    "$SCRIPT_DIR/fm-busy-event.sh" retire "$state_dir" "$id" --current-gen
+  fi
+}
+
+validate_pr_poll_cleanup() {
+  local state_dir=$1 id=$2 state_device artifact has_artifact=0
+  fm_task_id_path_safe "$id" || return 0
+  for artifact in "$state_dir/$id.check.sh" "$state_dir/$id.pr-poll" \
+    "$state_dir/$id.pr-poll-registration" "$state_dir/$id.pr-poll-retirement" \
+    "$state_dir/$id.merge-authority" "$state_dir/$id.check-trust"; do
+    [ -e "$artifact" ] || [ -L "$artifact" ] || continue
+    has_artifact=1
+  done
+  [ "$has_artifact" -eq 1 ] || return 0
+  [ -d "$state_dir" ] && [ ! -L "$state_dir" ] || return 1
+  state_device=$(fm_pr_file_device "$state_dir") || return 1
+  for artifact in "$state_dir/$id.check.sh" "$state_dir/$id.pr-poll" \
+    "$state_dir/$id.pr-poll-registration" "$state_dir/$id.pr-poll-retirement" \
+    "$state_dir/$id.merge-authority" "$state_dir/$id.check-trust"; do
+    [ -e "$artifact" ] || [ -L "$artifact" ] || continue
+    if [ ! -f "$artifact" ] || [ -L "$artifact" ] \
+      || [ "$(fm_pr_file_device "$artifact")" != "$state_device" ] \
+      || [ "$(fm_pr_file_link_count "$artifact")" != 1 ] \
+      || { [ "$artifact" = "$state_dir/$id.merge-authority" ] \
+        && [ "$(fm_pr_file_mode "$artifact")" != 600 ]; }; then
+      echo "REFUSED: unsafe task PR-check artifact; preserving task state." >&2
+      return 1
+    fi
+  done
+  if [ -e "$state_dir/$id.pr-poll-retirement" ] \
+    || [ -L "$state_dir/$id.pr-poll-retirement" ]; then
+    fm_pr_poll_retirement_state_valid "$state_dir" "$id" || {
+      echo "REFUSED: invalid PR-poll retirement receipt; preserving task state." >&2
+      return 1
+    }
+  fi
+}
+
+remove_pr_poll_artifacts() {
+  local state_dir=$1 id=$2
+  validate_pr_poll_cleanup "$state_dir" "$id" || return 1
+  fm_pr_poll_retirement_recover_one "$state_dir" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" || return 1
+  fm_pr_poll_merge_notified_remove "$state_dir" "$id" || return 1
+  rm -f "$state_dir/$id.check.sh" "$state_dir/$id.pr-poll" \
+    "$state_dir/$id.pr-poll-registration" "$state_dir/$id.pr-poll-retirement" \
+    "$state_dir/$id.merge-authority" "$state_dir/$id.check-trust" || return 1
+}
+
+# The completion links this teardown already holds locally. A scout's
+# deliverable is its report, a local-only ship lands on local main, and every
+# other ship carries the PR recorded on its own record.
+BACKLOG_DONE_ARGS=()
+backlog_done_args() {
+  local data_relative
+  BACKLOG_DONE_ARGS=()
+  case "$KIND" in
+    scout)
+      data_relative=$(fm_backlog_data_relative "$DATA") || return 1
+      BACKLOG_DONE_ARGS=(--report "$data_relative/$ID/report.md")
+      ;;
+    *)
+      if [ "$MODE" = local-only ]; then
+        BACKLOG_DONE_ARGS=(--note "local main")
+      elif [ -n "$PR_URL" ]; then
+        BACKLOG_DONE_ARGS=(--pr "$PR_URL")
+      fi
+      ;;
+  esac
+}
+
+# Closing the backlog item is this script's own last act on the record, not a
+# printed instruction for a later turn (bin/fm-backlog-transition-lib.sh owns the
+# invariant). This prints what already happened, so the follow-up wording stays
+# only where a human still owes the edit.
+backlog_refresh_reminder() {
+  local backlog_display root backend=markdown
+  [ "$KIND" = secondmate ] && return 0
+  [ "$CLEANUP_RECOVERY" = orca ] && return 0
+  if root=$(fm_backlog_root "$DATA"); then
+    backend=$(fm_tasks_axi_backend "$root") || return 2
+  fi
+  if [ "$backend" != markdown ]; then
+    backlog_display="this home's configured tasks-axi backend (data directory $DATA)"
+  elif backlog_display=$(fm_backlog_file "$DATA"); then
+    :
+  else
+    backlog_display="${DATA%/}/backlog.md"
+  fi
+  if [ "$BACKLOG_CLOSED" = 1 ] && [ "$BACKLOG_TRANSITION" = retain ]; then
+    printf '%s\n' "Backlog: $ID stays open in $backlog_display, still held for the captain with its deliverable recorded. Relay the question and close it only with bin/fm-captain-hold.sh answer."
+  elif [ "$BACKLOG_CLOSED" = 1 ]; then
+    printf '%s\n' "Backlog: $ID is closed in $backlog_display. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due."
+  else
+    printf '%s\n' "Backlog: $ID just finished ($BACKLOG_SKIP_REASON). Update $backlog_display - move $ID to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due."
+  fi
+}
+
+# A ship or scout placed on a worker host (bin/fm-task-route-lib.sh) has no
+# endpoint, copy, or process here, so its cleanup runs in two legs instead of
+# the local sequence below; the header's worker-host cleanup paragraph owns the
+# contract. It returns the exit status this teardown reports.
+worker_host_teardown() {
+  local host=$TEARDOWN_ROUTE_HOST which rc err out lost_slot=0 proj_name
+  local -a host_args
+  KIND=$TEARDOWN_META_KIND
+  case "$KIND" in
+    ship|scout) ;;
+    *)
+      echo "REFUSED: task $ID is placed on worker host $host as kind=$KIND; only a ship or scout can be placed there. Nothing was changed." >&2
+      return 1
+      ;;
+  esac
+  if [ "$TEARDOWN_LEGACY_PENDING" = 1 ]; then
+    echo "REFUSED: task $ID's placement record on worker host $host has no published spawn_gen; re-run the same fm-spawn --host placement to repair the record, then retry cleanup. Nothing was changed." >&2
+    return 1
+  fi
+  rc=0
+  worker_host_lookup "$DATA" "$host" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    echo "REFUSED: worker host $host is not resolvable in $(worker_host_registry_path "$DATA")${WORKER_HOST_ERROR:+ ($WORKER_HOST_ERROR)}; restore its record, then retry cleanup. Nothing was changed." >&2
+    return 1
+  fi
+  if [ "$WORKER_HOST_ROOT" != "$(fm_meta_get "$META" remote_root)" ] \
+     || [ "$WORKER_HOST_HOME" != "$(fm_meta_get "$META" remote_home)" ]; then
+    echo "REFUSED: task $ID's recorded worker host route no longer matches worker host $host's registry record; reconcile the record before cleanup. Nothing was changed." >&2
+    return 1
+  fi
+  MODE=$(fm_meta_get "$META" mode)
+  [ -n "$MODE" ] || MODE=no-mistakes
+  PR_URL=$(fm_meta_get "$META" pr)
+  CLEANUP_RECOVERY=$TEARDOWN_CLEANUP_RECOVERY
+  validate_pr_poll_cleanup "$STATE" "$ID" || return 1
+
+  # The host's file verb answers only while its placement claim exists, and a
+  # successful host leg releases that claim, so documents come across first.
+  for which in journal report; do
+    [ "$which" = journal ] || [ "$KIND" = scout ] || continue
+    [ ! -f "$DATA/$ID/$which.md" ] || continue
+    rc=0
+    "$SCRIPT_DIR/fm-procevent-remote-worker.sh" fetch "$host" "$ID" "$which" || rc=$?
+    case "$rc" in
+      0|1) ;;
+      255)
+        echo "error: worker host $host was unreachable while fetching $ID's $which; nothing was changed on either machine - re-run cleanup" >&2
+        return 255
+        ;;
+      *)
+        echo "error: $ID's $which could not be stored in $DATA/$ID; nothing was changed on either machine" >&2
+        return 1
+        ;;
+    esac
+  done
+  if [ "$KIND" = scout ] && [ "$FORCE" != "--force" ]; then
+    if [ ! -f "$DATA/$ID/report.md" ]; then
+      echo "REFUSED: scout task $ID has no report at $DATA/$ID/report.md, and worker host $host did not provide one." >&2
+      echo "The report is the work product. Have the worker write it, or use --force after explicit discard approval." >&2
+      return 1
+    fi
+    if ! FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" \
+        FM_CONFIG_OVERRIDE="$CONFIG" "$SCRIPT_DIR/fm-captain-hold.sh" verify "$ID" >/dev/null; then
+      echo "REFUSED: scout task $ID has not passed the captain-call completion gate." >&2
+      echo "Inventory its report and any visual review through bin/fm-captain-hold.sh before teardown." >&2
+      return 1
+    fi
+  fi
+
+  BACKLOG_CLOSED=0
+  BACKLOG_TRANSITION=$TEARDOWN_BACKLOG_TRANSITION
+  BACKLOG_TRANSITION_FLAGS=()
+  [ "$BACKLOG_TRANSITION" = close ] || BACKLOG_TRANSITION_FLAGS=(--retain)
+  BACKLOG_SKIP_REASON=$TEARDOWN_BACKLOG_SKIP_REASON
+  if [ "$TEARDOWN_BACKLOG_APPLIES" = 1 ]; then
+    backlog_done_args || {
+      echo "error: the pending backlog $BACKLOG_TRANSITION for $ID is not replayable; refusing cleanup" >&2
+      return 1
+    }
+  fi
+
+  # Leg one: the host's own full cleanup. Only its success lets anything here
+  # move; --force crosses only when this caller passed it.
+  host_args=(teardown "$ID")
+  [ "$FORCE" != "--force" ] || host_args+=(--force)
+  err=$(mktemp "${TMPDIR:-/tmp}/fm-teardown-host.XXXXXX") || return 1
+  rc=0
+  out=$("$SCRIPT_DIR/fm-on.sh" "$host" fm-remote-worker-control.sh "${host_args[@]}" < /dev/null 2> "$err") || rc=$?
+  [ -z "$out" ] || printf '%s\n' "$out" | sed "s/^/worker host $host: /"
+  [ ! -s "$err" ] || sed "s/^/worker host $host: /" "$err" >&2
+  rm -f -- "$err"
+  case "$rc" in
+    0) ;;
+    "$TEARDOWN_LOST_SLOT_EXIT") lost_slot=1 ;;
+    255)
+      echo "error: worker host $host was unreachable, or whether it finished cleaning up $ID is unknown; every record here and on the host is preserved and the backlog item did not move - re-run this cleanup, which the host answers with its finished cleanup instead of repeating it" >&2
+      return 255
+      ;;
+    *)
+      echo "REFUSED: worker host $host refused to clean up $ID (exit $rc); every record here is preserved and the backlog item did not move. Resolve what the host named, then re-run." >&2
+      return "$rc"
+      ;;
+  esac
+
+  # Leg two: the host copy is gone, so retire this home's records exactly as a
+  # local cleanup does once its own copy is returned.
+  if [ "$TEARDOWN_BACKLOG_APPLIES" = 1 ]; then
+    BACKLOG_CLOSED=1
+    if ! fm_backlog_close_marker_write "$STATE" "$ID" "$DATA" "$TEARDOWN_META_SPAWN_GEN" \
+        "${BACKLOG_TRANSITION_FLAGS[@]+"${BACKLOG_TRANSITION_FLAGS[@]}"}" \
+        "${BACKLOG_DONE_ARGS[@]+"${BACKLOG_DONE_ARGS[@]}"}"; then
+      echo "error: worker host $host cleaned up $ID, but the pending backlog $BACKLOG_TRANSITION could not be recorded here ($FM_BACKLOG_TRANSITION_ERROR); retaining every durable task record - re-run cleanup" >&2
+      return 1
+    fi
+  fi
+  if ! FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" \
+      "$SCRIPT_DIR/fm-inactive-reconcile.sh" report "$ID"; then
+    echo "error: $ID's final outcome has not reached the parent channel; retaining every durable task record so a rerun can retry the delivery" >&2
+    return 1
+  fi
+  teardown_export_records "$STATE" "$ID" || return 1
+  remove_pr_poll_artifacts "$STATE" "$ID" || return 1
+  retire_busy_state "$STATE" "$ID" "$(fm_meta_get "$META" busy_gen)" || return 1
+  [ ! -e "$CONFIG/fleet-ledger" ] || FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE FM_CONFIG_OVERRIDE=$CONFIG "$SCRIPT_DIR/fm-fleet-ledger.sh" cleaned_up "$ID" || true
+  teardown_retire_status "$STATE" "$ID" || return 1
+  fm_wake_queue_prune_task "$STATE" "$ID" "$(fm_meta_get "$META" window)" 2>/dev/null || true
+  VAULT_META_SNAPSHOT=$(cat "$META" 2>/dev/null || true)
+  proj_name=$(fm_meta_get "$META" remote_project)
+  proj_name=${proj_name##*/}
+  rm -f "${STATE:?}/${ID:?}.turn-ended" "${STATE:?}/${ID:?}.progress" \
+    "$(fm_wake_signal_seen_path "$STATE" "$STATE/$ID.turn-ended")" \
+    "${STATE:?}/${ID:?}.reconcile-nudged" "${STATE:?}/${ID:?}.pr-register-refused" \
+    "${STATE:?}/.${ID:?}.branch-outcome-index"
+  rm -rf "${STATE:?}/${ID:?}.inbox"
+  if [ "$BACKLOG_CLOSED" = 1 ]; then
+    if ! fm_backlog_atomic_transition "$BACKLOG_TRANSITION" "$META" "$(fm_backlog_close_marker_path "$STATE" "$ID")" \
+        "$DATA" "$ID" "$STATE" "${BACKLOG_DONE_ARGS[@]+"${BACKLOG_DONE_ARGS[@]}"}"; then
+      echo "error: worker host $host cleaned up $ID, but its backlog item could not be moved atomically ($FM_BACKLOG_TRANSITION_ERROR); the pending $BACKLOG_TRANSITION is recorded and the next session start retries it" >&2
+      return 1
+    fi
+  elif ! fm_backlog_atomic_transition remove "$META" "task record" "$STATE"; then
+    echo "error: worker host $host cleaned up $ID, but its task record could not be removed ($FM_BACKLOG_TRANSITION_ERROR)" >&2
+    return 1
+  fi
+  fm_lock_release "$META_LOCK"
+  META_LOCK_HELD=0
+  # With the record gone the task is no longer a mirror member, so a capture
+  # still in flight skips it; retiring its cursor now cannot race an ingest.
+  "$SCRIPT_DIR/fm-procevent-remote-worker.sh" retire-task "$host" "$ID" >/dev/null \
+    || echo "warning: could not retire $ID's status-mirror cursor for worker host $host; bin/fm-procevent-remote-worker.sh retire-task $host $ID finishes it" >&2
+  if [ "$KIND" = ship ] && [ "$MODE" != local-only ] && [ -n "$proj_name" ] && [ -d "$FM_HOME/projects/$proj_name" ]; then
+    "$FM_ROOT/bin/fm-fleet-sync.sh" "$proj_name" || true
+  fi
+  "$SCRIPT_DIR/fm-home-summary-refresh.sh" --best-effort || true
+  if [ "$lost_slot" = 1 ]; then
+    echo "teardown $ID finished its cleanup on worker host $host and removed its task record here, but the host's returned pool slot did not come back clean (see the host's warning above); clear those paths on the host so its pool can reuse the slot" >&2
+  else
+    echo "teardown $ID complete (worker host $host)"
+  fi
+  backlog_refresh_reminder
+  printf '%s\n' "$VAULT_META_SNAPSHOT" \
+    | FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
+      "$FM_ROOT/bin/fm-vault.sh" journal "$ID" --meta - 2>&1 || true
+  [ "$lost_slot" = 0 ] || return "$TEARDOWN_LOST_SLOT_EXIT"
+}
+
+if [ "$TEARDOWN_ROUTE" = worker-host ]; then
+  if worker_host_teardown; then exit 0; else exit "$?"; fi
+fi
+
 # This is the first cleanup authorization check. It is metadata-only and must
 # complete before fm-guard, a backend command, file removal, branch deletion,
 # worktree return, registry change, or process termination can run.
@@ -1587,62 +1893,6 @@ remove_kimi_turnend_auth() {
   rm -f -- "$path"
 }
 
-retire_busy_state() {
-  local state_dir=$1 id=$2 gen=${3:-}
-  # A remote secondmate's host-local route record lives inside the home that
-  # teardown has already removed, taking its busy records with it.
-  [ -d "$state_dir" ] || return 0
-  if [ -n "$gen" ]; then
-    "$SCRIPT_DIR/fm-busy-event.sh" retire "$state_dir" "$id" --gen "$gen"
-  elif [ -f "$state_dir/$id.busy-gen" ]; then
-    "$SCRIPT_DIR/fm-busy-event.sh" retire "$state_dir" "$id" --current-gen
-  fi
-}
-
-validate_pr_poll_cleanup() {
-  local state_dir=$1 id=$2 state_device artifact has_artifact=0
-  fm_task_id_path_safe "$id" || return 0
-  for artifact in "$state_dir/$id.check.sh" "$state_dir/$id.pr-poll" \
-    "$state_dir/$id.pr-poll-registration" "$state_dir/$id.pr-poll-retirement" \
-    "$state_dir/$id.merge-authority" "$state_dir/$id.check-trust"; do
-    [ -e "$artifact" ] || [ -L "$artifact" ] || continue
-    has_artifact=1
-  done
-  [ "$has_artifact" -eq 1 ] || return 0
-  [ -d "$state_dir" ] && [ ! -L "$state_dir" ] || return 1
-  state_device=$(fm_pr_file_device "$state_dir") || return 1
-  for artifact in "$state_dir/$id.check.sh" "$state_dir/$id.pr-poll" \
-    "$state_dir/$id.pr-poll-registration" "$state_dir/$id.pr-poll-retirement" \
-    "$state_dir/$id.merge-authority" "$state_dir/$id.check-trust"; do
-    [ -e "$artifact" ] || [ -L "$artifact" ] || continue
-    if [ ! -f "$artifact" ] || [ -L "$artifact" ] \
-      || [ "$(fm_pr_file_device "$artifact")" != "$state_device" ] \
-      || [ "$(fm_pr_file_link_count "$artifact")" != 1 ] \
-      || { [ "$artifact" = "$state_dir/$id.merge-authority" ] \
-        && [ "$(fm_pr_file_mode "$artifact")" != 600 ]; }; then
-      echo "REFUSED: unsafe task PR-check artifact; preserving task state." >&2
-      return 1
-    fi
-  done
-  if [ -e "$state_dir/$id.pr-poll-retirement" ] \
-    || [ -L "$state_dir/$id.pr-poll-retirement" ]; then
-    fm_pr_poll_retirement_state_valid "$state_dir" "$id" || {
-      echo "REFUSED: invalid PR-poll retirement receipt; preserving task state." >&2
-      return 1
-    }
-  fi
-}
-
-remove_pr_poll_artifacts() {
-  local state_dir=$1 id=$2
-  validate_pr_poll_cleanup "$state_dir" "$id" || return 1
-  fm_pr_poll_retirement_recover_one "$state_dir" "$id" "$SCRIPT_DIR/fm-pr-poll.sh" || return 1
-  fm_pr_poll_merge_notified_remove "$state_dir" "$id" || return 1
-  rm -f "$state_dir/$id.check.sh" "$state_dir/$id.pr-poll" \
-    "$state_dir/$id.pr-poll-registration" "$state_dir/$id.pr-poll-retirement" \
-    "$state_dir/$id.merge-authority" "$state_dir/$id.check-trust" || return 1
-}
-
 pr_number_from_target() {
   local target=$1 n
   case "$target" in
@@ -1802,55 +2052,6 @@ work_is_landed() {
   local branch=$1
   pr_is_merged "$branch" && return 0
   content_in_default
-}
-
-# The completion links this teardown already holds locally. A scout's
-# deliverable is its report, a local-only ship lands on local main, and every
-# other ship carries the PR recorded on its own record.
-BACKLOG_DONE_ARGS=()
-backlog_done_args() {
-  local data_relative
-  BACKLOG_DONE_ARGS=()
-  case "$KIND" in
-    scout)
-      data_relative=$(fm_backlog_data_relative "$DATA") || return 1
-      BACKLOG_DONE_ARGS=(--report "$data_relative/$ID/report.md")
-      ;;
-    *)
-      if [ "$MODE" = local-only ]; then
-        BACKLOG_DONE_ARGS=(--note "local main")
-      elif [ -n "$PR_URL" ]; then
-        BACKLOG_DONE_ARGS=(--pr "$PR_URL")
-      fi
-      ;;
-  esac
-}
-
-# Closing the backlog item is this script's own last act on the record, not a
-# printed instruction for a later turn (bin/fm-backlog-transition-lib.sh owns the
-# invariant). This prints what already happened, so the follow-up wording stays
-# only where a human still owes the edit.
-backlog_refresh_reminder() {
-  local backlog_display root backend=markdown
-  [ "$KIND" = secondmate ] && return 0
-  [ "$CLEANUP_RECOVERY" = orca ] && return 0
-  if root=$(fm_backlog_root "$DATA"); then
-    backend=$(fm_tasks_axi_backend "$root") || return 2
-  fi
-  if [ "$backend" != markdown ]; then
-    backlog_display="this home's configured tasks-axi backend (data directory $DATA)"
-  elif backlog_display=$(fm_backlog_file "$DATA"); then
-    :
-  else
-    backlog_display="${DATA%/}/backlog.md"
-  fi
-  if [ "$BACKLOG_CLOSED" = 1 ] && [ "$BACKLOG_TRANSITION" = retain ]; then
-    printf '%s\n' "Backlog: $ID stays open in $backlog_display, still held for the captain with its deliverable recorded. Relay the question and close it only with bin/fm-captain-hold.sh answer."
-  elif [ "$BACKLOG_CLOSED" = 1 ]; then
-    printf '%s\n' "Backlog: $ID is closed in $backlog_display. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due."
-  else
-    printf '%s\n' "Backlog: $ID just finished ($BACKLOG_SKIP_REASON). Update $backlog_display - move $ID to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due."
-  fi
 }
 
 path_is_ancestor_of() {
@@ -3671,7 +3872,13 @@ if [ "$KIND" = scout ] && [ "$FORCE" != "--force" ]; then
     echo "The report is the work product. Have the crewmate write it, or use --force after explicit discard approval." >&2
     exit 1
   fi
-  if ! FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" \
+  # On a worker host, a scout a primary placed here has its captain calls held
+  # in that primary's backlog, which checks this gate before asking for this
+  # cleanup (header: worker-host cleanup); this home holds no inventory for it.
+  if [ -f "$FM_HOME/.fm-worker-host" ] && [ ! -L "$FM_HOME/.fm-worker-host" ] \
+     && [ -f "$STATE/$ID.remote-worker" ] && [ ! -L "$STATE/$ID.remote-worker" ]; then
+    :
+  elif ! FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" \
       FM_CONFIG_OVERRIDE="$CONFIG" "$SCRIPT_DIR/fm-captain-hold.sh" verify "$ID" >/dev/null; then
     echo "REFUSED: scout task $ID has not passed the captain-call completion gate." >&2
     echo "Inventory its report and any visual review through bin/fm-captain-hold.sh before teardown." >&2

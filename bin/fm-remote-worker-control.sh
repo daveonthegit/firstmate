@@ -64,7 +64,10 @@
 # and acknowledged inbox records. teardown runs the full ordinary fm-teardown
 # here - landed-work test,
 # endpoint close, process reaper, worktree return - and removes the claim only
-# once that task record is gone.
+# once that task record is gone. A teardown for a task that has neither a
+# claim nor a record here reports that no task record remains and succeeds,
+# so the primary can re-run its cleanup after an unconfirmed answer (exit 255)
+# without this home inventing work; a record without a claim still refuses.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -333,6 +336,11 @@ cmd_file() {
 cmd_teardown() {
   local id=$1 force=${2:-} rc=0
   [ -z "$force" ] || [ "$force" = --force ] || usage
+  if [ ! -e "$(claim_path "$id")" ] && [ ! -L "$(claim_path "$id")" ] \
+     && [ ! -e "$(meta_path "$id")" ] && [ ! -L "$(meta_path "$id")" ]; then
+    printf 'teardown %s: no task record remains on this worker host\n' "$id"
+    return 0
+  fi
   require_claim "$id"
   if [ -f "$(meta_path "$id")" ]; then
     if [ -n "$force" ]; then
