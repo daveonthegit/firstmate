@@ -258,6 +258,26 @@ assert_equals "$ALPHA_LINE
 $BETA_LINE" "$(cat "$HOST/data/projects.md")" "the primary's record was not restored"
 pass "with no project named, the doctor checks every project the host holds and --fix repairs drift"
 
+primary_registry_before=$(cat "$PARENT/data/projects.md")
+host_registry_before=$(cat "$HOST/data/projects.md")
+account_before=$(cat "$TMP_ROOT/account.log")
+printf '%s\n' '- alpha [direct-PR forge=forgjeo] - invalid forge binding' "$BETA_LINE" > "$PARENT/data/projects.md"
+for doctor_mode in check fix; do
+  if [ "$doctor_mode" = fix ]; then
+    run "$ROOT/bin/fm-worker-host-doctor.sh" m1 --fix
+  else
+    run "$ROOT/bin/fm-worker-host-doctor.sh" m1
+  fi
+  expect_code 1 "$RC" "implicit $doctor_mode must fail on an unresolved delivery posture"
+  assert_contains "$OUT" 'unknown forge "forgjeo"' "the resolver diagnostic was lost"
+  assert_contains "$OUT" 'project alpha does not resolve to a delivery posture' "the unresolved project was not named"
+  assert_not_contains "$OUT" 'worker host home ready' "an unresolved project produced a ready verdict"
+  assert_equals "$host_registry_before" "$(cat "$HOST/data/projects.md")" "an unresolved project changed the host registry"
+  assert_equals "$account_before" "$(cat "$TMP_ROOT/account.log")" "an invalid delivery posture reached SSH"
+done
+printf '%s\n' "$primary_registry_before" > "$PARENT/data/projects.md"
+pass "implicit checks and repairs refuse unresolved delivery postures before SSH"
+
 git -C "$HOST/projects/alpha" remote remove no-mistakes
 git -C "$HOST/projects/alpha" remote set-url origin "$BETA_ORIGIN"
 printf '%s\n' '- alpha [direct-PR] - host record' "$BETA_LINE" > "$HOST/data/projects.md"

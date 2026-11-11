@@ -144,7 +144,6 @@ while [ "$i" -lt "${#PROJECT_NAMES[@]}" ]; do
   origin=${PROJECT_ORIGINS[$i]}
   i=$((i + 1))
   if ! mode_line=$(FM_HOME="$FM_HOME" FM_DATA_OVERRIDE="$DATA" "$SCRIPT_DIR/fm-project-mode.sh" "$project" 2>"$TMP/mode.err"); then
-    [ "$SCOPE" = present ] && continue
     cat "$TMP/mode.err" >&2
     die "project $project does not resolve to a delivery posture"
   fi
