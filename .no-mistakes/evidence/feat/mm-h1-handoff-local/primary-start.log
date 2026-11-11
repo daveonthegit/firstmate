@@ -1,0 +1,8 @@
+I ran `bash .live-handoff/start.sh` once and it failed with exit code 1.
+
+1. **Task created:** It added task `scout-h1` ("Inspect source", kind scout, repo widget), which is now Queued.
+2. **Brief file:** It created `.live-handoff/home/data/scout-h1/brief.md` from a template. The `{TASK}` and `{FIRSTMATE_SPEC}` placeholders in it still need filling in.
+3. **Gate refusal:** It printed `fm-gate-refuse: gate agent lifecycle permitted only against lab home .../.live-handoff/home`.
+4. **Fatal error:** The worktree step (`treehouse get`) failed to get into a separate worktree within 60s. Its last location was `.live-handoff/home/projects/widget`, which is the project that started it, not a separate copy. The error says to look at the window `primary:fm-scout-h1`.
+
+I didn't run anything else to look into it or clean up, so task `scout-h1` is still queued.

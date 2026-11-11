@@ -1,0 +1,10 @@
+1..8
+ok - ships and scouts require nonempty worker notes before preservation and cleanup
+ok - all handoff actions require eligible supervision before mutation
+ok - fm-brief --continue-from carries the Task verbatim and records the source and carried commit
+ok - fm-spawn --continue-from plants the copy at the carried commit and refuses a moved branch
+ok - fm-handoff refuses a remote target, an open decision, a recorded PR, and a missing remote before steering
+ok - a ship hand-off carries its pushed work into a fresh task with one live backlog item at a time
+ok - a scout hand-off carries its interim report and notes into a fresh scout
+ok - fm-handoff --cancel withdraws a request and tells the worker to resume
+FM_TEST_COMPLETE

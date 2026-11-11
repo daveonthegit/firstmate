@@ -1,0 +1,27 @@
+ok: added scout-live (scout, repo widget) -> Queued
+task:
+  id: scout-live
+  title: Inspect both source lines
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: widget
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start scout-live --file=data/backlog.md` to move it to in flight
+  - Run `tasks-axi block scout-live --by <other> --file=data/backlog.md` to record a dependency
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-handoff/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: project entry for {run-worktree}/.live-handoff/home/projects/widget in ~/.claude.json already declined external CLAUDE.md imports; refusing to override that consent. To recover, remove hasClaudeMdExternalIncludesApproved and hasClaudeMdExternalIncludesWarningShown from that project entry and approve the imports dialog interactively once
+error: refusing to pre-register Claude trust: could not record trust for '{run-worktree}/.live-handoff/pool/.treehouse/widget-8d12b9/2/widget' and project '{run-worktree}/.live-handoff/home/projects/widget' in '~/.claude.json'
+error: could not pre-register Claude workspace trust for {run-worktree}/.live-handoff/pool/.treehouse/widget-8d12b9/2/widget; refusing to launch a claude worker that would wedge on the trust dialog; inspect window primary:fm-scout-live

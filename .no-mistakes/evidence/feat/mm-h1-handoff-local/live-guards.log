@@ -1,0 +1,51 @@
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local
+error: --remote is required; explicitly choose the preservation destination
+exit=1
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to another-host
+error: --to another-host: only a local hand-off exists; moving a task to another machine is not built
+exit=2
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin --as custom
+error: unknown option --as
+exit=2
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin
+error: task scout-h1 has an open decision or blocker (colour	needs-decision	choose colour); answer it before handing the task off
+exit=1
+
+Request while .fm-worker-host exists: error: this home is a worker host; only the supervisor hands tasks off (exit=1)
+
+Request while .supervisor-lease-lost exists: error: this home has stood down from the supervisor lease (synthetic lab stand-down); hand-offs need the supervisor (exit=1)
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin --reason local\ lab\ guard\ verification
+requested: scout-h1 asked to commit, push, and write its notes for continuation as scout-h1-c2; re-run this command after its 'paused: handoff ready' line
+if the worker cannot answer (stopped, out of context, or out of usage), recover it as a stuck worker first; firstmate never commits inside a project copy
+exit=0
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin
+waiting: scout-h1 has not reported 'paused: handoff ready' since the request
+exit=75
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin
+error: task scout-h1 reported ready but wrote no nonempty notes at {run-worktree}/.live-handoff/home/data/scout-h1/handoff-notes.md
+exit=1
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin
+error: task scout-h1 reported ready but wrote no nonempty notes at {run-worktree}/.live-handoff/home/data/scout-h1/handoff-notes.md
+exit=1
+
+finish while .fm-worker-host exists: error: this home is a worker host; only the supervisor hands tasks off (exit=1)
+
+cancel while .fm-worker-host exists: error: this home is a worker host; only the supervisor hands tasks off (exit=1)
+
+finish while .supervisor-lease-lost exists: error: this home has stood down from the supervisor lease (synthetic lab stand-down); hand-offs need the supervisor (exit=1)
+
+cancel while .supervisor-lease-lost exists: error: this home has stood down from the supervisor lease (synthetic lab stand-down); hand-offs need the supervisor (exit=1)
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --cancel
+cancelled: the hand-off of scout-h1 as scout-h1-c2
+exit=0
+
+Confirmed: refused operations left old task, request checksum and inbox unchanged; cancellation removed only the request and queued the resume steer.

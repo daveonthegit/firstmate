@@ -1,0 +1,9 @@
+The command exited with status **0**.
+
+Output:
+```
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-handoff/home
+spawned scout-h1 harness=claude kind=scout window=primary:fm-scout-h1 worktree={run-worktree}/.live-handoff/pool/.treehouse/widget-8d12b9/1/widget
+```
+
+The script printed an `fm-gate-refuse` message, but it still spawned `scout-h1` in window `primary:fm-scout-h1` and exited 0.

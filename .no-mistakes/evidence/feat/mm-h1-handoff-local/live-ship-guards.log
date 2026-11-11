@@ -1,0 +1,28 @@
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote absent
+error: task scout-h1's copy {run-worktree}/.live-handoff/pool/.treehouse/widget-8d12b9/1/widget has no git remote 'absent' to carry its branch through; pass --remote
+exit=1
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin
+requested: scout-h1 asked to commit, push, and write its notes for continuation as scout-h1-c2; re-run this command after its 'paused: handoff ready' line
+if the worker cannot answer (stopped, out of context, or out of usage), recover it as a stuck worker first; firstmate never commits inside a project copy
+exit=0
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin
+error: task scout-h1 reported ready but wrote no nonempty notes at {run-worktree}/.live-handoff/home/data/scout-h1/handoff-notes.md
+exit=1
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin
+error: task scout-h1's copy still has uncommitted changes; ask the worker to commit them:
+?? untracked-wip.txt
+exit=1
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --remote origin
+error: remote origin has branch fm/scout-h1 at 'nothing', not 1f217f4e1cbb1fdeba6c4720908dfefbdbdbdd15; ask the worker to push it
+exit=1
+
+Confirmed: synthetic ship ready lines cannot bypass nonempty notes, untracked-work and preservation checks; the old task remains recorded and no continuation was created.
+
+$ {run-worktree}/bin/fm-handoff.sh scout-h1 --to local --cancel
+cancelled: the hand-off of scout-h1 as scout-h1-c2
+exit=0

@@ -1,0 +1,40 @@
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+bash-3.2$ treehouse get
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.no-mistakes/worktrees/747da666653e/01M76DKKXNCWX9S4S6B1MEZY6E/.live-handoff/pool/.treehouse/wi
+dget-8d12b9/1/widget. Type 'exit' to return.
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+bash-3.2$ cd -- '{run-worktree}/.live-handoff/pool/.tre
+ehouse/widget-8d12b9/1/widget'
+bash-3.2$ export GOTMPDIR=/tmp/fm-scout-h1/gotmp
+bash-3.2$ export COMPACT_ADVISER_DISABLE=1
+bash-3.2$ export FM_TASK_ID=scout-h1
+bash-3.2$ . '/tmp/fm-scout-h1+bb4136b4409da0ee31c4a66186dcde19725d49e785c7fdb5b89a9c9b85263a00/launch.s1794439277.17628.
+16941.sh'
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  WARNING: Claude Code running in Bypass Permissions mode
+
+  In Bypass Permissions mode, Claude Code will not ask for your approval before running potentially dangerous
+  commands.
+  This mode should only be used in a sandboxed container/VM that has restricted internet access and can easily be
+  restored if damaged.
+
+  By proceeding, you accept all responsibility for actions taken while running in Bypass Permissions mode.
+
+  https://code.claude.com/docs/en/security
+
+  ❯ No, exit
+    Yes, I accept
+
+  Enter to confirm · Esc to cancel
+
