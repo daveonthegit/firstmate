@@ -384,7 +384,7 @@ fi
 # nothing can be delivered to a wrong endpoint either way. What that refusal
 # cannot say is WHY, and "malformed metadata" is the wrong thing to tell an
 # operator about a correctly configured remote route. Name the placement
-# instead, using the same `remote_host` signal bin/fm-send.sh routes on.
+# instead, using the shared route discriminator before local validation.
 # shellcheck source=bin/fm-task-route-lib.sh
 . "$SCRIPT_DIR/fm-task-route-lib.sh"
 fm_task_route_require_supported "$META" "$VERB" || exit 1

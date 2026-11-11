@@ -85,7 +85,9 @@
 #   re-run finishes a placement whose record, backlog move, or mirror arm
 #   failed after the host launched. --relaunch, --secondmate, --account,
 #   --hermes-profile, --herdr-resume-lock-wait, and a raw launch command are
-#   refused with --host.
+#   refused with --host. An existing worker-host placement also refuses a
+#   local spawn without --host or a direct --relaunch; re-run the same --host
+#   spawn for placement recovery, not to replace its worker.
 #   Ship/scout launches always put fm-dod-lib.sh's current worker role scope
 #   first in the private launch-brief overlay, including the exact task-owned
 #   steering inbox. This never rewrites a project's instruction files or a

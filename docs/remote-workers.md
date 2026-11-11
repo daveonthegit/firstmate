@@ -10,7 +10,7 @@ The worker host runs a headless Firstmate home with its own project clones, work
 ## Current limits
 
 - This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, and placement from the primary with `fm-spawn.sh --host`, all described below.
-- The primary cannot yet read, peek at, steer, interrupt, answer, or clean up a placed task: `fm-send`, `fm-peek`, `fm-control`, `fm-t3-answer`, and `fm-teardown` recognize its placement and explicitly refuse unsupported operations, while `fm-crew-state` reports unknown state and names the worker host; those steps run on the host itself for now.
+- The primary cannot yet read, peek at, steer, interrupt, answer, relaunch, or clean up a placed task: `fm-send`, `fm-peek`, `fm-control`, `fm-t3-answer`, and `fm-teardown` recognize its placement and explicitly refuse unsupported operations, while `fm-crew-state` reports unknown state and names the worker host; those steps run on the host itself for now.
 - Placement is an explicit per-task choice; automatic placement by load or by project is not built.
 
 ## How it works
@@ -21,8 +21,7 @@ The worker host runs a headless Firstmate home with its own project clones, work
 4. The host keeps an ordinary local task record under the same task id, plus a placement claim that marks the task as placed by a primary.
 5. The primary records the route the host returned in its own task record, moves the backlog item In flight, and arms the host's status mirror.
 
-The primary's task record names the host with `remote_worker_host=` and never with the second-mate key `remote_host=`, and it records the host's paths only under `remote_*` keys, so nothing here mistakes them for a local copy and this machine's project capacity does not count the task.
-[`bin/fm-task-route-lib.sh`](../bin/fm-task-route-lib.sh) is the one helper that tells a placed task from a local task and from a remote second mate.
+[`bin/fm-task-route-lib.sh`](../bin/fm-task-route-lib.sh) owns route discrimination between placed tasks, local tasks, and remote second mates.
 A host at capacity defers the placement exactly as a local spawn defers, and the backlog item stays queued.
 The [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns the forwarded flags, local checks, recorded keys, and placement recovery, including a re-run after a failed mirror arm.
 
@@ -30,7 +29,7 @@ Only the brief's `# Task` section crosses the machine boundary.
 The host re-renders the rest of the brief itself, so every path a worker is told - its status file, steering inbox, report, and journal - is a path in the host's home.
 The primary forwards the facts that shape the scaffold as explicit flags; the [controller header](../bin/fm-remote-worker-control.sh) owns that flag set and the route block it prints.
 A brief section the primary edited by hand outside `# Task` is not carried.
-The host's spawn re-validates the brief against the host's own `data/projects.md`, capacity declarations, and backend, so a host at capacity defers exactly as a local spawn does.
+The host's spawn re-validates the brief against the host's own `data/projects.md`, capacity declarations, and backend.
 
 The host leg answers only for tasks a primary placed there.
 A spawn for a task the host already holds reports the existing route instead of launching again, which makes a re-run after an unconfirmed SSH spawn safe.
