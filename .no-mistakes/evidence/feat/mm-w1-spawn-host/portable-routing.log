@@ -1,0 +1,5 @@
+1..3
+ok - the helper routes local, placed, and remote second-mate records by their recorded keys
+ok - the helper refuses contradictory, unsafe, missing, and symlinked records
+ok - placed ship and scout operations report their host without local actions
+FM_TEST_COMPLETE

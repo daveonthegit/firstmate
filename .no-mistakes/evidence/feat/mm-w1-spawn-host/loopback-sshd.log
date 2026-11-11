@@ -1,0 +1,71 @@
+Server listening on 127.0.0.1 port 22491.
+Connection from 127.0.0.1 port 49347 on 127.0.0.1 port 22491
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 49347 ssh2 [preauth]
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 49347 ssh2: ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 66546
+Starting session: forced-command (config) '{run-worktree}/.live/ssh-gateway.py' for davidxiao from 127.0.0.1 port 49347 id 0
+Received disconnect from 127.0.0.1 port 49347:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 49347
+Connection from 127.0.0.1 port 49607 on 127.0.0.1 port 22491
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 49607 ssh2 [preauth]
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 49607 ssh2: ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 91028
+Starting session: forced-command (config) '{run-worktree}/.live/ssh-gateway.py' for davidxiao from 127.0.0.1 port 49607 id 0
+Received disconnect from 127.0.0.1 port 49607:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 49607
+Connection from 127.0.0.1 port 49632 on 127.0.0.1 port 22491
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 49632 ssh2 [preauth]
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 49632 ssh2: ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 92241
+Starting session: forced-command (config) '{run-worktree}/.live/ssh-gateway.py' for davidxiao from 127.0.0.1 port 49632 id 0
+Received disconnect from 127.0.0.1 port 49632:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 49632
+Connection from 127.0.0.1 port 49656 on 127.0.0.1 port 22491
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 49656 ssh2 [preauth]
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 49656 ssh2: ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 93888
+Starting session: forced-command (config) '{run-worktree}/.live/ssh-gateway.py' for davidxiao from 127.0.0.1 port 49656 id 0
+Received disconnect from 127.0.0.1 port 49656:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 49656
+Connection from 127.0.0.1 port 49694 on 127.0.0.1 port 22491
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 49694 ssh2 [preauth]
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 49694 ssh2: ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 97995
+Starting session: forced-command (config) '{run-worktree}/.live/ssh-gateway.py' for davidxiao from 127.0.0.1 port 49694 id 0
+Received disconnect from 127.0.0.1 port 49694:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 49694
+Connection from 127.0.0.1 port 49695 on 127.0.0.1 port 22491
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 49695 ssh2 [preauth]
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 49695 ssh2: ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 99975
+Starting session: forced-command (config) '{run-worktree}/.live/ssh-gateway.py' for davidxiao from 127.0.0.1 port 49695 id 0
+Received disconnect from 127.0.0.1 port 49695:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 49695
+Connection from 127.0.0.1 port 49706 on 127.0.0.1 port 22491
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Postponed publickey for davidxiao from 127.0.0.1 port 49706 ssh2 [preauth]
+Accepted key ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw found at {run-worktree}/.live/authorized_keys:1
+Accepted publickey for davidxiao from 127.0.0.1 port 49706 ssh2: ED25519 SHA256:6LgO4kAZ8Nc9e7AFbCs4ST+FrZ+pvApjIZc3rFwkPcw
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 4910
+Starting session: forced-command (config) '{run-worktree}/.live/ssh-gateway.py' for davidxiao from 127.0.0.1 port 49706 id 0
+Received disconnect from 127.0.0.1 port 49706:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 49706

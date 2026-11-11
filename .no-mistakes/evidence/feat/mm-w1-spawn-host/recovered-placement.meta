@@ -1,0 +1,17 @@
+window=remote:a1
+endpoint_task_id=a1
+harness=claude
+kind=ship
+mode=local-only
+yolo=off
+branch=fm/a1
+model=default
+effort=default
+spawn_gen=s1794380512.99006.17066
+remote_worker_host=loop
+remote_root={run-worktree}
+remote_home={run-worktree}/w
+remote_backend=tmux
+remote_target=firstmate:fm-a1
+remote_worktree={run-worktree}/.live/pool/.treehouse/sample-fd143e/3/sample
+remote_project={run-worktree}/w/projects/sample

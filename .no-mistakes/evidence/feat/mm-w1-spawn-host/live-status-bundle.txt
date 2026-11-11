@@ -1,0 +1,16 @@
+schema=fm-remote-worker-events.v1
+records=1
+
+schema=fm-remote-delta.v1
+task=t1
+status=delta
+path=state/t1.status
+from_offset=0
+to_offset=58
+from_prefix_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+to_prefix_sha256=7ac0353257d8aa39c4ad490b7ad5aa5b53b33ee5ec2dfc2ecad11851bee928f9
+payload_sha256=7ac0353257d8aa39c4ad490b7ad5aa5b53b33ee5ec2dfc2ecad11851bee928f9
+payload_bytes=58
+reason=
+
+working [at=1794380000]: disposable loopback status proof

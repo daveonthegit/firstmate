@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Ship placement publishes remote-only route, host-rendered brief, backlog transition and working status mirror over real loopback SSH",
+    "result": "pass"
+  },
+  {
+    "name": "Full loopback host defers a new scout with exit 75 and leaves it queued without a route or endpoint",
+    "result": "pass"
+  },
+  {
+    "name": "A scout SSH result lost after real launch is retried without a duplicate and the existing route is published",
+    "result": "pass"
+  },
+  {
+    "name": "Away mirror-arm recovery at spend cap 1 reuses the existing worker while rejecting new work",
+    "result": "pass"
+  },
+  {
+    "name": "Unknown host and unforwardable account pin refuse before placement and preserve queued state",
+    "result": "pass"
+  },
+  {
+    "name": "Placed ship and scout refuse unsupported local operations; spawn and relaunch preserve the remote record and actual windows",
+    "result": "pass"
+  }
+]

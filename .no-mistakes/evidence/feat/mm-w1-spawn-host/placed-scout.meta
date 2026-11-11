@@ -1,0 +1,14 @@
+window=remote:r1
+endpoint_task_id=r1
+harness=claude
+kind=scout
+model=default
+effort=default
+spawn_gen=s1794380504.97637.4704
+remote_worker_host=loop
+remote_root={run-worktree}
+remote_home={run-worktree}/w
+remote_backend=tmux
+remote_target=firstmate:fm-r1
+remote_worktree={run-worktree}/.live/pool/.treehouse/sample-fd143e/2/sample
+remote_project={run-worktree}/w/projects/sample
