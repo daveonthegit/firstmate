@@ -220,14 +220,18 @@
 # a returned slot lost on the host, reported here as exit 4) does leg two
 # record the pending backlog transition, retire this home's status, records,
 # and volatile state, and land the backlog close or captain-held retain
-# exactly as a local cleanup does; the task's status-mirror cursor is retired
-# once its record is gone, so no capture still in flight can ingest it.
+# exactly as a local cleanup does. Status retirement, membership removal, and
+# cursor retirement share the host lifecycle lock with mirror ingestion, so
+# an admitted ingest cannot recreate retired status. Once the task record is
+# gone, its cursor is retired even if the backlog update failed; the pending
+# transition remains for session-start replay.
 # Before leg one, the recorded remote_root= and remote_home= must still match
 # the host's data/worker-hosts.md record. An SSH exit 255, a host refusal
 # (passed through, never bypassed), or any other leg-one failure preserves
-# every record on both machines and moves nothing. A host whose cleanup already
-# finished answers a re-run with "no task record remains", so re-running after
-# an unconfirmed answer completes leg two instead of repeating leg one.
+# the primary's task records and leaves its backlog unchanged. Exit 255 means
+# the host's outcome is unknown: it may already have removed its records.
+# A host whose cleanup already finished answers a re-run with "no task record
+# remains", so retrying completes leg two without repeating host-side work.
 #
 # Usage: fm-teardown.sh <task-id> [--force] [--legacy-record]
 #   --force skips ordinary-task dirty and landed-work checks, skips scout report
