@@ -26,8 +26,8 @@
 #     home's clone's origin when it has one (bin/fm-project-origin-lib.sh owns
 #     which URLs are accepted);
 #   - the T3 version and capabilities the primary needs, read from this home's
-#     own `bin/fm-t3-mcp.mjs status`; with no T3 sign-in here, or a status that
-#     cannot be read, the host reports its own version without a match verdict;
+#     own `bin/fm-t3-mcp.mjs status`; unavailable primary evidence remains
+#     unresolved when this home has a T3 sign-in;
 #   - --lanes and --capacity, the host's config/lane-capacity cap and
 #     config/project-capacity lines, which --fix writes only where no different
 #     value is already declared.
@@ -94,7 +94,7 @@ while [ "$#" -gt 0 ]; do
       case "$1" in *=*) origin=${1#*=} ;; esac
       safe_id "$name" || die "invalid project name: $name"
       if [ -n "$origin" ]; then
-        fm_project_origin_safe "$origin" || die "project $name origin is not an accepted clone URL: $origin"
+        fm_project_origin_credential_free "$origin" || die "project $name requires a credential-free clone URL; authenticate on the host"
       fi
       PROJECT_NAMES+=("$name")
       PROJECT_ORIGINS+=("$origin")
@@ -159,9 +159,8 @@ while [ "$i" -lt "${#PROJECT_NAMES[@]}" ]; do
   [ -n "$registry_line" ] || die "project $project has no record in $REG"
   if [ -z "$origin" ] && [ -d "$PROJECTS/$project/.git" ]; then
     origin=$(git -C "$PROJECTS/$project" remote get-url origin 2>/dev/null || true)
-    if [ -n "$origin" ] && ! fm_project_origin_safe "$origin"; then
-      [ "$SCOPE" = present ] || die "project $project origin is not an accepted clone URL: $origin"
-      origin=
+    if [ -n "$origin" ] && ! fm_project_origin_credential_free "$origin"; then
+      die "project $project requires a credential-free clone URL; authenticate on the host"
     fi
   fi
   printf 'project=%s|%s|%s|%s\n' \
@@ -187,13 +186,15 @@ done
 T3_VERSION=
 T3_CAPS=
 T3_NOTE=
+T3_REQUIRED=1
 TOKEN="$CONFIG/t3code-token"
 if [ ! -e "$TOKEN" ] && [ ! -L "$TOKEN" ]; then
+  T3_REQUIRED=0
   T3_NOTE="the primary has no T3 sign-in"
 elif ! command -v node >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
   T3_NOTE="the primary cannot read its own T3 status without node and jq"
 elif ! status_json=$(node "$SCRIPT_DIR/fm-t3-mcp.mjs" status --token-file "$TOKEN" 2>"$TMP/t3.err"); then
-  T3_NOTE="the primary's own T3 status could not be read: $(grep -v '^warning:' "$TMP/t3.err" | tail -n 1)"
+  T3_NOTE="the primary's own T3 status could not be read"
 else
   T3_VERSION=$(printf '%s' "$status_json" | jq -r '.serverVersion // empty')
   T3_CAPS=$(printf '%s' "$status_json" \
@@ -203,6 +204,7 @@ fi
 {
   printf 'schema=fm-worker-host-home.v1\n'
   printf 'host_id_b64=%s\n' "$(printf '%s' "$ID" | encode)"
+  printf 't3_required=%s\n' "$T3_REQUIRED"
   [ -z "$LANES" ] || printf 'lanes=%s\n' "$LANES"
   cat "$TMP/capacity"
   [ -z "$T3_VERSION" ] || printf 't3_version_b64=%s\n' "$(printf '%s' "$T3_VERSION" | encode)"

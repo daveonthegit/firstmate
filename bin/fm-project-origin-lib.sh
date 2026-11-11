@@ -38,6 +38,30 @@
 #   relative paths, which resolve against whatever directory git happens to
 #   be in on the other machine
 #   "/../" traversal inside a local or file: path
+fm_project_origin_credential_free() {
+  local url=${1-} authority userpart
+  fm_project_origin_safe "$url" || return 1
+  case "$url" in
+    *://*)
+      authority=${url#*://}
+      authority=${authority%%/*}
+      case "$url" in *'?'*|*'#'*) return 1 ;; esac
+      case "$url" in
+        ssh://*)
+          case "$authority" in
+            *@*)
+              userpart=${authority%@*}
+              case "$userpart" in *[!A-Za-z0-9._-]*) return 1 ;; esac
+              ;;
+          esac
+          ;;
+        *) case "$authority" in *@*) return 1 ;; esac ;;
+      esac
+      ;;
+  esac
+  return 0
+}
+
 fm_project_origin_safe() { # <url>; 0 when the URL is an accepted clone URL
   local url=${1-} rest authority userpart hostpart port inner host path
 

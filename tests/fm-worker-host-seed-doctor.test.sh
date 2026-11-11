@@ -156,7 +156,32 @@ expect_code 1 "$RC" "a local-only project must be refused"
 assert_contains "$OUT" "local-only" "the refusal does not name the local-only posture"
 assert_absent "$HOST" "a refused seed created the host home"
 assert_absent "$TMP_ROOT/account.log" "a refused seed reached the host"
-pass "unregistered hosts, a missing lane cap, and local-only projects are refused before any SSH"
+run "$ROOT/bin/fm-worker-host-seed.sh" m1 --lanes 2
+expect_code 1 "$RC" "a seed must name projects"
+run "$ROOT/bin/fm-worker-host-seed.sh" m1 --lanes 2 --no-projects
+expect_code 2 "$RC" "the removed empty-project mode must be refused"
+for unsafe_origin in 'https://user:SECRET@forge.example/org/repo.git' 'https://SECRET@forge.example/org/repo.git' 'ssh://user:SECRET@forge.example/org/repo.git' 'https://forge.example/org/repo.git?token=SECRET'; do
+  run "$ROOT/bin/fm-worker-host-doctor.sh" m1 "alpha=$unsafe_origin"
+  expect_code 1 "$RC" "credential-bearing explicit origins must be refused"
+  assert_not_contains "$OUT" SECRET "the refusal leaked a credential"
+  git -C "$PARENT/projects/alpha" remote set-url origin "$unsafe_origin"
+  run "$ROOT/bin/fm-worker-host-doctor.sh" m1
+  expect_code 1 "$RC" "credential-bearing discovered origins must be refused"
+  assert_not_contains "$OUT" SECRET "the discovered-origin refusal leaked a credential"
+  manifest=$(printf 'schema=fm-worker-host-home.v1\nhost_id_b64=bTE=\nt3_required=0\nproject_scope=named\nproject_count=1\nproject=%s|%s|%s|%s\n' \
+    "$(printf alpha | base64 | tr -d '\n')" \
+    "$(printf '%s' "$unsafe_origin" | base64 | tr -d '\n')" \
+    "$(printf '%s' "$ALPHA_LINE" | base64 | tr -d '\n')" \
+    "$(printf no-mistakes | base64 | tr -d '\n')")
+  RC=0
+  OUT=$(printf '%s\n' "$manifest" | FM_HOME="$HOST" "$ROOT/bin/fm-worker-host-home.sh" --fix 2>&1) || RC=$?
+  expect_code 1 "$RC" "the receiving boundary must reject credentials"
+  assert_not_contains "$OUT" SECRET "the receiving refusal leaked a credential"
+done
+git -C "$PARENT/projects/alpha" remote set-url origin "$TMP_ROOT/origins/alpha.git"
+assert_absent "$HOST" "a refused command created the host"
+assert_absent "$TMP_ROOT/account.log" "a refused command reached SSH"
+pass "invalid seeds and credential-bearing origins are refused before mutation"
 
 # --- the doctor before any seed -------------------------------------------------
 
@@ -233,6 +258,27 @@ assert_equals "$ALPHA_LINE
 $BETA_LINE" "$(cat "$HOST/data/projects.md")" "the primary's record was not restored"
 pass "with no project named, the doctor checks every project the host holds and --fix repairs drift"
 
+git -C "$HOST/projects/alpha" remote remove no-mistakes
+git -C "$HOST/projects/alpha" remote set-url origin "$BETA_ORIGIN"
+printf '%s\n' '- alpha [direct-PR] - host record' "$BETA_LINE" > "$HOST/data/projects.md"
+registry_before=$(cat "$HOST/data/projects.md")
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1 --fix alpha
+expect_code 1 "$RC" "a mismatched clone must block project repairs"
+assert_contains "$OUT" "check clone:alpha=human" "clone identity mismatch was not reported"
+assert_equals "$registry_before" "$(cat "$HOST/data/projects.md")" "a wrong clone's registry was rewritten"
+assert_equals 'init alpha' "$(cat "$NM_LOG")" "a wrong clone was initialized"
+git -C "$HOST/projects/alpha" remote set-url origin 'https://user:SECRET@forge.example/org/repo.git'
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1 --fix alpha
+expect_code 1 "$RC" "an unsafe existing origin must block repairs"
+assert_not_contains "$OUT" SECRET "the host's existing origin leaked"
+assert_equals "$registry_before" "$(cat "$HOST/data/projects.md")" "an unsafe clone's registry was rewritten"
+git -C "$HOST/projects/alpha" remote set-url origin "$TMP_ROOT/origins/alpha.git"
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1 --fix alpha
+expect_code 0 "$RC" "a verified clone must allow repairs: $OUT"
+assert_equals 'init alpha
+init alpha' "$(cat "$NM_LOG")" "a verified clone was not initialized"
+pass "project repairs require a verified credential-free clone identity"
+
 # --- declarations are never overwritten ------------------------------------------------
 
 run "$ROOT/bin/fm-worker-host-seed.sh" m1 --lanes 3 --capacity alpha=2 alpha
@@ -307,5 +353,19 @@ expect_code 1 "$RC" "a host with no sign-in must not pass when the primary runs 
 assert_contains "$OUT" "check t3-credential=human: this home has no T3 sign-in, and the primary runs T3" "the missing sign-in was not reported"
 assert_absent "$HOST/config/t3code-token" "the doctor created a T3 credential on the host"
 pass "an expired or missing host sign-in is the operator's step, never copied from the primary"
+
+t3_fake_credential "$HOST/config/t3code-token"
+primary_pid=${T3_PIDS[0]}
+kill "$primary_pid"
+wait "$primary_pid" 2>/dev/null || true
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1
+expect_code 1 "$RC" "unavailable primary evidence must not pass with a host token"
+assert_contains "$OUT" "check t3-primary=human" "the unresolved primary comparison was lost"
+rm -f "$HOST/config/t3code-token"
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1
+expect_code 1 "$RC" "unavailable primary evidence must not pass without a host token"
+assert_contains "$OUT" "check t3-primary=human" "the unresolved comparison disappeared without a host token"
+assert_contains "$OUT" "check t3-credential=human" "an unavailable primary was treated as non-T3"
+pass "unavailable primary T3 evidence remains unresolved with or without host credentials"
 
 echo "all fm-worker-host-seed-doctor tests passed"

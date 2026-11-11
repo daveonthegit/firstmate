@@ -3,7 +3,7 @@
 #
 # Usage:
 #   fm-worker-host-seed.sh <worker-host-id> --lanes <cap> [--capacity <project>=<n>]...
-#       {<project>[=<origin-url>]...|--no-projects}
+#       <project>[=<origin-url>]...
 #
 # Seeding is bin/fm-worker-host-doctor.sh --fix with the declarations a new host
 # needs made explicit: the lane cap for its config/lane-capacity, and the
@@ -36,7 +36,6 @@ shift
 
 ARGS=()
 LANES_GIVEN=0
-NO_PROJECTS=0
 PROJECTS_GIVEN=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -51,7 +50,6 @@ while [ "$#" -gt 0 ]; do
       ARGS+=(--capacity "$2")
       shift
       ;;
-    --no-projects) NO_PROJECTS=1 ;;
     -h|--help|-*) usage ;;
     *)
       PROJECTS_GIVEN=1
@@ -61,10 +59,6 @@ while [ "$#" -gt 0 ]; do
   shift
 done
 [ "$LANES_GIVEN" -eq 1 ] || die "--lanes <cap> is required: say how many workers this host runs at once"
-if [ "$NO_PROJECTS" -eq 1 ]; then
-  [ "$PROJECTS_GIVEN" -eq 0 ] || die "--no-projects cannot be combined with project names"
-else
-  [ "$PROJECTS_GIVEN" -eq 1 ] || die "name at least one project, or pass --no-projects"
-fi
+[ "$PROJECTS_GIVEN" -eq 1 ] || die "name at least one project"
 
 exec "$SCRIPT_DIR/fm-worker-host-doctor.sh" "$ID" --fix "${ARGS[@]}"

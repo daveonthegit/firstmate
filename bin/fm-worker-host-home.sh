@@ -117,6 +117,8 @@ HOST_ID=$(base64_decode "$(manifest_value host_id_b64)") || die "the manifest ho
 safe_id "$HOST_ID" || die "the manifest carries an unsafe worker host id"
 LANES=$(manifest_value lanes)
 case "$LANES" in ''|[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) ;; *) die "the manifest lane cap is invalid: $LANES" ;; esac
+T3_REQUIRED=$(manifest_value t3_required)
+case "$T3_REQUIRED" in 0|1) ;; *) die "the manifest T3 requirement is invalid" ;; esac
 T3_EXPECT_VERSION=
 T3_EXPECT_VERSION_B64=$(manifest_value t3_version_b64)
 [ -z "$T3_EXPECT_VERSION_B64" ] || T3_EXPECT_VERSION=$(base64_decode "$T3_EXPECT_VERSION_B64") \
@@ -153,7 +155,7 @@ EOF
   line=$(base64_decode "$line_b64") || die "project $name registry line is not valid base64"
   mode=$(base64_decode "$mode_b64") || die "project $name mode is not valid base64"
   safe_id "$name" || die "a manifest project name is unsafe: $name"
-  [ -z "$origin" ] || fm_project_origin_safe "$origin" || die "project $name origin is not an accepted clone URL: $origin"
+  [ -z "$origin" ] || fm_project_origin_credential_free "$origin" || die "project $name requires a credential-free clone URL; authenticate on the host"
   case "$mode" in no-mistakes|direct-PR) ;; *) die "project $name has a mode a worker host cannot run: $mode" ;; esac
   case "$line" in "- $name "*) ;; *) die "project $name registry line is malformed" ;; esac
   case "$line" in *$'\n'*) die "project $name registry line spans lines" ;; esac
@@ -432,7 +434,10 @@ check_project() { # <index>
 
   if real_dir "$dest" && [ -d "$dest/.git" ]; then
     existing=$(git -C "$dest" remote get-url origin 2>/dev/null || true)
-    if [ -z "$origin" ]; then
+    if [ -n "$existing" ] && ! fm_project_origin_credential_free "$existing"; then
+      record "clone:$name" "human: $dest has an unsafe origin" \
+        "replace that origin with a credential-free URL and authenticate on the host"
+    elif [ -z "$origin" ]; then
       record "clone:$name" "ok: $dest (origin $existing; the primary named no origin to compare)"
     elif [ "$existing" = "$origin" ]; then
       record "clone:$name" "ok: $dest from $origin"
@@ -451,7 +456,9 @@ check_project() { # <index>
   fi
 
   have=$(registry_line_of "$name")
-  if [ "$have" = "$line" ]; then
+  if ! check_is_ok "clone:$name"; then
+    record "registry:$name" "human: $name needs a verified clone before registration" "close the clone:$name gap first"
+  elif [ "$have" = "$line" ]; then
     record "registry:$name" "ok: data/projects.md matches the primary's record"
   elif [ -z "$have" ]; then
     record "registry:$name" "fixable: $name is not registered in data/projects.md" "rerun the seed or the doctor with --fix"
@@ -464,7 +471,7 @@ check_project() { # <index>
     record "no-mistakes:$name" "skip: $name ships $mode"
   elif check_is_ok "clone:$name" && git -C "$dest" remote get-url no-mistakes >/dev/null 2>&1; then
     record "no-mistakes:$name" "ok: $dest has its no-mistakes remote"
-  elif check_is_ok "clone:$name" || [ -n "$origin" ]; then
+  elif check_is_ok "clone:$name"; then
     record "no-mistakes:$name" "fixable: $name is not initialized for no-mistakes" "rerun the seed or the doctor with --fix"
   else
     record "no-mistakes:$name" "human: $name cannot be initialized until its clone exists" "close the clone:$name gap first"
@@ -480,12 +487,16 @@ check_project() { # <index>
 T3_STATUS_JSON=
 
 t3_expected() {
-  [ -n "$T3_EXPECT_VERSION" ] || [ -n "$T3_EXPECT_CAPS" ]
+  [ "$T3_REQUIRED" -eq 1 ]
 }
 
 check_t3() {
   local out days expires version cap have missing='' offered=''
   T3_STATUS_JSON=
+  if t3_expected && [ -z "$T3_EXPECT_VERSION" ]; then
+    record t3-primary "human: the primary's T3 comparison evidence is unavailable${T3_NOTE:+; $T3_NOTE}" \
+      "restore the primary's T3 status and rerun the doctor"
+  fi
   if [ ! -e "$TOKEN" ] && [ ! -L "$TOKEN" ]; then
     if t3_expected; then
       record t3-credential "human: this home has no T3 sign-in, and the primary runs T3" \
@@ -531,7 +542,9 @@ check_t3() {
   record t3-server "ok: the T3 server this home signed in to answers and passes the capability gate"
 
   version=$(printf '%s' "$T3_STATUS_JSON" | jq -r '.serverVersion // "unknown"')
-  if [ -z "$T3_EXPECT_VERSION" ]; then
+  if t3_expected && [ -z "$T3_EXPECT_VERSION" ]; then
+    record t3-version "human: this host runs T3 $version; the primary's version is unavailable" "close the t3-primary gap first"
+  elif [ -z "$T3_EXPECT_VERSION" ]; then
     record t3-version "skip: this host runs T3 $version; the primary named no version to match${T3_NOTE:+ ($T3_NOTE)}"
   elif [ "$version" = "$T3_EXPECT_VERSION" ]; then
     record t3-version "ok: T3 $version, the same build as the primary"
@@ -547,7 +560,9 @@ check_t3() {
   for cap in ${T3_EXPECT_CAPS//,/ }; do
     case " $offered " in *" $cap "*) ;; *) missing="${missing:+$missing }$cap" ;; esac
   done
-  if [ -n "$missing" ]; then
+  if t3_expected && [ -z "$T3_EXPECT_VERSION" ]; then
+    record t3-capabilities "human: the primary's comparison evidence is unavailable" "close the t3-primary gap first"
+  elif [ -n "$missing" ]; then
     record t3-capabilities "human: this host's T3 lacks $missing, which the primary uses" \
       "install the T3 build the primary runs on that machine, then rerun the doctor"
   elif [ -n "$T3_EXPECT_CAPS" ]; then
@@ -703,7 +718,6 @@ fix_registry() { # <index>
 
 fix_no_mistakes() { # <index>
   local name=${P_NAMES[$1]} dest="$PROJECTS/${P_NAMES[$1]}"
-  real_dir "$dest" && [ -d "$dest/.git" ] || { fix_report "no-mistakes:$name" failed "$name has no clone to initialize"; return 0; }
   command -v no-mistakes >/dev/null 2>&1 \
     || { fix_report "no-mistakes:$name" failed "no-mistakes does not resolve on the remote runtime PATH"; return 0; }
   if (cd "$dest" && no-mistakes init >"$TMP/nm.out" 2>&1); then
@@ -747,9 +761,11 @@ apply_fixes() {
     if project_in_scope "$i"; then
       check_project "$i"
       if value_is_fixable "clone:${P_NAMES[$i]}"; then fix_clone "$i"; fi
-      if value_is_fixable "registry:${P_NAMES[$i]}"; then fix_registry "$i"; fi
       check_project "$i"
-      if value_is_fixable "no-mistakes:${P_NAMES[$i]}"; then fix_no_mistakes "$i"; fi
+      if check_is_ok "clone:${P_NAMES[$i]}"; then
+        if value_is_fixable "registry:${P_NAMES[$i]}"; then fix_registry "$i"; fi
+        if value_is_fixable "no-mistakes:${P_NAMES[$i]}"; then fix_no_mistakes "$i"; fi
+      fi
     fi
     i=$((i + 1))
   done
