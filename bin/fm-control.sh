@@ -133,6 +133,13 @@
 #
 # A remotely placed secondmate is refused by name: its agent runs on another
 # host, so no postcondition this plane verifies could be read for it here.
+# A ship or scout placed on a worker host (bin/fm-task-route-lib.sh) instead
+# runs interrupt or exit as that host's own fm-control.sh through fm-on.sh and
+# bin/fm-remote-worker-control.sh control, which verifies the postconditions
+# above where the endpoint lives; its output and exit pass through. An SSH exit
+# 255 means whether the action happened is unknown and exits nonzero. relaunch
+# is refused for a placed task before anything is sent, because the host leg
+# does not offer it.
 #
 # Fail-closed boundaries:
 #   - An unverified harness, or a harness whose control mechanics are unknown,
@@ -387,7 +394,25 @@ fi
 # instead, using the shared route discriminator before local validation.
 # shellcheck source=bin/fm-task-route-lib.sh
 . "$SCRIPT_DIR/fm-task-route-lib.sh"
-fm_task_route_require_supported "$META" "$VERB" || exit 1
+fm_task_route "$META" || die "$FM_TASK_ROUTE_ERROR"
+# A ship or scout placed on a worker host runs its ordinary local control plane
+# THERE, through the host leg, which verifies the same postconditions against
+# the endpoint it actually owns. Nothing is read or delivered locally.
+if [ "$FM_TASK_ROUTE" = worker-host ]; then
+  case "$VERB" in
+    interrupt|exit) ;;
+    *) die "task $ID is placed on worker host $FM_TASK_ROUTE_HOST, whose host leg offers only interrupt and exit; $VERB is not supported for a placed task, so nothing was sent" ;;
+  esac
+  worker_rc=0
+  "$SCRIPT_DIR/fm-on.sh" "$FM_TASK_ROUTE_HOST" fm-remote-worker-control.sh control "$ID" "$VERB" \
+    < /dev/null || worker_rc=$?
+  case "$worker_rc" in
+    0) exit 0 ;;
+    255) die "worker host $FM_TASK_ROUTE_HOST was unreachable or its answer was lost, so whether $VERB reached task $ID is unknown; read its state with bin/fm-crew-state.sh $ID before repeating it" ;;
+  esac
+  echo "error: worker host $FM_TASK_ROUTE_HOST did not complete $VERB for task $ID (exit $worker_rc); its reason is above" >&2
+  exit "$worker_rc"
+fi
 if [ "$FM_TASK_ROUTE" = remote-secondmate ]; then
   die "task $ID is a remotely placed secondmate on $(fm_meta_get "$META" remote_host); its agent runs outside this home, so no lifecycle action here could verify that it interrupted, stopped, or came back. Drive its lifecycle on that host, and reconcile it through the secondmate recovery path rather than this plane"
 fi
