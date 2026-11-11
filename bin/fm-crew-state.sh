@@ -24,7 +24,7 @@
 # Output is one stable, parseable, token-tight line firstmate can read every
 # heartbeat:
 #
-#   state: <working|parked|done|blocked|paused|failed|unknown> · source: <run-step|pane|status-log|remote-endpoint|none> · <detail>
+#   state: <working|parked|done|blocked|paused|failed|unknown> · source: <run-step|pane|status-log|remote-endpoint|worker-host|none> · <detail>
 #
 # A run-step reading whose run came from inventory selection ends its detail
 # with a `run: <id>` field naming that run, and a terminal one appends
@@ -43,7 +43,15 @@
 #      (fm-on.sh + fm-remote-secondmate-control.sh state). alive falls through
 #      to the routed status log; dead/missing report the remote verdict; an
 #      unreachable or unreadable remote reports unknown-remote, never a false
-#      gone/dead.
+#      gone/dead. A meta recording remote_worker_host= is a ship or scout
+#      placed on a worker host (bin/fm-task-route-lib.sh): the host's own
+#      fm-crew-state line is relayed through fm-on.sh +
+#      fm-remote-worker-control.sh state, keeping its state and source and
+#      prefixing its detail with `on worker host <id>`. That read is bounded by
+#      FM_CREW_STATE_REMOTE_BUDGET seconds (default 30); an unreachable host,
+#      an SSH exit 255, a timeout, a refusal, or an unparseable answer reports
+#      unknown · worker-host · unknown-remote, never dead and never a local
+#      reading.
 #   2. Matching no-mistakes run for this crew's branch AND current code identity,
 #      active or terminal (from `axi status`, or the coarse `no-mistakes runs`
 #      fallback)? Branch name alone is not enough: a historical run on a reused
@@ -303,8 +311,32 @@ meta_value() {  # <key>
 # shellcheck source=bin/fm-task-route-lib.sh
 . "$SCRIPT_DIR/fm-task-route-lib.sh"
 fm_task_route "$META" || emit unknown none "$FM_TASK_ROUTE_ERROR"
+# --- placed on a worker host: the host's own reading is the true source -----
+# Rule 1's worker-host arm. The record carries no local worktree or endpoint,
+# so nothing here may be read locally; the host's own fm-crew-state answers.
 if [ "$FM_TASK_ROUTE" = worker-host ]; then
-  emit unknown worker-host "placed on worker host $FM_TASK_ROUTE_HOST; current state is not yet supported"
+  WORKER_HOST=$FM_TASK_ROUTE_HOST
+  WORKER_BUDGET=${FM_CREW_STATE_REMOTE_BUDGET:-30}
+  case "$WORKER_BUDGET" in ''|*[!0-9]*|0) WORKER_BUDGET=30 ;; esac
+  WORKER_RC=0
+  WORKER_OUT=$(fm_run_timed "$WORKER_BUDGET" env FM_HOME="$FM_HOME" "$SCRIPT_DIR/fm-on.sh" "$WORKER_HOST" \
+    fm-remote-worker-control.sh state "$ID" < /dev/null 2>/dev/null) || WORKER_RC=$?
+  WORKER_LINE=$(printf '%s\n' "$WORKER_OUT" | grep '^state: [a-z]*'"$SEP"'source: ' | tail -1 || true)
+  if [ "$WORKER_RC" -eq 0 ] && [ -n "$WORKER_LINE" ]; then
+    WORKER_HEAD=${WORKER_LINE#state: }
+    WORKER_STATE=${WORKER_HEAD%%"$SEP"*}
+    WORKER_HEAD=${WORKER_HEAD#*"$SEP"source: }
+    WORKER_SOURCE=${WORKER_HEAD%%"$SEP"*}
+    WORKER_DETAIL=
+    case "$WORKER_HEAD" in *"$SEP"*) WORKER_DETAIL=${WORKER_HEAD#*"$SEP"} ;; esac
+    emit "$WORKER_STATE" "$WORKER_SOURCE" "on worker host $WORKER_HOST${WORKER_DETAIL:+$SEP$WORKER_DETAIL}"
+  fi
+  case "$WORKER_RC" in
+    0) emit unknown worker-host "unknown-remote: worker host $WORKER_HOST gave no state reading (not proof of death)" ;;
+    124) emit unknown worker-host "unknown-remote: worker host $WORKER_HOST did not answer within ${WORKER_BUDGET}s (not proof of death)" ;;
+    255) emit unknown worker-host "unknown-remote: worker host $WORKER_HOST unreachable or its answer was lost (not proof of death)" ;;
+    *) emit unknown worker-host "unknown-remote: worker host $WORKER_HOST could not read the task (exit $WORKER_RC; not proof of death)" ;;
+  esac
 fi
 
 WT=$(meta_value worktree)

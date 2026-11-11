@@ -32,6 +32,7 @@ This procedure covers ordinary `kind=ship` and `kind=scout` direct reports.
 Load `secondmate-provisioning` instead for `kind=secondmate` recovery.
 
 For a REMOTE secondmate, `fm-crew-state` and `fm-peek` read the actual remote endpoint over `fm-on.sh`, and `fm-send` reports a delivered-with-pending-confirmation steer as delivered (their headers own the contracts); an `unknown-remote` read or unreachable-host failure means the remote state could not be read, never that the mate is dead or the send failed.
+The same reading holds for a ship or scout placed on a worker host, whose steer, state, peek, and control run on that host ([`docs/remote-workers.md`](../../../docs/remote-workers.md) "Reaching a placed worker").
 Recover a genuinely stuck remote mate only through `bin/fm-spawn.sh <id> --secondmate`, never raw herdr pane close/kill surgery, which strands the endpoint binding.
 
 Treat the digest's endpoint result as a presence signal, not proof that the task's work or validation run is gone.

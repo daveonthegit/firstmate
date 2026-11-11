@@ -154,6 +154,21 @@
 # during the final locked remote-route validation; unset or empty guards do not
 # change ordinary sends.
 #
+# Placed worker delivery: a ship or scout placed on a worker host
+# (bin/fm-task-route-lib.sh) has no local endpoint, so every text steer to it
+# rides the inbox through fm-on.sh <host> to the host leg's send-stdin
+# (bin/fm-remote-worker-control.sh, which owns the delivery-id contract and
+# rings the host's own doorbell). This supervisor mints a fresh 16-hex delivery
+# id per steer; the host deduplicates the same id and body onto one record. The
+# same bounds and retry apply as for a remote secondmate: FM_SEND_REMOTE_BUDGET
+# per attempt and one identical retry, with the same id, after ssh exit 255.
+# A still-unknown completion exits 3 and prints the exact resend command,
+# carrying FM_SEND_PLACED_DELIVERY_ID=<id>, which reuses that id so a record
+# that did land is not duplicated; a plain rerun mints a new id and is a new
+# steer. A placed task is never marked, takes no --fire-and-forget, and has no
+# --key plane (fm-control.sh interrupt stops its turn). --resolve-key closes
+# this home's mirrored status record only after the host confirms the record.
+#
 # Decision closure (answerer-closes): pass --resolve-key <key> (repeatable,
 # before the message) when this send answers an open keyed needs-decision: or
 # blocked: record in the target task's state/<id>.status. fm-send itself
@@ -386,6 +401,29 @@ EOF
 # shellcheck source=bin/fm-task-route-lib.sh
 . "$SCRIPT_DIR/fm-task-route-lib.sh"
 
+# A ship or scout placed on a worker host resolves to the worker-host pseudo
+# backend: its text crosses fm-on.sh to the host leg, never a local adapter.
+fm_send_resolve_worker_host() { # <meta>
+  local id
+  id=$(fm_send_id_from_meta "$1")
+  RESOLVED_TARGET="remote:$id"
+  TARGET_BACKEND="worker-host"
+  TARGET_META=$1
+  TARGET_HARNESS=$(fm_meta_get "$1" harness)
+  EXPECTED_LABEL="fm-$id"
+  TARGET_SELECTOR=1
+  TARGET_REMOTE_ID=$id
+  TARGET_WORKER_HOST=$FM_TASK_ROUTE_HOST
+  RESOLUTION_TRIED="meta=$1; placement=worker-host $FM_TASK_ROUTE_HOST"
+}
+
+fm_send_route_meta() { # <meta>
+  fm_task_route "$1" || {
+    printf 'error: %s\n' "$FM_TASK_ROUTE_ERROR" >&2
+    return 1
+  }
+}
+
 fm_send_resolve_target() { # <raw-target>
   local raw=$1 meta pane_meta target backend assumed colons id session hint
 
@@ -397,11 +435,16 @@ fm_send_resolve_target() { # <raw-target>
   TARGET_SELECTOR=""
   TARGET_REMOTE_ID=""
   TARGET_REMOTE_HOST=""
+  TARGET_WORKER_HOST=""
   RESOLUTION_TRIED=""
 
   meta=$(fm_backend_meta_for_selector "$raw" "$STATE" 2>/dev/null || true)
   if [ -n "$meta" ]; then
-    fm_task_route_require_supported "$meta" send || return 1
+    fm_send_route_meta "$meta" || return 1
+    if [ "$FM_TASK_ROUTE" = worker-host ]; then
+      fm_send_resolve_worker_host "$meta"
+      return 0
+    fi
     if [ "$FM_TASK_ROUTE" = remote-secondmate ]; then
       id=$(fm_send_id_from_meta "$meta")
       RESOLVED_TARGET="remote:$id"
@@ -455,7 +498,11 @@ fm_send_resolve_target() { # <raw-target>
 
   meta=$(fm_backend_meta_for_window "$raw" "$STATE" 2>/dev/null || true)
   if [ -n "$meta" ]; then
-    fm_task_route_require_supported "$meta" send || return 1
+    fm_send_route_meta "$meta" || return 1
+    if [ "$FM_TASK_ROUTE" = worker-host ]; then
+      fm_send_resolve_worker_host "$meta"
+      return 0
+    fi
     target=$(fm_backend_target_of_meta "$meta")
     if [ -z "$target" ]; then
       echo "error: no backend target recorded in $meta (tried explicit target '$raw' via recorded window/terminal; backend=from-meta)" >&2
@@ -576,8 +623,19 @@ while :; do
   esac
 done
 
-if [ "$TARGET_BACKEND" != remote ]; then
-  fm_backend_validate "$TARGET_BACKEND" || exit 1
+case "$TARGET_BACKEND" in
+remote | worker-host) ;;
+*) fm_backend_validate "$TARGET_BACKEND" || exit 1 ;;
+esac
+if [ "${FM_SEND_PLACED_DELIVERY_ID+x}" = x ]; then
+  [ "$TARGET_BACKEND" = worker-host ] || {
+    echo "error: FM_SEND_PLACED_DELIVERY_ID applies only to a task placed on a worker host" >&2
+    exit 1
+  }
+  printf '%s' "$FM_SEND_PLACED_DELIVERY_ID" | grep -Eq '^[a-f0-9]{16}$' || {
+    echo "error: FM_SEND_PLACED_DELIVERY_ID must be the 16 lowercase hex characters an unconfirmed send printed" >&2
+    exit 1
+  }
 fi
 
 # Classify a from-firstmate -> secondmate request. Only a task selector resolved
@@ -910,6 +968,10 @@ if [ "${1:-}" = "--key" ]; then
   esac
   key=$2
   semantic_key=$(fm_send_normalize_key "$key")
+  if [ "$TARGET_BACKEND" = worker-host ]; then
+    echo "error: key '$key' not sent: task $TARGET_REMOTE_ID is placed on worker host $TARGET_WORKER_HOST, whose host leg takes no raw keys; use bin/fm-control.sh $TARGET_REMOTE_ID interrupt to stop its turn" >&2
+    exit 1
+  fi
   if [ "$TARGET_BACKEND" = remote ]; then
     FM_SEND_REMOTE_BUDGET=${FM_SEND_REMOTE_BUDGET:-30}
     case "$FM_SEND_REMOTE_BUDGET" in
@@ -935,7 +997,7 @@ else
     echo "error: a text steer requires a nonempty message; nothing was sent (an empty marked request would deliver only marker and correlation bytes and leave the parent waiting on a reply to nothing)" >&2
     exit 1
   fi
-  if [ "$TARGET_BACKEND" = remote ]; then
+  if [ "$TARGET_BACKEND" = remote ] || [ "$TARGET_BACKEND" = worker-host ]; then
     FM_SEND_REMOTE_BUDGET=${FM_SEND_REMOTE_BUDGET:-30}
     case "$FM_SEND_REMOTE_BUDGET" in
     '' | *[!0-9]* | 0)
@@ -1017,7 +1079,8 @@ else
   # command: the pre-existing marker-first wire bytes are retained in stage 1.
   INBOX_PLANE=0
   if [ -n "$TARGET_SELECTOR" ]; then
-    if [ -n "$FIRE_AND_FORGET_ID" ] || [ "$TARGET_BACKEND" = remote ]; then
+    if [ -n "$FIRE_AND_FORGET_ID" ] || [ "$TARGET_BACKEND" = remote ] ||
+      [ "$TARGET_BACKEND" = worker-host ]; then
       INBOX_PLANE=1
     else
       case "$RESOLVE_ANSWER_TEXT" in
@@ -1026,6 +1089,74 @@ else
       *) INBOX_PLANE=1 ;;
       esac
     fi
+  fi
+  if [ "$INBOX_PLANE" = 1 ] && [ "$TARGET_BACKEND" = worker-host ]; then
+    # Worker-host inbox leg (header: "Placed worker delivery"): the host leg
+    # writes the durable record under this supervisor-minted delivery id and
+    # deduplicates a retry of the same id and body onto the same record.
+    if [ "${FM_SEND_PLACED_DELIVERY_ID+x}" = x ]; then
+      PLACED_DELIVERY_ID=$FM_SEND_PLACED_DELIVERY_ID
+    else
+      PLACED_DELIVERY_ID=$(LC_ALL=C od -An -v -tx1 -N 8 /dev/urandom 2>/dev/null | tr -d ' \n') || PLACED_DELIVERY_ID=
+      printf '%s' "$PLACED_DELIVERY_ID" | grep -Eq '^[a-f0-9]{16}$' || {
+        echo "error: steer not sent to $TARGET_REMOTE_ID: a delivery id could not be minted" >&2
+        exit 1
+      }
+    fi
+    PLACED_META_LOCK=$(fm_meta_lock_path "$TARGET_META") || exit 1
+    if ! fm_task_inbox_lock_acquire "$PLACED_META_LOCK"; then
+      echo "error: steer not sent to $TARGET_REMOTE_ID on worker host $TARGET_WORKER_HOST: its task record could not be locked for final delivery validation" >&2
+      exit 1
+    fi
+    CURRENT_PLACED_HOST=
+    CURRENT_PLACED_SPAWN_GEN=
+    if [ -f "$TARGET_META" ] && fm_task_route "$TARGET_META" && [ "$FM_TASK_ROUTE" = worker-host ]; then
+      CURRENT_PLACED_HOST=$FM_TASK_ROUTE_HOST
+      CURRENT_PLACED_SPAWN_GEN=$(fm_meta_get "$TARGET_META" spawn_gen)
+    fi
+    if [ "$CURRENT_PLACED_HOST" != "$TARGET_WORKER_HOST" ] ||
+      { [ -n "${FM_SEND_EXPECTED_SPAWN_GEN:-}" ] &&
+        [ "$CURRENT_PLACED_SPAWN_GEN" != "$FM_SEND_EXPECTED_SPAWN_GEN" ]; }; then
+      fm_lock_release "$PLACED_META_LOCK"
+      echo "error: steer not sent to $TARGET_REMOTE_ID: the task retired or changed placement during target resolution" >&2
+      exit 1
+    fi
+    placed_rc=0
+    printf '%s' "$MESSAGE" | fm_run_timed "$FM_SEND_REMOTE_BUDGET" "$SCRIPT_DIR/fm-on.sh" --stdin \
+      "$TARGET_WORKER_HOST" fm-remote-worker-control.sh send-stdin "$TARGET_REMOTE_ID" "$PLACED_DELIVERY_ID" ||
+      placed_rc=$?
+    if [ "$placed_rc" -eq 255 ]; then
+      placed_rc=0
+      printf '%s' "$MESSAGE" | fm_run_timed "$FM_SEND_REMOTE_BUDGET" "$SCRIPT_DIR/fm-on.sh" --stdin \
+        "$TARGET_WORKER_HOST" fm-remote-worker-control.sh send-stdin "$TARGET_REMOTE_ID" "$PLACED_DELIVERY_ID" ||
+        placed_rc=$?
+      [ "$placed_rc" -eq 0 ] || placed_rc=255
+    fi
+    fm_lock_release "$PLACED_META_LOCK"
+    if [ "$placed_rc" -eq 255 ] || [ "$placed_rc" -eq 124 ]; then
+      if [ "$placed_rc" -eq 255 ]; then
+        echo "error: steer to $TARGET_REMOTE_ID on worker host $TARGET_WORKER_HOST is unconfirmed (delivery-id=$PLACED_DELIVERY_ID; the host was unreachable or its answer was lost, so whether the record landed is unknown). Resend only with the same delivery id, which lands on the same host inbox record:" >&2
+      else
+        echo "error: steer to $TARGET_REMOTE_ID on worker host $TARGET_WORKER_HOST is unconfirmed (delivery-id=$PLACED_DELIVERY_ID; the host did not answer within its ${FM_SEND_REMOTE_BUDGET}s budget). Resend only with the same delivery id, which lands on the same host inbox record:" >&2
+      fi
+      printf '%s' "$(fm_send_resend_env)" >&2
+      printf 'FM_SEND_PLACED_DELIVERY_ID=%q %s' "$PLACED_DELIVERY_ID" "$(fm_send_resend_exe)" >&2
+      for resend_arg in "${FM_SEND_ORIGINAL_ARGS[@]}"; do
+        printf ' %q' "$resend_arg" >&2
+      done
+      printf '\n' >&2
+      exit 3
+    fi
+    if [ "$placed_rc" -ne 0 ]; then
+      echo "error: steer not sent to $TARGET_REMOTE_ID: worker host $TARGET_WORKER_HOST could not write its steering-inbox record (exit $placed_rc; the host leg's stderr above has the reason)" >&2
+      exit 1
+    fi
+    # The host's record is durable delivery, exactly as a local enqueue is.
+    if [ -n "$RESOLVE_KEYS" ]; then
+      fm_send_close_resolved_keys "$RESOLVE_ANSWER_TEXT" || exit 1
+      fm_send_feed_resolved_holds "$RESOLVE_ANSWER_TEXT" || exit 1
+    fi
+    exit 0
   fi
   if [ "$INBOX_PLANE" = 1 ] && [ "$TARGET_BACKEND" = remote ]; then
     # Remote inbox leg: the message becomes a durable record in the remote
