@@ -567,9 +567,6 @@ fm_lease_guard "$ID" "teardown (fm-teardown)"
 META="$STATE/$ID.meta"
 # shellcheck source=bin/fm-task-route-lib.sh
 . "$SCRIPT_DIR/fm-task-route-lib.sh"
-if [ -e "$META" ] || [ -L "$META" ]; then
-  fm_task_route_require_supported "$META" cleanup || exit 1
-fi
 TREEHOUSE_PROJECT_LOCK=
 TREEHOUSE_PROJECT_LOCK_HELD=0
 TREEHOUSE_SLOT_LOCK_REQUIRED=0
