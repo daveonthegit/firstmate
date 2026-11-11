@@ -1,0 +1,6 @@
+Server listening on 127.0.0.1 port 22487.
+Accepted publickey for davidxiao from 127.0.0.1 port 63115 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 63115:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 63115
+Received signal 15; terminating.

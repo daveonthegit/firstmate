@@ -1,0 +1,1065 @@
+$ {run-worktree}/bin/fm-lab-home.sh create {run-worktree}/.test-tmp/live/primary
+{run-worktree}/.test-tmp/live/primary
+
+exit=0
+$ {run-worktree}/bin/fm-lab-home.sh create {run-worktree}/.test-tmp/live/host
+{run-worktree}/.test-tmp/live/host
+
+exit=0
+$ git init -q -b main {run-worktree}/.test-tmp/live/project
+
+exit=0
+$ git -C {run-worktree}/.test-tmp/live/project add README.md
+
+exit=0
+$ git -C {run-worktree}/.test-tmp/live/project commit -qm initial
+
+exit=0
+Server listening on 127.0.0.1 port 22487.
+$ tmux -S {run-worktree}/.t new-session -d -s fm-lab-cleanup sleep 900
+
+exit=0
+$ tasks-axi add live-ship Disposable live-ship --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-ship (ship) -> Queued
+task:
+  id: live-ship
+  title: Disposable live-ship
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-ship --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-ship --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-ship -> In flight
+help[1]:
+  - Run `tasks-axi done live-ship --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-ship
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-ship sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64076 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64076:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64076
+Accepted publickey for davidxiao from 127.0.0.1 port 64079 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64079:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64079
+$ {run-worktree}/bin/fm-teardown.sh live-ship
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-ship complete (window fm-lab-cleanup:fm-live-ship, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-ship just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-ship to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+worker host local: ●  WATCHER DOWN - SUPERVISION IS OFF
+worker host local: ●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 3s ago).
+worker host local: ●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+worker host local: ●  This is a supervision warning only; the guarded operation WILL still run.
+worker host local: ●  repair missing watcher supervision according to the session-start block for this harness; do not use shell &.
+worker host local: ●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown live-ship complete (worker host local)
+Backlog: live-ship is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+
+exit=0
+$ tasks-axi show live-ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+task:
+  id: live-ship
+  title: Disposable live-ship
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-11
+  deps: none
+  links: none
+  body: local main
+
+exit=0
+LIVE ship: host and primary records retired; final journal fetched; backlog done
+$ tasks-axi add live-down Disposable live-down --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-down (ship) -> Queued
+task:
+  id: live-down
+  title: Disposable live-down
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-down --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-down --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-down --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-down -> In flight
+help[1]:
+  - Run `tasks-axi done live-down --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-down
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-down sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+Received signal 15; terminating.
+$ {run-worktree}/bin/fm-teardown.sh live-down
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+error: worker host local was unreachable while fetching live-down's journal; nothing was changed on either machine - re-run cleanup
+
+exit=255
+$ tasks-axi show live-down --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+task:
+  id: live-down
+  title: Disposable live-down
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+exit=0
+LIVE unavailable SSH: exit 255; both homes preserved; backlog in_flight
+Server listening on 127.0.0.1 port 22487.
+Accepted publickey for davidxiao from 127.0.0.1 port 64095 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64095:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64095
+Accepted publickey for davidxiao from 127.0.0.1 port 64096 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64096:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64096
+$ {run-worktree}/bin/fm-teardown.sh live-down
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-down complete (window fm-lab-cleanup:fm-live-down, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-down just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-down to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 11s ago, grace 300s) - full banner already printed this episode.
+teardown live-down complete (worker host local)
+Backlog: live-down is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+
+exit=0
+$ tasks-axi show live-down --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+task:
+  id: live-down
+  title: Disposable live-down
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-11
+  deps: none
+  links: none
+  body: local main
+
+exit=0
+LIVE SSH recovery: retry converged to done
+$ tasks-axi add live-scout Disposable live-scout --kind scout --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-scout (scout) -> Queued
+task:
+  id: live-scout
+  title: Disposable live-scout
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-scout --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-scout --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-scout --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-scout -> In flight
+help[1]:
+  - Run `tasks-axi done live-scout --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-scout
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-scout sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64102 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64102:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64102
+Accepted publickey for davidxiao from 127.0.0.1 port 64103 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64103:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64103
+$ {run-worktree}/bin/fm-teardown.sh live-scout
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+not fetched: live-scout report from local - file is not a non-symlink regular file: data/live-scout/report.md 
+REFUSED: scout task live-scout has no report at {run-worktree}/.test-tmp/live/primary/data/live-scout/report.md, and worker host local did not provide one.
+The report is the work product. Have the worker write it, or use --force after explicit discard approval.
+
+exit=1
+Accepted publickey for davidxiao from 127.0.0.1 port 64104 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64104:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64104
+Accepted publickey for davidxiao from 127.0.0.1 port 64105 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64105:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64105
+$ {run-worktree}/bin/fm-teardown.sh live-scout
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+fm-captain-hold: origin live-scout has no completed captain-call inventory
+REFUSED: scout task live-scout has not passed the captain-call completion gate.
+Inventory its report and any visual review through bin/fm-captain-hold.sh before teardown.
+
+exit=1
+$ {run-worktree}/bin/fm-captain-hold.sh complete live-scout --none
+complete: live-scout captain-call inventory reviewed
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64109 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64109:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64109
+Accepted publickey for davidxiao from 127.0.0.1 port 64110 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64110:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64110
+Accepted publickey for davidxiao from 127.0.0.1 port 64111 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64111:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64111
+$ {run-worktree}/bin/fm-teardown.sh live-scout
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-scout complete (window fm-lab-cleanup:fm-live-scout, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-scout just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-scout to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 20s ago, grace 300s) - full banner already printed this episode.
+teardown live-scout complete (worker host local)
+Backlog: live-scout is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+
+exit=0
+$ tasks-axi show live-scout --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+task:
+  id: live-scout
+  title: Disposable live-scout data/live-scout/report.md
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-11
+  deps: none
+  links: "report:data/live-scout/report.md"
+  body: ""
+
+exit=0
+LIVE scout: missing report and inventory refused; retry fetched refreshed report, then closed both legs
+$ tasks-axi add live-lost Disposable live-lost --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-lost (ship) -> Queued
+task:
+  id: live-lost
+  title: Disposable live-lost
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-lost --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-lost --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-lost --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-lost -> In flight
+help[1]:
+  - Run `tasks-axi done live-lost --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-lost
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-lost sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64161 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64161:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64161
+Accepted publickey for davidxiao from 127.0.0.1 port 64166 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64166:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64166
+$ {run-worktree}/bin/fm-teardown.sh live-lost
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-lost complete (window fm-lab-cleanup:fm-live-lost, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-lost just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-lost to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 26s ago, grace 300s) - full banner already printed this episode.
+error: worker host local cleanup result for live-lost is unknown; host cleanup may already have completed. Nothing on the primary was retired and the backlog item did not move - safely re-run this cleanup to converge, even if the host already finished
+
+exit=255
+$ tasks-axi show live-lost --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+task:
+  id: live-lost
+  title: Disposable live-lost
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+exit=0
+$ {run-worktree}/bin/fm-procevent.sh list
+SOURCE                       ADAPTER      OWNER      PENDING
+remote-worker-local          remote-worker none       0
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64190 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64190:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64190
+Accepted publickey for davidxiao from 127.0.0.1 port 64191 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64191:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64191
+$ {run-worktree}/bin/fm-teardown.sh live-lost
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+not fetched: live-lost journal from local - task live-lost was not placed on this worker host by a primary (no {run-worktree}/.test-tmp/liv
+worker host local: teardown live-lost: no task record remains on this worker host
+teardown live-lost complete (worker host local)
+Backlog: live-lost is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+
+exit=0
+$ tasks-axi show live-lost --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+task:
+  id: live-lost
+  title: Disposable live-lost
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-11
+  deps: none
+  links: none
+  body: local main
+
+exit=0
+LIVE lost answer: injected SSH-channel exit 255 after real host cleanup preserved primary; retry completed without host records
+$ tasks-axi add live-dirty Disposable live-dirty --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-dirty (ship) -> Queued
+task:
+  id: live-dirty
+  title: Disposable live-dirty
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-dirty --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-dirty --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-dirty --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-dirty -> In flight
+help[1]:
+  - Run `tasks-axi done live-dirty --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-dirty
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-dirty sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64193 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64193:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64193
+Accepted publickey for davidxiao from 127.0.0.1 port 64194 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64194:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64194
+$ {run-worktree}/bin/fm-teardown.sh live-dirty
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: WARNING: watcher still down (same stale episode; last beat: 33s ago, grace 300s) - full banner already printed this episode.
+worker host local: REFUSED: local-only worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project has work not yet merged into main and not on any remote.
+worker host local: uncommitted changes present (untracked-only leftovers)
+worker host local: untracked paths (up to 10):
+worker host local:   scratch
+worker host local: Merge the branch into local main first (bin/fm-merge-local.sh after the captain approves), or push to a fork/remote, or get the captain's explicit OK to discard, then --force.
+REFUSED: worker host local refused to clean up live-dirty (exit 1); every record here is preserved and the backlog item did not move. Resolve what the host named, then re-run.
+
+exit=1
+$ tasks-axi show live-dirty --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+task:
+  id: live-dirty
+  title: Disposable live-dirty
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64195 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64195:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64195
+Accepted publickey for davidxiao from 127.0.0.1 port 64196 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64196:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64196
+$ {run-worktree}/bin/fm-teardown.sh live-dirty
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-dirty complete (window fm-lab-cleanup:fm-live-dirty, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-dirty just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-dirty to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 35s ago, grace 300s) - full banner already printed this episode.
+teardown live-dirty complete (worker host local)
+Backlog: live-dirty is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+
+exit=0
+LIVE dirty guard: preserved scratch and both records; clean retry fetched final journal and returned actual Treehouse slot
+$ tasks-axi add live-drift Disposable live-drift --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-drift (ship) -> Queued
+task:
+  id: live-drift
+  title: Disposable live-drift
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-drift --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-drift --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-drift --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-drift -> In flight
+help[1]:
+  - Run `tasks-axi done live-drift --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-drift
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-drift sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+$ {run-worktree}/bin/fm-teardown.sh live-drift
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+REFUSED: task live-drift's recorded worker host route no longer matches worker host local's registry record; reconcile the record before cleanup. Nothing was changed.
+
+exit=1
+$ tasks-axi show live-drift --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+task:
+  id: live-drift
+  title: Disposable live-drift
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64203 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64203:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64203
+Accepted publickey for davidxiao from 127.0.0.1 port 64204 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64204:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64204
+$ {run-worktree}/bin/fm-teardown.sh live-drift
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-drift complete (window fm-lab-cleanup:fm-live-drift, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-drift just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-drift to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 42s ago, grace 300s) - full banner already printed this episode.
+teardown live-drift complete (worker host local)
+Backlog: live-drift is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+
+exit=0
+LIVE route guard: registry drift refused; original route restored and cleaned up
+$ tasks-axi add live-sibling-a Disposable live-sibling-a --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-sibling-a (ship) -> Queued
+task:
+  id: live-sibling-a
+  title: Disposable live-sibling-a
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-sibling-a --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-sibling-a --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-sibling-a --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-sibling-a -> In flight
+help[1]:
+  - Run `tasks-axi done live-sibling-a --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-sibling-a
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-sibling-a sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+$ tasks-axi add live-sibling-b Disposable live-sibling-b --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-sibling-b (ship) -> Queued
+task:
+  id: live-sibling-b
+  title: Disposable live-sibling-b
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-sibling-b --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-sibling-b --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-sibling-b --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-sibling-b -> In flight
+help[1]:
+  - Run `tasks-axi done live-sibling-b --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-sibling-b
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/2/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/2/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/2/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-sibling-b sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64233 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64233:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64233
+Accepted publickey for davidxiao from 127.0.0.1 port 64234 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64234:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64234
+Accepted publickey for davidxiao from 127.0.0.1 port 64275 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64275:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64275
+$ {run-worktree}/bin/fm-teardown.sh live-sibling-a
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-sibling-a complete (window fm-lab-cleanup:fm-live-sibling-a, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-sibling-a just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-sibling-a to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 49s ago, grace 300s) - full banner already printed this episode.
+teardown live-sibling-a complete (worker host local)
+Backlog: live-sibling-a is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+
+exit=0
+$ {run-worktree}/bin/fm-procevent.sh list
+SOURCE                       ADAPTER      OWNER      PENDING
+remote-worker-local          remote-worker none       0
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64288 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64288:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64288
+Accepted publickey for davidxiao from 127.0.0.1 port 64289 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64289:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64289
+$ {run-worktree}/bin/fm-teardown.sh live-sibling-b
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-sibling-b complete (window fm-lab-cleanup:fm-live-sibling-b, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/2/project)
+worker host local: Backlog: live-sibling-b just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-sibling-b to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 55s ago, grace 300s) - full banner already printed this episode.
+teardown live-sibling-b complete (worker host local)
+Backlog: live-sibling-b is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+
+exit=0
+$ {run-worktree}/bin/fm-procevent.sh list
+no sources registered
+
+exit=0
+LIVE siblings: first cleanup kept shared mirror, last cleanup retired mirror
+$ tasks-axi add live-lock Disposable live-lock --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-lock (ship) -> Queued
+task:
+  id: live-lock
+  title: Disposable live-lock
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-lock --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-lock --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-lock --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-lock -> In flight
+help[1]:
+  - Run `tasks-axi done live-lock --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-lock
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-lock sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64292 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64292:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64292
+Accepted publickey for davidxiao from 127.0.0.1 port 64293 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64293:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64293
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-lock complete (window fm-lab-cleanup:fm-live-lock, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-lock just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-lock to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 60s ago, grace 300s) - full banner already printed this episode.
+teardown live-lock complete (worker host local)
+Backlog: live-lock is closed in {run-worktree}/.test-tmp/live/primary/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+$ {run-worktree}/bin/fm-procevent.sh list
+no sources registered
+
+exit=0
+LIVE lifecycle serialization: retirement waited for held mirror lock; status and cursor retired after release
+$ tasks-axi add live-fail-close Disposable live-fail-close --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-fail-close (ship) -> Queued
+task:
+  id: live-fail-close
+  title: Disposable live-fail-close
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-fail-close --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-fail-close --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-fail-close --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-fail-close -> In flight
+help[1]:
+  - Run `tasks-axi done live-fail-close --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-fail-close
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-fail-close sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64298 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64298:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64298
+Accepted publickey for davidxiao from 127.0.0.1 port 64299 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64299:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64299
+$ {run-worktree}/bin/fm-teardown.sh live-fail-close
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-fail-close complete (window fm-lab-cleanup:fm-live-fail-close, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-fail-close just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-fail-close to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 68s ago, grace 300s) - full banner already printed this episode.
+error: worker host local cleaned up live-fail-close, but its backlog item could not be moved atomically (injected-backlog-failure); the pending close is recorded and the next session start retries it
+
+exit=1
+$ {run-worktree}/bin/fm-procevent.sh list
+no sources registered
+
+exit=0
+$ tasks-axi add live-fail-retain Disposable live-fail-retain --kind ship --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: added live-fail-retain (ship) -> Queued
+task:
+  id: live-fail-retain
+  title: Disposable live-fail-retain
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-11
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live-fail-retain --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live-fail-retain --by <other> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` to record a dependency
+
+exit=0
+$ tasks-axi start live-fail-retain --file {run-worktree}/.test-tmp/live/primary/data/backlog.md
+ok: start live-fail-retain -> In flight
+help[1]:
+  - Run `tasks-axi done live-fail-retain --pr <url> --file={run-worktree}/.test-tmp/live/primary/data/backlog.md` when it ships
+
+exit=0
+$ bash -c cd "$1" && treehouse get --lease --no-fetch -b "$2" lab {run-worktree}/.test-tmp/live/project fm-live-fail-retain
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project. Run 'treehouse return {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project' to release it.
+{run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project
+
+exit=0
+$ tmux -S {run-worktree}/.t new-window -d -t fm-lab-cleanup -n fm-live-fail-retain sleep 900
+
+exit=0
+$ {run-worktree}/bin/fm-procevent-remote-worker.sh arm local
+armed: remote-worker-local
+
+exit=0
+$ {run-worktree}/bin/fm-captain-hold.sh hold live-fail-retain --reason Synthetic approval needed
+live-fail-retain
+
+exit=0
+Accepted publickey for davidxiao from 127.0.0.1 port 64333 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64333:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64333
+Accepted publickey for davidxiao from 127.0.0.1 port 64335 ssh2: ED25519 SHA256:KTzBbkGOP1Yqn7x0tjieZ595eFlCILxTBKabiS2bvWE
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64335:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64335
+$ {run-worktree}/bin/fm-teardown.sh live-fail-retain
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-tmp/live/primary
+worker host local: A new version of treehouse is available: v3.1.2 → v3.1.8
+worker host local: Run "treehouse update" to update
+worker host local: 
+worker host local: 🌳 Worktree returned to pool.
+worker host local: teardown live-fail-retain complete (window fm-lab-cleanup:fm-live-fail-retain, worktree {run-worktree}/.test-tmp/live/pool/.treehouse/project-36ff67/1/project)
+worker host local: Backlog: live-fail-retain just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-tmp/live/host/data/backlog.md - move live-fail-retain to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+worker host local: WARNING: watcher still down (same stale episode; last beat: 74s ago, grace 300s) - full banner already printed this episode.
+error: worker host local cleaned up live-fail-retain, but its backlog item could not be moved atomically (injected-backlog-failure); the pending retain is recorded and the next session start retries it
+
+exit=1
+$ {run-worktree}/bin/fm-procevent.sh list
+no sources registered
+
+exit=0
+LIVE backlog failure injection: both close and retain failures left replay markers but no stale task cursor or mirror registration
+LIVE_DRIVER_COMPLETE
+Received signal 15; terminating.

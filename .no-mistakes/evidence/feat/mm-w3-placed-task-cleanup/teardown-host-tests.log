@@ -1,0 +1,11 @@
+1..9
+ok - cleanup runs the host's own teardown, fetches the journal, then retires the primary records and closes the item
+ok - an SSH exit 255 before the host is reached preserves every record and moves nothing
+ok - an SSH exit 255 after the host finished keeps every primary record, and a re-run finishes leg two
+ok - a host refusal for unlanded work passes through untouched, and only an explicit --force crosses
+ok - cleanup releases only its own task from a host mirror other tasks still use
+ok - primary retirement waits for the mirror lifecycle lock after the host leg
+ok - failed backlog close and retain still retire the removed task's mirror and cursor
+ok - cleanup refuses a placement whose route no longer matches the registry before reaching any host
+ok - a scout's report is fetched and its captain-call gate checked here before the host cleans up
+FM_TEST_COMPLETE
