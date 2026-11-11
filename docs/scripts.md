@@ -7,7 +7,7 @@ The shared no-mistakes gate lifecycle boundary is summarized in [architecture.md
 
 | Script                   | Purpose                                                                              |
 | ------------------------ | ------------------------------------------------------------------------------------ |
-| `fm-session-start.sh`    | Compose lock, bootstrap, and wake drain into the single ordered session-start digest |
+| `fm-session-start.sh`    | Compose supervisor lease, lock, bootstrap, and wake drain into the single ordered session-start digest |
 | `fm-sessionstart-nudge.sh` | Print the native session-start hook nudge when the primary has not already run the digest |
 | `fm-sessionstart-run.sh` | Route a native session-open hook to the full digest, a context re-emit, or the nudge |
 | `fm-operational-input.sh` | Construct and parse the canonical cross-language operational-input protocol |
@@ -27,6 +27,9 @@ The shared no-mistakes gate lifecycle boundary is summarized in [architecture.md
 | `fm-on.sh`               | Execute one tracked Firstmate command in a configured remote secondmate or worker host home, using its job worker except for the doctor bootstrap |
 | `fm-remote-worker-control.sh` | Host-local leg for a ship or scout a primary places on a [worker host](remote-workers.md): spawn, route, state, steer, control, answer, capture, file, and cleanup |
 | `fm-worker-host-lib.sh`  | Parse `data/worker-hosts.md` worker host records                                    |
+| `fm-worker-host-seed.sh` | Seed a registered [worker host](remote-workers.md#prepare-the-worker-host)'s home from the primary: `fm-worker-host-doctor.sh --fix` with the lane cap and projects required |
+| `fm-worker-host-doctor.sh` | Check, and with `--fix` converge, a registered worker host: its account readiness, then its home against the primary's projects, capacity, and T3 build |
+| `fm-worker-host-home.sh` | Host-side check and repair of a worker host home, reached only through `fm-on.sh` with the primary's manifest |
 | `fm-remote-job-lib.sh`   | Shared bounded remote job queue, worker readiness, LaunchAgent contract, and filesystem-composed PATH |
 | `fm-remote-job-worker.sh` | Long-lived remote queue worker for tracked `fm-*.sh` commands in the account runtime |
 | `fm-remote-job-reap-orphans.sh` | Stop remote job workers left running by a pruned code root, never one whose checkout still exists |
@@ -180,6 +183,7 @@ The shared no-mistakes gate lifecycle boundary is summarized in [architecture.md
 | `fm-teardown.sh`         | Fail-closed teardown: return landed ship worktrees, require completed scout deliverables, retire secondmate homes |
 | `fm-harness.sh`          | Detect the running harness, resolve crew or secondmate harness, model, and effort, and validate the native-only `ultra` effort |
 | `fm-lock.sh`             | Per-home firstmate session lock                                                      |
+| `fm-supervisor-lease.sh` | Machine-wide supervisor lease kept in a records repository with a remote |
 | `fm-x-lib.sh`            | Shared Relay config, relay, and reply-threading helpers                              |
 | `fm-x-poll.sh`           | One bounded Relay poll: stash newly offered mentions, emit their once-only wake, and raise queued public-followup rejection wakes at least once |
 | `fm-x-reply.sh`          | Post or dry-run preview a composed Relay reply or follow-up                          |

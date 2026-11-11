@@ -190,8 +190,10 @@
 //     rather than a regular file (credential_linked: a link names another
 //     home's sign-in), any credential refusal, and an origin that is not a
 //     loopback origin (credential_not_local: the server is another machine's).
-//     Prints the origin. A remote second mate's host-local control plane and
-//     bin/fm-remote-doctor.sh gate a t3code route on it.
+//     Prints the origin, the credential's expiry (expiresAt), and its days
+//     left (daysLeft). A remote second mate's host-local control plane and
+//     bin/fm-remote-doctor.sh gate a t3code route on it, and
+//     bin/fm-worker-host-home.sh reports a worker host's days left from it.
 //
 // Every verb accepts --token-file <path>. It defaults to
 // $FM_T3CODE_TOKEN_FILE, else ${FM_CONFIG_OVERRIDE:-$FM_HOME/config}/t3code-token,
@@ -853,7 +855,12 @@ async function hostCredential(flags) {
   if (!isLoopbackOrigin(cred.origin)) {
     throw new Refusal("credential_not_local", `T3 credential ${file} names ${cred.origin}, which is not this machine's own T3 server; sign in on this machine against its loopback origin with: bin/fm-t3-mcp.mjs login --access full-access --token-file ${file}`);
   }
-  return { ok: true, origin: cred.origin };
+  return {
+    ok: true,
+    origin: cred.origin,
+    expiresAt: new Date(cred.expires_at).toISOString(),
+    daysLeft: Number(((cred.expires_at - Date.now()) / DAY_MS).toFixed(1)),
+  };
 }
 
 // state: whether the thread exists, and its archive and run state. A thread

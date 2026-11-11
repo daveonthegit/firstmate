@@ -422,6 +422,8 @@ test_host_credential_is_offline_and_local_only() {
   mcp host-credential
   expect_code 0 "$RC" "a loopback credential is this machine's own: $ERR"
   assert_equals http://127.0.0.1:9 "$(field "$OUT" origin)" "host-credential reports the origin"
+  case "$(field "$OUT" daysLeft)" in 29.*|30|30.0) ;; *) fail "host-credential reports the days left: $OUT" ;; esac
+  [ -n "$(field "$OUT" expiresAt)" ] || fail "host-credential reports the expiry: $OUT"
   [ ! -s "$T3_FAKE_LOG" ] || fail "host-credential must make no request"
   t3_fake_credential "$CRED" env-fake-1 "" 600 http://192.0.2.7:3773
   mcp host-credential

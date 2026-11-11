@@ -26,8 +26,19 @@
 # ORDERING, and why LOCK now runs before BOOTSTRAP (the old AGENTS.md order
 # was bootstrap-then-lock):
 #
-#   1. lock          - acquire the per-home session lock FIRST, before any
-#                       mutating step runs.
+#   0b. lease        - the machine-wide supervisor lease
+#                       (bin/fm-supervisor-lease.sh acquire, --reemit on a
+#                       context rebuild), before the lock. Silent and
+#                       network-free unless data/ is a git repository with a
+#                       remote; a refusal makes the session read-only and the
+#                       lock is never attempted, so no supervision owner can
+#                       treat this session as the lock holder. Because the
+#                       lease is per machine and runs first, a second session
+#                       on the holding machine still advances the epoch before
+#                       the lock refuses it; that is harmless, because the
+#                       machine holding the lease is unchanged.
+#   1. lock          - after the supervisor lease, acquire the per-home session
+#                       lock before any home-local mutating startup step runs.
 #   1b. home role    - the resolved firstmate-repository role line
 #                      (bin/fm-role.sh report), purely local, no network.
 #   1c. T3 identity  - when locked and not re-emitting, capture and export the
@@ -74,7 +85,7 @@
 #                       script points back to the emitted harness supervision
 #                       block and deliberately never arms the watcher itself.
 #
-# Those ten names are also the runtime-bound stage list below, so a truncated
+# Those names are also the runtime-bound stage list below, so a truncated
 # startup can name exactly which of them never ran - and the parent banners
 # EVERY nonzero child exit, not only the bound: a child that dies or is killed
 # mid-stage must never truncate the digest silently.
@@ -97,6 +108,11 @@
 # The digest is therefore composed from bounded local reads and local
 # subprocesses only, while slow network or inactive-state reconciliation delays
 # a reported check rather than startup.
+# The one deliberate exception is the supervisor lease (step 0b): which machine
+# may supervise has to be settled before the lock, so a home with a records
+# remote pays up to three bounded git calls (FM_SUPERVISOR_LEASE_TIMEOUT each,
+# default 15s, well inside FM_SESSION_START_TIMEOUT) on the blocking path. A
+# home without one makes no call at all.
 # What this deliberately trades: on a slow network the digest prints "IN
 # PROGRESS" and names exactly which checks are not yet confirmed, instead of
 # waiting for them. It never reports an unconfirmed check as passed.
@@ -285,7 +301,7 @@ done
 # The ordered stage list is the contract behind the truncation banner: the child
 # names the stage it is entering, and the parent reports every stage at or after
 # that one as never emitted. Keep it in the exact order the digest prints.
-SESSION_START_STAGES='lock role bootstrap wake-queue supervision-instructions read-once fleet-state network-checks context next-step'
+SESSION_START_STAGES='lease lock role bootstrap wake-queue supervision-instructions read-once fleet-state network-checks context next-step'
 
 stage() {  # <stage-name>: breadcrumb for the parent's truncation banner
   [ -n "${FM_SESSION_START_STAGE_FILE:-}" ] || return 0
@@ -698,11 +714,32 @@ if [ "$REEMIT" -eq 1 ]; then
 else
   section "SESSION START - $FM_HOME"
 fi
+# --- 0b. supervisor lease ----------------------------------------------
+# Silent and network-free for a home whose data/ is not a git repository with a
+# remote. Otherwise its bounded fetch and push decide whether this MACHINE may
+# supervise, so a refusal skips the session lock entirely.
+stage lease
+LEASE_ARGS=(acquire)
+[ "$REEMIT" -eq 0 ] || LEASE_ARGS+=(--reemit)
+LEASE_OUT=$("$SCRIPT_DIR/fm-supervisor-lease.sh" "${LEASE_ARGS[@]}" 2>&1)
+LEASE_RC=$?
+if [ -n "$LEASE_OUT" ]; then
+  subsection "SUPERVISOR LEASE"
+  printf '%s\n' "$LEASE_OUT"
+fi
+
 # --- 1. lock -----------------------------------------------------------
 stage lock
 subsection "LOCK"
-LOCK_OUT=$("$SCRIPT_DIR/fm-lock.sh" 2>&1)
-LOCK_RC=$?
+if [ "$LEASE_RC" -eq 0 ]; then
+  LOCK_OUT=$("$SCRIPT_DIR/fm-lock.sh" 2>&1)
+  LOCK_RC=$?
+  LOCK_TITLE='FLEET LOCK OWNERSHIP WAS NOT VERIFIED'
+else
+  LOCK_OUT='lock: not attempted - this machine does not hold the supervisor lease (see SUPERVISOR LEASE above)'
+  LOCK_RC=1
+  LOCK_TITLE='THIS MACHINE DOES NOT HOLD THE SUPERVISOR LEASE'
+fi
 printf '%s\n' "$LOCK_OUT"
 READ_ONLY=0
 if [ "$LOCK_RC" -ne 0 ]; then
@@ -710,7 +747,7 @@ if [ "$LOCK_RC" -ne 0 ]; then
   BAR='●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
   {
     printf '%s\n' "$BAR"
-    printf '●  READ-ONLY SESSION - FLEET LOCK OWNERSHIP WAS NOT VERIFIED\n'
+    printf '●  READ-ONLY SESSION - %s\n' "$LOCK_TITLE"
     printf '●  %s\n' "$LOCK_OUT"
     printf '●  Skipping every mutating step: stale Herdr child cleanup,\n'
     printf '●  secondmate convergence, secondmate liveness, pending remote handoff retry,\n'

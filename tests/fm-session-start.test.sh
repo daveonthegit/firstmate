@@ -881,6 +881,83 @@ EOF
   pass "a lock refusal prints a loud read-only banner, skips every mutating step, and still completes the digest"
 }
 
+# make_records_home <home> <machine-id>: replace the home's plain data/ with a
+# clone of a fresh local bare records remote. Echoes the remote path.
+make_records_home() {
+  local home=$1 id=$2 remote seed
+  remote="${home%/home}/records.git"
+  seed="${home%/home}/records-seed"
+  git init -q --bare -b main "$remote"
+  fm_git_init_commit "$seed"
+  git -C "$seed" remote add origin "$remote"
+  git -C "$seed" push -q origin main
+  rm -rf "$home/data"
+  git clone -q "$remote" "$home/data"
+  printf '%s\n' "$id" > "$home/config/machine-id"
+  printf '%s\n' "$remote"
+}
+
+test_supervisor_lease_refusal_never_takes_the_lock() {
+  local rec root home fakebin remote out status
+  rec=$(new_world lease-refusal)
+  IFS='|' read -r root home fakebin <<EOF
+$rec
+EOF
+  make_fake_toolchain "$fakebin"
+  make_fake_ps_claude "$fakebin"
+  remote=$(make_records_home "$home" m-here)
+  # Another machine already holds the lease on the records remote.
+  printf 'host=m-elsewhere epoch=4 since=2026-11-10T00:00:00Z by=session-1\n' > "${home%/home}/records-seed/supervisor.lease"
+  git -C "${home%/home}/records-seed" add supervisor.lease
+  git -C "${home%/home}/records-seed" commit -qm "lease elsewhere"
+  git -C "${home%/home}/records-seed" push -q origin main
+  append_wake "$home/state" signal task-q "done: queued before the refusal" || fail "seed wake failed"
+
+  status=0
+  out=$(run_session_start "$home" "$root" "$fakebin:$BASE_PATH") || status=$?
+  expect_code 0 "$status" "fm-session-start.sh must exit 0 on a lease refusal"
+  assert_contains "$out" "SUPERVISOR LEASE" "the lease section is missing"
+  assert_contains "$out" "refused: the lease is held by m-elsewhere at epoch 4" "the lease refusal did not name the holder"
+  assert_contains "$out" "READ-ONLY SESSION - THIS MACHINE DOES NOT HOLD THE SUPERVISOR LEASE" "the read-only banner did not name the lease"
+  assert_contains "$out" "lock: not attempted" "the lock stage did not say it was skipped"
+  assert_contains "$out" "skipped (read-only session)" "the wake queue was not left untouched"
+  assert_contains "$out" "NEXT STEP" "the read-only digest did not complete"
+  [ ! -e "$home/state/.lock" ] || fail "a lease-refused session took the session lock"
+  assert_contains "$(git -C "$remote" show main:supervisor.lease)" "host=m-elsewhere epoch=4" "a refused session moved the lease"
+  pass "a supervisor lease refusal makes the session read-only without ever taking the session lock"
+}
+
+test_supervisor_lease_is_acquired_before_the_lock() {
+  local rec root home fakebin remote out
+  rec=$(new_world lease-off)
+  IFS='|' read -r root home fakebin <<EOF
+$rec
+EOF
+  make_fake_toolchain "$fakebin"
+  make_fake_ps_claude "$fakebin"
+  out=$(run_session_start "$home" "$root" "$fakebin:$BASE_PATH")
+  assert_not_contains "$out" "SUPERVISOR LEASE" "a home without a records remote printed a lease section"
+  assert_contains "$out" "lock acquired: harness pid" "a home without a records remote did not take the lock as before"
+
+  rec=$(new_world lease-held)
+  IFS='|' read -r root home fakebin <<EOF
+$rec
+EOF
+  make_fake_toolchain "$fakebin"
+  make_fake_ps_claude "$fakebin"
+  remote=$(make_records_home "$home" m-here)
+  out=$(run_session_start "$home" "$root" "$fakebin:$BASE_PATH")
+  assert_contains "$out" "held by this machine at epoch 1" "session start did not acquire the free lease"
+  assert_contains "$out" "lock acquired: harness pid" "session start did not take the lock after the lease"
+  assert_not_contains "$out" "READ-ONLY SESSION" "a held lease still produced a read-only session"
+  assert_contains "$(git -C "$remote" show main:supervisor.lease)" "host=m-here epoch=1" "the lease never reached the records remote"
+  case "$out" in
+    *"SUPERVISOR LEASE"*"LOCK"*) : ;;
+    *) fail "the lease section did not precede the lock section" ;;
+  esac
+  pass "session start acquires the supervisor lease before the lock, and a home without a records remote is unchanged"
+}
+
 test_lock_write_failure_read_only_path() {
   local rec root home fakebin out status
   rec=$(new_world lock-write-failure)
@@ -3096,6 +3173,8 @@ EOF
 
 test_context_digest_absent_empty_present
 test_lock_refusal_read_only_path
+test_supervisor_lease_refusal_never_takes_the_lock
+test_supervisor_lease_is_acquired_before_the_lock
 test_lock_write_failure_read_only_path
 test_trace_context_effective_state_is_frozen_after_lock
 test_session_lock_concurrent_single_winner

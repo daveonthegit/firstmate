@@ -9,7 +9,7 @@ The worker host runs a headless Firstmate home with its own project clones, work
 
 ## Current limits
 
-- This build provides the worker host registry, its route, the host-local leg, the status mirror, and placement from the primary with `fm-spawn.sh --host`, all described below.
+- This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, and placement from the primary with `fm-spawn.sh --host`, all described below.
 - The primary cannot yet read, peek at, steer, interrupt, answer, or clean up a placed task: `fm-send`, `fm-peek`, `fm-control`, `fm-t3-answer`, and `fm-teardown` recognize its placement and explicitly refuse unsupported operations, while `fm-crew-state` reports unknown state and names the worker host; those steps run on the host itself for now.
 - Placement is an explicit per-task choice; automatic placement by load or by project is not built.
 
@@ -50,15 +50,25 @@ The [`fm-on.sh` header](../bin/fm-on.sh) owns route uniqueness across both regis
 
 ## Prepare the worker host
 
-There is no seed or doctor for a worker host yet, so prepare it by hand:
+Register the host first, then let the primary seed its home and check it:
 
-1. Meet the [remote second mate prerequisites](remote-secondmates.md#prerequisites): an SSH alias with strict host keys and no agent forwarding, a Firstmate clone at an absolute code root, the fixed entrypoint on the non-interactive `PATH`, and the remote job worker installed by `fm-remote-doctor.sh --fix`.
-2. Create the home directory separately from the code root, with `data/`, `state/`, `config/`, and `projects/` inside it.
-3. Write an `.fm-worker-host` marker file at the home root, and do not make the home a second-mate home.
-4. Write `manual` to the home's `config/backlog-backend`, because the primary's backlog owns these tasks.
-5. Clone each project the host should work on into the home's `projects/`, register it in the home's `data/projects.md` with the same delivery mode and forge binding as the primary, and run `no-mistakes init` in each no-mistakes project.
-6. Select the host's runtime in its own `config/backend` and declare its limits in `config/project-capacity` and `config/lane-capacity`.
-7. Sign in on the host to every worker tool, model account, and forge identity its workers will use; every login is the operator's own step.
+1. Meet the [remote second mate prerequisites](remote-secondmates.md#prerequisites): an SSH alias with strict host keys and no agent forwarding, a Firstmate clone at an absolute code root, at a build that carries these commands, and the fixed entrypoint on the non-interactive `PATH`.
+2. Add the host's record to the primary's `data/worker-hosts.md`, naming a home outside the code root ([register a worker host](#register-a-worker-host)).
+3. From the primary, run `bin/fm-worker-host-seed.sh <id> --lanes <cap> [--capacity <project>=<n>]... <project>[=<origin-url>]...`.
+4. On the host, as the worker account, sign in to every worker tool, model account, and forge identity its workers will use, including the home's own T3 sign-in when its workers use T3; every login is the operator's own step.
+5. Select the host's runtime in its home's `config/backend` when it should differ from the default.
+6. From the primary, run `bin/fm-worker-host-doctor.sh <id>` until it reports the host ready, and rerun it whenever the host or the primary changes.
+
+The seed first checks the account's transport readiness with [`fm-remote-doctor.sh`](remote-secondmates.md#readiness-repair-and-the-human-steps), repairing what it can, and touches the home only once that passes.
+It then creates the home with `data/`, `state/`, `config/`, and `projects/`, writes the `.fm-worker-host` marker, sets `config/backlog-backend` to `manual` because the primary's backlog owns these tasks, writes `config/lane-capacity` and `config/project-capacity` from the values given, clones each project from its origin, copies the primary's registry line for it so its delivery mode and forge binding match, and runs `no-mistakes init` in each no-mistakes project.
+An explicitly named local-only project is refused, an existing capacity declaration is never overwritten, and a second-mate home or a home marked for another worker host is never changed.
+Clone URLs must be credential-free; [the origin validator](../bin/fm-project-origin-lib.sh) owns the accepted forms, and authentication must be configured on the host.
+The doctor reports each of those facts plus the host's T3 sign-in days left and whether its T3 version and capabilities match the primary's own; with `--fix` it repairs the gaps it owns, and the rest are named with the step that closes them.
+If the primary has a T3 sign-in but its status cannot be read, the comparison remains unresolved, not ready.
+If neither home has a T3 sign-in, T3 checks are skipped; an existing host sign-in is still checked even when the primary has none.
+With no project named, the doctor checks every non-local-only project the primary registers that the host already clones or registers; an unresolved primary delivery posture aborts the command rather than silently omitting the project.
+No credential, token, `config/` file, or `state/` record crosses from the primary.
+[`fm-worker-host-doctor.sh`](../bin/fm-worker-host-doctor.sh) owns what is sent and its exit statuses, and [`fm-worker-host-home.sh`](../bin/fm-worker-host-home.sh) owns every check, repair, and output line on the host.
 
 A worker host runs its workers with every credential placed on it, so treat it as sensitive as the primary.
 
@@ -69,3 +79,4 @@ A worker host runs its workers with every credential placed on it, so treat it a
 [`tests/fm-task-route-lib.test.sh`](../tests/fm-task-route-lib.test.sh) covers shared route discrimination and primary entry-point refusals without local backend actions.
 [`tests/fm-on.test.sh`](../tests/fm-on.test.sh) covers worker host routing beside remote second-mate routes.
 [`tests/fm-remote-worker-mirror.test.sh`](../tests/fm-remote-worker-mirror.test.sh) drives the status mirror through the real entrypoint, remote job worker, and process-event runner.
+[`tests/fm-worker-host-seed-doctor.test.sh`](../tests/fm-worker-host-seed-doctor.test.sh) seeds, checks, and repairs a worker host home from the primary through the real entrypoint and remote job worker, with fake T3 servers for the sign-in, version, and capability checks.
