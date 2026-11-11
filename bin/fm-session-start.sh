@@ -37,8 +37,8 @@
 #                       on the holding machine still advances the epoch before
 #                       the lock refuses it; that is harmless, because the
 #                       machine holding the lease is unchanged.
-#   1. lock          - acquire the per-home session lock FIRST, before any
-#                       mutating step runs.
+#   1. lock          - after the supervisor lease, acquire the per-home session
+#                       lock before any home-local mutating startup step runs.
 #   1b. home role    - the resolved firstmate-repository role line
 #                      (bin/fm-role.sh report), purely local, no network.
 #   1c. T3 identity  - when locked and not re-emitting, capture and export the

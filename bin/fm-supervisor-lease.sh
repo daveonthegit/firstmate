@@ -21,9 +21,10 @@
 # is malformed and refused rather than guessed. The epoch only ever grows: every
 # write is epoch+1 over the highest epoch this machine has seen.
 #
-# MACHINE ID. config/machine-id (one line, [A-Za-z0-9._-]) when present;
+# MACHINE ID. config/machine-id (one [A-Za-z0-9._-] token) when present;
 # otherwise macOS's LocalHostName (stable across networks, unlike hostname);
-# otherwise `hostname -s`.
+# otherwise `hostname -s`. The value `none` is reserved and refused for both
+# configured and fallback identities.
 #
 # REMOTE AND BRANCH. data/ must be on a branch with exactly one remote.
 # The remote branch is the upstream's merge ref, else the same branch name.
@@ -55,7 +56,9 @@
 #   fm-supervisor-lease.sh release
 #       Requires a reachable remote and a lease naming this host. Writes
 #       host=none epoch=<n+1>, commits, and pushes; the push must be accepted
-#       before a move counts as started. On success this home stands down.
+#       before a move counts as started. This home stands down before attempting
+#       the push, even if delivery is rejected or unconfirmed, or local adoption
+#       fails after the remote accepts the release.
 #   fm-supervisor-lease.sh steal --owner-approved
 #       ONLY on the owner's explicit word. Takes the lease whoever holds it, at
 #       epoch = (highest epoch seen locally or on the remote) + 1, and clears

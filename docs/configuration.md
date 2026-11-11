@@ -148,11 +148,12 @@ Untracked files and directories whose names begin with `scratchpad` are also git
 
 The session lock only stops two sessions on one machine, so a home whose records are shared between machines also needs a supervisor lease.
 The lease applies only when `data/` is itself the top of a git repository that has a remote; every other home, including one whose `data/` merely sits inside the Firstmate checkout, has no lease and starts exactly as before.
+An active records repository must have exactly one remote; multiple remotes are refused even when an upstream is configured.
 For such a records repository, `data/supervisor.lease` names the machine that may supervise, with an epoch that grows on every change.
 Session start acquires it before the session lock, and a machine that cannot acquire it stays read-only without taking the lock.
 The remote's refusal of a non-fast-forward push decides which machine wins, so no other service is involved.
 
-A machine is identified by `config/machine-id` (one token of letters, digits, `.`, `_`, or `-`, excluding the reserved value `none`) when present, and otherwise by its macOS local host name or its short host name. The fallback identity also must not be `none`.
+Set `config/machine-id` to distinguish machines whose fallback host names would collide; the [script header](../bin/fm-supervisor-lease.sh) owns identity syntax, reserved values, and fallback selection.
 A worker-host home, marked by `.fm-worker-host`, never holds the lease.
 `bin/fm-supervisor-lease.sh` adds `status`, `release` (hand the lease off before moving the supervisor), `steal --owner-approved` (only on the owner's explicit word), and `push` (the records push for a running session, which stands the session down when the push is rejected or the lease moved).
 While a home is stood down, `bin/fm-lock.sh` refuses the session lock and no supervision owner treats the session as the lock holder, until a later session start re-acquires the lease.
