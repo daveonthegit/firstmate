@@ -300,6 +300,33 @@ EOF
   pass "away recovery finishes existing placement at or below the cap without admitting new work"
 }
 
+test_local_launches_preserve_worker_host_placement() {
+  local out rc before operation primary_bin
+  make_case local-refusals
+  make_brief p1 --mode local-only
+  add_item p1
+  out=$(primary "$SPAWN" p1 sample --host mbp --mode local-only --yolo off --harness claude 2>&1) \
+    || fail "placement failed: $out"
+  before=$(< "$PARENT/state/p1.meta")
+  primary_bin=$(make_fakebin "$CASE/primary-tools")
+  for operation in spawn relaunch; do
+    rc=0
+    if [ "$operation" = spawn ]; then
+      out=$(PATH="$primary_bin:$PATH" primary "$SPAWN" p1 "$WT_DIR" --mode local-only --yolo off --harness claude 2>&1) || rc=$?
+    else
+      out=$(PATH="$primary_bin:$PATH" primary "$SPAWN" p1 --relaunch --harness claude 2>&1) || rc=$?
+    fi
+    [ "$rc" -ne 0 ] || fail "local $operation accepted a worker-host placement"
+    assert_contains "$out" "task placed on worker host mbp" "local $operation did not identify the owning host"
+    assert_equals "$before" "$(< "$PARENT/state/p1.meta")" "local $operation changed the placement record"
+    assert_equals in_flight "$(row_state p1)" "local $operation changed the backlog state"
+    assert_absent "$primary_bin/.spawn-window" "local $operation launched a duplicate worker"
+    assert_equals 1 "$(new_windows)" "local $operation launched another host worker"
+  done
+  pass "local spawn and direct relaunch refuse existing worker-host placements"
+}
+
 fm_test_run test_successful_placement test_capacity_deferral_stays_queued \
   test_unconfirmed_result_reruns_safely test_unknown_host_refused \
-  test_failed_mirror_arm_keeps_record_and_reruns
+  test_failed_mirror_arm_keeps_record_and_reruns \
+  test_local_launches_preserve_worker_host_placement

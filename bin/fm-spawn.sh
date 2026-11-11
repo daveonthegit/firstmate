@@ -2802,6 +2802,14 @@ fi
 if [ "$HOST_SET" -eq 1 ]; then
   spawn_worker_host
 fi
+SPAWN_META_LOCK=$(fm_meta_lock_path "$STATE/$ID.meta") || exit 1
+fm_lock_acquire_wait "$SPAWN_META_LOCK" || exit 1
+SPAWN_META_LOCK_HELD=1
+if [ -e "$STATE/$ID.meta" ] || [ -L "$STATE/$ID.meta" ]; then
+  fm_task_route_require_supported "$STATE/$ID.meta" "local spawn or relaunch" || exit 1
+fi
+fm_lock_release "$SPAWN_META_LOCK"
+SPAWN_META_LOCK_HELD=0
 if [ "$RELAUNCH" -eq 0 ]; then
   spawn_refuse_if_away_spend_cap
   spawn_require_relocated_queued_work
