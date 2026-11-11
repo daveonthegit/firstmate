@@ -247,5 +247,28 @@ test_unknown_host_refused() {
   pass "--host refuses an unregistered host and unforwardable flags before reaching any host"
 }
 
+test_failed_mirror_arm_keeps_record_and_reruns() {
+  local out rc=0
+  make_case arm
+  make_brief a1 --mode local-only
+  add_item a1
+  # A regular file where the process-event state root belongs makes arming fail.
+  : > "$PARENT/state/procevent"
+  out=$(primary "$SPAWN" a1 sample --host mbp --mode local-only --yolo off --harness claude 2>&1) || rc=$?
+  [ "$rc" -ne 0 ] || fail "a placement whose mirror could not be armed reported success: $out"
+  assert_contains "$out" "status mirror could not be armed" "the arm failure was not named"
+  assert_equals firstmate:fm-a1 "$(meta_value a1 remote_target)" "the arm failure lost the placed record"
+  assert_equals in_flight "$(row_state a1)" "the arm failure moved the backlog item back"
+  rm -f "$PARENT/state/procevent"
+  out=$(primary "$SPAWN" a1 sample --host mbp --mode local-only --yolo off --harness claude 2>&1) \
+    || fail "re-running after a failed arm failed: $out"
+  assert_contains "$out" "already placed" "the re-run did not reuse the host's existing worker"
+  assert_equals 1 "$(new_windows)" "the re-run launched a second worker"
+  out=$(primary "$ROOT/bin/fm-procevent.sh" list 2>&1) || fail "procevent list failed: $out"
+  assert_contains "$out" "remote-worker-mbp" "the re-run did not arm the host's status mirror"
+  pass "a failed mirror arm keeps the placed record In flight, and re-running the spawn arms it"
+}
+
 fm_test_run test_successful_placement test_capacity_deferral_stays_queued \
-  test_unconfirmed_result_reruns_safely test_unknown_host_refused
+  test_unconfirmed_result_reruns_safely test_unknown_host_refused \
+  test_failed_mirror_arm_keeps_record_and_reruns
