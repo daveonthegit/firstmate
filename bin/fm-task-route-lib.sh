@@ -13,9 +13,10 @@
 #   worker-host        a ship or scout this primary placed on a worker host
 #                      (docs/remote-workers.md): the record names the host with
 #                      remote_worker_host=<id>, its remote_* keys name the
-#                      host's own home, endpoint, and copy, and every operation
-#                      runs bin/fm-remote-worker-control.sh there through
-#                      bin/fm-on.sh <id>.
+#                      host's own home, endpoint, and copy. Supported operations
+#                      run bin/fm-remote-worker-control.sh there through
+#                      bin/fm-on.sh <id>; unsupported primary operations must
+#                      refuse rather than interpret the route locally.
 #   remote-secondmate  a persistent second mate on another machine: the record
 #                      names its SSH alias with remote_host=<alias>, and its
 #                      operations run bin/fm-remote-secondmate-control.sh.
@@ -23,7 +24,8 @@
 # On success it sets FM_TASK_ROUTE to one of those words and FM_TASK_ROUTE_HOST
 # to the worker host id or second-mate SSH alias (empty for local), and returns
 # 0. It returns 1 with FM_TASK_ROUTE_ERROR set, and both route fields empty,
-# when the record is missing, is not a regular file, names an unsafe host, or
+# when the record is missing, unreadable, symlinked, not a regular file,
+# names an unsafe worker host id, or
 # names BOTH remote_worker_host and remote_host: such a record is
 # contradictory, so a caller refuses it rather than guess which leg owns it.
 # A placed task never records remote_host, exactly so that the entry points
