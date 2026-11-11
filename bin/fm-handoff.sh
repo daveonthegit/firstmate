@@ -6,7 +6,7 @@
 # whose context is exhausted, one stuck behind a usage limit on one seat, or a
 # worker launched on the wrong model. Firstmate never commits inside a project
 # copy, so a worker that cannot answer is a stuck worker to recover first.
-# Usage: fm-handoff.sh <task-id> --to local [--as <new-id>] [--remote <name>] [--reason <text>]
+# Usage: fm-handoff.sh <task-id> --to local --remote <name> [--reason <text>]
 #          [--harness <name>] [--model <name>] [--effort <level>] [--account <entry>] [--backend <name>]
 #        fm-handoff.sh <task-id> --to local --cancel
 #   Run it once to REQUEST the hand-off, then run the same command again after
@@ -15,9 +15,10 @@
 #   (data/<id>/ outlives cleanup), and a finish that stops part-way resumes on
 #   the next run from whichever step has not landed.
 #   --to local is the only target; a cross-machine hand-off is not built.
-#   --as names the continuation task id; it defaults to <task-id> with a -c<n>
-#   suffix (`x` -> `x-c2`, `x-c2` -> `x-c3`).
-#   --remote is the git remote the carried branch is pushed to (default origin).
+#   The continuation id uses a -c<n> suffix (`x` -> `x-c2`, `x-c2` -> `x-c3`).
+#   --remote must name the preservation remote explicitly on every non-cancel run.
+#   Choose origin only for a personal repository at its owner's choice; the
+#   private rescue remote arrives with H3.
 #   --reason is one line recorded in the request and the handoff document.
 #   The launch flags are passed through to bin/fm-spawn.sh unchanged, so the
 #   continuation runs on the profile firstmate resolved at this intake (for
@@ -26,8 +27,8 @@
 # REQUEST, which changes nothing but the request record and the worker's inbox,
 # refuses when: this home is a worker host or has stood down from the
 # supervisor lease; the task has no record, is a second mate, or is placed on
-# another machine; a ship has a recorded PR, a Gerrit or external-review forge,
-# no recorded branch, or no such remote in its copy; the task has an open
+# another machine; a ship has a recorded PR or a Gerrit or external-review forge
+# (H1 limits), no recorded branch, or no such remote in its copy; the task has an open
 # decision (answer it first); its brief lacks both `# Task` subsections; or the
 # continuation id is taken. Capacity is not checked: the old worker's place is
 # released by its cleanup before the continuation takes one. It then steers the
@@ -37,8 +38,8 @@
 # scout instead writes its interim report and passes its brief's completion
 # gate, because its copy is scratch and cleanup requires both, and appends
 # `paused: handoff ready`. Exits 0 once the steer is recorded.
-# FINISH, once that line is in the status log after the request, verifies a
-# ship's copy is clean at <head> on its recorded branch and that <remote> has
+# FINISH, once that line is in the status log after the request, requires
+# nonempty worker notes for ships and scouts, and verifies a ship's copy is clean at <head> on its recorded branch and that <remote> has
 # the branch at <head> with its remote-tracking ref containing it (the commits
 # then exist outside the copy, which is what lets cleanup accept them), then:
 #   1. writes data/<new-id>/continuation (bin/fm-continuation-lib.sh) and
@@ -125,7 +126,6 @@ for a in "$@"; do
     case "$a" in --*) echo "error: --$want requires a value" >&2; exit 2 ;; esac
     case "$want" in
       to) TO=$a ;;
-      as) NEW_ID=$a ;;
       remote) REMOTE=$a ;;
       reason) REASON=$a; REASON_SET=1 ;;
       harness) LAUNCH_HARNESS=$a ;;
@@ -138,7 +138,7 @@ for a in "$@"; do
     continue
   fi
   case "$a" in
-    --to|--as|--remote|--reason|--harness|--model|--effort|--account|--backend) want=${a#--} ;;
+    --to|--remote|--reason|--harness|--model|--effort|--account|--backend) want=${a#--} ;;
     --cancel) CANCEL=1 ;;
     --*) echo "error: unknown option $a" >&2; exit 2 ;;
     *)
@@ -186,8 +186,6 @@ default_new_id() {  # <id>
 
 request_preflight() {
   local kind branch forge open copy
-  [ ! -e "$FM_HOME/.fm-worker-host" ] || die "this home is a worker host; only the supervisor hands tasks off"
-  [ ! -e "$STATE/.supervisor-lease-lost" ] || die "this home has stood down from the supervisor lease ($(head -n 1 "$STATE/.supervisor-lease-lost" 2>/dev/null)); hand-offs need the supervisor"
   [ -f "$META" ] || die "task $ID has no record at $META"
   kind=$(meta_get "$META" kind)
   case "${kind:-ship}" in
@@ -198,11 +196,11 @@ request_preflight() {
     die "task $ID runs on another machine; a cross-machine hand-off is not built"
   if [ "${kind:-ship}" = ship ]; then
     [ -z "$(meta_get "$META" pr)" ] ||
-      die "task $ID already has a pull request ($(meta_get "$META" pr)); a hand-off continues work that has not reached one"
+      die "task $ID already has a pull request ($(meta_get "$META" pr)); H1 only continues work that has not reached one"
     forge=$(sed -n 's/^Delivery contract: .* forge=\([^ ]*\).*$/\1/p' "$DATA/$ID/brief.md" 2>/dev/null | head -n 1)
     [ -z "$(meta_get "$META" forge)" ] || forge=$(meta_get "$META" forge)
     case "$forge" in
-      gerrit|external) die "task $ID publishes through forge=$forge, whose push rules a hand-off does not handle yet" ;;
+      gerrit|external) die "task $ID publishes through forge=$forge, whose push rules H1 does not handle" ;;
     esac
     branch=$(meta_get "$META" branch)
     [ -n "$branch" ] || die "task $ID records no branch to carry"
@@ -220,12 +218,12 @@ request_preflight() {
 }
 
 new_id_free() {
-  [ ! -e "$STATE/$NEW_ID.meta" ] || die "continuation id $NEW_ID already has a task record; pass another --as"
-  [ ! -e "$DATA/$NEW_ID/brief.md" ] || die "continuation id $NEW_ID already has a brief; pass another --as"
-  [ ! -e "$(fm_continuation_path "$DATA" "$NEW_ID")" ] || die "continuation id $NEW_ID already has a continuation record; pass another --as"
+  [ ! -e "$STATE/$NEW_ID.meta" ] || die "continuation id $NEW_ID already has a task record"
+  [ ! -e "$DATA/$NEW_ID/brief.md" ] || die "continuation id $NEW_ID already has a brief"
+  [ ! -e "$(fm_continuation_path "$DATA" "$NEW_ID")" ] || die "continuation id $NEW_ID already has a continuation record"
   if fm_backlog_transition_applies "$CONFIG" "$DATA" ship; then
     if fm_backlog_row_probe "$DATA" "$NEW_ID"; then
-      die "continuation id $NEW_ID already has a backlog item; pass another --as"
+      die "continuation id $NEW_ID already has a backlog item"
     fi
     [ "$FM_BACKLOG_ROW_RESULT" = not_found ] || die "could not read the backlog before the hand-off ($FM_BACKLOG_ROW_ERROR)"
   fi
@@ -281,9 +279,7 @@ write_request() {
 
 do_request() {
   local kind out
-  [ -n "$REMOTE" ] || REMOTE=origin
-  fm_continuation_remote_valid "$REMOTE" || die "--remote '$REMOTE' is not a git remote name"
-  [ -n "$NEW_ID" ] || NEW_ID=$(default_new_id "$ID")
+  NEW_ID=$(default_new_id "$ID")
   fm_task_id_creation_valid "$NEW_ID" || die "invalid continuation id '$NEW_ID'"
   [ "$NEW_ID" != "$ID" ] || die "the continuation needs its own task id"
   request_preflight
@@ -353,6 +349,7 @@ verify_carried_work() {
 write_handoff_doc() {
   local doc="$DATA/$NEW_ID/handoff.md" notes="$DATA/$ID/handoff-notes.md" tmp
   [ ! -e "$doc" ] || return 0
+  [ -s "$notes" ] || die "task $ID wrote no nonempty notes at $notes"
   mkdir -p "$DATA/$NEW_ID"
   tmp="$doc.tmp.$$"
   {
@@ -368,11 +365,7 @@ write_handoff_doc() {
     echo
     echo "## Previous worker's notes"
     echo
-    if [ -s "$notes" ]; then
-      cat "$notes"
-    else
-      echo "The previous worker wrote no notes at \`$notes\`."
-    fi
+    cat "$notes"
   } > "$tmp"
   mv -f "$tmp" "$doc"
 }
@@ -512,10 +505,9 @@ do_finish() {
   [ "$(request_get schema)" = "$REQUEST_SCHEMA" ] || die "$REQUEST is not a hand-off request"
   KIND=$(request_get kind)
   recorded=$(request_get new_id)
-  [ -z "$NEW_ID" ] || [ "$NEW_ID" = "$recorded" ] || die "the hand-off of $ID was requested as $recorded, not $NEW_ID"
   NEW_ID=$recorded
   recorded=$(request_get remote)
-  [ -z "$REMOTE" ] || [ "$REMOTE" = "$recorded" ] || die "the hand-off of $ID was requested through remote $recorded, not $REMOTE"
+  [ "$REMOTE" = "$recorded" ] || die "the hand-off of $ID was requested through remote $recorded, not $REMOTE"
   REMOTE=$recorded
   [ "$REASON_SET" -eq 1 ] || REASON=$(request_get reason)
   for key in $LAUNCH_KEYS; do
@@ -535,6 +527,7 @@ do_finish() {
       [ -z "$out" ] || echo "latest from $ID: $out"
       exit 75
     fi
+    [ -s "$DATA/$ID/handoff-notes.md" ] || die "task $ID reported ready but wrote no nonempty notes at $DATA/$ID/handoff-notes.md"
     remember_task_record
     if [ "$KIND" = ship ]; then
       verify_carried_work
@@ -572,8 +565,15 @@ do_cancel() {
   [ ! -e "$(fm_continuation_path "$DATA" "$new_id")" ] || leftovers+=" $(fm_continuation_path "$DATA" "$new_id")"
   [ ! -e "$DATA/$new_id/brief.md" ] || leftovers+=" $DATA/$new_id/brief.md"
   echo "cancelled: the hand-off of $ID as $new_id"
-  [ -z "$leftovers" ] || echo "note: a partial finish left$leftovers and possibly a queued backlog item $new_id; a new request needs another --as or their removal"
+  [ -z "$leftovers" ] || echo "note: a partial finish left$leftovers and possibly a queued backlog item $new_id; a new request needs their removal"
 }
+
+[ ! -e "$FM_HOME/.fm-worker-host" ] || die "this home is a worker host; only the supervisor hands tasks off"
+[ ! -e "$STATE/.supervisor-lease-lost" ] || die "this home has stood down from the supervisor lease ($(head -n 1 "$STATE/.supervisor-lease-lost" 2>/dev/null)); hand-offs need the supervisor"
+if [ "$CANCEL" -ne 1 ]; then
+  [ -n "$REMOTE" ] || die "--remote is required; explicitly choose the preservation destination"
+  fm_continuation_remote_valid "$REMOTE" || die "--remote '$REMOTE' is not a git remote name"
+fi
 
 if [ "$CANCEL" -eq 1 ]; then
   do_cancel

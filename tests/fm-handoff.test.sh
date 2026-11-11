@@ -220,18 +220,24 @@ test_handoff_refuses_what_it_cannot_carry() {
   home=$case_dir/home
   start_task "$case_dir" old-r1 ship
 
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to local)
+  expect_code 1 $? "a destination must be explicitly authorized"
+  assert_contains "$out" "--remote is required" "the missing destination was not named"
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to local --remote origin --as custom)
+  expect_code 2 $? "custom continuation identities must not be accepted"
+
   out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to m1)
   expect_code 2 $? "a cross-machine target should be a usage refusal"
   assert_contains "$out" "only a local hand-off exists" "the cross-machine refusal was not explained"
 
   status_append "$case_dir" old-r1 "needs-decision [at=$(date +%s)] [key=pick]: which colour"
-  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to local)
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to local --remote origin)
   [ $? -eq 1 ] || fail "a task with an open decision was handed off"
   assert_contains "$out" "open decision" "the open decision was not named"
   status_append "$case_dir" old-r1 "resolved [at=$(date +%s)] [key=pick]: blue"
 
   printf 'pr=https://github.com/o/r/pull/7\n' >> "$home/state/old-r1.meta"
-  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to local)
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to local --remote origin)
   [ $? -eq 1 ] || fail "a task with a pull request was handed off"
   assert_contains "$out" "already has a pull request" "the recorded PR was not named"
   sed -i.bak '/^pr=/d' "$home/state/old-r1.meta"
@@ -254,7 +260,7 @@ test_ship_handoff_end_to_end() {
   start_task "$case_dir" old-e1 ship
   [ "$(row_field "$case_dir" old-e1 state)" = in_flight ] || fail "fixture: the task is not in flight"
 
-  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-e1 --to local --reason "context exhausted")
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-e1 --to local --remote origin --reason "context exhausted")
   expect_code 0 $? "the hand-off request should succeed"$'\n'"$out"
   assert_contains "$out" "requested: old-e1" "the request was not reported"
   msg=$(find "$home/state/old-e1.inbox" -maxdepth 1 -name '*.msg' | head -n 1)
@@ -263,18 +269,22 @@ test_ship_handoff_end_to_end() {
   assert_grep "paused [at=<epoch>]: handoff ready fm/old-e1" "$msg" "the steer does not name the ready line"
   assert_grep "$home/data/old-e1/handoff-notes.md" "$msg" "the steer does not ask for notes"
 
-  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-e1 --to local)
+  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-e1 --to local --remote origin)
   expect_code 75 $? "finishing before the ready line should wait"
   assert_contains "$out" "waiting: old-e1" "the wait was not reported"
 
-  head=$(worker_ships_ready "$case_dir" old-e1 nopush)
   out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-e1 --to local)
+  expect_code 1 $? "a resumed finish must explicitly name its destination"
+  assert_contains "$out" "--remote is required" "finish silently reused the destination"
+
+  head=$(worker_ships_ready "$case_dir" old-e1 nopush)
+  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-e1 --to local --remote origin)
   [ $? -eq 1 ] || fail "a hand-off finished before the branch was pushed"
   assert_contains "$out" "ask the worker to push" "the unpushed branch was not named"
   [ -f "$home/state/old-e1.meta" ] || fail "a refused finish cleaned up the old task"
 
   git -C "$case_dir/wt1" push --quiet origin fm/old-e1
-  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-e1 --to local --harness claude)
+  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-e1 --to local --remote origin --harness claude)
   status=$?
   expect_code 0 "$status" "the hand-off should finish"$'\n'"$out"
   assert_contains "$out" "handed-off: old-e1 -> old-e1-c2 on local" "the hand-off was not reported"
@@ -293,7 +303,7 @@ test_ship_handoff_end_to_end() {
   assert_grep 'Done: first half. Left: second half.' "$home/data/old-e1-c2/handoff.md" "the handoff document lost the worker's notes"
   assert_grep 'context exhausted' "$home/data/old-e1-c2/handoff.md" "the handoff document lost the reason"
 
-  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-e1 --to local)
+  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-e1 --to local --remote origin)
   expect_code 0 $? "a repeated finish should be a no-op"
   assert_contains "$out" "already done" "the repeated finish was not reported as done"
   pass "a ship hand-off carries its pushed work into a fresh task with one live backlog item at a time"
@@ -306,7 +316,7 @@ test_scout_handoff_end_to_end() {
   home=$case_dir/home
   start_task "$case_dir" old-sc1 scout
 
-  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-sc1 --to local --as next-sc1)
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-sc1 --to local --remote origin)
   expect_code 0 $? "the scout hand-off request should succeed"$'\n'"$out"
   assert_grep "interim report" "$(find "$home/state/old-sc1.inbox" -maxdepth 1 -name '*.msg' | head -n 1)" \
     "the scout steer does not ask for an interim report"
@@ -317,13 +327,13 @@ test_scout_handoff_end_to_end() {
     fail "fixture: the scout could not pass its completion gate"$'\n'"$out"
   status_append "$case_dir" old-sc1 "paused [at=$(date +%s)]: handoff ready"
 
-  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-sc1 --to local)
+  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-sc1 --to local --remote origin)
   expect_code 0 $? "the scout hand-off should finish"$'\n'"$out"
   [ ! -e "$home/state/old-sc1.meta" ] || fail "the old scout was not cleaned up"
-  assert_grep 'kind=scout' "$home/state/next-sc1.meta" "the continuation is not a scout"
-  assert_grep 'continued_from=old-sc1' "$home/state/next-sc1.meta" "the continuation does not name the old scout"
-  assert_grep "$home/data/old-sc1/report.md" "$home/data/next-sc1/brief.md" "the brief does not point at the interim report"
-  [ "$(row_field "$case_dir" next-sc1 state)" = in_flight ] || fail "the continuation's backlog item is not in flight"
+  assert_grep 'kind=scout' "$home/state/old-sc1-c2.meta" "the continuation is not a scout"
+  assert_grep 'continued_from=old-sc1' "$home/state/old-sc1-c2.meta" "the continuation does not name the old scout"
+  assert_grep "$home/data/old-sc1/report.md" "$home/data/old-sc1-c2/brief.md" "the brief does not point at the interim report"
+  [ "$(row_field "$case_dir" old-sc1-c2 state)" = in_flight ] || fail "the continuation's backlog item is not in flight"
   pass "a scout hand-off carries its interim report and notes into a fresh scout"
 }
 
@@ -333,7 +343,7 @@ test_cancel_withdraws_a_request() {
   case_dir=$(make_case cancel)
   home=$case_dir/home
   start_task "$case_dir" old-x1 ship
-  in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-x1 --to local >/dev/null || fail "fixture: the request failed"
+  in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-x1 --to local --remote origin >/dev/null || fail "fixture: the request failed"
   out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-x1 --to local --cancel)
   expect_code 0 $? "cancel should succeed"$'\n'"$out"
   [ ! -e "$home/data/old-x1/handoff-request" ] || fail "cancel left the request"
@@ -343,7 +353,79 @@ test_cancel_withdraws_a_request() {
   pass "fm-handoff --cancel withdraws a request and tells the worker to resume"
 }
 
+test_handoff_requires_notes_for_both_kinds() {
+  local case_dir home kind notes_state out
+  [ "$HAVE_TASKS_AXI" -eq 1 ] || { pass "skipped: tasks-axi is not installed"; return; }
+  for kind in ship scout; do
+    case_dir=$(make_case "notes-$kind")
+    home=$case_dir/home
+    start_task "$case_dir" old-n1 "$kind"
+    in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-n1 --to local --remote origin >/dev/null || fail "request failed"
+    if [ "$kind" = ship ]; then
+      worker_ships_ready "$case_dir" old-n1 >/dev/null
+    else
+      printf '# Interim\nFindings.\n' > "$home/data/old-n1/report.md"
+      in_case "$case_dir" "$case_dir/wt1" "$ROOT/bin/fm-captain-hold.sh" complete old-n1 --none >/dev/null || fail "completion gate failed"
+      status_append "$case_dir" old-n1 "paused: handoff ready"
+    fi
+    for notes_state in absent empty; do
+      rm -f "$home/data/old-n1/handoff-notes.md"
+      [ "$notes_state" != empty ] || touch "$home/data/old-n1/handoff-notes.md"
+      out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-n1 --to local --remote origin)
+      expect_code 1 $? "$kind must refuse $notes_state notes"
+      assert_contains "$out" "no nonempty notes" "missing notes were not reported"
+      [ -f "$home/state/old-n1.meta" ] || fail "missing notes allowed cleanup"
+      [ ! -e "$home/data/old-n1-c2/continuation" ] || fail "missing notes allowed preservation"
+      [ "$(row_field "$case_dir" old-n1 state)" = in_flight ] || fail "missing notes closed the item"
+    done
+    printf 'Done: first half. Left: second half.\n' > "$home/data/old-n1/handoff-notes.md"
+    out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-n1 --to local --remote origin)
+    expect_code 0 $? "$kind should finish once notes are supplied: $out"
+  done
+  pass "ships and scouts require nonempty worker notes before preservation and cleanup"
+}
+
+test_handoff_requires_supervisor_for_every_action() {
+  local case_dir home marker out action before messages
+  [ "$HAVE_TASKS_AXI" -eq 1 ] || { pass "skipped: tasks-axi is not installed"; return; }
+  case_dir=$(make_case supervisor)
+  home=$case_dir/home
+  start_task "$case_dir" old-g1 ship
+  for marker in "$home/.fm-worker-host" "$home/state/.supervisor-lease-lost"; do
+    touch "$marker"
+    out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-g1 --to local --remote origin)
+    expect_code 1 $? "ineligible supervisor must not request a handoff"
+    [ ! -e "$home/data/old-g1/handoff-request" ] || fail "ineligible request mutated state"
+    rm "$marker"
+  done
+  in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-g1 --to local --remote origin >/dev/null || fail "request failed"
+  worker_ships_ready "$case_dir" old-g1 >/dev/null
+  before=$(cksum < "$home/data/old-g1/handoff-request")
+  messages=$(find "$home/state/old-g1.inbox" -maxdepth 1 -name '*.msg' | wc -l)
+  for marker in "$home/.fm-worker-host" "$home/state/.supervisor-lease-lost"; do
+    touch "$marker"
+    for action in finish cancel; do
+      if [ "$action" = finish ]; then
+        out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-g1 --to local --remote origin --model other)
+      else
+        out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-g1 --to local --cancel)
+      fi
+      expect_code 1 $? "ineligible supervisor must not $action"
+      [ "$(cksum < "$home/data/old-g1/handoff-request")" = "$before" ] || fail "$action changed the request"
+      [ -f "$home/state/old-g1.meta" ] || fail "$action cleaned up the worker"
+      [ ! -e "$home/data/old-g1-c2/continuation" ] || fail "$action wrote continuation state"
+      [ "$(find "$home/state/old-g1.inbox" -maxdepth 1 -name '*.msg' | wc -l)" = "$messages" ] || fail "$action steered the worker"
+    done
+    rm "$marker"
+  done
+  out=$(in_case "$case_dir" "$case_dir/wt2" "$HANDOFF" old-g1 --to local --remote origin)
+  expect_code 0 $? "eligible supervisor should finish: $out"
+  pass "all handoff actions require eligible supervision before mutation"
+}
+
 fm_test_run \
+  test_handoff_requires_notes_for_both_kinds \
+  test_handoff_requires_supervisor_for_every_action \
   test_brief_continue_from_copies_the_task_and_records_the_source \
   test_spawn_continue_from_starts_at_the_carried_commit \
   test_handoff_refuses_what_it_cannot_carry \
