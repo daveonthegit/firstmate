@@ -1,0 +1,450 @@
+$ FM_HOME={run-worktree}/.local-test/live/host git init -q -b main {run-worktree}/.local-test/live/src
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host git -C {run-worktree}/.local-test/live/src add README
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host git -C {run-worktree}/.local-test/live/src -c user.name=Validation -c user.email=test@example.invalid commit -qm seed
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host git clone --bare -q {run-worktree}/.local-test/live/src {run-worktree}/.local-test/live/origin.git
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh
+mode=check
+home={run-worktree}/.local-test/live/host
+check home=fixable: {run-worktree}/.local-test/live/host does not exist
+check secondmate=ok: no second-mate marker
+check layout=fixable: data/, state/, config/, and projects/ follow the home
+check marker=fixable: no .fm-worker-host marker in {run-worktree}/.local-test/live/host
+check backlog-backend=fixable: config/backlog-backend is not manual
+check lane-capacity=fixable: no config/lane-capacity; the primary asks for a cap of 2
+check project-capacity=fixable: no config/project-capacity; the primary declares alpha service
+check clone:alpha service=fixable: no clone of alpha service in {run-worktree}/.local-test/live/host/projects
+check registry:alpha service=human: alpha service needs a verified clone before registration
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+action: home: seed this host from the primary, or rerun the doctor with --fix
+action: layout: seed this host from the primary, or rerun the doctor with --fix
+action: marker: rerun the doctor with --fix
+action: backlog-backend: rerun the doctor with --fix
+action: lane-capacity: rerun the seed or the doctor with --fix
+action: project-capacity: rerun the seed or the doctor with --fix
+action: clone:alpha service: rerun the seed or the doctor with --fix
+action: registry:alpha service: close the clone:alpha service gap first
+error: this worker host home is not ready; unresolved: home layout marker backlog-backend lane-capacity project-capacity clone:alpha service registry:alpha service
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+fix home=applied: created {run-worktree}/.local-test/live/host
+fix layout=applied: created data/ state/ config/ projects/
+fix marker=applied: wrote .fm-worker-host for m1
+fix backlog-backend=applied: set config/backlog-backend to manual
+fix lane-capacity=applied: declared a cap of 2 lanes
+fix project-capacity=applied: declared alpha service 1
+fix clone:alpha service=applied: cloned {run-worktree}/.local-test/live/origin.git
+fix registry:alpha service=applied: copied the primary's record
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+ok: worker host home ready at {run-worktree}/.local-test/live/host
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+ok: worker host home ready at {run-worktree}/.local-test/live/host
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh
+mode=check
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=fixable: no .fm-worker-host marker in {run-worktree}/.local-test/live/host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=fixable: data/projects.md registers alpha service differently from the primary (- alpha service [no-mistakes] - drift)
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+action: marker: rerun the doctor with --fix
+action: registry:alpha service: rerun the doctor with --fix to copy the primary's record, so delivery mode and forge binding match
+error: this worker host home is not ready; unresolved: marker registry:alpha service
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+fix marker=applied: wrote .fm-worker-host for m1
+fix registry:alpha service=applied: copied the primary's record
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+ok: worker host home ready at {run-worktree}/.local-test/live/host
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=human: {run-worktree}/.local-test/live/host/config/lane-capacity caps lanes at 2, not the requested 3
+check project-capacity=human: {run-worktree}/.local-test/live/host/config/project-capacity already declares alpha service is 1 not 2
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+action: lane-capacity: edit the cap on the host yourself; Firstmate never overwrites an existing capacity declaration
+action: project-capacity: edit those lines on the host yourself; Firstmate never overwrites an existing capacity declaration
+error: this worker host home is not ready; unresolved: lane-capacity project-capacity
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=human: {run-worktree}/.local-test/live/host/.fm-worker-host names worker host other-host, not m1
+check backlog-backend=fixable: config/backlog-backend is not manual
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+action: marker: check which primary record owns this home; two worker host records must not share one home
+action: backlog-backend: rerun the doctor with --fix
+error: this worker host home is not ready; unresolved: marker backlog-backend
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=human: {run-worktree}/.local-test/live/host carries .fm-secondmate-home, so it is a second-mate home
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=fixable: config/backlog-backend is not manual
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+action: secondmate: give the worker host its own home path; a worker host home must never be a second-mate home, and Firstmate changes nothing in this one
+action: backlog-backend: rerun the doctor with --fix
+error: this worker host home is not ready; unresolved: secondmate backlog-backend
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+fix backlog-backend=applied: set config/backlog-backend to manual
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+ok: worker host home ready at {run-worktree}/.local-test/live/host
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host git -C {run-worktree}/.local-test/live/host/projects/alpha service remote set-url origin {run-worktree}/.local-test/live/src
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=human: {run-worktree}/.local-test/live/host/projects/alpha service clones {run-worktree}/.local-test/live/src, not the primary's {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=human: alpha service needs a verified clone before registration
+check no-mistakes:alpha service=human: alpha service cannot be initialized until its clone exists
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+action: clone:alpha service: inspect that clone yourself; Firstmate never replaces a clone that may hold work
+action: registry:alpha service: close the clone:alpha service gap first
+action: no-mistakes:alpha service: close the clone:alpha service gap first
+error: this worker host home is not ready; unresolved: clone:alpha service registry:alpha service no-mistakes:alpha service
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host git -C {run-worktree}/.local-test/live/host/projects/alpha service remote set-url origin {run-worktree}/.local-test/live/origin.git
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+fix registry:alpha service=applied: copied the primary's record
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=skip: this home has no T3 sign-in
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+ok: worker host home ready at {run-worktree}/.local-test/live/host
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/primary {run-worktree}/bin/fm-worker-host-doctor.sh m1 alpha service=https://user:SECRET@forge.example/repo.git
+error: project alpha service requires a credential-free clone URL; authenticate on the host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+error: project alpha service requires a credential-free clone URL; authenticate on the host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/primary {run-worktree}/bin/fm-worker-host-doctor.sh m1 alpha service=https://SECRET@forge.example/repo.git
+error: project alpha service requires a credential-free clone URL; authenticate on the host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+error: project alpha service requires a credential-free clone URL; authenticate on the host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/primary {run-worktree}/bin/fm-worker-host-doctor.sh m1 alpha service=ssh://git:SECRET@forge.example/repo.git
+error: project alpha service requires a credential-free clone URL; authenticate on the host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+error: project alpha service requires a credential-free clone URL; authenticate on the host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/primary {run-worktree}/bin/fm-worker-host-doctor.sh m1 alpha service=https://forge.example/repo.git?token=SECRET
+error: project alpha service requires a credential-free clone URL; authenticate on the host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+error: project alpha service requires a credential-free clone URL; authenticate on the host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/primary {run-worktree}/bin/fm-worker-host-seed.sh m1 --lanes 2 notes
+error: project notes is local-only, so its work never runs on a worker host
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/primary {run-worktree}/bin/fm-worker-host-doctor.sh m1
+refused: unknown forge "forgjeo" registered for alpha service in {run-worktree}/.local-test/live/primary/data/projects.md; the accepted values are forge=gerrit, forge=forgejo, and forge=external, or no forge token at all for a forge whose pull requests no-mistakes already drives; correct the registry entry
+error: project alpha service does not resolve to a delivery posture
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/primary {run-worktree}/bin/fm-worker-host-doctor.sh m1 --fix
+refused: unknown forge "forgjeo" registered for alpha service in {run-worktree}/.local-test/live/primary/data/projects.md; the accepted values are forge=gerrit, forge=forgejo, and forge=external, or no forge token at all for a forge whose pull requests no-mistakes already drives; correct the registry entry
+error: project alpha service does not resolve to a delivery posture
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh
+mode=check
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=ok: 30 days left (expires 2026-12-11T04:00:09.523Z); the operator signs in again before then
+check t3-server=ok: the T3 server this home signed in to answers and passes the capability gate
+check t3-version=ok: T3 0.1.7+fork.1, the same build as the primary
+check t3-capabilities=ok: offers launchEnvironment sessionStop keepAlive, covering the primary's launchEnvironment sessionStop keepAlive
+ok: worker host home ready at {run-worktree}/.local-test/live/host
+exit=0
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=ok: 30 days left (expires 2026-12-11T04:00:09.523Z); the operator signs in again before then
+check t3-server=ok: the T3 server this home signed in to answers and passes the capability gate
+check t3-version=human: this host runs T3 0.1.7, but the primary runs 0.1.7+fork.1
+check t3-capabilities=human: this host's T3 lacks sessionStop keepAlive, which the primary uses
+action: t3-version: install T3 0.1.7+fork.1 on that machine, restart its service, and rerun the doctor
+action: t3-capabilities: install the T3 build the primary runs on that machine, then rerun the doctor
+error: this worker host home is not ready; unresolved: t3-version t3-capabilities
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh
+mode=check
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=human: T3 credential {run-worktree}/.local-test/live/host/config/t3code-token expired at 2026-11-11T03:00:10.722Z; T3 issues no refresh token, so the captain signs in again
+check t3-server=human: the T3 server cannot be checked until this home's sign-in passes
+check t3-version=human: the T3 version cannot be read until this home's sign-in passes
+check t3-capabilities=human: the T3 capabilities cannot be read until this home's sign-in passes
+action: t3-credential: on that machine, as that account, run '{run-worktree}/bin/fm-t3-mcp.mjs login --access full-access --token-file {run-worktree}/.local-test/live/host/config/t3code-token' (the operator's sign-in), then rerun the doctor
+action: t3-server: close the t3-credential gap first
+action: t3-version: close the t3-credential gap first
+action: t3-capabilities: close the t3-credential gap first
+error: this worker host home is not ready; unresolved: t3-credential t3-server t3-version t3-capabilities
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh --fix
+mode=fix
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-credential=human: this home has no T3 sign-in, and the primary runs T3
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+action: t3-credential: on that machine, as that account, run '{run-worktree}/bin/fm-t3-mcp.mjs login --access full-access --token-file {run-worktree}/.local-test/live/host/config/t3code-token', then rerun the doctor
+error: this worker host home is not ready; unresolved: t3-credential
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh
+mode=check
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-primary=human: the primary's T3 comparison evidence is unavailable
+check t3-credential=human: this home has no T3 sign-in, and the primary runs T3
+check t3-server=skip: no T3 sign-in to check
+check t3-version=skip: no T3 sign-in to check
+check t3-capabilities=skip: no T3 sign-in to check
+action: t3-primary: restore the primary's T3 status and rerun the doctor
+action: t3-credential: on that machine, as that account, run '{run-worktree}/bin/fm-t3-mcp.mjs login --access full-access --token-file {run-worktree}/.local-test/live/host/config/t3code-token', then rerun the doctor
+error: this worker host home is not ready; unresolved: t3-primary t3-credential
+exit=1
+
+$ FM_HOME={run-worktree}/.local-test/live/host {run-worktree}/bin/fm-worker-host-home.sh
+mode=check
+home={run-worktree}/.local-test/live/host
+check home=ok: {run-worktree}/.local-test/live/host is its own directory, separate from the code root {run-worktree}
+check secondmate=ok: no second-mate marker
+check layout=ok: data/ state/ config/ projects/
+check marker=ok: {run-worktree}/.local-test/live/host/.fm-worker-host
+check backlog-backend=ok: manual; the primary's backlog owns these tasks
+check lane-capacity=ok: cap 2
+check project-capacity=ok: {run-worktree}/.local-test/live/host/config/project-capacity is valid
+check clone:alpha service=ok: {run-worktree}/.local-test/live/host/projects/alpha service from {run-worktree}/.local-test/live/origin.git
+check registry:alpha service=ok: data/projects.md matches the primary's record
+check no-mistakes:alpha service=skip: alpha service ships direct-PR
+check t3-primary=human: the primary's T3 comparison evidence is unavailable
+check t3-credential=ok: 30 days left (expires 2026-12-11T04:00:11.625Z); the operator signs in again before then
+check t3-server=ok: the T3 server this home signed in to answers and passes the capability gate
+check t3-version=human: this host runs T3 0.1.7; the primary's version is unavailable
+check t3-capabilities=human: the primary's comparison evidence is unavailable
+action: t3-primary: restore the primary's T3 status and rerun the doctor
+action: t3-version: close the t3-primary gap first
+action: t3-capabilities: close the t3-primary gap first
+error: this worker host home is not ready; unresolved: t3-primary t3-version t3-capabilities
+exit=1
+
+Local T3 emulator stopped; exit=-15

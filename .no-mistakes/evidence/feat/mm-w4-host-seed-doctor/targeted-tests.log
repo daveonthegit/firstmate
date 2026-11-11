@@ -1,0 +1,17 @@
+ok - invalid seeds and credential-bearing origins are refused before mutation
+ok - the doctor reports an unseeded host's gaps and changes nothing
+ok - the seed waits for account readiness and reports an unreachable host as unknown
+ok - the seed builds the home: layout, marker, manual backlog, capacity, clones, records, and no-mistakes init
+ok - a repeated seed converges without changing anything
+ok - with no project named, the doctor checks every project the host holds and --fix repairs drift
+ok - implicit checks and repairs refuse unresolved delivery postures before SSH
+ok - project repairs require a verified credential-free clone identity
+ok - an existing capacity declaration is reported, never overwritten
+ok - a second-mate home and a home inside the code root are reported and never changed
+ok - a conflicting worker-host marker blocks every home repair
+ok - spaced project names survive seeding, capacity declarations, discovery, and registry repair
+ok - a host on the primary's T3 build reports its days left, version, and capabilities as matching
+ok - a host on another T3 build is reported, and --fix leaves T3 to the operator
+ok - an expired or missing host sign-in is the operator's step, never copied from the primary
+ok - unavailable primary T3 evidence remains unresolved with or without host credentials
+all fm-worker-host-seed-doctor tests passed

@@ -1,0 +1,8 @@
+[
+  "PASS local home convergence: dry-run, real Git clone, spaced name, forge record, capacities, idempotency and drift repair",
+  "PASS capacity conflicts do not overwrite existing declarations",
+  "PASS conflicting worker identity and second-mate homes remain untouched",
+  "PASS wrong-clone identity blocks registry and no-mistakes repairs",
+  "PASS credential rejection at both manifest boundaries, local-only refusal and unresolved implicit discovery",
+  "PASS real Firstmate MCP client against localhost emulator: days left, matching/mismatched versions/capabilities, expiry/missing token, unavailable primary comparison"
+]

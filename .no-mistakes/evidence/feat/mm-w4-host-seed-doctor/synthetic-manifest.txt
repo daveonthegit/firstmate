@@ -1,0 +1,8 @@
+schema=fm-worker-host-home.v1
+host_id_b64=bTE=
+t3_required=0
+lanes=2
+capacity=YWxwaGEgc2VydmljZQ==|1
+project_scope=named
+project_count=1
+project=YWxwaGEgc2VydmljZQ==|L1VzZXJzL2RhdmlkeGlhby8ubm8tbWlzdGFrZXMvd29ya3RyZWVzLzc0N2RhNjY2NjUzZS8wMU03NEFGUVFUSjlXQUpZOUswU0JRUlEzNC8ubG9jYWwtdGVzdC9saXZlL29yaWdpbi5naXQ=|LSBhbHBoYSBzZXJ2aWNlIFtkaXJlY3QtUFIgZm9yZ2U9Zm9yZ2Vqb10gLSBkaXNwb3NhYmxlIFc0IGV4YW1wbGU=|ZGlyZWN0LVBS
