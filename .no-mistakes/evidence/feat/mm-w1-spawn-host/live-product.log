@@ -1,0 +1,121 @@
+scaffolded: {run-worktree}/.live/primary/data/live1/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+ok: added live1 (scout) -> Queued
+task:
+  id: live1
+  title: Synthetic local placement live1
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live1 --file={run-worktree}/.live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live1 --by <other> --file={run-worktree}/.live/primary/data/backlog.md` to record a dependency
+scaffolded: {run-worktree}/.live/primary/data/live2/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+ok: added live2 (scout) -> Queued
+task:
+  id: live2
+  title: Synthetic local placement live2
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start live2 --file={run-worktree}/.live/primary/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block live2 --by <other> --file={run-worktree}/.live/primary/data/backlog.md` to record a dependency
+
+=== place real scout through loopback transport ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/primary
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/host
+spawned live1 harness=claude kind=scout window=primary:fm-live1 worktree=~/.treehouse/sample-a64e87/1/sample
+spawned live1 harness=claude kind=scout window=remote:live1 worktree=~/.treehouse/sample-a64e87/1/sample host=lab backend=tmux
+
+=== recorded route ===
+window=remote:live1
+kind=scout
+
+=== full public task record ===
+window=remote:live1
+kind=scout
+remote_worker_host=lab
+remote_root={run-worktree}
+remote_home={run-worktree}/.live/host
+remote_backend=tmux
+remote_target=primary:fm-live1
+remote_worktree=~/.treehouse/sample-a64e87/1/sample
+remote_project={run-worktree}/.live/host/projects/sample
+SOURCE                       ADAPTER      OWNER      PENDING
+remote-worker-lab            remote-worker none       0
+
+=== full host defers second scout ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/primary
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/host
+deferred: project sample admits 1 worker(s) at once on this machine ({run-worktree}/.live/host/config/project-capacity) and 1 already hold a place (live1); task live2 was not launched and its backlog item stays queued - dispatch it again once one of them records its ready PR or is cleaned up
+deferred: worker host lab has no free place for project sample; task live2 was not placed and its backlog item stays queued - dispatch it again once that host has room
+capacity_exit=75
+task:
+  id: live2
+  title: Synthetic local placement live2
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+=== same placement retry ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/primary
+notice: task live1 is already placed on this worker host; reporting its existing route
+spawned live1 harness=claude kind=scout window=remote:live1 worktree=~/.treehouse/sample-a64e87/1/sample host=lab backend=tmux
+
+=== real tmux endpoint ===
+primary:zsh {run-worktree}
+primary:fm-live1 ~/.treehouse/sample-a64e87/1/sample
+
+=== unsupported primary operations ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/primary
+error: task placed on worker host lab; send is not yet supported
+refusal_exit=1
+error: task placed on worker host lab; peek is not yet supported
+refusal_exit=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/primary
+error: task placed on worker host lab; interrupt is not yet supported
+refusal_exit=1
+error: task placed on worker host lab; answer is not yet supported
+refusal_exit=1
+error: task placed on worker host lab; cleanup is not yet supported
+refusal_exit=1
+state: unknown · source: worker-host · placed on worker host lab; current state is not yet supported
+
+LIVE_DRIVER_COMPLETE
+DRIVER_EXIT=0

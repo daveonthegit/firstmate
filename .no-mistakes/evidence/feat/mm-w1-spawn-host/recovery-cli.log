@@ -1,0 +1,5 @@
+Captain, I ran `bash .live/recovery.sh` and it **exited with status 0**.
+
+The script sends all of its output to `~/.no-mistakes/evidence/01M74AZP4ES3P09BD6H6CSXGGX/live-recovery.log`, so nothing printed to the terminal. I didn't open the log.
+
+The script stops at the first failed step, so exit 0 means every check in it passed. It also left two synthetic workers running in tmux windows and set a global `TREEHOUSE_ROOT` in tmux. I left all of that in place.

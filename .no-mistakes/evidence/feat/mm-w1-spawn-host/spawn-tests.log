@@ -1,0 +1,7 @@
+1..5
+ok - --host places the worker on the host, records its route, moves the item In flight, and arms the mirror
+ok - a host at capacity defers with exit 75 and leaves the item queued with nothing recorded
+ok - an unconfirmed SSH placement records nothing, and re-running it records the one existing worker
+ok - --host refuses an unregistered host and unforwardable flags before reaching any host
+ok - away recovery finishes existing placement at or below the cap without admitting new work
+FM_TEST_COMPLETE

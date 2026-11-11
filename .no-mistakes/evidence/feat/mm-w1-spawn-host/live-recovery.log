@@ -1,0 +1,183 @@
+{run-worktree}/.live/recovery
+scaffolded: {run-worktree}/.live/recovery/data/lost1/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+ok: added lost1 (scout) -> Queued
+task:
+  id: lost1
+  title: Synthetic recovery lost1
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start lost1 --file={run-worktree}/.live/recovery/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block lost1 --by <other> --file={run-worktree}/.live/recovery/data/backlog.md` to record a dependency
+
+=== lose completed placement response ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/recovery
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/host
+spawned lost1 harness=claude kind=scout window=recovery:fm-lost1 worktree={run-worktree}/.live/pool/.treehouse/sample-a64e87/1/sample
+error: worker host lab (lab-loopback) was unreachable, or whether it launched lost1 is unknown; nothing was recorded here and its backlog item stays queued - re-run this same spawn, which the host answers with any worker it already launched instead of launching a second one
+lost_result_exit=255
+task:
+  id: lost1
+  title: Synthetic recovery lost1
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+=== recover unknown placement ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/recovery
+notice: task lost1 is already placed on this worker host; reporting its existing route
+spawned lost1 harness=claude kind=scout window=remote:lost1 worktree={run-worktree}/.live/pool/.treehouse/sample-a64e87/1/sample host=lab backend=tmux
+remote_worker_host=lab
+remote_root={run-worktree}
+remote_home={run-worktree}/.live/host
+remote_backend=tmux
+remote_target=recovery:fm-lost1
+remote_worktree={run-worktree}/.live/pool/.treehouse/sample-a64e87/1/sample
+remote_project={run-worktree}/.live/host/projects/sample
+
+=== unknown host refused without placement ===
+scaffolded: {run-worktree}/.live/recovery/data/unknown1/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+ok: added unknown1 (scout) -> Queued
+task:
+  id: unknown1
+  title: Synthetic recovery unknown1
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start unknown1 --file={run-worktree}/.live/recovery/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block unknown1 --by <other> --file={run-worktree}/.live/recovery/data/backlog.md` to record a dependency
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/recovery
+error: no worker host 'nonexistent' is registered in {run-worktree}/.live/recovery/data/worker-hosts.md; register it there first (docs/remote-workers.md)
+unknown_host_exit=1
+task:
+  id: unknown1
+  title: Synthetic recovery unknown1
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+scaffolded: {run-worktree}/.live/recovery/data/arm1/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+ok: added arm1 (scout) -> Queued
+task:
+  id: arm1
+  title: Synthetic recovery arm1
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start arm1 --file={run-worktree}/.live/recovery/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block arm1 --by <other> --file={run-worktree}/.live/recovery/data/backlog.md` to record a dependency
+
+=== away placement succeeds but mirror storage fails ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/recovery
+note: new-task spawn (fm-spawn) proceeds for the supervision branch under the away-posture record: main is parked and its standing authority is relocated; this script's own gate still applies (docs/pi-supervision-branch.md "Postures")
+note: new-task spawn (fm-spawn) proceeds for the supervision branch under the away-posture record: main is parked and its standing authority is relocated; this script's own gate still applies (docs/pi-supervision-branch.md "Postures")
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/host
+spawned arm1 harness=claude kind=scout window=recovery:fm-arm1 worktree={run-worktree}/.live/pool/.treehouse/sample-a64e87/2/sample
+mkdir: {run-worktree}/.live/recovery/state/procevent: File exists
+error: cannot publish the registration
+error: arm1 is placed on worker host lab and recorded here, but its status mirror could not be armed; re-run this same spawn, or bin/fm-procevent-remote-worker.sh arm lab
+failed_arm_exit=1
+task:
+  id: arm1
+  title: Synthetic recovery arm1
+  state: in_flight
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: scout
+  repo: "-"
+  priority: "-"
+  created: 2026-11-10
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+=== new away work remains blocked by cap ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/recovery
+note: new-task spawn (fm-spawn) proceeds for the supervision branch under the away-posture record: main is parked and its standing authority is relocated; this script's own gate still applies (docs/pi-supervision-branch.md "Postures")
+error: spawn refused - the away-posture record caps concurrent workers at 1 and 1 ordinary task(s) are live in this home; task unknown1 stays queued for the captain's return or for a worker to finish (spend cap: bin/fm-afk-contract.sh)
+new_work_exit=1
+
+=== same-placement recovery bypasses only new-work admission ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/recovery
+note: new-task spawn (fm-spawn) proceeds for the supervision branch under the away-posture record: main is parked and its standing authority is relocated; this script's own gate still applies (docs/pi-supervision-branch.md "Postures")
+notice: task arm1 is already placed on this worker host; reporting its existing route
+spawned arm1 harness=claude kind=scout window=remote:arm1 worktree={run-worktree}/.live/pool/.treehouse/sample-a64e87/2/sample host=lab backend=tmux
+SOURCE                       ADAPTER      OWNER      PENDING
+remote-worker-lab            remote-worker none       0
+remote_worker_host=lab
+remote_root={run-worktree}
+remote_home={run-worktree}/.live/host
+remote_backend=tmux
+remote_target=recovery:fm-arm1
+remote_worktree={run-worktree}/.live/pool/.treehouse/sample-a64e87/2/sample
+remote_project={run-worktree}/.live/host/projects/sample
+
+LIVE_RECOVERY_COMPLETE
+RECOVERY_EXIT=0

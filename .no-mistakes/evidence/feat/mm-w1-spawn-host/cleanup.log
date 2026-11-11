@@ -1,0 +1,5 @@
+no server running on ~/.no-mistakes/evidence/01M74AZP4ES3P09BD6H6CSXGGX/tmux/tmux-501/fm-lab
+list-sessions after kill-server exit=1 (expected no server)
+
+Worktree fixtures removed; private tmux server stopped.
+Readonly lab hook directories made writable and removed; final git status clean.

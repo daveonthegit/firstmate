@@ -1,0 +1,40 @@
+treehouse get
+davidxiao@Mac sample % treehouse get
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.no-mistakes/worktrees/747da666653e/01M74AZP4ES3P09BD6H6CSXGGX/.live/pool/.treehouse/sample-a64
+e87/2/sample. Type 'exit' to return.
+davidxiao@Mac sample % cd -- '{run-worktree}/.live/pool
+/.treehouse/sample-a64e87/2/sample'
+davidxiao@Mac sample % export GOTMPDIR=/tmp/fm-arm1/gotmp
+davidxiao@Mac sample % export COMPACT_ADVISER_DISABLE=1
+davidxiao@Mac sample % export FM_TASK_ID=arm1
+davidxiao@Mac sample % . '/tmp/fm-arm1+deed213168887aab96b74ac908a6ff802362e676578302d6f2f38b578a3e2823/launch.s17943696
+71.86021.6426.sh'
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Allow external CLAUDE.md file imports?
+
+  This project's CLAUDE.md or .claude/rules imports files outside the current working directory. Never allow this for
+  third-party repositories.
+
+  External imports:
+    {run-worktree}/AGENTS.md
+
+  Important: Only use Claude Code with files you trust. Accessing untrusted files may pose security risks
+  https://code.claude.com/docs/en/security
+
+  ❯ No, disable external imports
+    Yes, allow external imports
+
+  Enter to confirm · Esc to cancel
+
+
+
+
+
+
+
+
