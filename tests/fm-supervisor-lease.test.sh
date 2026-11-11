@@ -331,6 +331,7 @@ test_multiple_remotes_refuse() {
 
 test_release_and_steal_failures_stand_down() {
   local w verb scenario out status
+  local original_path="$PATH"
   local -a args
   for verb in release steal; do
     args=("$verb")
@@ -376,7 +377,7 @@ WRAPPER
       chmod +x "$w/tools/git"
       status=0
       out=$(TEST_SCENARIO="$scenario" TEST_WORLD="$w" TEST_LEASE="$LEASE" \
-        TEST_REAL_GIT="$(command -v git)" TEST_ORIGINAL_PATH="$PATH" PATH="$w/tools:$PATH" \
+        TEST_REAL_GIT="$(command -v git)" TEST_ORIGINAL_PATH="$original_path" PATH="$w/tools:$original_path" \
         lease "$w/a" "${args[@]}") || status=$?
       expect_code 1 "$status" "$verb after $scenario"
       [ -f "$w/a/state/.supervisor-lease-lost" ] || fail "$verb after $scenario left supervision active: $out"
