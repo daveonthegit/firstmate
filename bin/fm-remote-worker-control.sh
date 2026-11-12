@@ -569,7 +569,9 @@ cmd_named_head() {
   wt=$(fm_meta_get "$meta" worktree)
   if fm_dod_forge_head_is_named_head "$mode" \
     && url=$(fm_dod_pr_url_from_done_note "$(status_line_note "$line")") \
-    && [[ "$url" = https://github.com/* ]] && [ -d "$wt" ] && command -v gh >/dev/null 2>&1; then
+    && fm_pr_url_parse "$url" && [ "$FM_PR_PROVIDER" = github ] \
+    && [ -d "$wt" ] && command -v gh >/dev/null 2>&1; then
+    fm_pr_github_host_export "$FM_PR_HOST"
     if remote_head=$(fm_run_timed 10 "$SCRIPT_DIR/fm-gh-account.sh" exec --dir "$wt" -- \
       bash -c 'cd "$1" && gh pr view "$2" --json headRefOid -q .headRefOid 2>/dev/null' _ "$wt" "$url") \
       && fm_pr_head_valid "$remote_head"; then

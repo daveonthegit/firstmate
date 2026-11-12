@@ -101,7 +101,7 @@ argv=()
 while IFS= read -r -d '' arg; do argv+=("\$arg"); done < <(decode "\$6")
 printf 'argv:%s\n' "\${argv[*]}" >> "$CASE/ssh.log"
 rc=0
-env -u FM_SUPERVISION_ACTOR -u FM_TRACE_CONTEXT -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE \\
+env -u GH_HOST -u FM_SUPERVISION_ACTOR -u FM_TRACE_CONTEXT -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE \\
   -u FM_PROJECTS_OVERRIDE -u FM_HOME FM_ROOT_OVERRIDE='' FM_HOME="\$home" \\
   HOME="$HOST_HOME/user-home" CLAUDE_CONFIG_DIR='' FM_SPAWN_NO_GUARD=1 FM_GH_ACCOUNT=none \\
   FM_FAKE_PANE_PATH="$WT_DIR" TMUX="fake,1,0" PATH="$HOST_BIN:\$PATH" \\
@@ -212,13 +212,25 @@ test_unreachable_host_is_retryable() {
 }
 
 test_rewritten_forge_head_registers() {
-  local out rc mode
+  local out rc mode host=${1:-github.com} URL
+  URL="https://$host/acme/sample/pull/7"
   for mode in direct-PR local-only no-mistakes ''; do
-    make_case "rewritten-${mode:-default}"
+    make_case "rewritten-$host-${mode:-default}"
+    printf '%s\n' "$host" > "$PARENT/config/github-hosts"
+    printf '%s\n' "$host" > "$HOST_HOME/config/github-hosts"
     commit_on_host rewritten.txt
     git -C "$WT_DIR" checkout --quiet --detach
     git -C "$WT_DIR" update-ref -d refs/heads/fm/t1
-    printf '#!/usr/bin/env bash\nprintf "%%s\\n" 1111111111111111111111111111111111111111\n' > "$HOST_BIN/gh"
+    cat > "$HOST_BIN/gh" <<'SH'
+#!/usr/bin/env bash
+case "$*" in
+  'pr view https://github.com/acme/sample/pull/7 --json headRefOid -q .headRefOid') ;;
+  'pr view https://github.acme.test/acme/sample/pull/7 --json headRefOid -q .headRefOid')
+    [ "${GH_HOST:-}" = github.acme.test ] || exit 1 ;;
+  *) exit 1 ;;
+esac
+printf '%s\n' 1111111111111111111111111111111111111111
+SH
     printf 'mode=%s\n' "$mode" >> "$HOST_HOME/state/t1.meta"
     rc=0
     out=$(primary bash "$ROOT/bin/fm-pr-check.sh" t1 "$URL" 2>&1) || rc=$?
@@ -235,7 +247,11 @@ test_rewritten_forge_head_registers() {
         ;;
     esac
   done
-  pass "a forge-held rewritten head registers only in no-mistakes mode, including its default"
+  pass "a forge-held rewritten head on $host registers only in no-mistakes mode, including its default"
+}
+
+test_rewritten_enterprise_head_registers() {
+  test_rewritten_forge_head_registers github.acme.test
 }
 
 test_route_drift_is_refused() {
@@ -258,4 +274,4 @@ test_route_drift_is_refused() {
 }
 
 fm_test_run test_pushed_host_head_registers test_copy_only_head_is_refused test_unreachable_host_is_retryable \
-  test_rewritten_forge_head_registers test_route_drift_is_refused
+  test_rewritten_forge_head_registers test_rewritten_enterprise_head_registers test_route_drift_is_refused
