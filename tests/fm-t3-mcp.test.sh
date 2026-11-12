@@ -1050,25 +1050,25 @@ w.threads[process.env.FM_T3_THREAD].items = items;'
   pass "fm-t3-mcp transcript: pages every page and keeps whole messages first user, last user, last assistant, then newest first, within the budget"
 }
 
-# transcript: a long thread reads its first page and its tail window only.
-test_transcript_reads_first_page_and_tail_window() {
+# Full paging must allow a short middle message to beat older messages.
+test_transcript_reads_every_page() {
   local thread
   fresh_case transcript-window
   thread=$(new_thread)
   FM_T3_THREAD="$thread" t3_fake_set '
 const items = [{ type: "user_message", status: "completed", text: "FIRST-USER" }];
-for (let i = 1; i < 5400; i++) items.push({ type: "assistant_message", status: "completed", text: "M-" + i });
+for (let i = 1; i < 5400; i++) items.push({ type: "assistant_message", status: "completed", text: i === 300 ? "MIDDLE-FITS" : "x".repeat(4000) });
 items.push({ type: "user_message", status: "completed", text: "LAST-USER" });
 w.threads[process.env.FM_T3_THREAD].items = items;'
   : > "$T3_FAKE_LOG"
   mcp transcript --thread "$thread" --budget-bytes 2000
   expect_code 0 "$RC" "transcript of a long thread: $ERR"
-  assert_equals '[100,400]' "$(field "$OUT" unread)" "the skipped middle is reported as unread positions"
-  assert_contains "$(field "$OUT" text)" "Timeline positions 100-400 were not read." "the text says what was not read"
+  assert_equals 5401 "$(field "$OUT" messages)" "all messages are considered"
+  assert_contains "$(field "$OUT" text)" "MIDDLE-FITS" "a fitting message in the middle is selected"
   assert_contains "$(field "$OUT" text)" "FIRST-USER" "the first page's first user message is kept"
   assert_contains "$(field "$OUT" text)" "LAST-USER" "the newest message is kept"
-  assert_equals 51 "$(t3_fake_calls t3_thread_read | wc -l | tr -d ' ')" "only the first page and the tail window are read"
-  pass "fm-t3-mcp transcript: a long thread reads its first page and a bounded tail window, and reports the unread middle"
+  assert_equals 55 "$(t3_fake_calls t3_thread_read | wc -l | tr -d ' ')" "every page is read"
+  pass "fm-t3-mcp transcript: whole-thread selection includes fitting middle messages"
 }
 
 test_gate_accepts_either_tool_generation() {
@@ -1180,4 +1180,4 @@ test_orchestration_error_is_not_proven_refusal
 test_long_wait_rearms_in_slices
 test_capture_clamps_lines_and_closes_session
 test_transcript_selects_within_budget_across_pages
-test_transcript_reads_first_page_and_tail_window
+test_transcript_reads_every_page

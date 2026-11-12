@@ -121,14 +121,12 @@
 //   fm-t3-mcp.mjs transcript --thread <id> --budget-bytes <n>
 //     A hand-off's transcript tail. Pages the thread's messages view (its
 //     user and assistant messages and proposed plans, each read at up to
-//     TRANSCRIPT_ITEM_CHARS characters) with afterPosition: the first page,
-//     then every page from TRANSCRIPT_TAIL_POSITIONS timeline positions
-//     before the end, so a long thread's middle is reported as unread rather
-//     than paged without bound. It then keeps whole messages in this order
+//     TRANSCRIPT_ITEM_CHARS characters) through every page with afterPosition.
+//     It then keeps whole messages in this order
 //     while they fit: the first user message, the last user message, the
 //     last assistant message, then the rest newest first (T3's own hand-off
 //     selection idea). Prints messages (the count read), selected, omitted,
-//     unread ([first, last] timeline positions skipped, or null), bytes, and
+//     bytes, and
 //     text: a header line, then the kept messages oldest first with a marker
 //     wherever messages were left out. text is at most <n> bytes of UTF-8,
 //     and empty when even the header does not fit.
@@ -336,11 +334,8 @@ const TERMINAL_RUN = new Set(["completed", "failed", "cancelled", "interrupted",
 const ACTIVE_STATUSES = ["preparing", "queued", "starting", "running", "waiting"];
 const READ_LIMIT_MAX = 100;
 // The transcript verb: characters read per message (T3's own hand-off
-// recovery hint reads 4000), the timeline positions its tail window covers,
-// and the most pages it reads before refusing.
+// recovery hint reads 4000).
 const TRANSCRIPT_ITEM_CHARS = 4000;
-const TRANSCRIPT_TAIL_POSITIONS = 5000;
-const TRANSCRIPT_PAGES_MAX = 100;
 const TRANSCRIPT_ROLES = { user_message: "user", assistant_message: "assistant", proposed_plan: "assistant" };
 // Each Firstmate harness runs on one T3 driver, whose reasoning option id is
 // part of that driver's protocol; the values come from T3's catalog. Claude
@@ -1332,42 +1327,30 @@ async function capture(flags) {
   return { text: renderCapture({ ...out, items }, lines) };
 }
 
-// transcript: the first page of the messages view, then its tail window.
+// transcript: all pages of the messages view.
 // Positions are timeline positions, and afterPosition is exclusive.
 async function readMessages(session, threadId) {
   const read = (afterPosition) =>
     session.call("t3_thread_read", { threadId, limit: READ_LIMIT_MAX, maxCharsPerItem: TRANSCRIPT_ITEM_CHARS, runLimit: 1, ...(afterPosition >= 0 ? { afterPosition } : {}) });
   let out = await read(-1);
   const items = [...(out?.items ?? [])];
-  let unread = null;
-  let pages = 1;
-  if (out?.hasMore && out.nextPosition !== null) {
-    const start = Math.max(out.nextPosition, (out?.thread?.itemCount ?? 0) - TRANSCRIPT_TAIL_POSITIONS - 1);
-    if (start > out.nextPosition) unread = [out.nextPosition + 1, start];
-    out = { hasMore: true, nextPosition: start };
-    while (out?.hasMore && out.nextPosition !== null) {
-      if (pages >= TRANSCRIPT_PAGES_MAX) {
-        throw new Refusal("transcript_unbounded", `T3 thread ${threadId} still had more messages after ${pages} pages`, 1, { threadId });
-      }
-      out = await read(out.nextPosition);
-      items.push(...(out?.items ?? []));
-      pages++;
-    }
+  while (out?.hasMore && out.nextPosition !== null) {
+    out = await read(out.nextPosition);
+    items.push(...(out?.items ?? []));
   }
-  return { items, unread };
+  return items;
 }
 
 // The transcript selection and rendering (header: transcript). Every count is
 // reserved at its widest, so the rendered text never exceeds the budget.
-export function selectTranscript(threadId, items, unread, budget) {
+export function selectTranscript(threadId, items, budget) {
   const messages = items
     .filter((it) => TRANSCRIPT_ROLES[it?.type] && typeof it.text === "string" && it.text.trim() !== "")
     .map((it) => ({ position: it.position, role: TRANSCRIPT_ROLES[it.type], kind: it.type, truncated: it.textTruncated === true, text: it.text }));
   const total = messages.length;
   const bytes = (s) => Buffer.byteLength(s, "utf8");
   const header = (n) =>
-    `Transcript tail of T3 thread ${threadId}: ${n} of ${total} messages kept, chosen as the first user message, the last user message, the last assistant message, then newest first.`
-    + (unread ? ` Timeline positions ${unread[0]}-${unread[1]} were not read.` : "");
+    `Transcript tail of T3 thread ${threadId}: ${n} of ${total} messages kept, chosen as the first user message, the last user message, the last assistant message, then newest first.`;
   const gap = (n) => `[... ${n} message${n === 1 ? "" : "s"} left out ...]`;
   const block = (m) => `[${m.role}, ${m.kind}, position ${m.position}${m.truncated ? `, cut at ${TRANSCRIPT_ITEM_CHARS} characters` : ""}]\n${m.text}`;
   const gapMax = bytes(gap(total)) + 2;
@@ -1386,7 +1369,7 @@ export function selectTranscript(threadId, items, unread, budget) {
     tryAdd(messages.findLastIndex((m) => m.role === "assistant"));
     for (let index = total - 1; index >= 0; index--) tryAdd(index);
   }
-  if (remaining < 0) return { messages: total, selected: 0, omitted: total, unread, bytes: 0, text: "" };
+  if (remaining < 0) return { messages: total, selected: 0, omitted: total, bytes: 0, text: "" };
   const parts = [header(kept.size)];
   let skipped = 0;
   messages.forEach((m, index) => {
@@ -1400,7 +1383,7 @@ export function selectTranscript(threadId, items, unread, budget) {
   });
   if (skipped) parts.push(gap(skipped));
   const text = parts.join("\n\n");
-  return { messages: total, selected: kept.size, omitted: total - kept.size, unread, bytes: bytes(text), text };
+  return { messages: total, selected: kept.size, omitted: total - kept.size, bytes: bytes(text), text };
 }
 
 async function transcript(flags) {
@@ -1408,8 +1391,8 @@ async function transcript(flags) {
   need(flags, "budget-bytes");
   const budget = positiveInt(flags, "budget-bytes");
   const { session } = await verifiedSession(flags);
-  const { items, unread } = await readMessages(session, threadId);
-  return { ok: true, threadId, ...selectTranscript(threadId, items, unread, budget) };
+  const items = await readMessages(session, threadId);
+  return { ok: true, threadId, ...selectTranscript(threadId, items, budget) };
 }
 
 // t3_thread_wait in slices of at most WAIT_SLICE_MS until the run is terminal

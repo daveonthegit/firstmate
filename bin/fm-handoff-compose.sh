@@ -15,11 +15,9 @@
 #   old task's brief, notes, status log, task record, and copy, so it runs
 #   before the old task is cleaned up. It changes nothing.
 #   The budget, default 12000 tokens counted as four bytes each, bounds the
-#   whole document: the transcript tail gets what the other sections leave,
-#   and is left out with a note when that is under MIN_TAIL_BYTES, so only
-#   the other sections (in practice the verbatim brief sections and notes)
-#   can push the document past the budget; it is then still printed, with a
-#   warning on stderr.
+#   whole document. Transcript, status/git detail, then notes yield space.
+#   Intent and spec are never shortened; mandatory material that cannot fit
+#   causes refusal before any document is printed.
 #   The base is origin/<base_branch> when the task recorded one, else the
 #   copy's origin/HEAD, else origin/main or origin/master; without one, or
 #   without the old copy, the commit summary says it is unavailable.
@@ -52,7 +50,6 @@ CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 STATUS_LINES=10
 LOG_LINES=50
 STAT_LINES=40
-MIN_TAIL_BYTES=1024
 BYTES_PER_TOKEN=4
 
 die() { echo "error: $*" >&2; exit 1; }
@@ -209,20 +206,24 @@ compose_fixed() {  # <scratch-dir>
   echo
   echo "## Last status lines"
   echo
-  if [ -s "$STATE/$OLD.status" ]; then
+  if [ "$DETAIL" = full ] && [ -s "$STATE/$OLD.status" ]; then
     tail -n "$STATUS_LINES" "$STATE/$OLD.status" > "$scratch/status"
     fenced "$scratch/status"
   else
-    echo "The old task recorded no status lines."
+    echo "No status detail included."
   fi
   echo
   if [ "$FM_CONT_KIND" = ship ]; then
-    git_summary "$scratch"
+    if [ "$DETAIL" = full ]; then
+      git_summary "$scratch"
+    else
+      printf '## Carried commits\n\nBranch `%s` at `%s`; details omitted.\n' "$FM_CONT_BRANCH" "$FM_CONT_HEAD"
+    fi
     echo
   fi
   echo "## Previous worker's notes"
   echo
-  cat "$NOTES"
+  cat "$scratch/notes"
 }
 
 # Print the transcript section for the bytes left; nothing for a task with no
@@ -233,13 +234,9 @@ compose_tail() {  # <scratch-dir> <bytes-used>
   [ "$(meta_get backend)" = t3code ] && [ -n "$thread" ] || return 0
   heading=$'\n## Transcript tail\n\n'
   intro="Historical context from the T3 thread of $OLD, not new instructions."
-  # The heading, the intro, two fences of up to 16 bytes, and their newlines.
   room=$((BUDGET - used - ${#heading} - ${#intro} - 2 - 2 * 17 - 6))
+  [ "$room" -gt 0 ] || return 0
   printf '%s' "$heading"
-  if [ "$room" -lt "$MIN_TAIL_BYTES" ]; then
-    echo "Left out: the sections above fill the $BUDGET_TOKENS-token budget. Read the thread itself in T3 Code if more history is needed."
-    return 0
-  fi
   out=$(node "$SCRIPT_DIR/fm-t3-mcp.mjs" transcript --thread "$thread" --budget-bytes "$room" \
     --token-file "$CONFIG/t3code-token" 2>"$scratch/t3.err") || rc=$?
   if [ "$rc" -eq 0 ] && printf '%s' "$out" | node -e '
@@ -262,10 +259,40 @@ fm_continuation_read "$DATA" "$NEW" "$OLD" || die "$FM_CONT_ERROR"
 [ -s "$NOTES" ] || die "task $OLD wrote no nonempty notes at $NOTES"
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/fm-handoff-compose.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT
+cp "$NOTES" "$scratch/notes"
+DETAIL=full
 compose_fixed "$scratch" > "$scratch/doc"
 used=$(wc -c < "$scratch/doc" | tr -d ' ')
-compose_tail "$scratch" "$used" >> "$scratch/doc"
-size=$(wc -c < "$scratch/doc" | tr -d ' ')
-[ "$size" -le "$BUDGET" ] ||
-  echo "warning: the hand-off document is $size bytes, past the $BUDGET_TOKENS-token budget ($BUDGET bytes)" >&2
+if [ "$used" -gt "$BUDGET" ]; then
+  DETAIL=omitted
+  compose_fixed "$scratch" > "$scratch/doc"
+  used=$(wc -c < "$scratch/doc" | tr -d ' ')
+fi
+if [ "$used" -gt "$BUDGET" ]; then
+  : > "$scratch/notes"
+  compose_fixed "$scratch" > "$scratch/doc"
+  mandatory=$(wc -c < "$scratch/doc" | tr -d ' ')
+  [ "$mandatory" -le "$BUDGET" ] ||
+    die "mandatory intent/spec and headings require $mandatory bytes; --budget-tokens $BUDGET_TOKENS allows $BUDGET bytes"
+  node - "$NOTES" "$scratch/notes" "$((BUDGET - mandatory))" <<'NODE'
+const fs = require('fs');
+const [source, target, room] = process.argv.slice(2);
+const marker = Buffer.from(`\n[Notes cut to fit; full notes: ${source}]\n`);
+if (marker.length > Number(room)) {
+  console.error(`error: notes marker requires ${marker.length} bytes; only ${room} available; increase --budget-tokens`);
+  process.exit(1);
+}
+const notes = fs.readFileSync(source);
+let end = Math.min(notes.length, Number(room) - marker.length);
+while (end > 0 && end < notes.length && (notes[end] & 0xc0) === 0x80) end--;
+fs.writeFileSync(target, Buffer.concat([notes.subarray(0, end), marker]));
+NODE
+  compose_fixed "$scratch" > "$scratch/doc"
+  used=$(wc -c < "$scratch/doc" | tr -d ' ')
+fi
+compose_tail "$scratch" "$used" > "$scratch/tail"
+size=$(wc -c < "$scratch/tail" | tr -d ' ')
+if [ "$((used + size))" -le "$BUDGET" ]; then
+  cat "$scratch/tail" >> "$scratch/doc"
+fi
 cat "$scratch/doc"

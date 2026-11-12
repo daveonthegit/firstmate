@@ -163,8 +163,78 @@ test_document_without_a_transcript_tail() {
   pass "the document leaves out the tail with no T3 thread, has no commits for a scout, and notes a failed read"
 }
 
+# The public document's byte limit comes from the handoff contract, not
+# token estimation; oversized optional material must never clip the brief.
+test_budget_sacrifices_optional_material() {
+  local dir size
+  dir=$(make_home oversized old-b2 ship t3code thread-budget)
+  t3_fake_case "$TMP_ROOT/cases/budget"
+  t3_fake_credential "$dir/home/config/t3code-token"
+  seed_thread thread-budget 2 30
+  node -e 'process.stdout.write("worker-note-".repeat(5000))' > "$dir/home/data/old-b2/handoff-notes.md"
+  compose "$dir" old-b2
+  expect_code 0 "$RC" "oversized notes: $ERR"
+  size=$(printf '%s\n' "$OUT" | wc -c | tr -d ' ')
+  [ "$size" -le 48000 ] || fail "oversized notes breached budget: $size"
+  assert_contains "$OUT" "Notes cut to fit; full notes: $dir/home/data/old-b2/handoff-notes.md" "cut notes link to the durable original"
+  assert_contains "$OUT" "Ship the widget for old-b2." "intent survives intact"
+  assert_contains "$OUT" '- Out of scope: the gadget.' "spec survives intact"
+  assert_contains "$OUT" 'details omitted' "git detail yields before notes"
+  assert_not_contains "$OUT" 'step 12' "status yields before notes"
+  assert_not_contains "$OUT" '## Transcript tail' "transcript yields before notes"
+  [ "$(wc -c < "$dir/home/data/old-b2/handoff-notes.md" | tr -d ' ')" -eq 60000 ] || fail "original notes changed"
+
+  compose "$dir" old-b2 --budget-tokens 100
+  expect_code 1 "$RC" "mandatory material cannot fit"
+  [ -z "$OUT" ] || fail "refusal printed a partial document"
+  assert_contains "$ERR" 'mandatory intent/spec and headings require' "refusal names mandatory size"
+  assert_contains "$ERR" '--budget-tokens 100 allows 400 bytes' "refusal names budget and flag"
+  pass "oversized optional material yields; oversized mandatory material refuses"
+}
+
+test_small_tail_budget() {
+  local dir size tokens
+  dir=$(make_home small old-t2 scout)
+  compose "$dir" old-t2
+  expect_code 0 "$RC" "baseline: $ERR"
+  size=$(printf '%s\n' "$OUT" | wc -c | tr -d ' ')
+  tokens=$(((size + 900 + 3) / 4))
+  printf 'backend=t3code\nt3_thread_id=thread-small\n' >> "$dir/home/state/old-t2.meta"
+  t3_fake_case "$TMP_ROOT/cases/small"
+  t3_fake_credential "$dir/home/config/t3code-token"
+  seed_thread thread-small 0 0
+  compose "$dir" old-t2 --budget-tokens "$tokens"
+  expect_code 0 "$RC" "small tail: $ERR"
+  [ "$(printf '%s\n' "$OUT" | wc -c | tr -d ' ')" -le "$((tokens * 4))" ] || fail "small tail exceeds budget"
+  assert_contains "$OUT" 'Firstmate is handing this task off.' "short anchors fit below 1024 bytes"
+  assert_contains "$OUT" 'Committed, pushed, and wrote my notes.' "assistant anchor fits below 1024 bytes"
+  pass "small remaining budgets still carry fitting transcript anchors"
+}
+
+test_fences_and_failure_notices_are_budgeted() {
+  local dir
+  dir=$(make_home fences old-c2 scout t3code thread-fences)
+  t3_fake_case "$TMP_ROOT/cases/fences"
+  t3_fake_credential "$dir/home/config/t3code-token"
+  FM_T3_THREAD=thread-fences t3_fake_set '
+w.threads = { "thread-fences": { threadId: "thread-fences", projectId: "p", status: "idle", activeRunId: null, archived: false,
+  worktreePath: "/wt", pendingRequestCount: 0, parentThreadId: null, relationshipToParent: null,
+  items: [{ type: "user_message", status: "completed", text: "`".repeat(3000) }], runs: [] } };'
+  compose "$dir" old-c2 --budget-tokens 1500
+  expect_code 0 "$RC" "long transcript fence: $ERR"
+  [ "$(printf '%s\n' "$OUT" | wc -c | tr -d ' ')" -le 6000 ] || fail "transcript fences breached budget"
+  printf 't3_thread_id=missing-%s\n' "$(node -e 'process.stdout.write("x".repeat(7000))')" >> "$dir/home/state/old-c2.meta"
+  compose "$dir" old-c2 --budget-tokens 1500
+  expect_code 0 "$RC" "failed transcript: $ERR"
+  [ "$(printf '%s\n' "$OUT" | wc -c | tr -d ' ')" -le 6000 ] || fail "failure notice breached budget"
+  pass "dynamic fences and transcript failure notices cannot breach the document budget"
+}
+
 t3_fake_start "$TMP_ROOT/server"
 fm_test_run \
   test_ship_document_matches_golden_file \
   test_default_budget_bounds_a_long_thread \
-  test_document_without_a_transcript_tail
+  test_document_without_a_transcript_tail \
+  test_budget_sacrifices_optional_material \
+  test_small_tail_budget \
+  test_fences_and_failure_notices_are_budgeted
