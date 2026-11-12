@@ -11,12 +11,13 @@ The worker host runs a headless Firstmate home with its own project clones, work
 
 - This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, placement from the primary with `fm-spawn.sh --host`, steering, state, peek, interrupt, exit, answering, and ready-PR recording of a placed task from the primary, and cleanup from the primary with `fm-teardown.sh`, all described below.
 - The primary cannot yet relaunch a placed task: `fm-control relaunch` recognizes its placement and refuses.
-- Placement is an explicit per-task choice; automatic placement by load or by project is not built.
+- With [automatic placement](configuration.md#automatic-placement-configauto-placement) on, a spawn with no machine named runs on the machine with the most room ([how placement is chosen](#how-placement-is-chosen)); with it off, the default, placement is an explicit per-task choice.
+- Placement never pins a project to a machine, never seeds a project onto a host, and never moves a running task to rebalance load.
 - A running task moves between the primary and a worker host, or between two worker hosts, with `fm-handoff.sh <task> --to <host-id|local>` (Moving a task between machines below); the rescue repository lives only on the primary, and neither mirroring it to another machine nor fetching placed copies' branches into it on a schedule is built.
 
 ## How it works
 
-1. Firstmate places a ship or scout with [`bin/fm-spawn.sh`](../bin/fm-spawn.sh) `--host <id>`, which resolves the worker host from `data/worker-hosts.md` and reaches it with [`bin/fm-on.sh`](../bin/fm-on.sh), the same SSH transport, fixed entrypoint, and remote job worker that remote second mates use.
+1. Firstmate places a ship or scout with [`bin/fm-spawn.sh`](../bin/fm-spawn.sh) `--host <id>`, or automatic placement picks that host ([how placement is chosen](#how-placement-is-chosen)); the spawn resolves the worker host from `data/worker-hosts.md` and reaches it with [`bin/fm-on.sh`](../bin/fm-on.sh), the same SSH transport, fixed entrypoint, and remote job worker that remote second mates use.
 2. Every per-task operation runs [`bin/fm-remote-worker-control.sh`](../bin/fm-remote-worker-control.sh) in the host's home.
 3. That leg runs the ordinary local scripts there: the host's own `fm-brief`, `fm-spawn`, `fm-crew-state`, `fm-send`, `fm-control`, `fm-t3-answer`, `fm-peek`, `fm-remote-file`, and `fm-teardown`.
 4. The host keeps an ordinary local task record under the same task id, plus a placement claim that marks the task as placed by a primary.
@@ -39,6 +40,21 @@ A spawn for a task the host already holds reports the existing route instead of 
 The [controller header](../bin/fm-remote-worker-control.sh) owns delivery identity and retry requirements for steering.
 Cleanup uses the host's ordinary [`fm-teardown.sh`](../bin/fm-teardown.sh), whose header owns the landed-work test, the force exception, and the two-leg worker-host cleanup.
 See that header's worker-host cleanup contract for document refresh, the scout completion gate, failure preservation, and safe retries after an unconfirmed host answer.
+
+## How placement is chosen
+
+A machine named for the task always wins: `--host <id>` places it on that worker host, and `--host local` keeps it on the supervisor's machine on purpose.
+With no machine named and automatic placement on, the spawn treats the supervisor's machine and every worker host as equals and asks each one for its own capacity report, the host through its leg's `headroom` verb.
+
+- A machine is eligible only when it already has the project's clone; a host's clone comes from its seed, and placement never seeds one.
+- A machine admits the task when its own lane cap has an open lane and none of its host checks (load, memory, disk, pressure, a reserve flag, battery) holds it closed.
+- A host that cannot be reached, does not answer in time, has no lane cap, or lacks the project is skipped, never treated as free.
+- Each task counts against the machine it runs on: a task placed on a host holds a lane there and none on the supervisor's machine.
+- The admitting machines are ranked by their open share of their own cap, so a small and a large machine compare fairly; a tie goes to more open lanes, then to the supervisor's machine, then to worker hosts in registry order.
+
+The spawn prints every machine it considered with its open lanes, load, and free memory, or why it was skipped, and then its choice.
+It then runs the ordinary placement on the best machine; a machine that still defers at spawn passes the task to the next, and when none admits it the task stays queued with exit 75, exactly like a full machine today.
+Run [`bin/fm-placement.sh`](../bin/fm-placement.sh) `<project>` to see the same decision without spawning anything; its header owns the rules above in full, and the [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns retries, including how a placement whose answer was lost goes back to the same host instead of starting a second worker.
 
 ## Reaching a placed worker
 
@@ -99,6 +115,7 @@ The [`fm-handoff.sh` header](../bin/fm-handoff.sh) owns readiness and preservati
 
 [`tests/fm-remote-worker-control.test.sh`](../tests/fm-remote-worker-control.test.sh) drives the host leg against a fake worker-host home with the real brief, spawn, steer, file, and cleanup scripts.
 [`tests/fm-spawn-host.test.sh`](../tests/fm-spawn-host.test.sh) drives placement from a primary through a fake SSH into that same host leg, covering capacity deferral, a re-run after an unknown SSH result, and mirror-arm recovery under away admission limits.
+[`tests/fm-placement.test.sh`](../tests/fm-placement.test.sh) drives automatic placement through a fake SSH into two worker-host homes, covering the ranking and its ties, a host that is unreachable, uncapped, or lacks the project, placed tasks counted on their host, the setting off by default, `--host local`, a deferral that falls to the next machine, nothing admitting, and a lost answer re-run on the same host.
 [`tests/fm-teardown-host.test.sh`](../tests/fm-teardown-host.test.sh) drives two-leg cleanup through a fake SSH into that host leg, covering success, an unreachable host, a lost answer and its re-run, a host refusal for unlanded work, a drifted route, a shared mirror, and a scout's report and captain-call gate.
 [`tests/fm-handoff-host.test.sh`](../tests/fm-handoff-host.test.sh) drives `fm-handoff.sh --to <host>` through a fake SSH into two worker-host homes and a fake git SSH transport into the primary's rescue repository, covering a ship moving to a host, back to the primary, and between hosts, a scout with its interim report, and the target, worker, and record refusals.
 [`tests/fm-pr-check-host.test.sh`](../tests/fm-pr-check-host.test.sh) drives ready-PR recording of a placed ship through a fake SSH into the host leg, covering a pushed head, a head only in the host's disposable copy, and an unreachable host that the watcher's scan retries.

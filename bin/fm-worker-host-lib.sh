@@ -80,3 +80,39 @@ worker_host_lookup() {  # <data-dir> <id>
   WORKER_HOST_ID=$id WORKER_HOST_SUMMARY=$summary WORKER_HOST_HOST=$host
   WORKER_HOST_ROOT=$root WORKER_HOST_HOME=$home WORKER_HOST_ADDED=$added
 }
+
+# Print every record's id, one per line, in registry order. Returns 0 with no
+# output when the registry is absent, and 2 with the reason in
+# WORKER_HOST_ERROR when it is not a regular file, holds a malformed record,
+# or names one id twice, exactly as worker_host_lookup refuses them.
+worker_host_ids() {  # <data-dir>
+  local reg line seen='|' ids=''
+  reg=$(worker_host_registry_path "$1")
+  WORKER_HOST_ERROR=
+  if [ ! -e "$reg" ] && [ ! -L "$reg" ]; then
+    return 0
+  fi
+  if [ ! -f "$reg" ] || [ -L "$reg" ]; then
+    WORKER_HOST_ERROR="no safe worker host registry at $reg"
+    return 2
+  fi
+  while IFS= read -r line || [ -n "$line" ]; do
+    case "$line" in '- '*) ;; *) continue ;; esac
+    if ! worker_host_parse_line "$line"; then
+      WORKER_HOST_ERROR="malformed worker host registry entry: $line"
+      worker_host_parse_line '' || true
+      return 2
+    fi
+    case "$seen" in
+      *"|$WORKER_HOST_ID|"*)
+        WORKER_HOST_ERROR="worker host id $WORKER_HOST_ID has more than one record in $reg"
+        worker_host_parse_line '' || true
+        return 2
+        ;;
+    esac
+    seen="$seen$WORKER_HOST_ID|"
+    ids="$ids$WORKER_HOST_ID"$'\n'
+  done < "$reg"
+  worker_host_parse_line '' || true
+  printf '%s' "$ids"
+}

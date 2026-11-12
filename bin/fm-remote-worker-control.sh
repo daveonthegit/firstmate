@@ -14,6 +14,7 @@
 #   fm-remote-worker-control.sh teardown <task-id> [--force]
 #   fm-remote-worker-control.sh named-head <task-id> <done-line>
 #   fm-remote-worker-control.sh admit <task-id> <project>
+#   fm-remote-worker-control.sh headroom <project>
 #   fm-remote-worker-control.sh rescue <task-id> <url>
 #   fm-remote-worker-control.sh carried <task-id> <remote> <branch> <head>
 #   fm-remote-worker-control.sh handoff <task-id> <new-id> <to> <ran-on> [--reason <text>] [--carried <remote> <branch> <head>]
@@ -93,6 +94,13 @@
 # `refused: <reason>` and exits 1, including for a task this home holds no
 # claimed record for; every other answer is no verdict, and the
 # primary's fm_dod_accept_placed_done owns treating it as cannot-verify-now.
+#
+# headroom serves automatic placement on the primary (bin/fm-placement.sh): it
+# prints the schema line, project=<project>, cloned=yes|no (whether this home
+# has that project's clone), and this home's own bin/fm-capacity.sh report
+# line unchanged, which counts the tasks placed here as this machine's lanes.
+# It exits 0 even when the report flags an unreadable lane cap (target=invalid),
+# so the primary reads the reason instead of a bare failure. It changes nothing.
 #
 # The hand-off verbs serve bin/fm-handoff.sh on the primary:
 #   admit    preflight for a continuation placed here: the home is a worker
@@ -478,6 +486,25 @@ cmd_admit() {
   printf 'admitted: %s on project %s\n' "$id" "$project"
 }
 
+cmd_headroom() {
+  local project=$1 cloned=no report
+  case "$project" in ''|-*|.*|*[!A-Za-z0-9._-]*) die "invalid project name: $project" ;; esac
+  validate_home
+  if [ -d "$TARGET_HOME/projects/$project" ] && [ ! -L "$TARGET_HOME/projects/$project" ] \
+     && git -C "$TARGET_HOME/projects/$project" rev-parse --git-dir >/dev/null 2>&1; then
+    cloned=yes
+  fi
+  report=$("$SCRIPT_DIR/fm-capacity.sh" 2>/dev/null | head -n 1 || true)
+  case "$report" in
+    'capacity: '*) ;;
+    *) die "this worker host's fm-capacity.sh printed no capacity report" ;;
+  esac
+  printf 'schema=%s\n' "$SCHEMA"
+  printf 'project=%s\n' "$project"
+  printf 'cloned=%s\n' "$cloned"
+  printf '%s\n' "$report"
+}
+
 cmd_rescue() {
   local id=$1 url=$2 copy
   validate_url "$url"
@@ -610,6 +637,7 @@ case "$VERB" in
   teardown) [ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage; validate_home; cmd_teardown "$@" ;;
   named-head) [ "$#" -eq 2 ] || usage; validate_home; cmd_named_head "$@" ;;
   admit) [ "$#" -eq 2 ] || usage; cmd_admit "$@" ;;
+  headroom) [ "$#" -eq 1 ] || usage; cmd_headroom "$1" ;;
   rescue) [ "$#" -eq 2 ] || usage; validate_home; cmd_rescue "$@" ;;
   carried) [ "$#" -eq 4 ] || usage; validate_home; cmd_carried "$@" ;;
   handoff) [ "$#" -ge 4 ] || usage; validate_home; cmd_handoff "$@" ;;

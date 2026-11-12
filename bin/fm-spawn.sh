@@ -4,7 +4,7 @@
 # Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--continue-from <old-id>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--continue-from <old-id>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--backend <name>] --secondmate
-#        fm-spawn.sh <task-id> <project> {--mode <mode> --yolo <on|off>|--scout} --host <worker-host-id> [--branch-prefix <prefix>] [--base-branch <branch>] [--upstream-consent <scope>] [--continue-from <old-id>] [--harness <name>] [--model <name>] [--effort <level>] [--backend <name>]
+#        fm-spawn.sh <task-id> <project> {--mode <mode> --yolo <on|off>|--scout} --host <worker-host-id|local> [--branch-prefix <prefix>] [--base-branch <branch>] [--upstream-consent <scope>] [--continue-from <old-id>] [--harness <name>] [--model <name>] [--effort <level>] [--backend <name>]
 #   --mode and --yolo are this task's delivery contract, REQUIRED for every ship
 #   spawn and refused on --scout and --secondmate spawns. Firstmate resolves both
 #   per task at intake (AGENTS.md section 7); data/projects.md holds the captain's
@@ -109,6 +109,26 @@
 #   refused with --host. An existing worker-host placement also refuses a
 #   local spawn without --host or a direct --relaunch; re-run the same --host
 #   spawn for placement recovery, not to replace its worker.
+#   --host local names this machine on purpose: the spawn runs exactly as a
+#   plain local spawn and automatic placement is skipped. A worker host whose
+#   registry id is `local` therefore cannot be named with --host.
+#   Automatic placement (docs/configuration.md "Automatic placement"): when
+#   config/auto-placement exists in this home, which is neither a secondmate
+#   nor a worker host home, a fresh ship or scout spawn with no --host and no
+#   --continue-from asks bin/fm-placement.sh to rank this machine and every
+#   eligible worker host by current load, prints that script's lines on stderr,
+#   and re-runs this spawn with --host <machine> (or --host local) for the best
+#   one. A machine that defers at spawn with exit 75 passes the task to the
+#   next; when none is left, or none admitted it, the spawn exits 75 and the
+#   backlog item stays queued. Any other failure stops there and is returned
+#   unchanged. Before trying a worker host it writes state/<task-id>.placement
+#   naming that host, and removes it unless the host's answer was lost (exit
+#   255): a later spawn of the same task without --host then re-runs on that
+#   host instead of placing it again elsewhere, so an unconfirmed placement
+#   never becomes two workers. An existing record placed on a worker host is
+#   likewise finished on its host. --account, --hermes-profile,
+#   --herdr-resume-lock-wait, and a raw launch command keep the spawn on this
+#   machine, because no worker host receives them.
 #   Ship/scout launches always put fm-dod-lib.sh's current worker role scope
 #   first in the private launch-brief overlay, including the exact task-owned
 #   steering inbox. This never rewrites a project's instruction files or a
@@ -1088,6 +1108,7 @@ RELAUNCH=0
 # Absent/unset keeps upstream refuse-on-contention. See header.
 HERDR_RESUME_LOCK_WAIT=0
 POS=()
+SPAWN_ARGV=("$@")
 want_value=
 for a in "$@"; do
   if [ -n "$want_value" ]; then
@@ -1297,6 +1318,18 @@ fi
   echo "error: --account applies to ships and scouts; secondmate ${POS[0]:-} launches on its own config/secondmate-accounts/<id>/claude-account pin" >&2
   exit 1
 }
+# --host local chooses this machine on purpose (header): a plain local spawn
+# that automatic placement never redirects.
+HOST_LOCAL=0
+if [ "$HOST_SET" -eq 1 ] && [ "$HOST_ARG" = local ]; then
+  [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] || {
+    echo "error: --host local chooses this machine for a fresh ship or scout; it is refused with --secondmate and --relaunch" >&2
+    exit 1
+  }
+  HOST_LOCAL=1
+  HOST_SET=0
+  HOST_ARG=
+fi
 # --host places a fresh ship or scout on a worker host, whose own spawn owns
 # every launch axis this home cannot forward (spawn_worker_host below).
 if [ "$HOST_SET" -eq 1 ]; then
@@ -2734,6 +2767,7 @@ if [ "${#POS[@]}" -gt 0 ] && [ "${POS[0]}" != "$idpart" ] && case "$idpart" in *
   [ "$HERDR_RESUME_LOCK_WAIT" -eq 0 ] || shared_args+=(--herdr-resume-lock-wait)
   [ "$ACCOUNT_SET" -eq 0 ] || shared_args+=(--account "$ACCOUNT_ARG")
   [ "$HOST_SET" -eq 0 ] || shared_args+=(--host "$HOST_ARG")
+  [ "$HOST_LOCAL" -eq 0 ] || shared_args+=(--host local)
   [ "$CONTINUE_FROM_SET" -eq 0 ] || {
     echo "error: --continue-from is single-task only; it names the one task being continued" >&2
     exit 1
@@ -2847,6 +2881,101 @@ spawn_require_relocated_queued_work() {
     exit 1
   fi
 }
+# Automatic placement (header; bin/fm-placement.sh owns the ranking). Each try
+# re-runs this spawn with an explicit --host, so the chosen machine's spawn is
+# exactly the explicit one, with every check and recovery it already has.
+spawn_placement_try() {  # <machine>: the exit status of that machine's spawn
+  local machine=$1 marker="$STATE/$ID.placement" tmp rc=0
+  if [ "$machine" != local ]; then
+    tmp="$marker.tmp.$$"
+    if ! mkdir -p "$STATE" || ! printf '%s\n' "$machine" > "$tmp" || ! mv -f -- "$tmp" "$marker"; then
+      rm -f -- "$tmp"
+      echo "error: could not record the placement of $ID on worker host $machine at $marker; nothing was placed" >&2
+      return 1
+    fi
+  fi
+  FM_SPAWN_NO_GUARD=1 "$FM_ROOT/bin/fm-spawn.sh" "${SPAWN_ARGV[@]}" --host "$machine" || rc=$?
+  if [ "$machine" != local ] && { [ "$rc" -eq 0 ] || [ "$rc" -eq "$FM_PROJECT_CAPACITY_DEFER_EXIT" ]; }; then
+    rm -f -- "$marker"
+  fi
+  return "$rc"
+}
+spawn_auto_placement() {
+  local meta marker host harness proj_arg proj_dir proj_name out rc order machine
+  [ "$RELAUNCH" -eq 0 ] && [ "$KIND" != secondmate ] || return 0
+  [ "$HOST_SET" -eq 0 ] && [ "$HOST_LOCAL" -eq 0 ] && [ "$CONTINUE_FROM_SET" -eq 0 ] || return 0
+  [ -f "$CONFIG/auto-placement" ] || return 0
+  [ ! -e "$FM_HOME/.fm-secondmate-home" ] && [ ! -e "$FM_HOME/.fm-worker-host" ] || return 0
+  meta="$STATE/$ID.meta"
+  if [ -e "$meta" ] || [ -L "$meta" ]; then
+    # A record already here decides: a placed one is finished on its host, and
+    # anything else is the local path's to judge.
+    fm_task_route "$meta" && [ "$FM_TASK_ROUTE" = worker-host ] || return 0
+    echo "placement: task $ID is already placed on worker host $FM_TASK_ROUTE_HOST; finishing that placement there" >&2
+    rc=0
+    spawn_placement_try "$FM_TASK_ROUTE_HOST" || rc=$?
+    exit "$rc"
+  fi
+  marker="$STATE/$ID.placement"
+  if [ -e "$marker" ] || [ -L "$marker" ]; then
+    host=
+    [ ! -f "$marker" ] || [ -L "$marker" ] || IFS= read -r host < "$marker" || true
+    case "$host" in
+    '' | local | -* | *[!A-Za-z0-9._-]*)
+      echo "error: $marker does not name one worker host; inspect it, and remove it only once that host is known not to run $ID" >&2
+      exit 1
+      ;;
+    esac
+    echo "placement: task $ID was last sent to worker host $host and its answer was lost; re-running that placement there" >&2
+    rc=0
+    spawn_placement_try "$host" || rc=$?
+    exit "$rc"
+  fi
+  if [ "$ACCOUNT_SET" -eq 1 ] || [ "$HERMES_PROFILE_SET" -eq 1 ] || [ "$HERDR_RESUME_LOCK_WAIT" -eq 1 ]; then
+    echo "placement: this machine - --account, --hermes-profile, and --herdr-resume-lock-wait are not forwarded to a worker host" >&2
+    return 0
+  fi
+  harness=${HARNESS_ARG:-${POS[2]:-}}
+  case "$harness" in
+  *[!A-Za-z0-9._-]*)
+    echo "placement: this machine - a raw launch command is not forwarded to a worker host" >&2
+    return 0
+    ;;
+  esac
+  proj_arg=${POS[1]:-}
+  [ -n "$proj_arg" ] || return 0
+  case "$proj_arg" in
+  projects/*) proj_dir="$PROJECTS/${proj_arg#projects/}" ;;
+  *) proj_dir=$proj_arg ;;
+  esac
+  proj_name=${proj_arg%/}
+  proj_name=${proj_name##*/}
+  rc=0
+  out=$("$SCRIPT_DIR/fm-placement.sh" "$proj_name" --local-dir "$proj_dir") || rc=$?
+  printf '%s\n' "$out" | grep -v '^order:' >&2 || true
+  [ "$rc" -eq 0 ] || {
+    echo "error: automatic placement could not judge where $ID runs (bin/fm-placement.sh exit $rc); nothing was placed" >&2
+    exit 1
+  }
+  order=$(printf '%s\n' "$out" | sed -n 's/^order: *//p' | tail -n 1)
+  if [ -z "$order" ]; then
+    echo "deferred: no machine admits task $ID now; nothing was placed and its backlog item stays queued - dispatch it again once a machine has room" >&2
+    exit "$FM_PROJECT_CAPACITY_DEFER_EXIT"
+  fi
+  for machine in $order; do
+    rc=0
+    spawn_placement_try "$machine" || rc=$?
+    [ "$rc" -eq "$FM_PROJECT_CAPACITY_DEFER_EXIT" ] || exit "$rc"
+    if [ "$machine" = local ]; then
+      echo "placement: this machine deferred $ID at spawn; trying the next machine" >&2
+    else
+      echo "placement: worker host $machine deferred $ID at spawn; trying the next machine" >&2
+    fi
+  done
+  echo "deferred: every machine that admitted task $ID deferred it at spawn; nothing was placed and its backlog item stays queued" >&2
+  exit "$FM_PROJECT_CAPACITY_DEFER_EXIT"
+}
+spawn_auto_placement
 if [ "$RELAUNCH" -eq 1 ]; then
   SPAWN_CONTROL_LOCK="$STATE/.control-$ID.lock"
   control_owner=$(cat "$SPAWN_CONTROL_LOCK/pid" 2>/dev/null || true)
