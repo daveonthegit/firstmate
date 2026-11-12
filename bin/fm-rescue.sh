@@ -3,8 +3,9 @@
 # at ~/fm-rescue/<project>.git, that a hand-off pushes a ship's carried branch
 # to (bin/fm-handoff.sh --remote fm-rescue) instead of a branch on origin.
 # A push creates refs/remotes/fm-rescue/<branch> in the project, which is a
-# remote-tracking branch, so ordinary bin/fm-teardown.sh accepts the work as
-# landed with no --force: the commits then exist outside the copy it returns.
+# remote-tracking branch, so ordinary bin/fm-teardown.sh accepts the work with
+# no --force: the commits then exist outside the copy it returns. Preservation
+# permits cleanup, but does not by itself prove final landing for pruning.
 # Usage: fm-rescue.sh ensure <task-id>
 #        fm-rescue.sh prune <task-id> <project-dir> [--abandoned]
 #   ensure creates the rescue repository for the task's project on demand
@@ -32,6 +33,10 @@
 #   A verified merged PR whose head contains the carried commit also proves
 #   landing. Cleanup preserves the tip's recorded pr= in data/<tip>/rescue-pr
 #   before removing its task record; prune reads that PR live from the forge.
+#   Non-forced cleanup of a continuation attempts prune automatically unless
+#   another hand-off is in progress; missing landing proof retains the refs
+#   and reports that retention without failing cleanup. A Done backlog row
+#   alone is not landing proof. Retry prune after landing is verifiable.
 #   Refresh remote-tracking refs before pruning. --abandoned is the owner's
 #   explicit word that the work is abandoned and needs no landing proof.
 #   Unreachable objects leave the rescue repository through git's own garbage
@@ -39,6 +44,8 @@
 # A later cross-machine hand-off can reach the same repository from a worker
 # host over SSH: rescue_url below is the one place the remote's URL is chosen,
 # and it is a plain local path today because only same-machine hand-offs exist.
+# Regression coverage: tests/fm-rescue.test.sh exercises preservation, base
+# landing, squash-merged PR proof, retention on missing proof, and abandonment.
 # Exit codes: 0 done (or nothing to prune); 1 refused or failed; 2 usage.
 set -eu
 
