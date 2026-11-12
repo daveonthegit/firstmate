@@ -112,6 +112,10 @@
 #   --host local names this machine on purpose: the spawn runs exactly as a
 #   plain local spawn and automatic placement is skipped. A worker host whose
 #   registry id is `local` therefore cannot be named with --host.
+#   FM_SPAWN_AUTO_PLACEMENT=1 is internal to automatic dispatch: the selected
+#   destination rechecks lane admission under its task-set lock before launch.
+#   A pending state/<task-id>.placement binds every fresh retry to that host,
+#   even with automatic placement disabled; another destination is refused.
 #   Automatic placement (docs/configuration.md "Automatic placement"): when
 #   config/auto-placement exists in this home, which is neither a secondmate
 #   nor a worker host home, a fresh ship or scout spawn with no --host and no
@@ -124,7 +128,8 @@
 #   unchanged. Before trying a worker host it writes state/<task-id>.placement
 #   naming that host, and removes it unless the host's answer was lost (exit
 #   255): a later spawn of the same task without --host then re-runs on that
-#   host instead of placing it again elsewhere, so an unconfirmed placement
+#   host; naming that same host also recovers it, and success or exit 75 clears
+#   the note. It never places it elsewhere, so an unconfirmed placement
 #   never becomes two workers. An existing record placed on a worker host is
 #   likewise finished on its host. --account, --hermes-profile,
 #   --herdr-resume-lock-wait, and a raw launch command keep the spawn on this
@@ -2048,6 +2053,7 @@ spawn_worker_host() {
   [ -z "$harness" ] || host_args+=(--harness "$harness")
   [ -z "$MODEL" ] || host_args+=(--model "$MODEL")
   [ -z "$EFFORT" ] || host_args+=(--effort "$EFFORT")
+  [ "${FM_SPAWN_AUTO_PLACEMENT:-0}" != 1 ] || host_args+=(--auto-placement)
   [ "$BACKEND_SET" -eq 0 ] || host_args+=(--backend "$BACKEND_ARG")
   if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
     host_args+=(--continue-from "$CONTINUE_FROM")
@@ -2123,6 +2129,7 @@ spawn_worker_host() {
   [ ! -s "$err_file" ] || cat "$err_file" >&2
   rm -f -- "$body_file" "$err_file"
   if [ "$rc" -eq "$FM_PROJECT_CAPACITY_DEFER_EXIT" ]; then
+    rm -f -- "$STATE/$ID.placement"
     echo "deferred: worker host $HOST_ARG has no free place for project $proj_name; task $ID was not placed and its backlog item stays queued - dispatch it again once that host has room" >&2
     exit "$FM_PROJECT_CAPACITY_DEFER_EXIT"
   fi
@@ -2234,6 +2241,7 @@ spawn_worker_host() {
   value=
   [ "$KIND" != ship ] || value=" mode=$MODE yolo=$YOLO"
   echo "spawned $ID harness=$route_harness kind=$KIND$value window=remote:$ID worktree=$route_worktree host=$HOST_ARG backend=$route_backend"
+  rm -f -- "$STATE/$ID.placement"
   exit 0
 }
 
@@ -2895,13 +2903,10 @@ spawn_placement_try() {  # <machine>: the exit status of that machine's spawn
     fi
   fi
   FM_SPAWN_NO_GUARD=1 "$FM_ROOT/bin/fm-spawn.sh" "${SPAWN_ARGV[@]}" --host "$machine" || rc=$?
-  if [ "$machine" != local ] && { [ "$rc" -eq 0 ] || [ "$rc" -eq "$FM_PROJECT_CAPACITY_DEFER_EXIT" ]; }; then
-    rm -f -- "$marker"
-  fi
   return "$rc"
 }
 spawn_auto_placement() {
-  local meta marker host harness proj_arg proj_dir proj_name out rc order machine
+  local meta harness proj_arg proj_dir proj_name out rc order machine
   [ "$RELAUNCH" -eq 0 ] && [ "$KIND" != secondmate ] || return 0
   [ "$HOST_SET" -eq 0 ] && [ "$HOST_LOCAL" -eq 0 ] && [ "$CONTINUE_FROM_SET" -eq 0 ] || return 0
   [ -f "$CONFIG/auto-placement" ] || return 0
@@ -2914,21 +2919,6 @@ spawn_auto_placement() {
     echo "placement: task $ID is already placed on worker host $FM_TASK_ROUTE_HOST; finishing that placement there" >&2
     rc=0
     spawn_placement_try "$FM_TASK_ROUTE_HOST" || rc=$?
-    exit "$rc"
-  fi
-  marker="$STATE/$ID.placement"
-  if [ -e "$marker" ] || [ -L "$marker" ]; then
-    host=
-    [ ! -f "$marker" ] || [ -L "$marker" ] || IFS= read -r host < "$marker" || true
-    case "$host" in
-    '' | local | -* | *[!A-Za-z0-9._-]*)
-      echo "error: $marker does not name one worker host; inspect it, and remove it only once that host is known not to run $ID" >&2
-      exit 1
-      ;;
-    esac
-    echo "placement: task $ID was last sent to worker host $host and its answer was lost; re-running that placement there" >&2
-    rc=0
-    spawn_placement_try "$host" || rc=$?
     exit "$rc"
   fi
   if [ "$ACCOUNT_SET" -eq 1 ] || [ "$HERMES_PROFILE_SET" -eq 1 ] || [ "$HERDR_RESUME_LOCK_WAIT" -eq 1 ]; then
@@ -2964,7 +2954,7 @@ spawn_auto_placement() {
   fi
   for machine in $order; do
     rc=0
-    spawn_placement_try "$machine" || rc=$?
+    FM_SPAWN_AUTO_PLACEMENT=1 spawn_placement_try "$machine" || rc=$?
     [ "$rc" -eq "$FM_PROJECT_CAPACITY_DEFER_EXIT" ] || exit "$rc"
     if [ "$machine" = local ]; then
       echo "placement: this machine deferred $ID at spawn; trying the next machine" >&2
@@ -2975,6 +2965,30 @@ spawn_auto_placement() {
   echo "deferred: every machine that admitted task $ID deferred it at spawn; nothing was placed and its backlog item stays queued" >&2
   exit "$FM_PROJECT_CAPACITY_DEFER_EXIT"
 }
+spawn_pending_placement() {
+  local marker="$STATE/$ID.placement" host rc=0
+  [ "$RELAUNCH" -eq 0 ] && [ "$KIND" != secondmate ] || return 0
+  if [ -e "$marker" ] || [ -L "$marker" ]; then
+    host=
+    [ ! -f "$marker" ] || [ -L "$marker" ] || IFS= read -r host < "$marker" || true
+    case "$host" in
+    '' | local | -* | *[!A-Za-z0-9._-]*)
+      echo "error: $marker does not name one worker host; inspect it, and remove it only once that host is known not to run $ID" >&2
+      exit 1
+      ;;
+    esac
+    if [ "$HOST_LOCAL" -eq 1 ] || { [ "$HOST_SET" -eq 1 ] && [ "$HOST_ARG" != "$host" ]; }; then
+      echo "error: earlier placement of $ID on $host must be reconciled first; re-run with --host $host" >&2
+      exit 1
+    fi
+    [ "$HOST_SET" -eq 0 ] || return 0
+    echo "placement: task $ID was last sent to worker host $host and its answer was lost; re-running that placement there" >&2
+    rc=0
+    spawn_placement_try "$host" || rc=$?
+    exit "$rc"
+  fi
+}
+spawn_pending_placement
 spawn_auto_placement
 if [ "$RELAUNCH" -eq 1 ]; then
   SPAWN_CONTROL_LOCK="$STATE/.control-$ID.lock"
@@ -3047,6 +3061,11 @@ if [ "$RELAUNCH" -eq 0 ]; then
 fi
 if [ "$HOST_SET" -eq 1 ]; then
   spawn_worker_host
+fi
+if [ "$RELAUNCH" -eq 0 ] && [ "${FM_SPAWN_AUTO_PLACEMENT:-0}" = 1 ]; then
+  admission_rc=0
+  "$SCRIPT_DIR/fm-capacity.sh" --admit || admission_rc=$?
+  [ "$admission_rc" -eq 0 ] || exit "$admission_rc"
 fi
 SPAWN_META_LOCK=$(fm_meta_lock_path "$STATE/$ID.meta") || exit 1
 fm_lock_acquire_wait "$SPAWN_META_LOCK" || exit 1

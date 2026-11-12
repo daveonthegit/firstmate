@@ -151,6 +151,16 @@ env -u FM_SUPERVISION_ACTOR -u FM_TRACE_CONTEXT -u FM_STATE_OVERRIDE -u FM_DATA_
   HOME="\$home/user-home" CLAUDE_CONFIG_DIR='' FM_SPAWN_NO_GUARD=1 FM_GH_ACCOUNT=none \\
   FM_FAKE_PANE_PATH="\$pane" TMUX="fake,1,0" PATH="$HOST_BIN:\$PATH" \\
   "\$root/bin/\${argv[0]}" "\${argv[@]:1}" || rc=\$?
+if [ "\${argv[1]}" = headroom ] && [ "\$alias" = remote-mac ]; then
+  case "\${FM_FAKE_FILL:-}" in
+    local) fill="$PARENT" ;;
+    remote) fill="\$home" ;;
+    *) fill= ;;
+  esac
+  if [ -n "\$fill" ]; then
+    printf 'kind=ship\\nmode=no-mistakes\\n' > "\$fill/state/raced.meta"
+  fi
+fi
 [ "\${FM_FAKE_SSH_LOSE_SPAWN:-}" != 1 ] || [ "\${argv[1]}" != spawn ] || exit 255
 exit "\$rc"
 SH
@@ -346,7 +356,7 @@ test_spawn_named_machine_wins() {
   make_case named
   : > "$PARENT/config/auto-placement"
   set_cap "$PARENT" 4
-  busy "$PARENT" 3
+  busy "$PARENT" 4
   set_cap "$HOST_A" 4
   make_brief n1 --mode local-only
   add_item n1
@@ -412,6 +422,18 @@ test_spawn_lost_answer_reruns_on_same_host() {
   assert_equals 1 "$(windows "$HOST_BIN")" "the host did not launch before its answer was lost"
   # This machine now has the larger share, but the task must not start twice.
   rm -f "$PARENT"/state/busy-*.meta
+  local destination setting
+  for setting in on off; do
+    [ "$setting" = on ] || rm -f "$PARENT/config/auto-placement"
+    for destination in local spare; do
+      auto_spawn r1 --host "$destination"
+      expect_code 1 "$SPAWN_RC" "pending placement redirected to $destination ($SPAWN_OUT)"
+      assert_contains "$SPAWN_OUT" "re-run with --host mbp" "refusal did not identify recovery host"
+      assert_equals mbp "$(cat "$PARENT/state/r1.placement")" "refusal lost pending ownership"
+      assert_equals 0 "$(windows "$PRIMARY_BIN")" "refusal launched locally"
+      assert_equals 1 "$(windows "$HOST_BIN")" "refusal launched another remote worker"
+    done
+  done
   auto_spawn r1
   expect_code 0 "$SPAWN_RC" "re-running after a lost answer ($SPAWN_OUT)"
   assert_contains "$SPAWN_OUT" "last sent to worker host mbp and its answer was lost" "the re-run did not follow the note"
@@ -419,7 +441,60 @@ test_spawn_lost_answer_reruns_on_same_host() {
   assert_equals 1 "$(windows "$HOST_BIN")" "the re-run launched a second worker on the host"
   assert_equals 0 "$(windows "$PRIMARY_BIN")" "the re-run launched a second worker here"
   assert_absent "$PARENT/state/r1.placement" "the confirmed re-run left its pending note"
+  printf 'mbp\n' > "$PARENT/state/r1.placement"
+  auto_spawn r1 --host mbp
+  expect_code 0 "$SPAWN_RC" "explicit same-host recovery ($SPAWN_OUT)"
+  assert_absent "$PARENT/state/r1.placement" "explicit recovery retained pending note"
+  assert_equals 1 "$(windows "$HOST_BIN")" "explicit recovery launched a second worker"
+  make_brief d1 --mode local-only
+  add_item d1
+  printf 'sample 1\n' > "$HOST_A/config/project-capacity"
+  printf 'mbp\n' > "$PARENT/state/d1.placement"
+  auto_spawn d1 --host mbp
+  expect_code 75 "$SPAWN_RC" "pending placement refused by host ($SPAWN_OUT)"
+  assert_absent "$PARENT/state/d1.placement" "host deferral retained pending ownership"
+  assert_equals queued "$(row_state d1)" "host deferral moved queued item"
   pass "a placement whose answer was lost is re-run on the same host, never placed twice"
+}
+
+test_spawn_rechecks_lane_admission() {
+  local destination expected_host
+  for destination in local remote; do
+    make_case "race-$destination"
+    : > "$PARENT/config/auto-placement"
+    set_cap "$PARENT" 1
+    set_cap "$HOST_A" 2
+    if [ "$destination" = local ]; then
+      busy "$HOST_A" 1
+      expected_host=mbp
+    else
+      busy "$PARENT" 0
+      set_cap "$PARENT" 2
+      busy "$PARENT" 1
+      set_cap "$HOST_A" 1
+      expected_host=
+    fi
+    make_brief a1 --mode local-only
+    add_item a1
+    FM_FAKE_FILL=$destination auto_spawn a1
+    expect_code 0 "$SPAWN_RC" "lane-race fallback ($SPAWN_OUT)"
+    assert_contains "$SPAWN_OUT" "deferred a1 at spawn; trying the next machine" "stale admission was accepted"
+    assert_equals "$expected_host" "$(meta_value a1 remote_worker_host)" "task did not reach remaining machine"
+    if [ "$destination" = local ]; then
+      assert_equals 0 "$(windows "$PRIMARY_BIN")" "full local destination launched"
+      assert_equals 1 "$(windows "$HOST_BIN")" "fallback host did not launch"
+    else
+      assert_equals 1 "$(windows "$PRIMARY_BIN")" "local fallback did not launch"
+      assert_equals 0 "$(windows "$HOST_BIN")" "full remote destination launched"
+      assert_absent "$PARENT/state/a1.placement" "deferral retained pending placement"
+      make_brief a2 --mode local-only
+      add_item a2
+      auto_spawn a2 --host mbp
+      expect_code 0 "$SPAWN_RC" "named full host override ($SPAWN_OUT)"
+      assert_equals 1 "$(windows "$HOST_BIN")" "named host did not override lane admission"
+    fi
+  done
+  pass "automatic destinations recheck lanes while named destinations override"
 }
 
 fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_machine \
@@ -428,4 +503,4 @@ fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_m
   test_spawn_off_by_default test_spawn_places_on_the_emptier_host \
   test_spawn_stays_here_when_this_machine_is_emptier test_spawn_named_machine_wins \
   test_spawn_nothing_admits_stays_queued test_spawn_deferral_falls_to_next_machine \
-  test_spawn_lost_answer_reruns_on_same_host
+  test_spawn_lost_answer_reruns_on_same_host test_spawn_rechecks_lane_admission

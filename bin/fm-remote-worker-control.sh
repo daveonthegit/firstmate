@@ -67,6 +67,9 @@
 # idempotent: it prints the existing route instead of launching twice, which is
 # what makes a re-run after an unconfirmed SSH spawn (exit 255) safe.
 #
+# Internal spawn flag --auto-placement carries automatic dispatch admission:
+# FM_SPAWN_AUTO_PLACEMENT=1 makes fm-spawn recheck lanes under its task-set lock.
+# Named-host spawns do not set it.
 # spawn and route print one route block the primary records:
 #   schema=fm-remote-worker-control.v1
 #   task=<id> kind=<ship|scout> backend=<b> target=<t> worktree=<path>
@@ -222,7 +225,7 @@ replace_task_section() { # <brief> <body-file>
 
 cmd_spawn() {
   local id=$1 project=$2 kind=ship flag value proj_dir meta claim brief body out rc=0 lock
-  local cont_from='' cont_remote='' cont_branch='' cont_head='' rescue_url='' source_brief=''
+  local cont_from='' cont_remote='' cont_branch='' cont_head='' rescue_url='' source_brief='' auto_placement=0
   local -a brief_args spawn_args
   shift 2
   validate_id "$id"
@@ -234,6 +237,7 @@ cmd_spawn() {
     shift
     case "$flag" in
       --scout) kind=scout; brief_args+=(--scout); spawn_args+=(--scout); continue ;;
+      --auto-placement) auto_placement=1; continue ;;
       --herdr-lab) brief_args+=(--herdr-lab); continue ;;
       --journal) brief_args+=(--journal); continue ;;
     esac
@@ -334,7 +338,7 @@ cmd_spawn() {
     spawn_abandon
     die "the rendered brief for $id has no # Task section to fill"
   fi
-  if out=$("$SCRIPT_DIR/fm-spawn.sh" "$id" "$proj_dir" "${spawn_args[@]}" 2>&1); then
+  if out=$(FM_SPAWN_AUTO_PLACEMENT=$auto_placement "$SCRIPT_DIR/fm-spawn.sh" "$id" "$proj_dir" "${spawn_args[@]}" 2>&1); then
     rc=0
   else
     rc=$?
