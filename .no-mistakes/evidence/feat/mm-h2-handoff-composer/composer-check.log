@@ -1,0 +1,8 @@
+1..6
+ok - a ship's hand-off document carries the brief, status, commits, notes, and a budgeted transcript tail exactly as the golden file
+ok - the default budget bounds the whole document while keeping the anchor messages of a long thread
+ok - the document leaves out the tail with no T3 thread, has no commits for a scout, and notes a failed read
+ok - oversized optional material yields; oversized mandatory material refuses
+ok - small remaining budgets still carry fitting transcript anchors
+ok - dynamic fences and transcript failure notices cannot breach the document budget
+FM_TEST_COMPLETE

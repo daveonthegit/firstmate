@@ -1,0 +1,4 @@
+1..2
+ok - fm-t3-mcp transcript: pages every page and keeps whole messages first user, last user, last assistant, then newest first, within the budget
+ok - fm-t3-mcp transcript: whole-thread selection includes fitting middle messages
+FM_TEST_COMPLETE

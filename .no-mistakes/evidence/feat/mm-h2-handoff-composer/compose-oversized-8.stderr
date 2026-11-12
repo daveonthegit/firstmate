@@ -1,0 +1,2 @@
+exit=1
+error: mandatory intent/spec and headings require 763 bytes; --budget-tokens 100 allows 400 bytes

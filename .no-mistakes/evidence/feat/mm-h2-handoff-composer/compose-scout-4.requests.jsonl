@@ -1,0 +1,14 @@
+{"path":"/mcp","method":"initialize","auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"notifications/initialized","auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/list","auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_environment_read","arguments":{},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1,"afterPosition":99},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1,"afterPosition":199},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1,"afterPosition":299},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1,"afterPosition":399},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1,"afterPosition":499},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1,"afterPosition":599},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1,"afterPosition":699},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"tools/call","tool":"t3_thread_read","arguments":{"threadId":"thread-long","limit":100,"maxCharsPerItem":4000,"runLimit":1,"afterPosition":799},"auth":"tok-test-47441775","protocol":"2025-06-18"}
+{"path":"/mcp","method":"DELETE","session":"sess-fake","protocol":"2025-06-18"}

@@ -1,0 +1,2 @@
+exit=0
+warning: no transcript tail for old-f2: fm-t3-mcp: T3 t3_thread_read failed: Thread thread-missing is no longer available.
