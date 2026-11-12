@@ -45,6 +45,8 @@ The T3 Code backend suites carry the slowest successful Ubuntu samples from CI r
 `tests/fm-backend-t3code.test.sh` and `tests/fm-t3-mcp.test.sh` run in the portable parallel lanes, so those two values sit in `portable_parallel_weight_hints`: every case id the backend suite spawns carries a per-run suffix and its cleanup removes only the `/tmp/fm-<id>` directories that run created, and both suites passed running concurrently with each other and beside another parallel suite (see [`fm-test-isolation-proof.md`](fm-test-isolation-proof.md)).
 
 The worker-host seed/doctor suite carries a provisional local macOS arm64 hint of 59810 ms, measured by `bin/fm-test-run.sh tests/fm-worker-host-seed-doctor.test.sh` on 2026-11-11. Replace it with successful Ubuntu timing-artifact measurements at the next CI refresh; it is not evidence of CI duration or concurrency safety.
+The hand-off suite carries a provisional local macOS arm64 hint of 56777 ms, the slowest of three `bin/fm-test-run.sh tests/fm-handoff.test.sh` samples (56317-56777 ms) on 2026-11-11.
+Replace it with successful Ubuntu timing-artifact measurements at the next CI refresh; it is not evidence of CI duration or concurrency safety.
 
 ## Parallel lanes
 

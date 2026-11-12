@@ -175,6 +175,8 @@ The shared no-mistakes gate lifecycle boundary is summarized in [architecture.md
 | `fm-merge-authority-lib.sh` | Resolve merge authority at the gate, persist it against the accepted canonical PR, and identity-check its later poll consumption |
 | `fm-parent-channel-lib.sh` | Resolve a secondmate home's parent channel and append a captain-facing outcome line to it at most once |
 | `fm-promote.sh`          | Promote a scout task in place to a protected ship task with an explicit delivery mode, write the ship instructions carrying that mode's definition of done, and supersede the task's brief so a later relaunch cannot revive stale scout delivery text |
+| [`fm-handoff.sh`](../bin/fm-handoff.sh) | Continue a running ship or scout in a fresh local thread; its header owns the workflow, preservation requirements, and supported limits |
+| `fm-continuation-lib.sh` | Own the continuation record a hand-off writes and `fm-brief.sh`/`fm-spawn.sh --continue-from` read |
 | `fm-gh-account.sh`       | Select repository-keyed GitHub access without switching the global account |
 | `fm-gh-shim.sh`          | Repository-aware gh wrapper for shared processes and worker calls |
 | `fm-install-gh-shim.sh`  | Install, inspect, or remove only the Firstmate-owned gh wrapper |

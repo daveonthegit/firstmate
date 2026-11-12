@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Spawn a direct report: a crewmate in a treehouse or Orca worktree, or a
 # secondmate in its isolated firstmate home.
-# Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
-#        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
+# Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--continue-from <old-id>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
+#        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--continue-from <old-id>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--backend <name>] --secondmate
 #        fm-spawn.sh <task-id> <project> {--mode <mode> --yolo <on|off>|--scout} --host <worker-host-id> [--branch-prefix <prefix>] [--base-branch <branch>] [--upstream-consent <scope>] [--harness <name>] [--model <name>] [--effort <level>] [--backend <name>]
 #   --mode and --yolo are this task's delivery contract, REQUIRED for every ship
@@ -52,8 +52,9 @@
 #   prefix is the captain's standing preference and the brief agreement above
 #   already guarantees the worker's instructions match the branch.
 #   --base-branch is the optional branch selected at intake for a ship or scout
-#   to start from and target instead of origin's default branch. A fresh launch
-#   resets its pooled copy to origin/<branch>, refusing when the project has no
+#   to start from and target instead of origin's default branch. Except for a
+#   ship's --continue-from (below), a fresh launch resets its pooled copy to
+#   origin/<branch>, refusing when the project has no
 #   origin or origin lacks that branch, or when the project's registered forge
 #   cannot carry it. It must agree with every Setup "Base branch:" line in the
 #   brief (bin/fm-brief.sh --base-branch writes one; other such lines are prose),
@@ -61,6 +62,19 @@
 #   base_branch= in state/<id>.meta, which a relaunch reuses and later review and
 #   cleanup read; it is refused on secondmates and relaunches, and without it
 #   nothing changes.
+#   --continue-from <old-id> starts a fresh ship or scout that continues task
+#   <old-id> in a new thread on this machine (bin/fm-handoff.sh runs it). It
+#   reads the continuation record bin/fm-continuation-lib.sh owns at
+#   data/<task-id>/continuation, which must name <old-id> and this spawn's
+#   kind, and requires the brief's Setup "Continued from: <old-id>" line to
+#   agree, as for --base-branch; a brief with such a line refuses a fresh spawn
+#   without the flag. A ship's fresh copy, after the same clean check, fetches
+#   the carried branch from the recorded remote and resets to the recorded
+#   head, refusing when the remote is missing or its branch is not at that
+#   commit, instead of starting from the base; --base-branch keeps meaning the
+#   branch its pull request targets. A scout's scratch copy starts from the
+#   base as usual. The record gains continued_from=<old-id>, which a relaunch
+#   keeps. Refused with --relaunch, --secondmate, --host, and batch pairs.
 #   --host <worker-host-id> places a fresh ship or scout on a worker host named
 #   in data/worker-hosts.md instead of launching it here (docs/remote-workers.md).
 #   Only the brief's `# Task` body crosses over, with the flags that shape the
@@ -390,7 +404,9 @@
 #   set (its header owns the refusal). A secondmate runs in its own home and is
 #   not marked.
 #   Only after this isolation check, every fresh ship or scout requires a clean
-#   task worktree. When an origin configuration is detected, spawn fetches it,
+#   task worktree. A ship's --continue-from uses the carried-work check above
+#   instead of the following base selection. Otherwise, when an origin
+#   configuration is detected, spawn fetches it,
 #   resolves the current remote default branch (or uses --base-branch, described
 #   above), and resets to its tip. A home that creates the default-off
 #   config/spawn-base-primary-checkout flag (docs/configuration.md) instead
@@ -1003,6 +1019,8 @@ fm_backlog_directory_present "$STATE" "state directory" || {
 . "$SCRIPT_DIR/fm-pr-lib.sh"
 # shellcheck source=bin/fm-dod-lib.sh
 . "$SCRIPT_DIR/fm-dod-lib.sh"
+# shellcheck source=bin/fm-continuation-lib.sh
+. "$SCRIPT_DIR/fm-continuation-lib.sh"
 # shellcheck source=bin/fm-role-lib.sh
 . "$SCRIPT_DIR/fm-role-lib.sh"
 # shellcheck source=bin/fm-trace-context-lib.sh
@@ -1056,6 +1074,8 @@ ACCOUNT_ARG=
 ACCOUNT_SET=0
 HOST_ARG=
 HOST_SET=0
+CONTINUE_FROM=
+CONTINUE_FROM_SET=0
 RELAUNCH=0
 # Opt-in only: exact-resume presentation-order lock waits instead of refusing.
 # Absent/unset keeps upstream refuse-on-contention. See header.
@@ -1122,6 +1142,10 @@ for a in "$@"; do
     host)
       HOST_ARG=$a
       HOST_SET=1
+      ;;
+    continue-from)
+      CONTINUE_FROM=$a
+      CONTINUE_FROM_SET=1
       ;;
     *)
       echo "error: internal parser state for --$want_value" >&2
@@ -1204,6 +1228,11 @@ for a in "$@"; do
     HOST_ARG=${a#--host=}
     HOST_SET=1
     ;;
+  --continue-from) want_value=continue-from ;;
+  --continue-from=*)
+    CONTINUE_FROM=${a#--continue-from=}
+    CONTINUE_FROM_SET=1
+    ;;
   *) POS+=("$a") ;;
   esac
 done
@@ -1280,6 +1309,18 @@ if [ "$HOST_SET" -eq 1 ]; then
   }
   [ "$ACCOUNT_SET" -eq 0 ] && [ "$HERMES_PROFILE_SET" -eq 0 ] && [ "$HERDR_RESUME_LOCK_WAIT" -eq 0 ] || {
     echo "error: --account, --hermes-profile, and --herdr-resume-lock-wait are not forwarded to a worker host; its own home configures them" >&2
+    exit 1
+  }
+fi
+# --continue-from starts one fresh local ship or scout from a hand-off record
+# (header); every other spawn shape has nothing to continue.
+if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+  fm_task_id_creation_valid "$CONTINUE_FROM" || {
+    echo "error: --continue-from requires the task id being continued (got '$CONTINUE_FROM')" >&2
+    exit 1
+  }
+  [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] && [ "$HOST_SET" -eq 0 ] || {
+    echo "error: --continue-from starts a fresh local ship or scout; it is refused with --secondmate, --relaunch, and --host" >&2
     exit 1
   }
 fi
@@ -1885,6 +1926,10 @@ spawn_worker_host() {
     fi
   elif fm_brief_base_branches "$brief" >/dev/null; then
     echo "error: $brief records a Base branch line but the spawn has no --base-branch" >&2
+    exit 1
+  fi
+  if fm_brief_continued_from "$brief" >/dev/null; then
+    echo "error: $brief continues another task, and a continuation cannot be placed on a worker host yet; spawn it locally with --continue-from" >&2
     exit 1
   fi
 
@@ -2623,6 +2668,10 @@ if [ "${#POS[@]}" -gt 0 ] && [ "${POS[0]}" != "$idpart" ] && case "$idpart" in *
   [ "$HERDR_RESUME_LOCK_WAIT" -eq 0 ] || shared_args+=(--herdr-resume-lock-wait)
   [ "$ACCOUNT_SET" -eq 0 ] || shared_args+=(--account "$ACCOUNT_ARG")
   [ "$HOST_SET" -eq 0 ] || shared_args+=(--host "$HOST_ARG")
+  [ "$CONTINUE_FROM_SET" -eq 0 ] || {
+    echo "error: --continue-from is single-task only; it names the one task being continued" >&2
+    exit 1
+  }
   for pair in "${POS[@]}"; do
     case "$pair" in
     *=*) : ;;
@@ -4802,6 +4851,23 @@ if [ "$KIND" = ship ] || [ "$KIND" = scout ]; then
     echo "error: $BRIEF records a Base branch line but the spawn has no --base-branch; pass the brief's base with --base-branch or re-scaffold the brief without one" >&2
     exit 1
   fi
+  if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+    fm_continuation_read "$DATA" "$ID" "$CONTINUE_FROM" || {
+      echo "error: --continue-from $CONTINUE_FROM: $FM_CONT_ERROR" >&2
+      exit 1
+    }
+    [ "$FM_CONT_KIND" = "$KIND" ] || {
+      echo "error: --continue-from $CONTINUE_FROM: the continuation record is for a $FM_CONT_KIND, not a $KIND spawn" >&2
+      exit 1
+    }
+    if ! fm_brief_continued_from "$BRIEF" >/dev/null || fm_brief_continued_from "$BRIEF" | grep -vxF -- "$CONTINUE_FROM" >/dev/null; then
+      echo "error: $BRIEF must record Continued from: $CONTINUE_FROM and no other Continued from line to spawn with --continue-from $CONTINUE_FROM; scaffold it with bin/fm-brief.sh --continue-from $CONTINUE_FROM" >&2
+      exit 1
+    fi
+  elif [ "$RELAUNCH" -eq 0 ] && fm_brief_continued_from "$BRIEF" >/dev/null; then
+    echo "error: $BRIEF continues another task but the spawn has no --continue-from; pass the brief's source task with --continue-from" >&2
+    exit 1
+  fi
   # Use the existing launch-brief overlay for every worker kind, including
   # pre-scope briefs and relaunches. Charters never enter this worker path.
   SOURCE_BRIEF=$BRIEF
@@ -5226,6 +5292,37 @@ spawn_base_from_primary_checkout() { # <worktree> <project> <default> <origin-re
   return 1
 }
 
+# --continue-from (header): plant a clean fresh copy at the carried commit
+# instead of the base, after proving the carried branch on the recorded remote
+# still points at it.
+spawn_worktree_checkout_carried() { # <worktree>
+  local worktree=$1 remote=$FM_CONT_REMOTE branch=$FM_CONT_BRANCH head=$FM_CONT_HEAD tracking actual
+  tracking="refs/remotes/$remote/$branch"
+  git -C "$worktree" remote get-url "$remote" >/dev/null 2>&1 || {
+    echo "error: pooled worktree '$worktree' has no remote '$remote', so it cannot check out the work carried over from $CONTINUE_FROM" >&2
+    return 1
+  }
+  if ! git -C "$worktree" fetch --quiet "$remote" "+refs/heads/$branch:$tracking"; then
+    echo "error: could not fetch '$remote/$branch' for pooled worktree '$worktree'; refusing to continue $CONTINUE_FROM without its carried work" >&2
+    return 1
+  fi
+  actual=$(git -C "$worktree" rev-parse --verify --quiet "$tracking^{commit}" 2>/dev/null || true)
+  if [ "$actual" != "$head" ]; then
+    echo "error: '$remote/$branch' is at '${actual:-nothing}', not the carried commit '$head' from $CONTINUE_FROM; refusing to launch" >&2
+    return 1
+  fi
+  if ! git -C "$worktree" -c advice.detachedHead=false checkout --quiet --detach "$head" ||
+    ! git -C "$worktree" reset --quiet --hard "$head"; then
+    echo "error: could not check out the carried commit '$head' in pooled worktree '$worktree'; refusing to launch" >&2
+    return 1
+  fi
+  actual=$(git -C "$worktree" rev-parse --verify --quiet HEAD 2>/dev/null || true)
+  [ "$actual" = "$head" ] || {
+    echo "error: pooled worktree '$worktree' is at '${actual:-unknown}', not the carried commit '$head'; refusing to launch" >&2
+    return 1
+  }
+}
+
 freshen_spawn_worktree_base() { # <worktree> <base-branch> <project> <mode>; 2 when the worktree is not clean
   local worktree=$1 base=${2:-} project=${3:-} mode=${4:-} default target expected reset_ref actual status
   status=$(git -C "$worktree" -c core.quotePath=false status --porcelain) || {
@@ -5239,6 +5336,10 @@ freshen_spawn_worktree_base() { # <worktree> <base-branch> <project> <mode>; 2 w
       echo "error: pooled worktree '$worktree' is not clean; refusing to discard uncommitted work while refreshing its base" >&2
     fi
     return 2
+  fi
+  if [ "$CONTINUE_FROM_SET" -eq 1 ] && [ "$FM_CONT_KIND" = ship ]; then
+    spawn_worktree_checkout_carried "$worktree"
+    return
   fi
   if ! spawn_worktree_has_origin_config "$worktree"; then
     [ -z "$base" ] || {
@@ -7828,6 +7929,8 @@ preserve_relaunch_meta() {
   [ -z "${BRANCH:-}" ] || echo "branch=$BRANCH"
   echo "tasktmp=$TASK_TMP"
   [ -z "$BASE_BRANCH" ] || echo "base_branch=$BASE_BRANCH"
+  # A relaunch keeps the recorded value through preserve_relaunch_meta.
+  [ "$RELAUNCH" -eq 1 ] || [ -z "$CONTINUE_FROM" ] || echo "continued_from=$CONTINUE_FROM"
   [ -z "$UPSTREAM_CONSENT" ] || echo "upstream_consent=$UPSTREAM_CONSENT"
   # Read by bin/fm-dod-lib.sh's ready-report gate; absent on every other forge.
   [ "$EXTERNAL_REVIEW" = 0 ] || echo "forge=external"
