@@ -1,0 +1,24 @@
+Live runtime setup attempts in this turn:
+
+1. Workspace-local private tmux socket:
+   mkdir -p .live/tmux
+   TMUX_TMPDIR=.live/tmux tmux -L fm-lab new-session -d -s probe -x 120 -y 40 'sleep 30'
+   Result: error connecting to {run-worktree}/.live/tmux/tmux-501/fm-lab (File name too long).
+   Follow-up display-message and kill-server returned the same path-length error; no server started.
+
+2. Guarded Herdr session:
+   FM_HERDR_LAB_STATE_DIR=$PWD/.live/herdr-state
+   S=$(bin/fm-herdr-lab.sh name placement)
+   bin/fm-herdr-lab.sh prepare "$S" && bin/fm-herdr-lab.sh provision "$S" && bin/fm-herdr-lab.sh run "$S" status --json
+   Result: fm-herdr-lab: fleet-state tripwire requires exactly one running default session.
+   prepare failed, so provision and status did not run. No Herdr session was created or changed. The live default session was not started or manipulated.
+
+3. Alternative isolation assessment:
+   docker info --format '{{.ServerVersion}}' returned 29.5.2.
+   docker image ls showed Python, Postgres, OpenBao verification, gateway and hello-world images, but no prepared Firstmate/harness worker image. No container was started or production credentials copied. A container would additionally need a Linux harness runtime and its own authorized login; the existing macOS login was not copied.
+   The real SSH entrypoint explicitly resolves the account's actual login home and bootstraps its remote job worker there. Thus changing FM_HOME alone does not isolate that service, and running it against the operator account would violate the workspace boundary.
+
+4. Successful bounded fallback:
+   The real fm-capacity, fm-placement, fm-spawn, tasks-axi and destination-side fm-remote-worker-control CLIs were exercised directly against two marked workspace-local lab homes. An actual OpenSSH connection to 127.0.0.1:1 used an isolated -F config, IdentityFile none, IdentityAgent none, and local known-hosts path. It failed without authentication; no remote success is claimed. See live-cli.log and live-driver.sh.
+
+The final live-driver.sh run exited 0. Earlier setup attempts omitted a pending task's brief/backlog item; both omissions were repaired using fm-brief and tasks-axi before the final run. Those were fixture errors, not product failures.

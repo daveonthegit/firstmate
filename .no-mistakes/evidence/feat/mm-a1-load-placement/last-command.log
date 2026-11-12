@@ -1,0 +1,2 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/worker
+deferred: lane capacity of this home ({run-worktree}/.live/worker/config/lane-capacity) does not admit another lane: full: 1 of 1 lanes

@@ -1,0 +1,135 @@
+{run-worktree}/.live/home
+{run-worktree}/.live/worker
+
+### full-capacity
+$ bin/fm-capacity.sh 
+capacity: free_lanes=0 reason=full lanes=1 target=1 secondmates=0 load1=7.96 cores=10 mem_free_pct=81 disk_free_mb=69619 placed=0
+Lanes: 1 running of 1 target, 0 open.
+Host: load 7.96 on 10 cores, memory free 81%, disk free 69619 MB.
+Pressure: ok from beat.
+exit=0 (expected 0)
+
+### full-automatic
+$ spawn full --harness claude 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+placement: this machine does not admit - full, 1 of 1 lanes running (load 7.96 on 10 cores, memory 79% free)
+placement: no machine admits the task now
+deferred: no machine admits task full now; nothing was placed and its backlog item stays queued - dispatch it again once a machine has room
+exit=75 (expected 75)
+
+### queued-item
+$ tasks-axi show full --file {run-worktree}/.live/home/data/backlog.md 
+task:
+  id: full
+  title: Full local lane stays queued
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-12
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+exit=0 (expected 0)
+
+### full-raw-local-only
+$ spawn raw-full sleep\ 60 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+placement: this machine - a raw launch command is not forwarded to a worker host
+deferred: lane capacity of this home ({run-worktree}/.live/home/config/lane-capacity) does not admit another lane: full: 1 of 1 lanes
+exit=75 (expected 75)
+
+### full-account-local-only
+$ spawn account-full --harness claude --account lab 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+placement: this machine - --account, --hermes-profile, and --herdr-resume-lock-wait are not forwarded to a worker host
+deferred: lane capacity of this home ({run-worktree}/.live/home/config/lane-capacity) does not admit another lane: full: 1 of 1 lanes
+exit=75 (expected 75)
+
+### full-resume-local-only
+$ spawn resume-full --harness claude --herdr-resume-lock-wait 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+placement: this machine - --account, --hermes-profile, and --herdr-resume-lock-wait are not forwarded to a worker host
+deferred: lane capacity of this home ({run-worktree}/.live/home/config/lane-capacity) does not admit another lane: full: 1 of 1 lanes
+exit=75 (expected 75)
+
+### missing-cap-raw
+$ spawn raw-nocap sleep\ 60 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+placement: this machine - a raw launch command is not forwarded to a worker host
+error: automatic placement needs this machine's readable config/lane-capacity (docs/configuration.md "Lane capacity")
+exit=1 (expected 1)
+
+### missing-cap-account
+$ spawn account-nocap --harness claude --account lab 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+placement: this machine - --account, --hermes-profile, and --herdr-resume-lock-wait are not forwarded to a worker host
+error: automatic placement needs this machine's readable config/lane-capacity (docs/configuration.md "Lane capacity")
+exit=1 (expected 1)
+
+### full-and-unreachable
+$ bin/fm-placement.sh sample 
+placement: this machine does not admit - full, 1 of 1 lanes running (load 7.96 on 10 cores, memory 71% free)
+placement: worker host laptop skipped - unreachable
+placement: no machine admits the task now
+order: 
+exit=0 (expected 0)
+
+### full-and-unreachable-spawn
+$ spawn full --harness claude 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+placement: this machine does not admit - full, 1 of 1 lanes running (load 7.64 on 10 cores, memory 70% free)
+placement: worker host laptop skipped - unreachable
+placement: no machine admits the task now
+deferred: no machine admits task full now; nothing was placed and its backlog item stays queued - dispatch it again once a machine has room
+exit=75 (expected 75)
+
+### pending-refuses-local
+$ spawn pending --harness claude --host local 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+error: earlier placement of pending on laptop must be reconciled first; re-run with --host laptop
+exit=1 (expected 1)
+
+### pending-refuses-other-host
+$ spawn pending --harness claude --host other 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+error: earlier placement of pending on laptop must be reconciled first; re-run with --host laptop
+exit=1 (expected 1)
+
+### pending-refuses-local-with-feature-off
+$ spawn pending --harness claude --host local 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+error: earlier placement of pending on laptop must be reconciled first; re-run with --host laptop
+exit=1 (expected 1)
+
+### pending-unnamed-retry-unreachable
+$ spawn pending --harness claude 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+placement: task pending was last sent to worker host laptop and its answer was lost; re-running that placement there
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/home
+ssh: connect to host 127.0.0.1 port 1: Connection refused
+error: worker host laptop (127.0.0.1) was unreachable, or whether it launched pending is unknown; nothing was recorded here and its backlog item stays queued - re-run this same spawn, which the host answers with any worker it already launched instead of launching a second one
+exit=255 (expected 255)
+
+### worker-headroom
+$ env FM_HOME={run-worktree}/.live/worker bin/fm-remote-worker-control.sh headroom sample 
+schema=fm-remote-worker-control.v1
+project=sample
+cloned=yes
+capacity: free_lanes=0 reason=full lanes=1 target=1 secondmates=0 load1=7.64 cores=10 mem_free_pct=70 disk_free_mb=69620 placed=0
+exit=0 (expected 0)
+
+### worker-locked-admission
+$ env FM_HOME={run-worktree}/.live/worker bin/fm-remote-worker-control.sh spawn remote-full sample --mode local-only --yolo off --harness claude --auto-placement 
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live/worker
+deferred: lane capacity of this home ({run-worktree}/.live/worker/config/lane-capacity) does not admit another lane: full: 1 of 1 lanes
+exit=75 (expected 75)
+
+All exercised rejection paths left no new worker metadata.
