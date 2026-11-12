@@ -572,6 +572,7 @@ cmd_named_head() {
     && fm_pr_url_parse "$url" && [ "$FM_PR_PROVIDER" = github ] \
     && [ -d "$wt" ] && command -v gh >/dev/null 2>&1; then
     fm_pr_github_host_export "$FM_PR_HOST"
+    # shellcheck disable=SC2016 # The child shell expands $1 and $2 from its positional args.
     if remote_head=$(fm_run_timed 10 "$SCRIPT_DIR/fm-gh-account.sh" exec --dir "$wt" -- \
       bash -c 'cd "$1" && gh pr view "$2" --json headRefOid -q .headRefOid 2>/dev/null' _ "$wt" "$url") \
       && fm_pr_head_valid "$remote_head"; then
