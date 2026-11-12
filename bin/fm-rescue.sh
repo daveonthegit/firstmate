@@ -6,8 +6,7 @@
 # remote-tracking branch, so ordinary bin/fm-teardown.sh accepts the work as
 # landed with no --force: the commits then exist outside the copy it returns.
 # Usage: fm-rescue.sh ensure <task-id>
-#        fm-rescue.sh prune <task-id> <project-dir> [--abandoned|--landed]
-#        fm-rescue.sh path <project-dir>
+#        fm-rescue.sh prune <task-id> <project-dir> [--abandoned]
 #   ensure creates the rescue repository for the task's project on demand
 #   (private: the directories are mode 700) and adds it to the task's copy as
 #   the git remote `fm-rescue`. A copy is a worktree of the project's clone,
@@ -26,16 +25,14 @@
 #   still points at the carried commit the record names; a ref that moved is
 #   left alone and reported, and an absent one is already pruned. It refuses,
 #   deleting nothing, while the tip still has a task record (live work) or a
-#   hand-off request of its own in progress. Without a flag it also needs
-#   proof that the tip was cleaned up rather than never spawned: its backlog
-#   item must be done. --landed is passed by bin/fm-teardown.sh right after an
-#   ordinary (not forced) cleanup of the tip, whose landed-work test is that
-#   proof; the tip must then be <task-id> itself. --abandoned is the owner's
-#   word that the work is abandoned (including a continuation that was never
-#   spawned, or one cleaned up with --force), and is the only way to prune in a
-#   home whose backlog is kept by hand. Unreachable objects leave the rescue
-#   repository through git's own garbage collection.
-#   path prints the rescue repository path for a project.
+#   hand-off request of its own in progress. Each carried commit must be
+#   contained in a remote-tracking base branch, excluding fm-rescue and
+#   no-mistakes. The base is recorded in the source task's hand-off request,
+#   or is the project's default branch when no explicit base was selected.
+#   Refresh remote-tracking refs before pruning. --abandoned is the owner's
+#   explicit word that the work is abandoned and needs no landing proof.
+#   Unreachable objects leave the rescue repository through git's own garbage
+#   collection.
 # A later cross-machine hand-off can reach the same repository from a worker
 # host over SSH: rescue_url below is the one place the remote's URL is chosen,
 # and it is a plain local path today because only same-machine hand-offs exist.
@@ -56,14 +53,11 @@ FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
-CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 
 # shellcheck source=bin/fm-continuation-lib.sh
 . "$SCRIPT_DIR/fm-continuation-lib.sh"
-# shellcheck source=bin/fm-tasks-axi-lib.sh
-. "$SCRIPT_DIR/fm-tasks-axi-lib.sh"
-# shellcheck source=bin/fm-backlog-transition-lib.sh
-. "$SCRIPT_DIR/fm-backlog-transition-lib.sh"
+# shellcheck source=bin/fm-tangle-lib.sh
+. "$SCRIPT_DIR/fm-tangle-lib.sh"
 
 RESCUE_REMOTE=fm-rescue
 
@@ -149,6 +143,22 @@ delete_ref_at() {  # <git-path> <ref> <head>
   fi
 }
 
+carried_landed() {
+  local project=$1 from=$2 head=$3 base ref remote
+  base=$(meta_get "$DATA/$from/handoff-request" base_branch)
+  [ -n "$base" ] || base=$(fm_default_branch "$project") || return 1
+  while IFS= read -r ref; do
+    remote=${ref#refs/remotes/}
+    remote=${remote%%/*}
+    case "$remote" in fm-rescue|no-mistakes) continue ;; esac
+    [ "$ref" = "refs/remotes/$remote/$base" ] || continue
+    if git -C "$project" merge-base --is-ancestor "$head" "$ref" 2>/dev/null; then
+      return 0
+    fi
+  done < <(git -C "$project" for-each-ref --format='%(refname)' refs/remotes/)
+  return 1
+}
+
 do_prune() {  # <task-id> <project-dir> <flag>
   local id=$1 project=$2 flag=$3 tip next count path cur result tracking rc=0 carried=0
   [ -d "$project" ] || die "project directory $project does not exist"
@@ -170,25 +180,6 @@ do_prune() {  # <task-id> <project-dir> <flag>
     die "task $tip, the last continuation of $id, still has a task record; its rescued work is in use until it is cleaned up"
   [ ! -e "$DATA/$tip/handoff-request" ] ||
     die "task $tip has a hand-off request in progress; finish or cancel it first"
-  case "$flag" in
-    --landed)
-      [ "$tip" = "$id" ] || die "--landed vouches for $id, but the chain continues to $tip"
-      ;;
-    --abandoned) ;;
-    '')
-      if fm_backlog_transition_applies "$CONFIG" "$DATA" ship; then
-        fm_backlog_row_probe "$DATA" "$tip" ||
-          die "cannot prove task $tip was cleaned up: its backlog item could not be read (${FM_BACKLOG_ROW_ERROR:-$FM_BACKLOG_ROW_RESULT}); pass --abandoned only with the owner's word"
-        case "$FM_BACKLOG_ROW_STATE" in
-          done\ *) ;;
-          *) die "task $tip's backlog item is ${FM_BACKLOG_ROW_STATE%% *}, so it may never have run; its rescued work stays until it lands, or pass --abandoned with the owner's word" ;;
-        esac
-      else
-        [ "$?" -ne 2 ] || die "the backlog cannot be read ($FM_BACKLOG_TRANSITION_ERROR)"
-        die "this home's backlog is kept by hand, so prune cannot prove task $tip was cleaned up; pass --abandoned only with the owner's word"
-      fi
-      ;;
-  esac
 
   cur=$tip
   while [ -f "$(fm_continuation_path "$DATA" "$cur")" ]; do
@@ -196,6 +187,12 @@ do_prune() {  # <task-id> <project-dir> <flag>
     fm_continuation_read "$DATA" "$cur" "$next" || die "$FM_CONT_ERROR"
     if [ "$FM_CONT_KIND" = ship ] && [ "$FM_CONT_REMOTE" = "$RESCUE_REMOTE" ]; then
       carried=1
+      if [ "$flag" != --abandoned ] && ! carried_landed "$project" "$FM_CONT_FROM" "$FM_CONT_HEAD"; then
+        echo "retained: $FM_CONT_BRANCH; no proof of landing on its remote base branch" >&2
+        rc=1
+        cur=$next
+        continue
+      fi
       if [ -d "$path" ]; then
         result=$(delete_ref_at "$path" "refs/heads/$FM_CONT_BRANCH" "$FM_CONT_HEAD")
       else
@@ -232,14 +229,10 @@ case "$verb" in
     [ "$#" -ge 2 ] && [ "$#" -le 3 ] || { usage >&2; exit 2; }
     fm_task_id_path_safe "$1" || { echo "error: invalid task id '$1'" >&2; exit 2; }
     case "${3:-}" in
-      ''|--abandoned|--landed) ;;
+      ''|--abandoned) ;;
       *) echo "error: unknown option ${3}" >&2; exit 2 ;;
     esac
     do_prune "$1" "$2" "${3:-}"
-    ;;
-  path)
-    [ "$#" -eq 1 ] || { usage >&2; exit 2; }
-    rescue_path "$1"
     ;;
   *) usage >&2; exit 2 ;;
 esac

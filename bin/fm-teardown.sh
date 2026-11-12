@@ -46,8 +46,8 @@
 # reachable from any remote-tracking branch other than the local no-mistakes
 # mirror (a fork counts as a remote, so upstream-contribution PRs pushed to a
 # fork satisfy this in any mode, as does a push to the private rescue remote
-# bin/fm-rescue.sh owns, whose refs an ordinary cleanup of the continuation
-# that carried them prunes; the mirror is not a forge), OR - for a
+# bin/fm-rescue.sh owns and prunes after landing or abandonment;
+# the mirror is not a forge), OR - for a
 # normal ship task whose commits are not so reachable - when its PR is merged and
 # GitHub reports a PR head that contains the current local work, or its content is
 # already present in the up-to-date default branch. This recognizes the common
@@ -4436,17 +4436,13 @@ META_LOCK_HELD=0
 if [ "$KIND" != scout ] && [ "$KIND" != secondmate ] && [ "$MODE" != local-only ]; then
   "$FM_ROOT/bin/fm-fleet-sync.sh" "$PROJ" || true
 fi
-# An ordinary cleanup of a continuation just proved its work landed, which ends
-# its hand-off chain, so bin/fm-rescue.sh releases the rescue refs that carried
-# it. A forced cleanup keeps them, as does the old task of a hand-off whose
-# request is on record. The task is already cleaned up, so a refusal only warns.
 if [ "$KIND" != scout ] && [ "$KIND" != secondmate ] && [ "$FORCE" != --force ] &&
   [ ! -e "$DATA/$ID/handoff-request" ] && printf '%s\n' "$VAULT_META_SNAPSHOT" | grep -q '^continued_from='; then
   if RESCUE_PRUNE_OUT=$(FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
-      "$SCRIPT_DIR/fm-rescue.sh" prune "$ID" "$PROJ" --landed 2>&1); then
+      "$SCRIPT_DIR/fm-rescue.sh" prune "$ID" "$PROJ" 2>&1); then
     printf '%s\n' "$RESCUE_PRUNE_OUT" | grep -v '^nothing to prune:' || true
   else
-    printf 'warning: %s was cleaned up, but its rescue refs were not all pruned:\n%s\n' "$ID" "$RESCUE_PRUNE_OUT" >&2
+    printf 'retained: rescue refs for %s after cleanup: %s\n' "$ID" "$(printf '%s' "$RESCUE_PRUNE_OUT" | tr '\n' ';')" >&2
   fi
 fi
 # A secondmate retirement may remove the home containing an overridden control

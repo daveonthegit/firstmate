@@ -116,10 +116,6 @@ test_ensure_creates_a_private_repository_and_remote() {
   printf '%s\n' "project=$case_dir/project" "worktree=$case_dir/wt1" > "$home/state/e1.meta"
   repo=$(rescue_repo "$case_dir")
 
-  out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" path "$case_dir/project")
-  [ "$out" = "$repo" ] || fail "path printed '$out', not $repo"
-  [ ! -e "$repo" ] || fail "path created the rescue repository"
-
   out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" ensure e1)
   expect_code 0 $? "ensure should create the rescue repository"$'\n'"$out"
   assert_contains "$out" "created: rescue repository $repo" "the creation was not reported"
@@ -183,9 +179,11 @@ test_cleanup_accepts_rescued_work_without_force() {
 }
 
 test_handoff_through_rescue_then_prune_on_landing() {
-  local case_dir home out head msg repo
+  local case_dir home out head msg repo mode base
   [ "$HAVE_TASKS_AXI" -eq 1 ] || { pass "skipped: tasks-axi is not installed"; return; }
-  case_dir=$(make_case handoff)
+  for mode in unchanged pushed merged; do
+  case_dir=$(make_case "handoff-$mode")
+  base=$(git -C "$case_dir/project" symbolic-ref --short HEAD)
   home=$case_dir/home
   repo=$(rescue_repo "$case_dir")
   start_ship "$case_dir" old-h1 "$case_dir/wt1"
@@ -214,11 +212,26 @@ test_handoff_through_rescue_then_prune_on_landing() {
   assert_contains "$out" "old-h1-c2, the last continuation of old-h1, still has a task record" "the live continuation was not named"
   [ "$(git -C "$repo" rev-parse refs/heads/fm/old-h1)" = "$head" ] || fail "a refused prune deleted the rescued work"
 
-  commit_work "$case_dir/wt2" fm/old-h1-c2 'second half' >/dev/null
-  git -C "$case_dir/wt2" push --quiet origin fm/old-h1-c2
+  if [ "$mode" != unchanged ]; then
+    commit_work "$case_dir/wt2" fm/old-h1-c2 'second half' >/dev/null
+    git -C "$case_dir/wt2" push --quiet origin fm/old-h1-c2
+  fi
+  if [ "$mode" = merged ]; then
+    git -C "$case_dir/wt2" push --quiet origin "HEAD:refs/heads/$base"
+  fi
   out=$(in_case "$case_dir" "$case_dir/wt2" "$TEARDOWN" old-h1-c2)
-  expect_code 0 $? "the landed continuation should clean up"$'\n'"$out"
-  assert_contains "$out" "pruned: fm/old-h1 at $head" "cleanup of the landed continuation did not prune"
+  expect_code 0 $? "the preserved continuation should clean up"$'\n'"$out"
+  if [ "$mode" != merged ]; then
+    assert_contains "$out" "retained: rescue refs" "cleanup did not report retained work"
+    [ "$(git -C "$repo" rev-parse refs/heads/fm/old-h1)" = "$head" ] || fail "cleanup deleted unmerged rescued work"
+    [ "$(git -C "$case_dir/project" rev-parse refs/remotes/fm-rescue/fm/old-h1)" = "$head" ] || fail "cleanup deleted the unmerged tracking ref"
+    out=$(in_case "$case_dir" "$case_dir/wt2" "$RESCUE" prune old-h1 "$case_dir/project")
+    expect_code 1 $? "a Done backlog item is not landing proof"
+    git -C "$case_dir/project" push --quiet origin "$head:refs/heads/$base"
+    out=$(in_case "$case_dir" "$case_dir/wt2" "$RESCUE" prune old-h1 "$case_dir/project")
+    expect_code 0 $? "merged work should prune"$'\n'"$out"
+  fi
+  assert_contains "$out" "pruned: fm/old-h1 at $head" "landing did not prune"
   if git -C "$repo" rev-parse --verify --quiet refs/heads/fm/old-h1 >/dev/null; then
     fail "the rescue repository still holds the carried branch"
   fi
@@ -229,14 +242,14 @@ test_handoff_through_rescue_then_prune_on_landing() {
   out=$(in_case "$case_dir" "$case_dir/wt2" "$RESCUE" prune old-h1 "$case_dir/project")
   expect_code 0 $? "a repeated prune should be a no-op"$'\n'"$out"
   assert_contains "$out" "already pruned: fm/old-h1" "the repeated prune was not reported"
-  pass "a hand-off carries work through the rescue remote, and the continuation's landed cleanup prunes it"
+  done
+  pass "cleanup retains unchanged or pushed work until merged, and landing prunes rescue refs"
 }
 
 # Hand-written records: old-p1 handed off through fm-rescue to old-p1-c2, whose
 # continuation was never spawned.
 test_prune_refusals_and_abandon() {
   local case_dir home out repo head moved
-  [ "$HAVE_TASKS_AXI" -eq 1 ] || { pass "skipped: tasks-axi is not installed"; return; }
   case_dir=$(make_case prune)
   home=$case_dir/home
   repo=$(rescue_repo "$case_dir")
@@ -247,22 +260,18 @@ test_prune_refusals_and_abandon() {
   git -C "$case_dir/wt1" push --quiet fm-rescue fm/old-p1
   bash -c '. "$1/bin/fm-continuation-lib.sh"; fm_continuation_write "$2" old-p1-c2 old-p1 ship fm-rescue fm/old-p1 "$3"' _ "$ROOT" "$home/data" "$head" ||
     fail "fixture: could not write the continuation record"
-  backlog "$case_dir" add old-p1-c2 "widget work" --kind ship --queue >/dev/null
 
   out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-p1 "$case_dir/project")
-  expect_code 1 $? "prune must refuse a continuation that may never have run"
-  assert_contains "$out" "backlog item is queued" "the queued continuation was not named"
-  out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-p1 "$case_dir/project" --landed)
-  expect_code 1 $? "--landed must vouch for the chain's tip only"
-  assert_contains "$out" "the chain continues to old-p1-c2" "the misdirected --landed was not named"
+  expect_code 1 $? "prune must retain unmerged work"
+  assert_contains "$out" "no proof of landing" "unmerged work was not reported"
   touch "$home/data/old-p1-c2/handoff-request"
   out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-p1 "$case_dir/project" --abandoned)
   expect_code 1 $? "prune must refuse while the tip has a hand-off in progress"
   rm "$home/data/old-p1-c2/handoff-request"
   printf '%s\n' manual > "$home/config/backlog-backend"
   out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-p1 "$case_dir/project")
-  expect_code 1 $? "a hand-kept backlog cannot prove the continuation ran"
-  assert_contains "$out" "kept by hand" "the manual backlog was not named"
+  expect_code 1 $? "manual backlog mode must not bypass landing proof"
+  assert_contains "$out" "no proof of landing" "unmerged work was not reported"
   rm "$home/config/backlog-backend"
   [ "$(git -C "$repo" rev-parse refs/heads/fm/old-p1)" = "$head" ] || fail "a refused prune deleted the rescued work"
 
@@ -280,7 +289,41 @@ test_prune_refusals_and_abandon() {
   if git -C "$repo" rev-parse --verify --quiet refs/heads/fm/old-p1 >/dev/null; then
     fail "the abandoned rescue branch was not pruned"
   fi
-  pass "prune refuses live, unproven, or misdirected chains and moved refs, and --abandoned prunes"
+  if git -C "$case_dir/project" rev-parse --verify --quiet refs/remotes/fm-rescue/fm/old-p1 >/dev/null; then
+    fail "the abandoned tracking ref was not pruned"
+  fi
+  pass "prune retains unmerged work and moved refs, and --abandoned prunes"
+}
+
+test_prune_requires_the_recorded_base() {
+  local case_dir home out repo head base
+  case_dir=$(make_case named-base)
+  home=$case_dir/home
+  repo=$(rescue_repo "$case_dir")
+  base=$(git -C "$case_dir/project" symbolic-ref --short HEAD)
+  printf '%s\n' "project=$case_dir/project" "worktree=$case_dir/wt1" > "$home/state/old-b1.meta"
+  in_case "$case_dir" "$case_dir/wt1" "$RESCUE" ensure old-b1 >/dev/null || fail "fixture: ensure failed"
+  rm "$home/state/old-b1.meta"
+  head=$(commit_work "$case_dir/wt1" fm/old-b1 'carried to release')
+  git -C "$case_dir/wt1" push --quiet fm-rescue fm/old-b1
+  bash -c '. "$1/bin/fm-continuation-lib.sh"; fm_continuation_write "$2" old-b1-c2 old-b1 ship fm-rescue fm/old-b1 "$3"' _ "$ROOT" "$home/data" "$head" ||
+    fail "fixture: could not write the continuation record"
+  mkdir -p "$home/data/old-b1"
+  printf '%s\n' 'base_branch=release/next' > "$home/data/old-b1/handoff-request"
+  git -C "$case_dir/wt1" push --quiet origin "HEAD:refs/heads/$base" fm/old-b1
+  git -C "$case_dir/project" update-ref refs/remotes/no-mistakes/release/next "$head"
+  git -C "$case_dir/project" update-ref refs/remotes/fm-rescue/release/next "$head"
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-b1 "$case_dir/project")
+  expect_code 1 $? "only the recorded remote base may prove landing"
+  [ "$(git -C "$repo" rev-parse refs/heads/fm/old-b1)" = "$head" ] || fail "a non-target branch caused rescue deletion"
+  [ "$(git -C "$case_dir/project" rev-parse refs/remotes/fm-rescue/fm/old-b1)" = "$head" ] || fail "a non-target branch caused tracking deletion"
+  git -C "$case_dir/wt1" push --quiet origin HEAD:refs/heads/release/next
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-b1-c2 "$case_dir/project")
+  expect_code 0 $? "landing on the recorded base should prune"$'\n'"$out"
+  if git -C "$repo" rev-parse --verify --quiet refs/heads/fm/old-b1 >/dev/null; then
+    fail "landing on the recorded base did not prune"
+  fi
+  pass "prune requires the recorded base, excluding feature branches and local mirrors"
 }
 
 test_prune_ignores_hand_offs_through_other_remotes() {
@@ -291,7 +334,7 @@ test_prune_ignores_hand_offs_through_other_remotes() {
   git -C "$case_dir/wt1" push --quiet origin fm/old-o1
   bash -c '. "$1/bin/fm-continuation-lib.sh"; fm_continuation_write "$2" old-o1-c2 old-o1 ship origin fm/old-o1 "$3"' _ "$ROOT" "$home/data" "$head" ||
     fail "fixture: could not write the continuation record"
-  out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-o1-c2 "$case_dir/project" --landed)
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-o1-c2 "$case_dir/project")
   expect_code 0 $? "a chain carried through origin has nothing to prune"$'\n'"$out"
   assert_contains "$out" "nothing to prune" "the empty prune was not reported"
   [ "$(git -C "$case_dir/origin.git" rev-parse refs/heads/fm/old-o1)" = "$head" ] || fail "prune touched origin"
@@ -303,4 +346,5 @@ fm_test_run \
   test_cleanup_accepts_rescued_work_without_force \
   test_handoff_through_rescue_then_prune_on_landing \
   test_prune_refusals_and_abandon \
+  test_prune_requires_the_recorded_base \
   test_prune_ignores_hand_offs_through_other_remotes
