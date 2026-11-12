@@ -1,0 +1,95 @@
+$ tmux -L fm-lab new-session -d -s fm-lab-rescue -n idle -x 100 -y 30 bash
+[exit 0]
+
+$ {run-worktree}/bin/fm-lab-home.sh create $LAB/home
+$LAB/home
+[exit 0]
+
+$ git init -q -b main $LAB/project
+[exit 0]
+
+$ git -C $LAB/project config user.name Live
+[exit 0]
+
+$ git -C $LAB/project config user.email live@example.invalid
+[exit 0]
+
+$ git -C $LAB/project add .
+[exit 0]
+
+$ git -C $LAB/project commit -qm base
+[exit 0]
+
+$ git init --bare -q $LAB/origin.git
+[exit 0]
+
+$ git -C $LAB/project remote add origin $LAB/origin.git
+[exit 0]
+
+$ git -C $LAB/project push -qu origin main
+[exit 0]
+
+$ treehouse get --lease --no-fetch -b fm/cleanup
+🌳 Setting up worktree...
+🌳 Leased worktree at $LAB/pool/.treehouse/project-73d3ee/1/project. Run 'treehouse return $LAB/pool/.treehouse/project-73d3ee/1/project' to release it.
+$LAB/pool/.treehouse/project-73d3ee/1/project
+[exit 0]
+
+$ git -C $LAB/pool/.treehouse/project-73d3ee/1/project add .
+[exit 0]
+
+$ git -C $LAB/pool/.treehouse/project-73d3ee/1/project commit -qm feature
+[exit 0]
+
+$ git -C $LAB/pool/.treehouse/project-73d3ee/1/project rev-parse HEAD
+eebc8beb45a6db809694714d351dc13b64bc760b
+[exit 0]
+
+$ {run-worktree}/bin/fm-teardown.sh cleanup
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB/home
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REFUSED: worktree $LAB/pool/.treehouse/project-73d3ee/1/project has work not on any remote and not landed.
+unpushed commits:
+eebc8be feature
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+[exit 1]
+
+$ {run-worktree}/bin/fm-rescue.sh ensure cleanup
+created: rescue repository $LAB/user/fm-rescue/project.git
+ready: task cleanup's copy pushes to remote 'fm-rescue' at $LAB/user/fm-rescue/project.git
+[exit 0]
+
+$ git -C $LAB/pool/.treehouse/project-73d3ee/1/project push -q fm-rescue fm/cleanup
+[exit 0]
+
+$ {run-worktree}/bin/fm-teardown.sh cleanup
+fm-gate-refuse: gate agent lifecycle permitted only against lab home $LAB/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for cleanup: 92249
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+$LAB/project: already current
+teardown cleanup complete (window fm-lab-rescue:fm-cleanup, worktree $LAB/pool/.treehouse/project-73d3ee/1/project)
+Backlog: cleanup just finished (config/backlog-backend selects manual editing). Update $LAB/home/data/backlog.md - move cleanup to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+[exit 0]
+
+$ git -C $LAB/user/fm-rescue/project.git rev-parse refs/heads/fm/cleanup
+eebc8beb45a6db809694714d351dc13b64bc760b
+[exit 0]
+
+$ git -C $LAB/origin.git for-each-ref --format=%(refname) refs/heads
+refs/heads/main
+[exit 0]
+
+PASS: actual fm-teardown refused unpushed work, accepted rescue-only work without --force, retained durable rescue head, and left origin with main only.
+
+$ tmux -L fm-lab kill-server
+[exit 0]

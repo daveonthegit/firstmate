@@ -1,0 +1,10 @@
+1..7
+ok - fm-rescue ensure creates a private bare repository and a shared fm-rescue remote, and refuses conflicts
+ok - ordinary cleanup accepts work pushed only to the rescue remote, with no --force
+Rebasing (1/1)Successfully rebased and updated detached HEAD.
+ok - cleanup retains unchanged or pushed work until merged, and landing prunes rescue refs
+ok - prune retains unmerged work and moved refs, and --abandoned prunes
+ok - merged PR pruning requires all carried work, allowing equivalent rebased commits
+ok - prune requires the recorded base, excluding feature branches and local mirrors
+ok - prune leaves hand-offs carried through other remotes alone
+FM_TEST_COMPLETE

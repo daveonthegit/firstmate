@@ -1,0 +1,143 @@
+
+SCENARIO 1: On-demand handoff request creates private rescue storage; conflicts stay untouched
+{run-worktree}/.test-rescue-tmp/live/request/home
+created: rescue repository {run-worktree}/.test-rescue-tmp/live/request/user/fm-rescue/project.git
+ready: task source's copy pushes to remote 'fm-rescue' at {run-worktree}/.test-rescue-tmp/live/request/user/fm-rescue/project.git
+requested: source asked to commit, push, and write its notes for continuation as source-c2; re-run this command after its 'paused: handoff ready' line
+if the worker cannot answer (stopped, out of context, or out of usage), recover it as a stuck worker first; firstmate never commits inside a project copy
+ready: task source's copy pushes to remote 'fm-rescue' at {run-worktree}/.test-rescue-tmp/live/request/user/fm-rescue/project.git
+drwx------  3 davidxiao  staff   96 Nov 12 09:16 {run-worktree}/.test-rescue-tmp/live/request/user/fm-rescue
+drwx------  9 davidxiao  staff  288 Nov 12 09:16 {run-worktree}/.test-rescue-tmp/live/request/user/fm-rescue/project.git
+001.msg
+handled
+error: task source's copy already has a remote 'fm-rescue' at '{run-worktree}/.test-rescue-tmp/live/request/unrelated.git', not '{run-worktree}/.test-rescue-tmp/live/request/user/fm-rescue/project.git'; it is left unchanged
+refusal exit=1
+PASS 1: request persisted; steer delivered; repeat ensure works; conflicting URL unchanged
+
+SCENARIO 2: Real teardown rejects unpreserved work, then accepts rescue-only work without --force
+{run-worktree}/.test-rescue-tmp/live/cleanup/home
+Deleted branch fm/source (was aa336dc).
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.test-rescue-tmp/live/cleanup/pool/.treehouse/project-0f870f/1/project. Run 'treehouse return {run-worktree}/.test-rescue-tmp/live/cleanup/pool/.treehouse/project-0f870f/1/project' to release it.
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-rescue-tmp/live/cleanup/home
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REFUSED: worktree {run-worktree}/.test-rescue-tmp/live/cleanup/pool/.treehouse/project-0f870f/1/project has work not on any remote and not landed.
+unpushed commits:
+263f386 rescued feature
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+refusal exit=1
+created: rescue repository {run-worktree}/.test-rescue-tmp/live/cleanup/user/fm-rescue/project.git
+ready: task source's copy pushes to remote 'fm-rescue' at {run-worktree}/.test-rescue-tmp/live/cleanup/user/fm-rescue/project.git
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-rescue-tmp/live/cleanup/home
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+teardown: reaping leaked worktree process(es) for source: 40412 42578
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+{run-worktree}/.test-rescue-tmp/live/cleanup/project: already current
+teardown source complete (window fm-lab-rescue:fm-source, worktree {run-worktree}/.test-rescue-tmp/live/cleanup/pool/.treehouse/project-0f870f/1/project)
+Backlog: source just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.test-rescue-tmp/live/cleanup/home/data/backlog.md - move source to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+durable rescue + tracking refs retain 263f386bc2b5cb8ce564c36a7564c57ab0acd6fa
+PASS 2: cleanup removed task record, returned real Treehouse slot, retained external rescue; origin untouched
+
+SCENARIO 3: Live and pending continuations, feature pushes and wrong bases cannot prune; actual base landing can
+{run-worktree}/.test-rescue-tmp/live/base/home
+created: rescue repository {run-worktree}/.test-rescue-tmp/live/base/user/fm-rescue/project.git
+ready: task source's copy pushes to remote 'fm-rescue' at {run-worktree}/.test-rescue-tmp/live/base/user/fm-rescue/project.git
+error: task source-c2, the last continuation of source, still has a task record; its rescued work is in use until it is cleaned up
+refusal exit=1
+error: task source-c2 has a hand-off request in progress; finish or cancel it first
+refusal exit=1
+retained: fm/source; no proof of landing on its remote base branch or in a merged PR
+refusal exit=1
+durable rescue + tracking refs retain 91781789b7c677a8cc17f4f803c82271a523c7e3
+pruned: fm/source at 91781789b7c677a8cc17f4f803c82271a523c7e3 from {run-worktree}/.test-rescue-tmp/live/base/user/fm-rescue/project.git (carried from source to source-c2)
+rescue branch and tracking ref both absent
+already pruned: fm/source from {run-worktree}/.test-rescue-tmp/live/base/user/fm-rescue/project.git (carried from source to source-c2)
+PASS 3: guarded until recorded target landed; repeated prune harmless
+
+SCENARIO 4: Rebase plus real squash merge prunes only with synthetic MERGED forge evidence
+{run-worktree}/.test-rescue-tmp/live/rebase/home
+created: rescue repository {run-worktree}/.test-rescue-tmp/live/rebase/user/fm-rescue/project.git
+ready: task source's copy pushes to remote 'fm-rescue' at {run-worktree}/.test-rescue-tmp/live/rebase/user/fm-rescue/project.git
+Rebasing (1/2)Rebasing (2/2)Successfully rebased and updated refs/heads/fm/source.
+Updating c603971..830c992
+Fast-forward
+Squash commit -- not updating HEAD
+ second.txt | 1 +
+ widget.txt | 1 +
+ 2 files changed, 2 insertions(+)
+ create mode 100644 second.txt
+ create mode 100644 widget.txt
+retained: fm/source; no proof of landing on its remote base branch or in a merged PR
+refusal exit=1
+retained: fm/source; no proof of landing on its remote base branch or in a merged PR
+refusal exit=1
+durable rescue + tracking refs retain 6bc786900266f67cbbfa408134e61e7290e0e48e
+pruned: fm/source at 6bc786900266f67cbbfa408134e61e7290e0e48e from {run-worktree}/.test-rescue-tmp/live/rebase/user/fm-rescue/project.git (carried from source to source-c2)
+rescue branch and tracking ref both absent
+PASS 4: actual rewritten and squash-landed content pruned; open/unavailable responses retained refs (synthetic forge, not GitHub validation)
+
+SCENARIO 5: A synthetically merged PR that drops all or some carried work retains both rescue refs
+{run-worktree}/.test-rescue-tmp/live/dropped/home
+created: rescue repository {run-worktree}/.test-rescue-tmp/live/dropped/user/fm-rescue/project.git
+ready: task source's copy pushes to remote 'fm-rescue' at {run-worktree}/.test-rescue-tmp/live/dropped/user/fm-rescue/project.git
+retained: fm/source; no proof of landing on its remote base branch or in a merged PR
+refusal exit=1
+durable rescue + tracking refs retain ebafd9aaa6becee110f91128356bc45e6f69d0dc
+PASS 5/dropped: actual landed head omits carried content; no deletion despite synthetic MERGED state
+{run-worktree}/.test-rescue-tmp/live/partial/home
+created: rescue repository {run-worktree}/.test-rescue-tmp/live/partial/user/fm-rescue/project.git
+ready: task source's copy pushes to remote 'fm-rescue' at {run-worktree}/.test-rescue-tmp/live/partial/user/fm-rescue/project.git
+[main a0e8dfd] first carried feature
+ Date: Thu Nov 12 09:16:52 2026 -0500
+ 1 file changed, 1 insertion(+)
+ create mode 100644 widget.txt
+retained: fm/source; no proof of landing on its remote base branch or in a merged PR
+refusal exit=1
+durable rescue + tracking refs retain 0723838f4e0fb110a0da7f535ef11c95ae4ecd86
+PASS 5/partial: actual landed head omits carried content; no deletion despite synthetic MERGED state
+
+SCENARIO 6: Abandonment deletes only unchanged refs; other remotes remain intact
+{run-worktree}/.test-rescue-tmp/live/abandon/home
+created: rescue repository {run-worktree}/.test-rescue-tmp/live/abandon/user/fm-rescue/project.git
+ready: task source's copy pushes to remote 'fm-rescue' at {run-worktree}/.test-rescue-tmp/live/abandon/user/fm-rescue/project.git
+warning: {run-worktree}/.test-rescue-tmp/live/abandon/user/fm-rescue/project.git has fm/source at dead8810d7d469ed7ab66f4bef2f034e5315e2f4, not the carried ab112a804dff1203bb97de212ce11d27855a113e; left in place
+warning: {run-worktree}/.test-rescue-tmp/live/abandon/project has fm-rescue/fm/source at dead8810d7d469ed7ab66f4bef2f034e5315e2f4, not the carried ab112a804dff1203bb97de212ce11d27855a113e; left in place
+refusal exit=1
+moved rescue ref retained at dead8810d7d469ed7ab66f4bef2f034e5315e2f4
+pruned: fm/source at ab112a804dff1203bb97de212ce11d27855a113e from {run-worktree}/.test-rescue-tmp/live/abandon/user/fm-rescue/project.git (carried from source to source-c2)
+rescue branch and tracking ref both absent
+origin main unchanged: fa77aa661516eae755f38355a80442b710a2c46e
+PASS 6: explicit abandonment prunes; moved work remains protected
+
+ALL LIVE LOCAL SCENARIOS COMPLETED
+
+Generated handoff request:
+schema=fm-handoff-request.v1
+to=local
+kind=ship
+new_id=source-c2
+remote=fm-rescue
+reason=
+status_offset=0
+requested_at=1794493000
+
+Delivered inbox message:
+schema=fm-task-inbox.v1
+at=2026-11-12T14:16:40Z
+body-terminator=1
+--
+Firstmate is handing this task off to a fresh thread on this machine. Stop your current step at the next safe point and do only this:
+1. If a no-mistakes validation run is active for your branch, leave it alone: append `blocked [at=<epoch>]: handoff refused, validation run active` and stop.
+2. Commit everything in your copy, untracked files included, to your branch `fm/source` as one work-in-progress commit; skip this when the copy is already clean.
+3. Write `{run-worktree}/.test-rescue-tmp/live/request/home/data/source/handoff-notes.md` for the next worker: what is done, what is left, what you tried that failed, and how to verify.
+4. Push your branch: `git -C {run-worktree}/.test-rescue-tmp/live/request/copy push fm-rescue fm/source`. This one push of your own task branch is authorized for the hand-off; never push the default branch.
+5. Append `paused [at=<epoch>]: handoff ready fm/source <the full 40-character commit id of your branch head>` to your status file, then stop; firstmate takes it from here.

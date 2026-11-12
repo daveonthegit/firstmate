@@ -1,32 +1,264 @@
-A new version of treehouse is available: v3.1.2 → v3.1.8
-Run "treehouse update" to update
+$ {run-worktree}/bin/fm-lab-home.sh create $LAB/home
+$LAB/home
+[exit 0]
 
-🌳 Setting up worktree...
-🌳 Leased worktree at {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget. Run 'treehouse return {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget' to release it.
-=== Handoff request creates rescue remote on demand ===
-created: rescue repository {run-worktree}/.l/user/fm-rescue/widget.git
-ready: task a's copy pushes to remote 'fm-rescue' at {run-worktree}/.l/user/fm-rescue/widget.git
-requested: a asked to commit, push, and write its notes for continuation as a-c2; re-run this command after its 'paused: handoff ready' line
-if the worker cannot answer (stopped, out of context, or out of usage), recover it as a stuck worker first; firstmate never commits inside a project copy
-bare=true permissions=700
-ready: task a's copy pushes to remote 'fm-rescue' at {run-worktree}/.l/user/fm-rescue/widget.git
-cancelled: the hand-off of a as a-c2
-=== Cleanup refuses unpreserved work ===
-fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
-WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
-REFUSED: worktree {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget has work not on any remote and not landed.
-unpushed commits:
-d808553 carried
-Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
-=== Push rescue, cleanup without force ===
-fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
-WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
-A new version of treehouse is available: v3.1.2 → v3.1.8
-Run "treehouse update" to update
+$ git init -q -b main $LAB/project
+[exit 0]
 
-🌳 Worktree returned to pool.
-widget: already current
-teardown a complete (window primary:fm-a, worktree {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget)
-Backlog: a just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.l/data/backlog.md - move a to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
-Rescued commit d808553a1a1ca4220ba814d3b07719e83e8f04a6 survives outside returned copy; origin has only main.
-BASE-LIVE-PASS
+$ git -C $LAB/project config user.name Live Test
+[exit 0]
+
+$ git -C $LAB/project config user.email live@example.invalid
+[exit 0]
+
+$ git -C $LAB/project add .
+[exit 0]
+
+$ git -C $LAB/project commit -qm base
+[exit 0]
+
+$ git -C $LAB/project rev-parse HEAD
+379fbaaa8d758e41c2819f8456b12c9c7043b7c3
+[exit 0]
+
+$ git init --bare -q $LAB/origin.git
+[exit 0]
+
+$ git -C $LAB/project remote add origin $LAB/origin.git
+[exit 0]
+
+$ git -C $LAB/project push -q -u origin main
+[exit 0]
+
+$ git -C $LAB/project worktree add -q -b fm/carry $LAB/copy
+[exit 0]
+
+$ {run-worktree}/bin/fm-rescue.sh ensure carry
+created: rescue repository $LAB/user/fm-rescue/project.git
+ready: task carry's copy pushes to remote 'fm-rescue' at $LAB/user/fm-rescue/project.git
+[exit 0]
+
+$ {run-worktree}/bin/fm-rescue.sh ensure carry
+ready: task carry's copy pushes to remote 'fm-rescue' at $LAB/user/fm-rescue/project.git
+[exit 0]
+
+$ git -C $LAB/user/fm-rescue/project.git rev-parse --is-bare-repository
+true
+[exit 0]
+
+$ git -C $LAB/project remote set-url fm-rescue $LAB/conflict.git
+[exit 0]
+
+$ {run-worktree}/bin/fm-rescue.sh ensure carry
+error: task carry's copy already has a remote 'fm-rescue' at '$LAB/conflict.git', not '$LAB/user/fm-rescue/project.git'; it is left unchanged
+[exit 1]
+
+$ git -C $LAB/project remote get-url fm-rescue
+$LAB/conflict.git
+[exit 0]
+
+$ git -C $LAB/project remote set-url fm-rescue $LAB/user/fm-rescue/project.git
+[exit 0]
+
+$ git -C $LAB/copy add .
+[exit 0]
+
+$ git -C $LAB/copy commit -qm carried feature
+[exit 0]
+
+$ git -C $LAB/copy rev-parse HEAD
+93a0b3526769996ec613c0e1b700283a8b8d4c61
+[exit 0]
+
+$ git -C $LAB/copy push -q fm-rescue fm/carry
+[exit 0]
+
+$ git -C $LAB/origin.git for-each-ref --format=%(refname) refs/heads
+refs/heads/main
+[exit 0]
+
+$ bash -c . "$1/bin/fm-continuation-lib.sh"; fm_continuation_write "$2" carry-c2 carry ship fm-rescue fm/carry "$3" _ {run-worktree} $LAB/home/data 93a0b3526769996ec613c0e1b700283a8b8d4c61
+[exit 0]
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project
+error: task carry-c2, the last continuation of carry, still has a task record; its rescued work is in use until it is cleaned up
+[exit 1]
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project
+retained: fm/carry; no proof of landing on its remote base branch or in a merged PR
+[exit 1]
+
+$ git -C $LAB/user/fm-rescue/project.git rev-parse refs/heads/fm/carry
+93a0b3526769996ec613c0e1b700283a8b8d4c61
+[exit 0]
+
+$ git -C $LAB/copy push -q origin HEAD:refs/heads/main
+[exit 0]
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project
+pruned: fm/carry at 93a0b3526769996ec613c0e1b700283a8b8d4c61 from $LAB/user/fm-rescue/project.git (carried from carry to carry-c2)
+[exit 0]
+
+$ git -C $LAB/user/fm-rescue/project.git for-each-ref --format=%(refname) refs/heads/fm/carry
+[exit 0]
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project
+already pruned: fm/carry from $LAB/user/fm-rescue/project.git (carried from carry to carry-c2)
+[exit 0]
+
+$ git -C $LAB/copy push -q --force origin 379fbaaa8d758e41c2819f8456b12c9c7043b7c3:refs/heads/main
+[exit 0]
+
+$ git -C $LAB/copy push -q fm-rescue fm/carry
+[exit 0]
+
+$ git -C $LAB/copy commit -qam more work
+[exit 0]
+
+$ git -C $LAB/copy rev-parse HEAD
+28367eebacd78bf607df90d754dd49174a07ab33
+[exit 0]
+
+$ git -C $LAB/copy push -q fm-rescue fm/carry
+[exit 0]
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project --abandoned
+warning: $LAB/user/fm-rescue/project.git has fm/carry at 28367eebacd78bf607df90d754dd49174a07ab33, not the carried 93a0b3526769996ec613c0e1b700283a8b8d4c61; left in place
+warning: $LAB/project has fm-rescue/fm/carry at 28367eebacd78bf607df90d754dd49174a07ab33, not the carried 93a0b3526769996ec613c0e1b700283a8b8d4c61; left in place
+[exit 1]
+
+$ git -C $LAB/user/fm-rescue/project.git rev-parse refs/heads/fm/carry
+28367eebacd78bf607df90d754dd49174a07ab33
+[exit 0]
+
+$ git -C $LAB/copy push -q --force fm-rescue 93a0b3526769996ec613c0e1b700283a8b8d4c61:refs/heads/fm/carry
+[exit 0]
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project --abandoned
+pruned: fm/carry at 93a0b3526769996ec613c0e1b700283a8b8d4c61 from $LAB/user/fm-rescue/project.git (carried from carry to carry-c2)
+[exit 0]
+
+$ git -C $LAB/copy reset --hard 93a0b3526769996ec613c0e1b700283a8b8d4c61
+HEAD is now at 93a0b35 carried feature
+[exit 0]
+
+$ git -C $LAB/project add .
+[exit 0]
+
+$ git -C $LAB/project commit -qm advance main
+[exit 0]
+
+$ git -C $LAB/project push -q origin main
+[exit 0]
+
+$ git -C $LAB/copy rebase origin/main
+Rebasing (1/1)
+Successfully rebased and updated refs/heads/fm/carry.
+[exit 0]
+
+$ git -C $LAB/copy rev-parse HEAD
+bc2416639941a1bf9d3facb5f14b27c65687d1b0
+[exit 0]
+
+$ git -C $LAB/project merge --squash fm/carry
+Updating 28e8796..bc24166
+Fast-forward
+Squash commit -- not updating HEAD
+ widget.txt | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 widget.txt
+[exit 0]
+
+$ git -C $LAB/project commit -qm squash carried feature
+[exit 0]
+
+$ git -C $LAB/project push -q origin main
+[exit 0]
+
+$ git -C $LAB/project merge-base --is-ancestor 93a0b3526769996ec613c0e1b700283a8b8d4c61 origin/main
+[exit 1]
+
+$ openssl req -x509 -newkey rsa:2048 -nodes -keyout $LAB/key.pem -out $LAB/cert.pem -days 1 -subj /CN=rescue.example.test -addext subjectAltName=DNS:rescue.example.test
+.....+++++++++++++++++++++++++++++++++++++++*..........+..+.......+...............+......+...+..+...+.......+...+++++++++++++++++++++++++++++++++++++++*....+..+......+...+...............+....+...+..+......+.+.....+...+.......+...+..+.+.....+...+....+......+...............+......+...........+....+.........+..+....+.....+.+..................+..+............+...+....+...+..+......+........................+....+..+..........+...+.........+...........+......+...+.+.....+.+......+..+...+....+.....+...............+.+............+......+...............+.....+.+...+..+.........+............+...+.........+......+....+......+..+.......+..+.+.....+.......+.....+.+............++++++
+...+......+......+...........+...+....+..+..........+++++++++++++++++++++++++++++++++++++++*....+.+.........+...+..+...+.+......+...+...........+.+......+..+.......+......+..+++++++++++++++++++++++++++++++++++++++*.....+..+.+.....+.+........+......+...............+....+........+...+.......+....................+...+.+......+...+..+....+.....+...+......+..........+.....+.+.....+.+.....+...............+...+............+....+.....+...+.+..+.......+...+.........+.....+.+...+...........+.+..+......+.+.....+.........+.+.......................+...+............+.+..+......................+...+..+......+................+.....+......+...+....+..+.+...+..+...+......+.+..+............+....+..............+.+.....+.+......+..+.......+......+...+......+...........+.........+.+...+.....+......+.+..+...............+.+.....+....+...........+.+...+...+...+...............+.....+......+...+......+.+...+...+...+..+............++++++
+-----
+[exit 0]
+
+$ git -C $LAB/copy push -q fm-rescue 93a0b3526769996ec613c0e1b700283a8b8d4c61:refs/heads/fm/carry
+[exit 0]
+
+LOCAL GRAPHQL {"query":"\n\tquery PullRequestByNumber($owner: String!, $repo: String!, $pr_number: Int!) {\n\t\trepository(owner: $owner, name: $repo) {\n\t\t\tpullRequest(number: $pr_number) {state,headRefOid,url,id,number}\n\t\t}\n\t}","variables":{"owner":"owner","pr_number":7,"repo":"repo"}}
+
+$ gh pr view https://rescue.example.test/owner/repo/pull/7 --json state,headRefOid,url
+{"headRefOid":"bc2416639941a1bf9d3facb5f14b27c65687d1b0","state":"OPEN","url":"https://rescue.example.test/owner/repo/pull/7"}
+[exit 0]
+
+LOCAL GRAPHQL {"query":"\n\tquery PullRequestByNumber($owner: String!, $repo: String!, $pr_number: Int!) {\n\t\trepository(owner: $owner, name: $repo) {\n\t\t\tpullRequest(number: $pr_number) {state,headRefOid,url,id,number}\n\t\t}\n\t}","variables":{"owner":"owner","pr_number":7,"repo":"repo"}}
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project
+retained: fm/carry; no proof of landing on its remote base branch or in a merged PR
+[exit 1]
+
+$ git -C $LAB/user/fm-rescue/project.git rev-parse refs/heads/fm/carry
+93a0b3526769996ec613c0e1b700283a8b8d4c61
+[exit 0]
+
+LOCAL GRAPHQL {"query":"\n\tquery PullRequestByNumber($owner: String!, $repo: String!, $pr_number: Int!) {\n\t\trepository(owner: $owner, name: $repo) {\n\t\t\tpullRequest(number: $pr_number) {state,headRefOid,url,id,number}\n\t\t}\n\t}","variables":{"owner":"owner","pr_number":7,"repo":"repo"}}
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project
+retained: fm/carry; no proof of landing on its remote base branch or in a merged PR
+[exit 1]
+
+$ git -C $LAB/user/fm-rescue/project.git rev-parse refs/heads/fm/carry
+93a0b3526769996ec613c0e1b700283a8b8d4c61
+[exit 0]
+
+LOCAL GRAPHQL {"query":"\n\tquery PullRequestByNumber($owner: String!, $repo: String!, $pr_number: Int!) {\n\t\trepository(owner: $owner, name: $repo) {\n\t\t\tpullRequest(number: $pr_number) {state,headRefOid,url,id,number}\n\t\t}\n\t}","variables":{"owner":"owner","pr_number":7,"repo":"repo"}}
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project
+pruned: fm/carry at 93a0b3526769996ec613c0e1b700283a8b8d4c61 from $LAB/user/fm-rescue/project.git (carried from carry to carry-c2)
+[exit 0]
+
+$ git -C $LAB/user/fm-rescue/project.git for-each-ref --format=%(refname) refs/heads/fm/carry
+[exit 0]
+
+PASS: rebased then squash-landed carried feature pruned only after the synthetic forge reported MERGED.
+
+$ git -C $LAB/project push -q --force origin 379fbaaa8d758e41c2819f8456b12c9c7043b7c3:refs/heads/main
+[exit 0]
+
+$ git -C $LAB/copy reset --hard 379fbaaa8d758e41c2819f8456b12c9c7043b7c3
+HEAD is now at 379fbaa base
+[exit 0]
+
+$ git -C $LAB/copy add .
+[exit 0]
+
+$ git -C $LAB/copy commit -qm different feature
+[exit 0]
+
+$ git -C $LAB/copy rev-parse HEAD
+f7cecbfd57f4063f37a5bc3767d15a4023db27a5
+[exit 0]
+
+$ git -C $LAB/copy push -q origin HEAD:refs/heads/main
+[exit 0]
+
+$ git -C $LAB/copy push -q fm-rescue 93a0b3526769996ec613c0e1b700283a8b8d4c61:refs/heads/fm/carry
+[exit 0]
+
+LOCAL GRAPHQL {"query":"\n\tquery PullRequestByNumber($owner: String!, $repo: String!, $pr_number: Int!) {\n\t\trepository(owner: $owner, name: $repo) {\n\t\t\tpullRequest(number: $pr_number) {state,headRefOid,url,id,number}\n\t\t}\n\t}","variables":{"owner":"owner","pr_number":7,"repo":"repo"}}
+
+$ {run-worktree}/bin/fm-rescue.sh prune carry $LAB/project
+pruned: fm/carry at 93a0b3526769996ec613c0e1b700283a8b8d4c61 from $LAB/user/fm-rescue/project.git (carried from carry to carry-c2)
+[exit 0]
+
+$ git -C $LAB/user/fm-rescue/project.git for-each-ref --format=%(refname) refs/heads/fm/carry
+[exit 0]
+
+ADVERSARIAL ORACLE: continuation discarded widget.txt and landed different feature at f7cecbfd57f4063f37a5bc3767d15a4023db27a5; synthetic merged PR reports that real Git head. It contains no carried feature. Expected retention; actual prune exit=0, rescue_ref_exists=False.
+
+$ git -C $LAB/project for-each-ref --format=%(refname) refs/remotes/fm-rescue/fm/carry
+[exit 0]
+
+FAIL: merged PR unrelated to carried work deleted rescue ref; tracking_ref=absent.
