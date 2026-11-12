@@ -26,12 +26,15 @@
 #   still points at the carried commit the record names; a ref that moved is
 #   left alone and reported, and an absent one is already pruned. It refuses,
 #   deleting nothing, while the tip still has a task record (live work) or a
-#   hand-off request of its own in progress. Each carried commit must be
-#   contained in a remote-tracking base branch, excluding fm-rescue and
-#   no-mistakes. The base is recorded in the source task's hand-off request,
+#   hand-off request of its own in progress. Landing is proven by containment
+#   of the carried commit in a remote-tracking base branch, excluding fm-rescue
+#   and no-mistakes. The base is recorded in the source task's hand-off request,
 #   or is the project's default branch when no explicit base was selected.
-#   A verified merged PR for the chain's tip also proves landing, even when
-#   the continuation rewrote the carried commits. Cleanup preserves the tip's
+#   Alternatively, a verified merged PR for the chain's tip proves landing if
+#   its head contains the carried commit, or every carried commit since their
+#   shared base has a patch-equivalent commit in that head. The latter proof
+#   refuses merge commits, missing objects, or unmatched patches; a merged PR
+#   alone is insufficient. Cleanup preserves the tip's
 #   recorded pr= in data/<tip>/rescue-pr before removing its task record;
 #   prune reads that PR live from the forge.
 #   Non-forced cleanup of a continuation attempts prune automatically unless
@@ -46,7 +49,8 @@
 # host over SSH: rescue_url below is the one place the remote's URL is chosen,
 # and it is a plain local path today because only same-machine hand-offs exist.
 # Regression coverage: tests/fm-rescue.test.sh exercises preservation, base
-# landing, squash-merged PR proof, retention on missing proof, and abandonment.
+# landing, squash-merged and rebased PR proof, retention on missing or partial
+# proof, and abandonment.
 # Exit codes: 0 done (or nothing to prune); 1 refused or failed; 2 usage.
 set -eu
 
