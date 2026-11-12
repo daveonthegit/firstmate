@@ -178,6 +178,7 @@ The shared no-mistakes gate lifecycle boundary is summarized in [architecture.md
 | [`fm-handoff.sh`](../bin/fm-handoff.sh) | Continue a running ship or scout in a fresh local thread; its header owns the workflow, preservation requirements, and supported limits |
 | [`fm-handoff-compose.sh`](../bin/fm-handoff-compose.sh) | Compose the hand-off document a continuation reads first, within a token budget; its header owns the sections and the budget |
 | `fm-continuation-lib.sh` | Own the continuation record a hand-off writes and `fm-brief.sh`/`fm-spawn.sh --continue-from` read |
+| [`fm-rescue.sh`](../bin/fm-rescue.sh) | Create a project's private rescue repository and `fm-rescue` remote for a hand-off on demand, and prune its refs once the continuation lands or the work is abandoned; its header owns the rules |
 | `fm-gh-account.sh`       | Select repository-keyed GitHub access without switching the global account |
 | `fm-gh-shim.sh`          | Repository-aware gh wrapper for shared processes and worker calls |
 | `fm-install-gh-shim.sh`  | Install, inspect, or remove only the Firstmate-owned gh wrapper |

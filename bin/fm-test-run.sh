@@ -890,6 +890,7 @@ tests/fm-remote-secondmate-trace-context.test.sh 74870
 tests/fm-remote-transport-lanes.test.sh 66089
 tests/fm-remote-worker-control.test.sh 110000
 tests/fm-remote-worker-mirror.test.sh 35000
+tests/fm-rescue.test.sh 38499
 tests/fm-rovo-harness.test.sh 15691
 tests/fm-rovo-signals-live-e2e.test.sh 52
 tests/fm-secondmate-harness.test.sh 188187

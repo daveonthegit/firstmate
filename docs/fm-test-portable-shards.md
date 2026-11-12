@@ -49,6 +49,8 @@ The hand-off suite carries a provisional local macOS arm64 hint of 56777 ms, the
 Replace it with successful Ubuntu timing-artifact measurements at the next CI refresh; it is not evidence of CI duration or concurrency safety.
 The hand-off composer suite carries a provisional local macOS arm64 hint of 4429 ms, the slowest of three `bin/fm-test-run.sh tests/fm-handoff-compose.test.sh` samples (4359-4429 ms) on 2026-11-12.
 Replace it with successful Ubuntu timing-artifact measurements at the next CI refresh; it is not evidence of CI duration or concurrency safety.
+The rescue-remote suite carries a provisional local macOS arm64 hint of 38499 ms, the slowest of three `bin/fm-test-run.sh tests/fm-rescue.test.sh` samples (37084-38499 ms) on 2026-11-12.
+Replace it with successful Ubuntu timing-artifact measurements at the next CI refresh; it is not evidence of CI duration or concurrency safety.
 
 ## Parallel lanes
 

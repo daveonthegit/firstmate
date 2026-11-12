@@ -17,8 +17,10 @@
 #   --to local is the only target; a cross-machine hand-off is not built.
 #   The continuation id uses a -c<n> suffix (`x` -> `x-c2`, `x-c2` -> `x-c3`).
 #   --remote must name the preservation remote explicitly on every non-cancel run.
-#   Choose origin only for a personal repository at its owner's choice; the
-#   private rescue remote arrives with H3.
+#   Choose origin only for a personal repository at its owner's choice, or
+#   fm-rescue for the project's private rescue repository on this machine,
+#   which a ship's request creates and adds to its copy on demand
+#   (bin/fm-rescue.sh owns that repository and the pruning of its refs).
 #   --reason is one line recorded in the request and the handoff document.
 #   The launch flags are passed through to bin/fm-spawn.sh unchanged, so the
 #   continuation runs on the profile firstmate resolved at this intake (for
@@ -26,10 +28,11 @@
 #   and a later run's flags replace them.
 # Every action, including resumed FINISH and --cancel, refuses before mutation
 # when this home is a worker host or has stood down from the supervisor lease.
-# REQUEST, which changes nothing but the request record and the worker's inbox,
-# refuses when: the task has no record, is a second mate, or is placed on
-# another machine; a ship has a recorded PR or a Gerrit or external-review forge
-# (H1 limits), no recorded branch, or no such remote in its copy; the task has an open
+# REQUEST, which changes nothing but the request record, the worker's inbox,
+# and an on-demand fm-rescue remote, refuses when: the task has no record, is a
+# second mate, or is placed on another machine; a ship has a recorded PR or a
+# Gerrit or external-review forge (H1 limits), no recorded branch, or no such
+# remote in its copy (other than fm-rescue); the task has an open
 # decision (answer it first); its brief lacks both `# Task` subsections; or the
 # continuation id is taken. Capacity is not checked: the old worker's place is
 # released by its cleanup before the continuation takes one. It then steers the
@@ -206,7 +209,7 @@ request_preflight() {
     branch=$(meta_get "$META" branch)
     [ -n "$branch" ] || die "task $ID records no branch to carry"
     copy=$(meta_get "$META" worktree)
-    git -C "$copy" remote get-url "$REMOTE" >/dev/null 2>&1 ||
+    [ "$REMOTE" = fm-rescue ] || git -C "$copy" remote get-url "$REMOTE" >/dev/null 2>&1 ||
       die "task $ID's copy $copy has no git remote '$REMOTE' to carry its branch through; pass --remote"
   fi
   open=$(status_open_decisions "$STATUS_FILE" "${kind:-ship}")
@@ -286,6 +289,9 @@ do_request() {
   request_preflight
   kind=$(meta_get "$META" kind)
   kind=${kind:-ship}
+  if [ "$kind" = ship ] && [ "$REMOTE" = fm-rescue ]; then
+    "$SCRIPT_DIR/fm-rescue.sh" ensure "$ID" || die "could not prepare the rescue remote for $ID; nothing was requested"
+  fi
   write_request "$kind"
   if ! out=$("$SCRIPT_DIR/fm-send.sh" "$ID" "$(steer_text "$kind")" 2>&1); then
     rm -f "$REQUEST"
