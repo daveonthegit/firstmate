@@ -143,6 +143,7 @@ home=\$(decode "\$5")
 argv=()
 while IFS= read -r -d '' arg; do argv+=("\$arg"); done < <(decode "\$6")
 printf '%s %s\n' "\$alias" "\${argv[*]:1:2}" >> "$CASE/ssh.log"
+[ "\${FM_FAKE_SSH_SKIP_SPAWN:-}" != 1 ] || [ "\${argv[1]}" != spawn ] || exit 255
 pane=
 [ ! -f "\$home/.fake-pane" ] || pane=\$(cat "\$home/.fake-pane")
 rc=0
@@ -420,6 +421,7 @@ test_spawn_lost_answer_reruns_on_same_host() {
   expect_code 255 "$SPAWN_RC" "a lost host answer ($SPAWN_OUT)"
   assert_equals mbp "$(cat "$PARENT/state/r1.placement" 2>/dev/null)" "the unconfirmed placement was not noted"
   assert_equals 1 "$(windows "$HOST_BIN")" "the host did not launch before its answer was lost"
+  set_cap "$HOST_A" 1
   # This machine now has the larger share, but the task must not start twice.
   rm -f "$PARENT"/state/busy-*.meta
   local destination setting
@@ -678,6 +680,35 @@ SH
   pass "a stale automatic destination cannot claim an already-published task"
 }
 
+test_pending_recovery_rechecks_admission() {
+  local setting
+  for setting in on off; do
+    make_case "pending-admission-$setting"
+    : > "$PARENT/config/auto-placement"
+    set_cap "$PARENT" 1
+    busy "$PARENT" 1
+    set_cap "$HOST_A" 1
+    make_brief u1 --mode local-only
+    add_item u1
+    FM_FAKE_SSH_SKIP_SPAWN=1 auto_spawn u1
+    expect_code 255 "$SPAWN_RC" "transport failure before remote execution ($SPAWN_OUT)"
+    assert_equals mbp "$(cat "$PARENT/state/u1.placement")" "transport failure lost pending host"
+    assert_absent "$HOST_A/state/u1.meta" "failed transport executed remote spawn"
+    assert_equals 0 "$(windows "$HOST_BIN")" "failed transport launched a worker"
+    busy "$HOST_A" 1
+    [ "$setting" = on ] || rm -f "$PARENT/config/auto-placement"
+    auto_spawn u1
+    expect_code 75 "$SPAWN_RC" "unnamed recovery on full host ($SPAWN_OUT)"
+    assert_equals queued "$(row_state u1)" "deferred recovery moved queued task"
+    assert_absent "$PARENT/state/u1.meta" "deferred recovery published a local record"
+    assert_absent "$HOST_A/state/u1.meta" "deferred recovery launched on a full host"
+    assert_absent "$PARENT/state/u1.placement" "deferral retained pending ownership"
+    assert_equals 0 "$(windows "$PRIMARY_BIN")" "recovery launched locally"
+    assert_equals 0 "$(windows "$HOST_BIN")" "recovery exceeded remote lane capacity"
+  done
+  pass "unnamed pending recovery defers when its host filled before launch"
+}
+
 fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_machine \
   test_unreachable_and_uncapped_hosts_are_skipped test_this_machine_needs_its_cap \
   test_placed_tasks_count_on_their_host \
@@ -686,4 +717,4 @@ fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_m
   test_spawn_nothing_admits_stays_queued test_spawn_deferral_falls_to_next_machine \
   test_spawn_lost_answer_reruns_on_same_host test_spawn_rechecks_lane_admission \
   test_pending_placement_is_serialized test_local_only_automatic_choices_check_admission \
-  test_stale_destination_cannot_claim_existing_task
+  test_stale_destination_cannot_claim_existing_task test_pending_recovery_rechecks_admission

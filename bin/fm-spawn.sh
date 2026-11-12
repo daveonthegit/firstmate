@@ -2990,7 +2990,7 @@ spawn_pending_placement() {
     [ "$HOST_SET" -eq 0 ] || return 0
     echo "placement: task $ID was last sent to worker host $host and its answer was lost; re-running that placement there" >&2
     rc=0
-    spawn_placement_try "$host" || rc=$?
+    FM_SPAWN_AUTO_PLACEMENT=1 spawn_placement_try "$host" || rc=$?
     exit "$rc"
   fi
 }
