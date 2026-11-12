@@ -9,7 +9,7 @@
 // never do. Every verb but host-credential opens one
 // MCP streamable-HTTP session (protocol 2025-06-18, JSON or SSE replies),
 // proves the server is the one the credential was issued by, and runs the
-// call; every verb prints exactly one JSON object on stdout.
+// call; every verb except capture prints exactly one JSON object on stdout.
 //
 // Usage:
 //   fm-t3-mcp.mjs login --access full-access [--url <origin>] [--t3 <t3-bin>] [--base-dir <t3-base-dir>] [--label <label>]

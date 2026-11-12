@@ -16,16 +16,18 @@
 #   before the old task is cleaned up. It changes nothing.
 #   The budget, default 12000 tokens counted as four bytes each, bounds the
 #   whole document. Transcript, status/git detail, then notes yield space.
+#   Cut notes retain a marker pointing to the unchanged original notes file;
+#   if even that marker cannot fit, composition refuses.
 #   Intent and spec are never shortened; mandatory material that cannot fit
 #   causes refusal before any document is printed.
 #   The base is origin/<base_branch> when the task recorded one, else the
 #   copy's origin/HEAD, else origin/main or origin/master; without one, or
 #   without the old copy, the commit summary says it is unavailable.
-#   A transcript read that fails leaves a one-line note in place of the tail
-#   and a warning on stderr. A task with no T3 thread has no transcript
-#   section.
-# Exit codes: 0 composed; 1 the continuation record, brief sections, or notes
-# are missing or unreadable; 2 usage.
+#   A transcript read that fails warns on stderr and leaves an unavailability
+#   note only if the resulting section fits. The transcript section is omitted
+#   when it exceeds the remaining budget or the task has no T3 thread.
+# Exit codes: 0 composed; 1 required input is missing or unreadable, or
+# mandatory material or the cut-notes marker cannot fit; 2 usage.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
