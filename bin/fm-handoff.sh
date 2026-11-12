@@ -47,7 +47,7 @@
 # the branch at <head> with its remote-tracking ref containing it (the commits
 # then exist outside the copy, which is what lets cleanup accept them), then:
 #   1. writes data/<new-id>/continuation (bin/fm-continuation-lib.sh) and
-#      data/<new-id>/handoff.md (reason, carried commit, the worker's notes);
+#      data/<new-id>/handoff.md, composed by bin/fm-handoff-compose.sh;
 #   2. scaffolds data/<new-id>/brief.md with bin/fm-brief.sh --continue-from,
 #      carrying the delivery mode, forge, PR-text owner, branch prefix, base
 #      branch, upstream consent, Herdr contract, and journal section;
@@ -354,26 +354,12 @@ verify_carried_work() {
 }
 
 write_handoff_doc() {
-  local doc="$DATA/$NEW_ID/handoff.md" notes="$DATA/$ID/handoff-notes.md" tmp
+  local doc="$DATA/$NEW_ID/handoff.md" tmp
   [ ! -e "$doc" ] || return 0
-  [ -s "$notes" ] || die "task $ID wrote no nonempty notes at $notes"
   mkdir -p "$DATA/$NEW_ID"
   tmp="$doc.tmp.$$"
-  {
-    echo "# Hand-off from $ID"
-    echo
-    echo "- Reason: ${REASON:-not given}"
-    echo "- Continues task $ID, on this machine; its brief is \`$DATA/$ID/brief.md\`."
-    if [ "$KIND" = ship ]; then
-      echo "- Carried work: branch \`$FM_CONT_BRANCH\` at \`$FM_CONT_HEAD\`, pushed to \`$FM_CONT_REMOTE\`; your copy starts there."
-    else
-      echo "- The previous interim report is \`$DATA/$ID/report.md\`."
-    fi
-    echo
-    echo "## Previous worker's notes"
-    echo
-    cat "$notes"
-  } > "$tmp"
+  "$SCRIPT_DIR/fm-handoff-compose.sh" "$ID" "$NEW_ID" --reason "$REASON" > "$tmp" ||
+    { rm -f "$tmp"; die "could not compose the handoff document for $NEW_ID"; }
   mv -f "$tmp" "$doc"
 }
 

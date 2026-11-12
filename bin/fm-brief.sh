@@ -732,7 +732,7 @@ if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
   TASK_SECTION="# Task"$'\n'"## Captain's intent"$'\n'"$CONT_INTENT"$'\n\n'"## Firstmate spec"$'\n'"$CONT_SPEC"
   CONTINUATION_BLOCK="# Continuation
 This task continues task $CONTINUE_FROM in a fresh thread; the ask above is unchanged and remains the acceptance criteria.
-Read \`$DATA/$ID/handoff.md\` before anything else: it says why the work moved and carries the previous worker's notes on what is done, what is left, what was tried and failed, and how to verify."
+Read \`$DATA/$ID/handoff.md\` before anything else: it says why the work moved and carries the previous worker's notes on what is done, what is left, what was tried and failed, and how to verify, with its last status lines, its carried commits, and the end of its conversation when it ran on T3 Code."
   if [ "$KIND" = ship ]; then
     CONTINUATION_BLOCK+="
 Your copy starts at the previous worker's last commit, so its commits are already on the branch you create: build on them, never discard or rewrite them, and deliver both halves together."
