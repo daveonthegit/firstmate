@@ -9,7 +9,7 @@ The worker host runs a headless Firstmate home with its own project clones, work
 
 ## Current limits
 
-- This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, placement from the primary with `fm-spawn.sh --host`, steering, state, peek, interrupt, exit, and answering of a placed task from the primary, and cleanup from the primary with `fm-teardown.sh`, all described below.
+- This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, placement from the primary with `fm-spawn.sh --host`, steering, state, peek, interrupt, exit, answering, and ready-PR recording of a placed task from the primary, and cleanup from the primary with `fm-teardown.sh`, all described below.
 - The primary cannot yet relaunch a placed task: `fm-control relaunch` recognizes its placement and refuses.
 - Placement is an explicit per-task choice; automatic placement by load or by project is not built.
 - A running task moves between the primary and a worker host, or between two worker hosts, with `fm-handoff.sh <task> --to <host-id|local>` (Moving a task between machines below); the rescue repository lives only on the primary, and neither mirroring it to another machine nor fetching placed copies' branches into it on a schedule is built.
@@ -49,6 +49,7 @@ The primary's ordinary per-task commands recognize a placed task and run the mat
 - [`fm-peek.sh`](../bin/fm-peek.sh) reads the worker's pane through `capture`.
 - [`fm-control.sh`](../bin/fm-control.sh) runs `interrupt` and `exit` through `control`, and refuses `relaunch`.
 - [`fm-t3-answer.sh`](../bin/fm-t3-answer.sh) reads and answers a T3 worker's pending questions through `answer`.
+- [`fm-pr-check.sh`](../bin/fm-pr-check.sh), and the watcher's scan and `fm-pr-merge.sh` through it, record a ready PR once the host's own named-head gate accepts it through `named-head`; [`fm-dod-lib.sh`](../bin/fm-dod-lib.sh) owns that gate and its cannot-verify-now outcome when the host does not answer.
 
 An SSH exit 255 leaves the remote outcome unknown; the linked command headers own each operation's reporting and recovery contract.
 
@@ -100,6 +101,7 @@ The [`fm-handoff.sh` header](../bin/fm-handoff.sh) owns readiness and preservati
 [`tests/fm-spawn-host.test.sh`](../tests/fm-spawn-host.test.sh) drives placement from a primary through a fake SSH into that same host leg, covering capacity deferral, a re-run after an unknown SSH result, and mirror-arm recovery under away admission limits.
 [`tests/fm-teardown-host.test.sh`](../tests/fm-teardown-host.test.sh) drives two-leg cleanup through a fake SSH into that host leg, covering success, an unreachable host, a lost answer and its re-run, a host refusal for unlanded work, a drifted route, a shared mirror, and a scout's report and captain-call gate.
 [`tests/fm-handoff-host.test.sh`](../tests/fm-handoff-host.test.sh) drives `fm-handoff.sh --to <host>` through a fake SSH into two worker-host homes and a fake git SSH transport into the primary's rescue repository, covering a ship moving to a host, back to the primary, and between hosts, a scout with its interim report, and the target, worker, and record refusals.
+[`tests/fm-pr-check-host.test.sh`](../tests/fm-pr-check-host.test.sh) drives ready-PR recording of a placed ship through a fake SSH into the host leg, covering a pushed head, a head only in the host's disposable copy, and an unreachable host that the watcher's scan retries.
 [`tests/fm-task-route-lib.test.sh`](../tests/fm-task-route-lib.test.sh) covers shared route discrimination and placed operations that never touch a local backend.
 [`tests/fm-placed-task-control.test.sh`](../tests/fm-placed-task-control.test.sh) drives steering, state, peek, control, and answering of a placed task from a primary through a fake SSH into the host leg, covering a resend that reuses its delivery id and `unknown-remote` on SSH exit 255.
 [`tests/fm-on.test.sh`](../tests/fm-on.test.sh) covers worker host routing beside remote second-mate routes.

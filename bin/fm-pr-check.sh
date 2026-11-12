@@ -3,7 +3,10 @@
 # exact pr_head=<sha> when available, then atomically arm a static merge poll.
 # Refuses when bin/fm-dod-lib.sh will not accept the named head as reachable
 # outside the worker's disposable copy; in no-mistakes mode a forge-reported
-# head is that named head and is already stored on the forge.
+# head is that named head and is already stored on the forge. For a task placed
+# on a worker host that gate is answered by the host (docs/remote-workers.md);
+# when the host cannot answer now, this records nothing and exits 75 so the
+# request can be retried, never treated as a refusal of the work.
 # The published check is a byte-for-byte copy of bin/fm-pr-poll.sh bound by its
 # own registration, so a later repository update does not invalidate it; task and
 # PR data live only in a private sidecar and are never interpolated into shell
@@ -34,7 +37,9 @@
 # path above, so every refusal still applies. A refusal prints one line naming
 # the task, the URL, and the reason, once per task and URL
 # (state/<task>.pr-register-refused), and the scan retries silently on later
-# sweeps, so a draft later marked ready is recorded without help. Each sweep
+# sweeps, so a draft later marked ready is recorded without help. An exit 75
+# (a worker host that cannot answer now) prints nothing and writes no marker,
+# and is retried on the next sweep. Each sweep
 # starts just after the last task the previous sweep attempted
 # (state/.pr-check-scan-cursor), so a registration that hangs or is refused
 # cannot take the whole budget on every sweep. Registrations
@@ -128,7 +133,7 @@ pr_check_scan() {
       rm -f -- "$marker"
       continue
     fi
-    [ "$rc" -ne 124 ] || continue
+    case "$rc" in 124|75) continue ;; esac
     if [ -f "$marker" ] && [ ! -L "$marker" ] && [ "$(cat "$marker")" = "$url" ]; then
       continue
     fi
@@ -293,10 +298,14 @@ case "$PROVIDER:$MODE" in
   *:no-mistakes|*:) DONE_LINE="done: PR $URL checks green" ;;
   *) DONE_LINE="done: PR $URL" ;;
 esac
-if { [ -z "$PR_HEAD" ] || ! fm_dod_forge_head_is_named_head "$MODE"; } \
-  && ! GATE_REASON=$(fm_dod_accept_ship_done "${KIND:-ship}" "$MODE" "$WT" "$PROJECT" "$DONE_LINE" "$STATE" "$ID" "$META"); then
-  echo "error: $GATE_REASON" >&2
-  exit 1
+if [ -z "$PR_HEAD" ] || ! fm_dod_forge_head_is_named_head "$MODE"; then
+  GATE_RC=0
+  GATE_REASON=$(fm_dod_accept_ship_done "${KIND:-ship}" "$MODE" "$WT" "$PROJECT" "$DONE_LINE" "$STATE" "$ID" "$META") || GATE_RC=$?
+  case "$GATE_RC" in
+    0) ;;
+    2) echo "error: $GATE_REASON" >&2; exit 75 ;;
+    *) echo "error: $GATE_REASON" >&2; exit 1 ;;
+  esac
 fi
 
 META_TMP=

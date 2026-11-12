@@ -12,6 +12,7 @@
 #   fm-remote-worker-control.sh capture <task-id> [lines]
 #   fm-remote-worker-control.sh file <task-id> {report|journal|brief|handoff-notes}
 #   fm-remote-worker-control.sh teardown <task-id> [--force]
+#   fm-remote-worker-control.sh named-head <task-id> <done-line>
 #   fm-remote-worker-control.sh admit <task-id> <project>
 #   fm-remote-worker-control.sh rescue <task-id> <url>
 #   fm-remote-worker-control.sh carried <task-id> <remote> <branch> <head>
@@ -84,6 +85,15 @@
 # so the primary can re-run its cleanup after an unconfirmed answer (exit 255)
 # without this home inventing work; a record without a claim still refuses.
 #
+# named-head runs bin/fm-dod-lib.sh's named-head gate (fm_dod_accept_ship_done)
+# over this home's own record for the task - its kind, mode, worktree, project,
+# and forge - against the single <done-line> the primary is asked to accept, so
+# a head that exists only in this disposable copy is refused here exactly as a
+# local one is. It prints `accepted: <id>` and exits 0, or prints
+# `refused: <reason>` and exits 1, including for a task this home holds no
+# claimed record for; every other answer is no verdict, and the
+# primary's fm_dod_accept_placed_done owns treating it as cannot-verify-now.
+#
 # The hand-off verbs serve bin/fm-handoff.sh on the primary:
 #   admit    preflight for a continuation placed here: the home is a worker
 #            host home, <project> is cloned here, <task-id> is free, and this
@@ -117,7 +127,7 @@ SCHEMA=fm-remote-worker-control.v1
 CAPTURE_MAX_LINES=100
 
 die() { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
-usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 validate_id() {
   case "$1" in ''|-*|.*|*[!A-Za-z0-9._-]*) die "invalid task id: $1" ;; esac
@@ -544,6 +554,27 @@ cmd_stage() {
   printf 'staged: %s\n' "$target"
 }
 
+cmd_named_head() {
+  local id=$1 line=$2 meta kind reason
+  if ! reason=$(require_task "$id" 2>&1); then
+    printf 'refused: %s\n' "${reason#error: }"
+    exit 1
+  fi
+  case "$line" in *[[:cntrl:]]*|'') die "the done line must be one non-empty line" ;; esac
+  meta=$(meta_path "$id")
+  kind=$(fm_meta_get "$meta" kind)
+  # shellcheck source=bin/fm-dod-lib.sh
+  . "$SCRIPT_DIR/fm-dod-lib.sh"
+  if reason=$(fm_dod_accept_ship_done "${kind:-ship}" "$(fm_meta_get "$meta" mode)" \
+    "$(fm_meta_get "$meta" worktree)" "$(fm_meta_get "$meta" project)" "$line" "$STATE" "$id" "$meta"); then
+    printf 'accepted: %s\n' "$id"
+    return 0
+  fi
+  reason=$(printf '%s\n' "$reason" | head -1)
+  printf 'refused: %s\n' "${reason:-the named-head gate refused this done line}"
+  exit 1
+}
+
 VERB=${1:-}
 case "$VERB" in
   ''|-h|--help|help) usage ;;
@@ -562,6 +593,7 @@ case "$VERB" in
   capture) [ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage; validate_home; cmd_capture "$@" ;;
   file) [ "$#" -eq 2 ] || usage; validate_home; cmd_file "$@" ;;
   teardown) [ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage; validate_home; cmd_teardown "$@" ;;
+  named-head) [ "$#" -eq 2 ] || usage; validate_home; cmd_named_head "$@" ;;
   admit) [ "$#" -eq 2 ] || usage; cmd_admit "$@" ;;
   rescue) [ "$#" -eq 2 ] || usage; validate_home; cmd_rescue "$@" ;;
   carried) [ "$#" -eq 4 ] || usage; validate_home; cmd_carried "$@" ;;
