@@ -1,0 +1,10 @@
+{
+  "passed": [
+    "Published worker head registers from supervisor without a local worktree and arms monitoring",
+    "Unpublished worker head and unclaimed task refuse registration and monitoring",
+    "Offline SSH returns retryable 75; scan stays silent then registers when transport recovers",
+    "Registry root/home drift refuses before dispatching to another worker identity",
+    "Published rewritten GitHub and Enterprise forge heads register only in no-mistakes/default mode; direct-PR/local-only still refuse stale copy-only HEAD"
+  ],
+  "scope": "Local SSH transport adapter and synthetic HTTPS forge; real product CLIs, Git, OpenSSH, and gh. Not production remote job daemon or tenant validation."
+}

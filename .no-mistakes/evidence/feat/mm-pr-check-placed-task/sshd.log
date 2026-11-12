@@ -1,0 +1,124 @@
+Server listening on 127.0.0.1 port 22282.
+Connection from 127.0.0.1 port 60720 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60720 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60720 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 73711
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60720 id 0
+Received disconnect from 127.0.0.1 port 60720:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60720
+Connection from 127.0.0.1 port 60723 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60723 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60723 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 74746
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60723 id 0
+Received disconnect from 127.0.0.1 port 60723:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60723
+Connection from 127.0.0.1 port 60726 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60726 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60726 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 75221
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60726 id 0
+Received disconnect from 127.0.0.1 port 60726:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60726
+Received signal 15; terminating.
+Server listening on 127.0.0.1 port 22282.
+Connection from 127.0.0.1 port 60734 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60734 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60734 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 76630
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60734 id 0
+Received disconnect from 127.0.0.1 port 60734:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60734
+Connection from 127.0.0.1 port 60739 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60739 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60739 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 78700
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60739 id 0
+Received disconnect from 127.0.0.1 port 60739:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60739
+Connection from 127.0.0.1 port 60746 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60746 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60746 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 81004
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60746 id 0
+Received disconnect from 127.0.0.1 port 60746:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60746
+Connection from 127.0.0.1 port 60775 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60775 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60775 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 84033
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60775 id 0
+Received disconnect from 127.0.0.1 port 60775:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60775
+Connection from 127.0.0.1 port 60781 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60781 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60781 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 85235
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60781 id 0
+Received disconnect from 127.0.0.1 port 60781:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60781
+Connection from 127.0.0.1 port 60783 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60783 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60783 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 85890
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60783 id 0
+Received disconnect from 127.0.0.1 port 60783:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60783
+Connection from 127.0.0.1 port 60786 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60786 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60786 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 86901
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60786 id 0
+Received disconnect from 127.0.0.1 port 60786:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60786
+Connection from 127.0.0.1 port 60789 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60789 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60789 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 87918
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60789 id 0
+Received disconnect from 127.0.0.1 port 60789:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60789
+Connection from 127.0.0.1 port 60791 on 127.0.0.1 port 22282
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Postponed publickey for davidxiao from 127.0.0.1 port 60791 ssh2 [preauth]
+Accepted key ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY found at {run-worktree}/.validation/client_key.pub:1
+Accepted publickey for davidxiao from 127.0.0.1 port 60791 ssh2: ED25519 SHA256:wTcxa8gM18g9ToWBRgLebmlnWzf6XVAzIeexyJ1OCFY
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+User child is on pid 88552
+Starting session: forced-command (config) '{run-worktree}/.validation/transport.py' for davidxiao from 127.0.0.1 port 60791 id 0
+Received disconnect from 127.0.0.1 port 60791:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 60791
+Received signal 15; terminating.

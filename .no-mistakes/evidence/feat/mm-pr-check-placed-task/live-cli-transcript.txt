@@ -1,0 +1,177 @@
+LOCAL SURFACE: real supervisor CLI -> real fm-on -> OpenSSH localhost -> transport adapter -> real worker named-head CLI; real Git repos. Forge requests use real gh against a synthetic HTTPS API via a private proxy. No production login or remote-job daemon tested.
+
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=0
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+armed: state/t1.check.sh
+persisted PR=https://github.com/acme/sample/pull/7; merge-monitor script exists=True
+SCENARIO PASS: Published worker head registers from supervisor without a local worktree and arms monitoring
+
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 0s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: on worker host lab: named head bdd6074ead1edf47befa42d32abba3a3ba97f1a7 is unreachable outside the worker copy
+persisted PR=None; merge-monitor script exists=False
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=1
+WARNING: watcher still down (same stale episode; last beat: 2s ago, grace 300s) - full banner already printed this episode.
+error: on worker host lab: task t1 was not placed on this worker host by a primary (no {run-worktree}/.validation/copy-only/worker/state/t1.remote-worker)
+persisted PR=None; merge-monitor script exists=False
+SCENARIO PASS: Unpublished worker head and unclaimed task refuse registration and monitoring
+
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=75
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: named head cannot be verified now: worker host lab is unreachable or its answer was lost; retry once the host answers
+persisted PR=None; merge-monitor script exists=False
+$ bin/fm-pr-check.sh scan
+exit=0
+
+$ bin/fm-pr-check.sh scan
+exit=0
+
+persisted PR=https://github.com/acme/sample/pull/7; merge-monitor script exists=True
+SCENARIO PASS: Offline SSH returns retryable 75; scan stays silent then registers when transport recovers
+
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: task t1 recorded worker host route no longer matches worker host lab registry record (route drift)
+persisted PR=None; merge-monitor script exists=False
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: task t1 recorded worker host route no longer matches worker host lab registry record (route drift)
+persisted PR=None; merge-monitor script exists=False
+SCENARIO PASS: Registry root/home drift refuses before dispatching to another worker identity
+
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=0
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+armed: state/t1.check.sh
+persisted PR=https://github.com/acme/sample/pull/7; merge-monitor script exists=True
+forge host=github.com; mode=no-mistakes; worker HEAD=54a7a28e482ffba452f23a6560a2198fceecddc4; published forge HEAD=f53df33083b93c243526401843c3caa5e2c0e39f; worker HEAD absent from remote refs; real gh requests=2
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=0
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+armed: state/t1.check.sh
+persisted PR=https://github.com/acme/sample/pull/7; merge-monitor script exists=True
+forge host=github.com; mode=default; worker HEAD=e5fd8610189694f98b7273c0c004c7ce6e3a961b; published forge HEAD=25d2a5cb874d969a75b6b080949925ccff56ed0d; worker HEAD absent from remote refs; real gh requests=2
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 0s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: on worker host lab: named head fc7d05a516ba7860cdf2ffd2b42e8f04f3384342 is unreachable outside the worker copy
+persisted PR=None; merge-monitor script exists=False
+forge host=github.com; mode=direct-PR; worker HEAD=fc7d05a516ba7860cdf2ffd2b42e8f04f3384342; published forge HEAD=b2f16cb1acbf41d8f874189859349be22ca9464c; worker HEAD absent from remote refs; real gh requests=1
+$ bin/fm-pr-check.sh t1 https://github.com/acme/sample/pull/7
+exit=1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: on worker host lab: named head 1a48bd286776cd1972be94e58fcb0bc0b70e0730 is unreachable outside the worker copy
+persisted PR=None; merge-monitor script exists=False
+forge host=github.com; mode=local-only; worker HEAD=1a48bd286776cd1972be94e58fcb0bc0b70e0730; published forge HEAD=d7f520103d49a7af7597e86019c3e79be1dae31e; worker HEAD absent from remote refs; real gh requests=1
+$ bin/fm-pr-check.sh t1 https://github.acme.test/acme/sample/pull/7
+exit=0
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+armed: state/t1.check.sh
+persisted PR=https://github.acme.test/acme/sample/pull/7; merge-monitor script exists=True
+forge host=github.acme.test; mode=no-mistakes; worker HEAD=d0cbacb999b0851371b93a78bfb0557209b39cae; published forge HEAD=40da5f7b3f7d8bc3706fffb9aa1d99a4e7f28eba; worker HEAD absent from remote refs; real gh requests=2
+$ bin/fm-pr-check.sh t1 https://github.acme.test/acme/sample/pull/7
+exit=0
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+armed: state/t1.check.sh
+persisted PR=https://github.acme.test/acme/sample/pull/7; merge-monitor script exists=True
+forge host=github.acme.test; mode=default; worker HEAD=f03a7535ead845a6a7f1cabd4e3b88b4b98f00fa; published forge HEAD=cda65485aaaaa1eff2da5b76797ef3b926119ceb; worker HEAD absent from remote refs; real gh requests=2
+$ bin/fm-pr-check.sh t1 https://github.acme.test/acme/sample/pull/7
+exit=1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 0s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: on worker host lab: named head f47a818ec7be4e9f293872fa4c40edca3c8f44f9 is unreachable outside the worker copy
+persisted PR=None; merge-monitor script exists=False
+forge host=github.acme.test; mode=direct-PR; worker HEAD=f47a818ec7be4e9f293872fa4c40edca3c8f44f9; published forge HEAD=11513df47275d904a9e5be4f3d00cc6f3688a6cd; worker HEAD absent from remote refs; real gh requests=1
+$ bin/fm-pr-check.sh t1 https://github.acme.test/acme/sample/pull/7
+exit=1
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no live watcher process holds this home lock (last beat: 1s ago).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: on worker host lab: named head 2b59ec3d0168110cd299b51a04db30e52e55dbd0 is unreachable outside the worker copy
+persisted PR=None; merge-monitor script exists=False
+forge host=github.acme.test; mode=local-only; worker HEAD=2b59ec3d0168110cd299b51a04db30e52e55dbd0; published forge HEAD=cb9651dc8f00969d4107c78fe971deccf502d9a9; worker HEAD absent from remote refs; real gh requests=1
+SCENARIO PASS: Published rewritten GitHub and Enterprise forge heads register only in no-mistakes/default mode; direct-PR/local-only still refuse stale copy-only HEAD
+
+ALL LOCAL SCENARIOS PASSED
+Disposable sshd stopped, exit=0

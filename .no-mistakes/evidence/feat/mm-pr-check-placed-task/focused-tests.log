@@ -1,0 +1,10 @@
+1..6
+ok - a placed task's ready PR whose head the host pushed is recorded and armed
+ok - a placed task's head that exists only in the host's disposable copy is refused
+ok - a placed task the host does not hold is refused, not retried as unreachable
+ok - an unreachable host or lost answer records nothing and exits 75 to retry
+ok - the PR-register scan retries an unreachable host silently and records once it answers
+ok - a forge-held rewritten head on github.com registers only in no-mistakes mode, including its default
+ok - a forge-held rewritten head on github.acme.test registers only in no-mistakes mode, including its default
+ok - registry root or home drift refuses before dispatch and records nothing
+FM_TEST_COMPLETE

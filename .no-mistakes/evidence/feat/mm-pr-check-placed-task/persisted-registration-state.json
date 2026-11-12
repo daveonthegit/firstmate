@@ -1,0 +1,67 @@
+{
+  "copy-only": {
+    "metadata": "kind=ship\nmode=no-mistakes\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/copy-only/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/copy-only/wt\nremote_project={run-worktree}/.validation/copy-only/repo\n",
+    "merge_monitor_armed": false,
+    "refusal_marker": false
+  },
+  "drift-home": {
+    "metadata": "kind=ship\nmode=no-mistakes\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/drift-home/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/drift-home/wt\nremote_project={run-worktree}/.validation/drift-home/repo\n",
+    "merge_monitor_armed": false,
+    "refusal_marker": false
+  },
+  "drift-root": {
+    "metadata": "kind=ship\nmode=no-mistakes\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/drift-root/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/drift-root/wt\nremote_project={run-worktree}/.validation/drift-root/repo\n",
+    "merge_monitor_armed": false,
+    "refusal_marker": false
+  },
+  "pushed": {
+    "metadata": "kind=ship\nmode=no-mistakes\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/pushed/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/pushed/wt\nremote_project={run-worktree}/.validation/pushed/repo\npr=https://github.com/acme/sample/pull/7\n",
+    "merge_monitor_armed": true,
+    "refusal_marker": false
+  },
+  "retry": {
+    "metadata": "kind=ship\nmode=no-mistakes\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/retry/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/retry/wt\nremote_project={run-worktree}/.validation/retry/repo\npr=https://github.com/acme/sample/pull/7\n",
+    "merge_monitor_armed": true,
+    "refusal_marker": false
+  },
+  "rewrite-github.acme.test-default": {
+    "metadata": "kind=ship\nmode=\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/rewrite-github.acme.test-default/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/rewrite-github.acme.test-default/wt\nremote_project={run-worktree}/.validation/rewrite-github.acme.test-default/repo\npr=https://github.acme.test/acme/sample/pull/7\n",
+    "merge_monitor_armed": true,
+    "refusal_marker": false
+  },
+  "rewrite-github.acme.test-direct-PR": {
+    "metadata": "kind=ship\nmode=direct-PR\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/rewrite-github.acme.test-direct-PR/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/rewrite-github.acme.test-direct-PR/wt\nremote_project={run-worktree}/.validation/rewrite-github.acme.test-direct-PR/repo\n",
+    "merge_monitor_armed": false,
+    "refusal_marker": false
+  },
+  "rewrite-github.acme.test-local-only": {
+    "metadata": "kind=ship\nmode=local-only\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/rewrite-github.acme.test-local-only/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/rewrite-github.acme.test-local-only/wt\nremote_project={run-worktree}/.validation/rewrite-github.acme.test-local-only/repo\n",
+    "merge_monitor_armed": false,
+    "refusal_marker": false
+  },
+  "rewrite-github.acme.test-no-mistakes": {
+    "metadata": "kind=ship\nmode=no-mistakes\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/rewrite-github.acme.test-no-mistakes/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/rewrite-github.acme.test-no-mistakes/wt\nremote_project={run-worktree}/.validation/rewrite-github.acme.test-no-mistakes/repo\npr=https://github.acme.test/acme/sample/pull/7\n",
+    "merge_monitor_armed": true,
+    "refusal_marker": false
+  },
+  "rewrite-github.com-default": {
+    "metadata": "kind=ship\nmode=\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/rewrite-github.com-default/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/rewrite-github.com-default/wt\nremote_project={run-worktree}/.validation/rewrite-github.com-default/repo\npr=https://github.com/acme/sample/pull/7\n",
+    "merge_monitor_armed": true,
+    "refusal_marker": false
+  },
+  "rewrite-github.com-direct-PR": {
+    "metadata": "kind=ship\nmode=direct-PR\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/rewrite-github.com-direct-PR/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/rewrite-github.com-direct-PR/wt\nremote_project={run-worktree}/.validation/rewrite-github.com-direct-PR/repo\n",
+    "merge_monitor_armed": false,
+    "refusal_marker": false
+  },
+  "rewrite-github.com-local-only": {
+    "metadata": "kind=ship\nmode=local-only\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/rewrite-github.com-local-only/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/rewrite-github.com-local-only/wt\nremote_project={run-worktree}/.validation/rewrite-github.com-local-only/repo\n",
+    "merge_monitor_armed": false,
+    "refusal_marker": false
+  },
+  "rewrite-github.com-no-mistakes": {
+    "metadata": "kind=ship\nmode=no-mistakes\nwindow=remote:t1\nendpoint_task_id=t1\nbranch=fm/t1\nremote_worker_host=lab\nremote_root={run-worktree}\nremote_home={run-worktree}/.validation/rewrite-github.com-no-mistakes/worker\nremote_backend=tmux\nremote_worktree={run-worktree}/.validation/rewrite-github.com-no-mistakes/wt\nremote_project={run-worktree}/.validation/rewrite-github.com-no-mistakes/repo\npr=https://github.com/acme/sample/pull/7\n",
+    "merge_monitor_armed": true,
+    "refusal_marker": false
+  }
+}
