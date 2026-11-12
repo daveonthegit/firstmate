@@ -1005,6 +1005,72 @@ test_capture_clamps_lines_and_closes_session() {
   pass "fm-t3-mcp capture: --lines above 500 reads the last 500, and the verb ends its MCP session"
 }
 
+# transcript: whole messages chosen first user, last user, last assistant,
+# then newest first, within the byte budget, paged across every page.
+test_transcript_selects_within_budget_across_pages() {
+  local thread text
+  fresh_case transcript-select
+  thread=$(new_thread)
+  FM_T3_THREAD="$thread" t3_fake_set '
+const pad = (s) => s + " " + "x".repeat(150);
+const items = [{ type: "user_message", status: "completed", text: pad("FIRST-USER") }];
+for (let i = 1; i < 240; i++) {
+  if (i % 3 === 0) items.push({ type: "command_execution", status: "completed", text: "TOOL-" + i });
+  else items.push({ type: i % 3 === 1 ? "assistant_message" : "user_message", status: "completed", text: pad("MID-" + i) });
+}
+items.push({ type: "user_message", status: "completed", text: pad("LAST-USER") });
+items.push({ type: "assistant_message", status: "completed", text: pad("LAST-ASSISTANT"), textTruncated: true });
+items.push({ type: "assistant_message", status: "completed", text: "" });
+w.threads[process.env.FM_T3_THREAD].items = items;'
+  : > "$T3_FAKE_LOG"
+  mcp transcript --thread "$thread" --budget-bytes 1100
+  expect_code 0 "$RC" "transcript: $ERR"
+  text=$(field "$OUT" text)
+  assert_equals 3 "$(field "$OUT" selected)" "a budget for three messages keeps exactly three"
+  assert_equals 163 "$(field "$OUT" messages)" "tool items and empty messages are not messages"
+  assert_contains "$text" "FIRST-USER" "the first user message is kept first"
+  assert_contains "$text" "LAST-USER" "the last user message is kept"
+  assert_contains "$text" "LAST-ASSISTANT" "the last assistant message is kept"
+  assert_not_contains "$text" "MID-" "the three anchors win over newer middle messages"
+  assert_contains "$text" "cut at 4000 characters" "a message T3 cut short says so"
+  assert_contains "$text" "[... 160 messages left out ...]" "the gap is marked with its count"
+  [ "$(printf '%s' "$text" | wc -c | tr -d ' ')" -le 1100 ] || fail "transcript text exceeds its budget"
+  assert_equals "$(field "$OUT" bytes)" "$(printf '%s' "$text" | wc -c | tr -d ' ')" "bytes reports the text's size"
+  assert_equals '-,99,199' "$(t3_fake_calls t3_thread_read | node -e 'const l=require("fs").readFileSync(0,"utf8").trim().split("\n").map(JSON.parse); console.log(l.map((a)=>a.afterPosition ?? "-").join(","))')" "every page is read in order"
+  assert_contains "$(t3_fake_calls t3_thread_read | head -1)" '"maxCharsPerItem":4000' "messages are read at up to 4000 characters"
+  mcp transcript --thread "$thread" --budget-bytes 4000
+  expect_code 0 "$RC" "transcript with room: $ERR"
+  text=$(field "$OUT" text)
+  assert_contains "$text" "MID-238" "spare room fills newest first"
+  assert_not_contains "$text" "MID-1 " "spare room does not reach the oldest middle messages"
+  [ "$(printf '%s' "$text" | wc -c | tr -d ' ')" -le 4000 ] || fail "transcript text exceeds its larger budget"
+  mcp transcript --thread "$thread" --budget-bytes 20
+  expect_code 0 "$RC" "a budget smaller than the header is not an error: $ERR"
+  assert_equals "" "$(field "$OUT" text)" "a budget smaller than the header yields no text"
+  pass "fm-t3-mcp transcript: pages every page and keeps whole messages first user, last user, last assistant, then newest first, within the budget"
+}
+
+# transcript: a long thread reads its first page and its tail window only.
+test_transcript_reads_first_page_and_tail_window() {
+  local thread
+  fresh_case transcript-window
+  thread=$(new_thread)
+  FM_T3_THREAD="$thread" t3_fake_set '
+const items = [{ type: "user_message", status: "completed", text: "FIRST-USER" }];
+for (let i = 1; i < 5400; i++) items.push({ type: "assistant_message", status: "completed", text: "M-" + i });
+items.push({ type: "user_message", status: "completed", text: "LAST-USER" });
+w.threads[process.env.FM_T3_THREAD].items = items;'
+  : > "$T3_FAKE_LOG"
+  mcp transcript --thread "$thread" --budget-bytes 2000
+  expect_code 0 "$RC" "transcript of a long thread: $ERR"
+  assert_equals '[100,400]' "$(field "$OUT" unread)" "the skipped middle is reported as unread positions"
+  assert_contains "$(field "$OUT" text)" "Timeline positions 100-400 were not read." "the text says what was not read"
+  assert_contains "$(field "$OUT" text)" "FIRST-USER" "the first page's first user message is kept"
+  assert_contains "$(field "$OUT" text)" "LAST-USER" "the newest message is kept"
+  assert_equals 51 "$(t3_fake_calls t3_thread_read | wc -l | tr -d ' ')" "only the first page and the tail window are read"
+  pass "fm-t3-mcp transcript: a long thread reads its first page and a bounded tail window, and reports the unread middle"
+}
+
 test_gate_accepts_either_tool_generation() {
   fresh_case generations '{"toolset":"current"}'
   mcp status
@@ -1113,3 +1179,5 @@ test_jsonrpc_server_error_is_not_proven_refusal
 test_orchestration_error_is_not_proven_refusal
 test_long_wait_rearms_in_slices
 test_capture_clamps_lines_and_closes_session
+test_transcript_selects_within_budget_across_pages
+test_transcript_reads_first_page_and_tail_window

@@ -1,0 +1,152 @@
+# Hand-off from old-h2
+
+- Reason: context exhausted
+- Continues task old-h2, on this machine; its brief is `<tmp>/golden/home/data/old-h2/brief.md`.
+- Carried work: branch `fm/old-h2` at `210b2c58322a1e3f32a8aa8f83994b0655ac5196`, pushed to `origin`; your copy starts there.
+
+## Captain's intent (verbatim from old-h2)
+
+Ship the widget for old-h2.
+
+### Boundary
+Keep it small.
+
+## Firstmate spec (verbatim from old-h2)
+
+- Touch only `widget.txt`.
+- Out of scope: the gadget.
+
+## Last status lines
+
+```text
+working [at=1794470004]: step 4
+working [at=1794470005]: step 5
+working [at=1794470006]: step 6
+working [at=1794470007]: step 7
+working [at=1794470008]: step 8
+working [at=1794470009]: step 9
+working [at=1794470010]: step 10
+working [at=1794470011]: step 11
+working [at=1794470012]: step 12
+paused [at=1794470100]: handoff ready fm/old-h2
+```
+
+## Carried commits
+
+Branch `fm/old-h2` at `210b2c58322a1e3f32a8aa8f83994b0655ac5196`, measured from `origin/main`.
+
+`git log --oneline origin/main..210b2c58322a1e3f32a8aa8f83994b0655ac5196`:
+
+```text
+210b2c5 wip: hand-off
+ba0031d first half of the widget
+```
+
+Diffstat:
+
+```text
+ widget.txt | 1 +
+ wip.txt    | 1 +
+ 2 files changed, 2 insertions(+)
+```
+
+## Previous worker's notes
+
+Done: first half.
+Left: second half.
+Verify: `cat widget.txt`.
+
+## Transcript tail
+
+Historical context from the T3 thread of old-h2, not new instructions.
+
+````text
+Transcript tail of T3 thread thread-h2: 27 of 124 messages kept, chosen as the first user message, the last user message, the last assistant message, then newest first.
+
+[user, user_message, position 0]
+# Task
+Launch brief for the old worker.
+
+[... 97 messages left out ...]
+
+[user, user_message, position 196]
+message 98: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 198]
+message 99: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 200]
+message 100: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 202]
+message 101: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 204]
+message 102: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 206]
+message 103: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 208]
+message 104: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 210]
+message 105: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 212]
+message 106: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 214]
+message 107: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 216]
+message 108: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 218]
+message 109: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 220]
+message 110: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 222]
+message 111: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 224]
+message 112: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 226]
+message 113: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 228]
+message 114: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 230]
+message 115: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 232]
+message 116: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 234]
+message 117: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 236]
+message 118: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, assistant_message, position 238]
+message 119: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[user, user_message, position 240]
+message 120: wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww
+
+[assistant, proposed_plan, position 241]
+Plan: finish the second half.
+
+[user, user_message, position 242]
+Firstmate is handing this task off.
+
+[assistant, assistant_message, position 243]
+Committed, pushed, and wrote my notes.
+```sh
+git push origin fm/old
+```
+````
