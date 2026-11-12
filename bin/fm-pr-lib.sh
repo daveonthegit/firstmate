@@ -363,7 +363,9 @@ fm_pr_read_merged_head() {
     case "$state" in MERGED|merged) ;; *) return 1 ;; esac
   fi
   fm_pr_head_valid "$head" || return 1
+  # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
   FM_PR_MERGED_HEAD=$head
+  # shellcheck disable=SC2034 # Output global, read by the sourcing caller.
   FM_PR_MERGED_URL=$resolved_url
 }
 
