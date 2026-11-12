@@ -33,10 +33,12 @@ make_home() {  # <name> <id> <kind> [backend] [thread]
   mkdir -p "$home/state" "$home/config" "$home/data/$id" "$home/data/$id-c2"
   {
     printf '%s\n' '# Task' "## Captain's intent" "Ship the widget for $id." '' '### Boundary' 'Keep it small.' ''
+    # shellcheck disable=SC2016 # Literal Markdown backticks.
     printf '%s\n' '## Firstmate spec' '- Touch only `widget.txt`.' '- Out of scope: the gadget.' ''
     printf '%s\n' '# Setup' 'You are in a disposable git worktree.' ''
     printf '%s\n' '# Definition of done' 'Delivery contract: mode=direct-PR'
   } > "$home/data/$id/brief.md"
+  # shellcheck disable=SC2016 # Literal Markdown backticks.
   printf '%s\n' 'Done: first half.' 'Left: second half.' 'Verify: `cat widget.txt`.' > "$home/data/$id/handoff-notes.md"
   for i in $(seq 1 12); do
     printf 'working [at=%s]: step %s\n' "$((1794470000 + i))" "$i"
@@ -77,6 +79,7 @@ compose() {  # <case-dir> <id> [args...] -> stdout in OUT, stderr in ERR, exit i
 # A thread whose transcript holds <count> messages after the launch message,
 # each about <size> bytes, with tool items between them.
 seed_thread() {  # <thread-id> <count> <size>
+  # shellcheck disable=SC2016 # JavaScript evaluated by Node.
   FM_T3_THREAD=$1 FM_T3_COUNT=$2 FM_T3_SIZE=$3 t3_fake_set '
 const n = Number(process.env.FM_T3_COUNT), size = Number(process.env.FM_T3_SIZE);
 const body = (label) => label + ": " + "w".repeat(Math.max(0, size - label.length - 2));

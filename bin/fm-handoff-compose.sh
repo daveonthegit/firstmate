@@ -219,6 +219,7 @@ compose_fixed() {  # <scratch-dir>
     if [ "$DETAIL" = full ]; then
       git_summary "$scratch"
     else
+      # shellcheck disable=SC2016 # Literal Markdown backticks.
       printf '## Carried commits\n\nBranch `%s` at `%s`; details omitted.\n' "$FM_CONT_BRANCH" "$FM_CONT_HEAD"
     fi
     echo
