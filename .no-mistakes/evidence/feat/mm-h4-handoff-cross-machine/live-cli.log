@@ -1,0 +1,162 @@
+$ bin/fm-lab-home.sh create {run-worktree}/.test-h4-live/primary
+{run-worktree}/.test-h4-live/primary
+[exit 0]
+$ bin/fm-lab-home.sh create {run-worktree}/.test-h4-live/worker
+{run-worktree}/.test-h4-live/worker
+[exit 0]
+$ git init -q -b main {run-worktree}/.test-h4-live/seed
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/seed add .
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/seed -c 'user.name=Disposable H4' -c user.email=h4@example.invalid commit -qm base
+[exit 0]
+$ git clone --bare {run-worktree}/.test-h4-live/seed {run-worktree}/.test-h4-live/origin.git
+Cloning into bare repository '{run-worktree}/.test-h4-live/origin.git'...
+done.
+[exit 0]
+$ git clone {run-worktree}/.test-h4-live/origin.git {run-worktree}/.test-h4-live/primary/projects/sample
+Cloning into '{run-worktree}/.test-h4-live/primary/projects/sample'...
+done.
+[exit 0]
+$ git clone {run-worktree}/.test-h4-live/origin.git {run-worktree}/.test-h4-live/worker/projects/sample
+Cloning into '{run-worktree}/.test-h4-live/worker/projects/sample'...
+done.
+[exit 0]
+$ bin/fm-brief.sh move sample --mode direct-PR
+scaffolded: {run-worktree}/.test-h4-live/worker/data/move/brief.md (ship, mode=direct-PR; replace {TASK} and {FIRSTMATE_SPEC})
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/worker/projects/sample checkout -qb fm/move
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'printf real-isolated-ssh-ready'
+real-isolated-ssh-ready[exit 0]
+$ bin/fm-rescue.sh host-url sample
+created: rescue repository {run-worktree}/.test-h4-live/user/fm-rescue/sample.git
+127.0.0.1:{run-worktree}/.test-h4-live/user/fm-rescue/sample.git
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh rescue move 127.0.0.1:{run-worktree}/.test-h4-live/user/fm-rescue/sample.git'
+ready: task move pushes to fm-rescue at 127.0.0.1:{run-worktree}/.test-h4-live/user/fm-rescue/sample.git
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/worker/projects/sample add -A
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/worker/projects/sample -c 'user.name=Disposable H4' -c user.email=h4@example.invalid commit -qm 'wip: preserved widget and scratch'
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/worker/projects/sample rev-parse HEAD
+5dd00531be6d042e418fb483d8195ca4c6106aa6
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/worker/projects/sample push fm-rescue fm/move
+To 127.0.0.1:{run-worktree}/.test-h4-live/user/fm-rescue/sample.git
+ * [new branch]      fm/move -> fm/move
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh carried move fm-rescue fm/move 5dd00531be6d042e418fb483d8195ca4c6106aa6'
+carried: move fm/move at 5dd00531be6d042e418fb483d8195ca4c6106aa6 on fm-rescue
+[exit 0]
+$ bin/fm-rescue.sh holds sample fm/move 5dd00531be6d042e418fb483d8195ca4c6106aa6
+holds: {run-worktree}/.test-h4-live/user/fm-rescue/sample.git has fm/move at 5dd00531be6d042e418fb483d8195ca4c6106aa6
+[exit 0]
+$ bin/fm-rescue.sh ensure-project {run-worktree}/.test-h4-live/primary/projects/sample
+ready: {run-worktree}/.test-h4-live/primary/projects/sample fetches from remote 'fm-rescue' at {run-worktree}/.test-h4-live/user/fm-rescue/sample.git
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/primary/projects/sample fetch fm-rescue fm/move
+From {run-worktree}/.test-h4-live/user/fm-rescue/sample
+ * branch            fm/move    -> FETCH_HEAD
+ * [new branch]      fm/move    -> fm-rescue/fm/move
+[exit 0]
+$ git -C {run-worktree}/.test-h4-live/primary/projects/sample show 5dd00531be6d042e418fb483d8195ca4c6106aa6:scratch.txt
+previously untracked
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh carried move fm-rescue fm/move 5dd00531be6d042e418fb483d8195ca4c6106aa6'
+error: task move: the copy still has uncommitted changes; ask the worker to commit them:
+?? dirty.txt
+[exit 1]
+$ git -C {run-worktree}/.test-h4-live/worker/projects/sample -c 'user.name=Disposable H4' -c user.email=h4@example.invalid commit --allow-empty -qm 'moved after ready'
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh carried move fm-rescue fm/move 5dd00531be6d042e418fb483d8195ca4c6106aa6'
+error: task move: branch fm/move in the copy is at '589603f544ae52449b2790527a672b40a9d2b728', not the reported 5dd00531be6d042e418fb483d8195ca4c6106aa6
+[exit 1]
+$ git -C {run-worktree}/.test-h4-live/worker/projects/sample reset --hard 5dd00531be6d042e418fb483d8195ca4c6106aa6
+HEAD is now at 5dd0053 wip: preserved widget and scratch
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh handoff move move-c2 local labmac --reason '"'"'free worker'"'"' --carried fm-rescue fm/move 5dd00531be6d042e418fb483d8195ca4c6106aa6'
+# Hand-off from move
+
+- Reason: free worker
+- Continues task move, which ran on worker host labmac and now continues on the supervisor; its brief stays there, and its intent and spec are copied below.
+- Carried work: branch `fm/move` at `5dd00531be6d042e418fb483d8195ca4c6106aa6`, pushed to `fm-rescue`; your copy starts there.
+
+## Captain's intent (verbatim from move)
+
+Carry the exact widget change between hosts.
+
+## Firstmate spec (verbatim from move)
+
+Keep the scratch file as well as the widget.
+
+## Last status lines
+
+```text
+paused: handoff ready fm/move 5dd00531be6d042e418fb483d8195ca4c6106aa6
+```
+
+## Carried commits
+
+Branch `fm/move` at `5dd00531be6d042e418fb483d8195ca4c6106aa6`, measured from `origin/main`.
+
+`git log --oneline origin/main..5dd00531be6d042e418fb483d8195ca4c6106aa6`:
+
+```text
+5dd0053 wip: preserved widget and scratch
+```
+
+Diffstat:
+
+```text
+ scratch.txt | 1 +
+ widget.txt  | 1 +
+ 2 files changed, 2 insertions(+)
+```
+
+## Previous worker's notes
+
+Done: first half. Left: second half. Verify both files.
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh stage move-c2 move handoff'
+staged: {run-worktree}/.test-h4-live/worker/data/move-c2/handoff.md
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh stage move-c2 move handoff'
+staged: {run-worktree}/.test-h4-live/worker/data/move-c2/handoff.md (unchanged)
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh stage move-c2 move handoff'
+error: {run-worktree}/.test-h4-live/worker/data/move-c2/handoff.md already holds different content; it is left unchanged
+[exit 1]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh stage scout-c2 scout report'
+staged: {run-worktree}/.test-h4-live/worker/data/scout/report.md
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh stage scout-c2 scout report'
+error: {run-worktree}/.test-h4-live/worker/data/scout/report.md already holds different content; it is left unchanged
+[exit 1]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh admit fresh sample'
+admitted: fresh on project sample
+[exit 0]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh admit fresh sample'
+deferred: lane capacity of this home ({run-worktree}/.test-h4-live/worker/config/lane-capacity) does not admit another lane: full: 2 of 1 lanes
+error: this worker host does not admit another task now (exit 75)
+[exit 75]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh admit fresh absent'
+error: project absent is not cloned on this worker host
+[exit 1]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env FM_HOME={run-worktree}/.test-h4-live/worker HOME={run-worktree}/.test-h4-live/user TMPDIR={run-worktree}/.test-h4-tmp PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin '"'"'GIT_SSH_COMMAND=/usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5'"'"' {run-worktree}/bin/fm-remote-worker-control.sh admit move sample'
+error: task id move already has a task record on this worker host
+[exit 1]
+$ bin/fm-handoff.sh move --to unknown --remote fm-rescue
+error: no worker host 'unknown' is registered in {run-worktree}/.test-h4-live/primary/data/worker-hosts.md
+[exit 1]
+$ bin/fm-handoff.sh move --to unknown --remote fm-rescue
+error: task move has an open decision or blocker (default	needs-decision	must answer before moving); answer it before handing the task off
+[exit 1]
+$ bin/fm-handoff.sh move --to unknown --remote fm-rescue
+error: this home has stood down from the supervisor lease (other-machine); hand-offs need the supervisor
+[exit 1]
+$ /usr/bin/ssh -F /dev/null -p 22379 -i {run-worktree}/.test-h4-live/client_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile={run-worktree}/.test-h4-live/known_hosts -o BatchMode=yes -o ConnectTimeout=5 127.0.0.1 'env PATH=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin {run-worktree}/bin/fm-remote-entrypoint.sh 1 L1VzZXJzL2RhdmlkeGlhby8ubm8tbWlzdGFrZXMvd29ya3RyZWVzLzc0N2RhNjY2NjUzZS8wMU03ODk0V1pZTTdEQ000WjJBNkdRSlA1VA== L1VzZXJzL2RhdmlkeGlhby8ubm8tbWlzdGFrZXMvd29ya3RyZWVzLzc0N2RhNjY2NjUzZS8wMU03ODk0V1pZTTdEQ000WjJBNkdRSlA1VC8udGVzdC1oNC1saXZlL3dvcmtlcg== Zm0tcmVtb3RlLXdvcmtlci1jb250cm9sLnNoAGFkbWl0AGZyZXNoAHNhbXBsZQA='
+error: remote root and home must be separate, non-overlapping directories
+[exit 64]
+All executed native SSH/Git/CLI checks satisfied their assertions. Full lifecycle remains blocked by the remote bootstrap isolation contract.

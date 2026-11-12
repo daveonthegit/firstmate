@@ -1,0 +1,78 @@
+Server listening on 127.0.0.1 port 22379.
+Accepted publickey for davidxiao from 127.0.0.1 port 64871 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64871:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64871
+Accepted publickey for davidxiao from 127.0.0.1 port 64872 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Accepted publickey for davidxiao from 127.0.0.1 port 64873 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64873:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64873
+Received disconnect from 127.0.0.1 port 64872:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64872
+Accepted publickey for davidxiao from 127.0.0.1 port 64874 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64874:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64874
+Accepted publickey for davidxiao from 127.0.0.1 port 64875 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Accepted publickey for davidxiao from 127.0.0.1 port 64876 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64876:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64876
+Received disconnect from 127.0.0.1 port 64875:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64875
+Accepted publickey for davidxiao from 127.0.0.1 port 64877 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64877:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64877
+Accepted publickey for davidxiao from 127.0.0.1 port 64878 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64878:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64878
+Accepted publickey for davidxiao from 127.0.0.1 port 64879 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64879:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64879
+Accepted publickey for davidxiao from 127.0.0.1 port 64880 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64880:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64880
+Accepted publickey for davidxiao from 127.0.0.1 port 64881 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64881:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64881
+Accepted publickey for davidxiao from 127.0.0.1 port 64882 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64882:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64882
+Accepted publickey for davidxiao from 127.0.0.1 port 64883 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64883:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64883
+Accepted publickey for davidxiao from 127.0.0.1 port 64884 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64884:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64884
+Accepted publickey for davidxiao from 127.0.0.1 port 64885 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64885:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64885
+Accepted publickey for davidxiao from 127.0.0.1 port 64886 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64886:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64886
+Accepted publickey for davidxiao from 127.0.0.1 port 64887 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64887:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64887
+Accepted publickey for davidxiao from 127.0.0.1 port 64888 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64888:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64888
+Accepted publickey for davidxiao from 127.0.0.1 port 64889 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+Received disconnect from 127.0.0.1 port 64889:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 64889
+Received signal 15; terminating.

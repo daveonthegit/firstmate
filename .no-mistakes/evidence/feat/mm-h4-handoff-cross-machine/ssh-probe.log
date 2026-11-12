@@ -1,0 +1,7 @@
+Server listening on 127.0.0.1 port 22379.
+Warning: Permanently added '[127.0.0.1]:22379' (ED25519) to the list of known hosts.
+Accepted publickey for davidxiao from 127.0.0.1 port 63484 ssh2: ED25519 SHA256:Y0mtUxf+nu+QmDAgVlaO5BldNxopqfDwcPOex8R+brs
+BSM audit: bsm_audit_session_setup: setaudit_addr failed: Operation not permitted
+disposable-ssh-okReceived disconnect from 127.0.0.1 port 63484:11: disconnected by user
+Disconnected from user davidxiao 127.0.0.1 port 63484
+Received signal 15; terminating.

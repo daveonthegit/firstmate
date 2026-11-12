@@ -1,0 +1,27 @@
+mode=check
+path=~/.pi/agent/bin:~/.nvm/versions/node/v24.16.0/bin:~/.local/bin:~/.nvm/versions/node/v24.16.0/bin:~/.nix-profile/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:~/go/bin:~/.cargo/bin:~/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/sbin
+entrypoint=no
+note: not launched through the fixed remote entrypoint; the reported PATH is this caller environment.
+platform=darwin
+required git=/run/current-system/sw/bin/git
+required jq=/run/current-system/sw/bin/jq
+required node=~/.nvm/versions/node/v24.16.0/bin/node
+required tasks-axi=~/.nvm/versions/node/v24.16.0/bin/tasks-axi
+required treehouse=~/.local/bin/treehouse
+required harness=claude:~/.local/bin/claude
+optional tmux=/run/current-system/sw/bin/tmux
+optional no-mistakes=~/.local/bin/no-mistakes
+optional gh=~/.local/bin/gh
+check t3code=human: no T3 credential at {run-worktree}/.test-h4-live/worker/config/t3code-token; the captain signs in with: bin/fm-t3-mcp.mjs login --access full-access
+check gui-session=ok: gui/501
+check remote-job-worker=fixable: {run-worktree}/.test-h4-live/user/Library/LaunchAgents/dev.firstmate.remote-job.plist does not match the Firstmate-owned Aqua worker contract
+check remote-job-worker-loaded=fixable: dev.firstmate.remote-job is not loaded in gui/501
+check remote-job-probe=fixable: the remote job worker has not reported a fresh probe
+check t3code-server=human: the T3 server cannot be checked until this home's own credential passes
+check entrypoint-link=skip: this run did not come through the fixed remote entrypoint
+action: t3code: on that machine, as that account, run '{run-worktree}/bin/fm-t3-mcp.mjs login --access full-access --token-file {run-worktree}/.test-h4-live/worker/config/t3code-token' (the captain's sign-in), then rerun this command
+action: remote-job-worker: rerun this command with --fix to write dev.firstmate.remote-job
+action: remote-job-worker-loaded: rerun this command with --fix to bootstrap the worker
+action: remote-job-probe: rerun this command with --fix to restart the worker, then rerun through fm-on.sh
+action: t3code-server: close the t3code gap above first
+error: this host is not ready for a remote second mate; unresolved: t3code remote-job-worker remote-job-worker-loaded remote-job-probe t3code-server

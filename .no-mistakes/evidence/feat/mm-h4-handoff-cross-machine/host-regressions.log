@@ -1,0 +1,8 @@
+1..6
+ok - a local ship moves to a worker host through the rescue repository and keeps one live item
+ok - a placed ship moves back to the supervisor: notes fetched, work verified on the host, two-leg cleanup
+ok - a placed ship moves between two worker hosts through origin
+ok - a scout moves to a worker host with its interim report
+ok - fm-handoff refuses an unregistered, unreachable, full, or ineligible target and an unreachable worker before changing anything
+ok - fm-spawn --host --continue-from requires a record that targets that host
+FM_TEST_COMPLETE
