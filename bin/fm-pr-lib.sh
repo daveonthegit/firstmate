@@ -343,7 +343,7 @@ fm_pr_url_parse() {
 }
 
 fm_pr_read_merged_head() {
-  local dir=$1 target=$2 view state remainder head resolved_url script_dir
+  local pr_dir=$1 target=$2 view state remainder head resolved_url script_dir
   script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || return 1
   FM_PR_MERGED_HEAD=
   FM_PR_MERGED_URL=
@@ -353,7 +353,7 @@ fm_pr_read_merged_head() {
     head=$FM_PR_RECORD_HEAD
     resolved_url=$FM_PR_URL
   else
-    view=$(cd "$dir" && "$script_dir/fm-gh-account.sh" exec --dir "$dir" -- gh pr view "$target" --json state,headRefOid,url -q '.state + "\t" + .headRefOid + "\t" + .url' 2>/dev/null) || return 1
+    view=$(cd "$pr_dir" && "$script_dir/fm-gh-account.sh" exec --dir "$pr_dir" -- gh pr view "$target" --json state,headRefOid,url -q '.state + "\t" + .headRefOid + "\t" + .url' 2>/dev/null) || return 1
     state=${view%%$'\t'*}
     remainder=${view#*$'\t'}
     [ "$state" != "$view" ] || return 1

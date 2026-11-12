@@ -120,7 +120,7 @@ test_ensure_creates_a_private_repository_and_remote() {
   expect_code 0 $? "ensure should create the rescue repository"$'\n'"$out"
   assert_contains "$out" "created: rescue repository $repo" "the creation was not reported"
   [ "$(git -C "$repo" rev-parse --is-bare-repository)" = true ] || fail "the rescue repository is not bare"
-  [ "$(stat -f %Lp "$(dirname "$repo")" 2>/dev/null || stat -c %a "$(dirname "$repo")")" = 700 ] ||
+  [ "$(stat -c %a "$(dirname "$repo")" 2>/dev/null || stat -f %Lp "$(dirname "$repo")")" = 700 ] ||
     fail "the rescue directory is not private"
   [ "$(git -C "$case_dir/wt1" remote get-url fm-rescue)" = "$repo" ] || fail "the copy has no fm-rescue remote"
   [ "$(git -C "$case_dir/wt2" remote get-url fm-rescue)" = "$repo" ] || fail "another copy of the project does not see the remote"
