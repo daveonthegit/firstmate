@@ -11,9 +11,18 @@
 #   - for a task on the t3code backend, a transcript tail of its T3 thread,
 #     whose paging and selection bin/fm-t3-mcp.mjs `transcript` owns.
 # Usage: fm-handoff-compose.sh <old-id> <new-id> [--reason <text>] [--budget-tokens <n>]
+#          [--record-dir <dir>] [--ran-on <worker-host-id>]
 #   It reads data/<new-id>/continuation (bin/fm-continuation-lib.sh) and the
 #   old task's brief, notes, status log, task record, and copy, so it runs
 #   before the old task is cleaned up. It changes nothing.
+#   It runs in the home where the old task ran: bin/fm-handoff.sh runs it here
+#   for a task on this machine, and the worker-host leg's `handoff` verb
+#   (bin/fm-remote-worker-control.sh) runs it on the host for a placed task,
+#   passing --record-dir, a directory holding <new-id>/continuation in place of
+#   this home's data/, and --ran-on, that host's id. The old task ran on
+#   --ran-on (default local) and the continuation runs on the record's `to`;
+#   when the two differ the document says the work moved between machines and
+#   names no path of the old machine except as a pointer to where it stays.
 #   The budget, default 12000 tokens counted as four bytes each, bounds the
 #   whole document. Transcript, status/git detail, then notes yield space.
 #   Cut notes retain a marker pointing to the unchanged original notes file;
@@ -60,18 +69,22 @@ OLD=
 NEW=
 REASON=
 BUDGET_TOKENS=12000
+RECORD_DIR=
+RAN_ON=local
 want=
 for a in "$@"; do
   if [ -n "$want" ]; then
     case "$want" in
       reason) REASON=$a ;;
       budget-tokens) BUDGET_TOKENS=$a ;;
+      record-dir) RECORD_DIR=$a ;;
+      ran-on) RAN_ON=$a ;;
     esac
     want=
     continue
   fi
   case "$a" in
-    --reason|--budget-tokens) want=${a#--} ;;
+    --reason|--budget-tokens|--record-dir|--ran-on) want=${a#--} ;;
     --*) echo "error: unknown option $a" >&2; exit 2 ;;
     *)
       if [ -z "$OLD" ]; then OLD=$a
@@ -88,6 +101,7 @@ case "$BUDGET_TOKENS" in
 esac
 REASON=$(printf '%s' "$REASON" | tr '\n\r' '  ')
 BUDGET=$((BUDGET_TOKENS * BYTES_PER_TOKEN))
+fm_continuation_target_valid "$RAN_ON" || { echo "error: --ran-on must be local or a worker host id" >&2; exit 2; }
 
 META="$STATE/$OLD.meta"
 BRIEF="$DATA/$OLD/brief.md"
@@ -191,11 +205,17 @@ compose_fixed() {  # <scratch-dir>
   echo "# Hand-off from $OLD"
   echo
   echo "- Reason: ${REASON:-not given}"
-  echo "- Continues task $OLD, on this machine; its brief is \`$BRIEF\`."
+  if [ "$MOVED" = 0 ]; then
+    echo "- Continues task $OLD, on this machine; its brief is \`$BRIEF\`."
+  else
+    echo "- Continues task $OLD, which ran on $(machine_label "$RAN_ON") and now continues on $(machine_label "$FM_CONT_TO"); its brief stays there, and its intent and spec are copied below."
+  fi
   if [ "$FM_CONT_KIND" = ship ]; then
     echo "- Carried work: branch \`$FM_CONT_BRANCH\` at \`$FM_CONT_HEAD\`, pushed to \`$FM_CONT_REMOTE\`; your copy starts there."
-  else
+  elif [ "$MOVED" = 0 ]; then
     echo "- The previous interim report is \`$DATA/$OLD/report.md\`."
+  else
+    echo "- The previous interim report was carried to this machine; your brief's # Continuation section names where."
   fi
   echo
   echo "## Captain's intent (verbatim from $OLD)"
@@ -258,7 +278,13 @@ process.stdout.write(d.text + "\n");
   echo "Unavailable: reading T3 thread $thread failed ($why)."
 }
 
-fm_continuation_read "$DATA" "$NEW" "$OLD" || die "$FM_CONT_ERROR"
+machine_label() {  # <local|worker-host-id>
+  if [ "$1" = local ]; then printf 'the supervisor'; else printf 'worker host %s' "$1"; fi
+}
+
+fm_continuation_read "${RECORD_DIR:-$DATA}" "$NEW" "$OLD" || die "$FM_CONT_ERROR"
+MOVED=0
+[ "$FM_CONT_TO" = "$RAN_ON" ] || MOVED=1
 [ -s "$NOTES" ] || die "task $OLD wrote no nonempty notes at $NOTES"
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/fm-handoff-compose.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT
@@ -277,10 +303,12 @@ if [ "$used" -gt "$BUDGET" ]; then
   mandatory=$(wc -c < "$scratch/doc" | tr -d ' ')
   [ "$mandatory" -le "$BUDGET" ] ||
     die "mandatory intent/spec and headings require $mandatory bytes; --budget-tokens $BUDGET_TOKENS allows $BUDGET bytes"
-  node - "$NOTES" "$scratch/notes" "$((BUDGET - mandatory))" <<'NODE'
+  where=''
+  [ "$MOVED" = 0 ] || where=" on $(machine_label "$RAN_ON")"
+  FM_COMPOSE_NOTES_WHERE=$where node - "$NOTES" "$scratch/notes" "$((BUDGET - mandatory))" <<'NODE'
 const fs = require('fs');
 const [source, target, room] = process.argv.slice(2);
-const marker = Buffer.from(`\n[Notes cut to fit; full notes: ${source}]\n`);
+const marker = Buffer.from(`\n[Notes cut to fit; full notes: ${source}${process.env.FM_COMPOSE_NOTES_WHERE || ''}]\n`);
 if (marker.length > Number(room)) {
   console.error(`error: notes marker requires ${marker.length} bytes; only ${room} available; increase --budget-tokens`);
   process.exit(1);

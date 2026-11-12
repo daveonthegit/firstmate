@@ -1284,6 +1284,12 @@ Each line beginning with `- ` must be a record; other lines are ignored prose:
 `bin/fm-worker-host-lib.sh` owns parsing; the [`fm-on.sh` header](../bin/fm-on.sh) owns route selection across the worker host and remote second-mate registries.
 A malformed record stops routing rather than being skipped.
 
+## Rescue remote (config/rescue-ssh)
+
+The optional local, gitignored `config/rescue-ssh` holds one SSH destination, an ssh config alias or `user@host`, by which worker hosts reach this primary.
+A cross-machine hand-off through `--remote fm-rescue` gives a worker host's copy the primary's rescue repository as `<destination>:<path>`; without the file such a hand-off refuses, and origin remains usable.
+[`bin/fm-rescue.sh`](../bin/fm-rescue.sh) owns the repository, its URLs, and pruning; [remote workers](remote-workers.md#moving-a-task-between-machines) covers the SSH access it needs.
+
 ## Harness support
 
 claude, codex, opencode, pi, pi-signed, grok, kimi, cursor, and omp are empirically verified for crewmate and secondmate launches; gemini is verified for crewmate and scout launches only, and [README requirements](../README.md#requirements) own the set supported for the primary session.

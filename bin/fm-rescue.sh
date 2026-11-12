@@ -7,6 +7,9 @@
 # no --force: the commits then exist outside the copy it returns. Preservation
 # permits cleanup, but does not by itself prove final landing for pruning.
 # Usage: fm-rescue.sh ensure <task-id>
+#        fm-rescue.sh ensure-project <project-dir>
+#        fm-rescue.sh host-url <project-name>
+#        fm-rescue.sh holds <project-name> <branch> <head>
 #        fm-rescue.sh prune <task-id> <project-dir> [--abandoned]
 #   ensure creates the rescue repository for the task's project on demand
 #   (private: the directories are mode 700) and adds it to the task's copy as
@@ -17,6 +20,20 @@
 #   repository path holds something other than a bare repository. bin/fm-handoff.sh
 #   runs it when a ship's hand-off names --remote fm-rescue, so nobody needs
 #   to run it first; the remote stays an explicit per-hand-off choice.
+#   For a task placed on a worker host (bin/fm-task-route-lib.sh) the
+#   repository is still created here, on the supervisor, and the host leg
+#   (bin/fm-remote-worker-control.sh `rescue`) adds it to the placed copy by
+#   its SSH URL, then proves the host reaches it with git ls-remote.
+#   ensure-project adds the remote to a clone on this machine that has no task
+#   yet: the project a continuation of a placed task starts in here.
+#   host-url creates the repository on demand and prints the URL a worker host
+#   uses for it: <dest>:<path>, where <dest> is the one line of
+#   config/rescue-ssh, the SSH destination (an ssh config alias or user@host)
+#   by which worker hosts reach this supervisor (docs/configuration.md "Rescue
+#   remote"). Without that file a worker host cannot reach the repository, so
+#   host-url, and ensure for a placed task, refuse.
+#   holds exits 0 when this supervisor's repository has <branch> at <head>, the
+#   check bin/fm-handoff.sh makes here for work a worker host pushed.
 #   prune deletes the rescue refs a finished hand-off chain no longer needs.
 #   <task-id> is any task of the chain (the continuation records
 #   data/<id>/continuation link it); the chain's tip is the last continuation.
@@ -45,9 +62,11 @@
 #   explicit word that the work is abandoned and needs no landing proof.
 #   Unreachable objects leave the rescue repository through git's own garbage
 #   collection.
-# A later cross-machine hand-off can reach the same repository from a worker
-# host over SSH: rescue_url below is the one place the remote's URL is chosen,
-# and it is a plain local path today because only same-machine hand-offs exist.
+# A copy on this machine reaches the repository by its plain local path, and a
+# copy on a worker host by rescue_host_url's SSH URL; those two functions are
+# the only places the remote's URL is chosen. Both name the same repository,
+# so a branch pushed from either machine is fetched by a continuation on the
+# other. Refs pushed from a worker host are pruned only on the supervisor.
 # Regression coverage: tests/fm-rescue.test.sh exercises preservation, base
 # landing, squash-merged and rebased PR proof, retention on missing or partial
 # proof, and abandonment.
@@ -68,11 +87,14 @@ FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
 STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
+CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 
 # shellcheck source=bin/fm-continuation-lib.sh
 . "$SCRIPT_DIR/fm-continuation-lib.sh"
 # shellcheck source=bin/fm-tangle-lib.sh
 . "$SCRIPT_DIR/fm-tangle-lib.sh"
+# shellcheck source=bin/fm-task-route-lib.sh
+. "$SCRIPT_DIR/fm-task-route-lib.sh"
 
 RESCUE_REMOTE=fm-rescue
 
@@ -95,40 +117,112 @@ rescue_url() {  # <project-dir>
   rescue_path "$1"
 }
 
+# The URL a worker host reaches this supervisor's repository by (header).
+rescue_host_url() {  # <project-dir>
+  local file="$CONFIG/rescue-ssh" dest path
+  [ -f "$file" ] && [ ! -L "$file" ] ||
+    die "config/rescue-ssh is not set, so a worker host cannot reach this supervisor's rescue repository; write the SSH destination worker hosts use for this machine there (docs/configuration.md \"Rescue remote\")"
+  dest=$(sed -n '1p' "$file" | tr -d '[:space:]')
+  case "$dest" in
+    '' | -* | *[!A-Za-z0-9._@-]*) die "config/rescue-ssh must hold one SSH destination such as an ssh config alias or user@host (got '$dest')" ;;
+  esac
+  path=$(rescue_path "$1")
+  printf '%s:%s\n' "$dest" "$path"
+}
+
+create_repo() {  # <path>
+  local path=$1
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    is_bare_repo "$path" || die "$path exists but is not a bare git repository; it is left unchanged"
+    return 0
+  fi
+  (umask 077 && mkdir -p "$(dirname "$path")") || die "could not create $(dirname "$path")"
+  chmod 700 "$(dirname "$path")" || die "could not make $(dirname "$path") private"
+  (umask 077 && git init --quiet --bare "$path") || die "could not create the rescue repository $path"
+  echo "created: rescue repository $path"
+}
+
+# Add the remote to one checkout on this machine (a task copy or a clone).
+add_local_remote() {  # <checkout> <url> <what>
+  local checkout=$1 url=$2 what=$3 current
+  if current=$(git -C "$checkout" remote get-url "$RESCUE_REMOTE" 2>/dev/null); then
+    [ "$current" = "$url" ] ||
+      die "$what already has a remote '$RESCUE_REMOTE' at '$current', not '$url'; it is left unchanged"
+    return 0
+  fi
+  git -C "$checkout" remote add "$RESCUE_REMOTE" "$url" ||
+    die "could not add remote '$RESCUE_REMOTE' to $what"
+}
+
+do_ensure_placed() {  # <task-id> <worker-host-id>
+  local id=$1 host=$2 project url out rc=0
+  project=$(meta_get "$STATE/$id.meta" remote_project)
+  [ -n "$project" ] || die "task $id on worker host $host records no project"
+  url=$(rescue_host_url "$project") || exit 1
+  create_repo "$(rescue_path "$project")"
+  out=$("$SCRIPT_DIR/fm-on.sh" "$host" fm-remote-worker-control.sh rescue "$id" "$url" 2>&1) || rc=$?
+  [ -z "$out" ] || printf '%s\n' "$out" | sed "s/^/worker host $host: /" >&2
+  [ "$rc" -eq 0 ] || die "worker host $host could not add or reach '$RESCUE_REMOTE' at $url for task $id (exit $rc)"
+  echo "ready: task $id's copy on worker host $host pushes to remote '$RESCUE_REMOTE' at $url"
+}
+
 is_bare_repo() {  # <path>
   [ "$(git -C "$1" rev-parse --is-bare-repository 2>/dev/null || true)" = true ] &&
     [ "$(cd "$1" && pwd -P)" = "$(cd "$(git -C "$1" rev-parse --absolute-git-dir)" && pwd -P)" ]
 }
 
 do_ensure() {  # <task-id>
-  local id=$1 meta project copy path url current
+  local id=$1 meta project copy url current
   meta="$STATE/$id.meta"
   [ -f "$meta" ] || die "task $id has no record at $meta"
+  fm_task_route "$meta" || die "$FM_TASK_ROUTE_ERROR"
+  case "$FM_TASK_ROUTE" in
+    worker-host) do_ensure_placed "$id" "$FM_TASK_ROUTE_HOST"; return ;;
+    local) ;;
+    *) die "task $id is a second mate on another machine; it has no rescue remote" ;;
+  esac
   project=$(meta_get "$meta" project)
   copy=$(meta_get "$meta" worktree)
   [ -n "$project" ] || die "task $id records no project"
   if [ -z "$copy" ] || ! git -C "$copy" rev-parse --git-dir >/dev/null 2>&1; then
     die "task $id's copy '${copy:-unrecorded}' is not a git checkout"
   fi
-  path=$(rescue_path "$project")
   url=$(rescue_url "$project")
   if current=$(git -C "$copy" remote get-url "$RESCUE_REMOTE" 2>/dev/null); then
     [ "$current" = "$url" ] ||
       die "task $id's copy already has a remote '$RESCUE_REMOTE' at '$current', not '$url'; it is left unchanged"
   fi
-  if [ -e "$path" ] || [ -L "$path" ]; then
-    is_bare_repo "$path" || die "$path exists but is not a bare git repository; it is left unchanged"
-  else
-    (umask 077 && mkdir -p "$(dirname "$path")") || die "could not create $(dirname "$path")"
-    chmod 700 "$(dirname "$path")" || die "could not make $(dirname "$path") private"
-    (umask 077 && git init --quiet --bare "$path") || die "could not create the rescue repository $path"
-    echo "created: rescue repository $path"
-  fi
-  if [ -z "${current:-}" ]; then
-    git -C "$copy" remote add "$RESCUE_REMOTE" "$url" ||
-      die "could not add remote '$RESCUE_REMOTE' to task $id's copy"
-  fi
+  create_repo "$(rescue_path "$project")"
+  add_local_remote "$copy" "$url" "task $id's copy"
   echo "ready: task $id's copy pushes to remote '$RESCUE_REMOTE' at $url"
+}
+
+do_ensure_project() {  # <project-dir>
+  local project=$1 url current
+  git -C "$project" rev-parse --git-dir >/dev/null 2>&1 || die "$project is not a git checkout"
+  url=$(rescue_url "$project")
+  if current=$(git -C "$project" remote get-url "$RESCUE_REMOTE" 2>/dev/null) && [ "$current" != "$url" ]; then
+    die "$project already has a remote '$RESCUE_REMOTE' at '$current', not '$url'; it is left unchanged"
+  fi
+  create_repo "$(rescue_path "$project")"
+  add_local_remote "$project" "$url" "$project"
+  echo "ready: $project fetches from remote '$RESCUE_REMOTE' at $url"
+}
+
+do_holds() {  # <project-name> <branch> <head>
+  local path actual
+  path=$(rescue_path "$1")
+  [ -d "$path" ] || die "no rescue repository at $path"
+  actual=$(git -C "$path" rev-parse --verify --quiet "refs/heads/$2^{commit}" 2>/dev/null || true)
+  [ "$actual" = "$3" ] || die "the rescue repository $path has $2 at '${actual:-nothing}', not $3"
+  echo "holds: $path has $2 at $3"
+}
+
+do_host_url() {  # <project-name>
+  local url
+  url=$(rescue_host_url "$1") || exit 1
+  create_repo "$(rescue_path "$1")" >&2
+  printf '%s\n' "$url"
 }
 
 # Every continuation record that continues <id>; prints the continuing ids.
@@ -256,6 +350,20 @@ case "$verb" in
     [ "$#" -eq 1 ] || { usage >&2; exit 2; }
     fm_task_id_path_safe "$1" || { echo "error: invalid task id '$1'" >&2; exit 2; }
     do_ensure "$1"
+    ;;
+  ensure-project)
+    [ "$#" -eq 1 ] || { usage >&2; exit 2; }
+    do_ensure_project "$1"
+    ;;
+  host-url)
+    [ "$#" -eq 1 ] || { usage >&2; exit 2; }
+    fm_task_id_path_safe "$1" || { echo "error: invalid project name '$1'" >&2; exit 2; }
+    do_host_url "$1"
+    ;;
+  holds)
+    [ "$#" -eq 3 ] || { usage >&2; exit 2; }
+    fm_task_id_path_safe "$1" || { echo "error: invalid project name '$1'" >&2; exit 2; }
+    do_holds "$@"
     ;;
   prune)
     [ "$#" -ge 2 ] && [ "$#" -le 3 ] || { usage >&2; exit 2; }

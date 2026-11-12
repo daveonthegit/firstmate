@@ -8,7 +8,7 @@
 #   fm-procevent-remote-worker.sh handle <worker-host-id> <sequence> <result-file>
 #   fm-procevent-remote-worker.sh autohandle <source-id> <sequence> <result-file>
 #   fm-procevent-remote-worker.sh members <worker-host-id>
-#   fm-procevent-remote-worker.sh fetch <worker-host-id> <task-id> <report|journal>
+#   fm-procevent-remote-worker.sh fetch <worker-host-id> <task-id> <report|journal|handoff-notes>
 #   fm-procevent-remote-worker.sh retire-task <worker-host-id> <task-id>
 #   fm-procevent-remote-worker.sh retire <worker-host-id>
 #   fm-procevent-remote-worker.sh classify <result-file>
@@ -56,7 +56,7 @@
 # watcher's signal scan already announces. With no members, `source` waits out
 # one window locally and reports it empty instead of calling the host.
 # `fetch` stores one of a task's documents in this home's data/<id>/ the same
-# way, exiting 0 stored, 1 refused by the host, 2 local storage failed, or 255
+# way (handoff-notes is the notes a hand-off asks for, bin/fm-handoff.sh), exiting 0 stored, 1 refused by the host, 2 local storage failed, or 255
 # transport unknown. `retire-task` drops one task's cursor and mirror records
 # and retires the host's source once it has no other members left. Placement
 # on the primary (bin/fm-spawn.sh --host) calls `arm`; primary-side cleanup
@@ -245,7 +245,7 @@ append_once() { # <status-file> <line>: 0 appended, 1 present, 2 failed
 # Fetch one of a task's documents from the host into this home's data/<task>/.
 # 0 stored, 1 refused by the host, 2 local storage failed, 255 transport unknown.
 FETCH_REASON=''
-fetch_doc() { # <host> <task> <report|journal>
+fetch_doc() { # <host> <task> <report|journal|handoff-notes>
   local host=$1 task=$2 which=$3 dir tmp err rc=0
   FETCH_REASON=''
   dir="$DATA/$task"
@@ -449,9 +449,9 @@ cmd_autohandle() { # <source-id> <seq> <result>
   with_lifecycle_lock "$host" cmd_handle_locked "$host" "$2" "$3"
 }
 
-cmd_fetch_locked() { # <host> <task> <report|journal>
+cmd_fetch_locked() { # <host> <task> <report|journal|handoff-notes>
   local rc=0
-  case "$3" in report|journal) ;; *) die "a worker document must be report or journal, not: $3" ;; esac
+  case "$3" in report|journal|handoff-notes) ;; *) die "a worker document must be report, journal, or handoff-notes, not: $3" ;; esac
   fetch_doc "$1" "$2" "$3" || rc=$?
   [ "$rc" -ne 1 ] || printf 'not fetched: %s %s from %s - %s\n' "$2" "$3" "$1" "$FETCH_REASON" >&2
   return "$rc"

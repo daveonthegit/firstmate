@@ -4,7 +4,7 @@
 # Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--continue-from <old-id>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--continue-from <old-id>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--backend <name>] --secondmate
-#        fm-spawn.sh <task-id> <project> {--mode <mode> --yolo <on|off>|--scout} --host <worker-host-id> [--branch-prefix <prefix>] [--base-branch <branch>] [--upstream-consent <scope>] [--harness <name>] [--model <name>] [--effort <level>] [--backend <name>]
+#        fm-spawn.sh <task-id> <project> {--mode <mode> --yolo <on|off>|--scout} --host <worker-host-id> [--branch-prefix <prefix>] [--base-branch <branch>] [--upstream-consent <scope>] [--continue-from <old-id>] [--harness <name>] [--model <name>] [--effort <level>] [--backend <name>]
 #   --mode and --yolo are this task's delivery contract, REQUIRED for every ship
 #   spawn and refused on --scout and --secondmate spawns. Firstmate resolves both
 #   per task at intake (AGENTS.md section 7); data/projects.md holds the captain's
@@ -63,10 +63,11 @@
 #   cleanup read; it is refused on secondmates and relaunches, and without it
 #   nothing changes.
 #   --continue-from <old-id> starts a fresh ship or scout that continues task
-#   <old-id> in a new thread on this machine (bin/fm-handoff.sh runs it). It
+#   <old-id> in a new thread (bin/fm-handoff.sh runs it). It
 #   reads the continuation record bin/fm-continuation-lib.sh owns at
-#   data/<task-id>/continuation, which must name <old-id> and this spawn's
-#   kind, and requires the brief's Setup "Continued from: <old-id>" line to
+#   data/<task-id>/continuation, which must name <old-id>, this spawn's
+#   kind, and as its target local, or with --host that worker host, and
+#   requires the brief's Setup "Continued from: <old-id>" line to
 #   agree, as for --base-branch; a brief with such a line refuses a fresh spawn
 #   without the flag. A ship's fresh copy, after the same clean check, fetches
 #   the carried branch from the recorded remote and resets to the recorded
@@ -74,7 +75,13 @@
 #   commit, instead of starting from the base; --base-branch keeps meaning the
 #   branch its pull request targets. A scout's scratch copy starts from the
 #   base as usual. The record gains continued_from=<old-id>, which a relaunch
-#   keeps. Refused with --relaunch, --secondmate, --host, and batch pairs.
+#   keeps. Refused with --relaunch, --secondmate, and batch pairs. With
+#   --host, data/<task-id>/handoff.md must exist; the spawn stages it on the
+#   host (and a scout's interim report data/<old-id>/report.md), then forwards
+#   --continue-from with the record's carried remote, branch, and head, plus
+#   the rescue repository's SSH URL (bin/fm-rescue.sh host-url) when the remote
+#   is fm-rescue; the host leg writes its own record and the host's fm-spawn
+#   plants the copy at the carried commit (bin/fm-remote-worker-control.sh).
 #   --host <worker-host-id> places a fresh ship or scout on a worker host named
 #   in data/worker-hosts.md instead of launching it here (docs/remote-workers.md).
 #   Only the brief's `# Task` body crosses over, with the flags that shape the
@@ -1312,15 +1319,15 @@ if [ "$HOST_SET" -eq 1 ]; then
     exit 1
   }
 fi
-# --continue-from starts one fresh local ship or scout from a hand-off record
+# --continue-from starts one fresh ship or scout from a hand-off record
 # (header); every other spawn shape has nothing to continue.
 if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
   fm_task_id_creation_valid "$CONTINUE_FROM" || {
     echo "error: --continue-from requires the task id being continued (got '$CONTINUE_FROM')" >&2
     exit 1
   }
-  [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] && [ "$HOST_SET" -eq 0 ] || {
-    echo "error: --continue-from starts a fresh local ship or scout; it is refused with --secondmate, --relaunch, and --host" >&2
+  [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] || {
+    echo "error: --continue-from starts a fresh ship or scout; it is refused with --secondmate and --relaunch" >&2
     exit 1
   }
 fi
@@ -1860,6 +1867,21 @@ worker_host_route_value() {  # <route> <key>
   printf '%s\n' "$1" | sed -n "s/^$2=//p" | tail -1
 }
 
+# Stage one continuation document on the host before its spawn (header).
+spawn_worker_host_stage() {  # <handoff|report> <file>
+  local which=$1 file=$2 out rc=0
+  out=$("$SCRIPT_DIR/fm-on.sh" --stdin "$HOST_ARG" fm-remote-worker-control.sh stage "$ID" "$CONTINUE_FROM" "$which" \
+    < "$file" 2>&1) || rc=$?
+  [ "$rc" -eq 0 ] && return 0
+  [ -z "$out" ] || printf '%s\n' "$out" >&2
+  if [ "$rc" -eq 255 ]; then
+    echo "error: worker host $HOST_ARG ($WORKER_HOST_HOST) was unreachable while staging $ID's $which; nothing was placed and its backlog item stays queued - re-run this same spawn" >&2
+    exit 255
+  fi
+  echo "error: worker host $HOST_ARG refused to stage $ID's $which (exit $rc); nothing was placed" >&2
+  exit "$rc"
+}
+
 # --host (the header owns the contract): place this fresh ship or scout through
 # the host leg's spawn, after the task-set lock and before any local backend,
 # capacity, worktree, or launch-brief step, then exit.
@@ -1928,8 +1950,33 @@ spawn_worker_host() {
     echo "error: $brief records a Base branch line but the spawn has no --base-branch" >&2
     exit 1
   fi
-  if fm_brief_continued_from "$brief" >/dev/null; then
-    echo "error: $brief continues another task, and a continuation cannot be placed on a worker host yet; spawn it locally with --continue-from" >&2
+  if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+    fm_continuation_read "$DATA" "$ID" "$CONTINUE_FROM" || {
+      echo "error: --continue-from $CONTINUE_FROM: $FM_CONT_ERROR" >&2
+      exit 1
+    }
+    [ "$FM_CONT_KIND" = "$KIND" ] || {
+      echo "error: --continue-from $CONTINUE_FROM: the continuation record is for a $FM_CONT_KIND, not a $KIND spawn" >&2
+      exit 1
+    }
+    [ "$FM_CONT_TO" = "$HOST_ARG" ] || {
+      echo "error: --continue-from $CONTINUE_FROM: the continuation record continues on '$FM_CONT_TO', not worker host $HOST_ARG" >&2
+      exit 1
+    }
+    if ! fm_brief_continued_from "$brief" >/dev/null || fm_brief_continued_from "$brief" | grep -vxF -- "$CONTINUE_FROM" >/dev/null; then
+      echo "error: $brief must record Continued from: $CONTINUE_FROM and no other Continued from line to spawn with --continue-from $CONTINUE_FROM; scaffold it with bin/fm-brief.sh --continue-from $CONTINUE_FROM" >&2
+      exit 1
+    fi
+    [ -s "$DATA/$ID/handoff.md" ] || {
+      echo "error: --continue-from $CONTINUE_FROM: $DATA/$ID/handoff.md is missing or empty; bin/fm-handoff.sh composes it" >&2
+      exit 1
+    }
+    [ "$KIND" != scout ] || [ -s "$DATA/$CONTINUE_FROM/report.md" ] || {
+      echo "error: --continue-from $CONTINUE_FROM: the interim report $DATA/$CONTINUE_FROM/report.md is missing or empty" >&2
+      exit 1
+    }
+  elif fm_brief_continued_from "$brief" >/dev/null; then
+    echo "error: $brief continues another task but the spawn has no --continue-from; pass the brief's source task with --continue-from" >&2
     exit 1
   fi
 
@@ -1969,6 +2016,19 @@ spawn_worker_host() {
   [ -z "$MODEL" ] || host_args+=(--model "$MODEL")
   [ -z "$EFFORT" ] || host_args+=(--effort "$EFFORT")
   [ "$BACKEND_SET" -eq 0 ] || host_args+=(--backend "$BACKEND_ARG")
+  if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+    host_args+=(--continue-from "$CONTINUE_FROM")
+    if [ "$KIND" = ship ]; then
+      host_args+=(--carried-remote "$FM_CONT_REMOTE" --carried-branch "$FM_CONT_BRANCH" --carried-head "$FM_CONT_HEAD")
+      if [ "$FM_CONT_REMOTE" = fm-rescue ]; then
+        value=$("$SCRIPT_DIR/fm-rescue.sh" host-url "$proj_name") || {
+          echo "error: worker host $HOST_ARG cannot be given the rescue repository for $proj_name; nothing was placed" >&2
+          exit 1
+        }
+        host_args+=(--rescue-url "$value")
+      fi
+    fi
+  fi
 
   SPAWN_TASK_LOCK="$STATE/.spawn-$ID.lock"
   fm_lock_try_acquire "$SPAWN_TASK_LOCK" || {
@@ -2007,6 +2067,11 @@ spawn_worker_host() {
     spawn_refuse_if_away_spend_cap
     spawn_require_relocated_queued_work
     spawn_backlog_preflight
+  fi
+
+  if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
+    spawn_worker_host_stage handoff "$DATA/$ID/handoff.md"
+    [ "$KIND" != scout ] || spawn_worker_host_stage report "$DATA/$CONTINUE_FROM/report.md"
   fi
 
   body_file=$(mktemp "${TMPDIR:-/tmp}/fm-spawn-host-task.XXXXXX") || exit 1
@@ -2086,6 +2151,7 @@ spawn_worker_host() {
       echo "model=$route_model"
       echo "effort=$route_effort"
       echo "spawn_gen=s$(date +%s).${BASHPID:-$$}.$RANDOM"
+      [ "$CONTINUE_FROM_SET" -eq 0 ] || echo "continued_from=$CONTINUE_FROM"
       echo "remote_worker_host=$HOST_ARG"
       echo "remote_root=$WORKER_HOST_ROOT"
       echo "remote_home=$WORKER_HOST_HOME"
@@ -4858,6 +4924,10 @@ if [ "$KIND" = ship ] || [ "$KIND" = scout ]; then
     }
     [ "$FM_CONT_KIND" = "$KIND" ] || {
       echo "error: --continue-from $CONTINUE_FROM: the continuation record is for a $FM_CONT_KIND, not a $KIND spawn" >&2
+      exit 1
+    }
+    [ "$FM_CONT_TO" = local ] || {
+      echo "error: --continue-from $CONTINUE_FROM: the continuation record continues on worker host $FM_CONT_TO; spawn it with --host $FM_CONT_TO" >&2
       exit 1
     }
     if ! fm_brief_continued_from "$BRIEF" >/dev/null || fm_brief_continued_from "$BRIEF" | grep -vxF -- "$CONTINUE_FROM" >/dev/null; then

@@ -9,7 +9,7 @@
 #   schema=fm-continuation.v1
 #   continued_from=<old-id>
 #   kind=<ship|scout>
-#   to=local
+#   to=<local|worker-host-id>
 #   remote=<git remote name>       ship only
 #   branch=<carried branch name>   ship only
 #   head=<40-hex commit>           ship only
@@ -18,6 +18,11 @@
 # it carries nothing through git (its interim report and notes live under
 # data/<old-id>/), so its remote, branch, and head are absent and the new copy
 # starts from the base as any scout does.
+# `to` names where the continuation runs as seen from the home that holds the
+# record: `local` for this home, or the data/worker-hosts.md id of the worker
+# host the supervisor places it on. A worker host's own copy of the record,
+# written by bin/fm-remote-worker-control.sh for a continuation placed there,
+# therefore says `local`. bin/fm-spawn.sh requires `to` to match its --host.
 # A brief made with --continue-from records the source task as one
 # "Continued from: <old-id>" line under `# Setup` (fm_brief_continued_from).
 
@@ -47,6 +52,12 @@ fm_continuation_path() {  # <data-dir> <new-id>
 }
 
 fm_continuation_remote_valid() {  # <remote>
+  case "${1-}" in
+    '' | -* | *[!A-Za-z0-9._-]*) return 1 ;;
+  esac
+}
+
+fm_continuation_target_valid() {  # <to>
   case "${1-}" in
     '' | -* | *[!A-Za-z0-9._-]*) return 1 ;;
   esac
@@ -84,8 +95,9 @@ fm_continuation_fields_valid() {  # <kind> <remote> <branch> <head>
 
 # Write the record atomically. Refuses to replace an existing record that
 # differs; an identical one is accepted, so a resumed hand-off is idempotent.
-fm_continuation_write() {  # <data-dir> <new-id> <old-id> <kind> <remote> <branch> <head>
-  local data=$1 new_id=$2 old_id=$3 kind=$4 remote=$5 branch=$6 head=$7 path tmp body
+# <to> defaults to local.
+fm_continuation_write() {  # <data-dir> <new-id> <old-id> <kind> <remote> <branch> <head> [<to>]
+  local data=$1 new_id=$2 old_id=$3 kind=$4 remote=$5 branch=$6 head=$7 to=${8:-local} path tmp body
   FM_CONT_ERROR=
   if ! fm_task_id_creation_valid "$new_id" || ! fm_task_id_creation_valid "$old_id"; then
     FM_CONT_ERROR="invalid task id"
@@ -95,8 +107,12 @@ fm_continuation_write() {  # <data-dir> <new-id> <old-id> <kind> <remote> <branc
     FM_CONT_ERROR="a task cannot continue itself"
     return 1
   }
+  fm_continuation_target_valid "$to" || {
+    FM_CONT_ERROR="target '$to' is not local or a worker host id"
+    return 1
+  }
   fm_continuation_fields_valid "$kind" "$remote" "$branch" "$head" || return 1
-  body="schema=$FM_CONTINUATION_SCHEMA"$'\n'"continued_from=$old_id"$'\n'"kind=$kind"$'\n'"to=local"$'\n'
+  body="schema=$FM_CONTINUATION_SCHEMA"$'\n'"continued_from=$old_id"$'\n'"kind=$kind"$'\n'"to=$to"$'\n'
   [ "$kind" != ship ] || body+="remote=$remote"$'\n'"branch=$branch"$'\n'"head=$head"$'\n'
   path=$(fm_continuation_path "$data" "$new_id")
   if [ -e "$path" ] || [ -L "$path" ]; then
@@ -163,8 +179,8 @@ fm_continuation_read() {  # <data-dir> <new-id> <old-id>
     FM_CONT_ERROR="$path continues '${from:-nothing}', not '$old_id'"
     return 1
   }
-  [ "$to" = local ] || {
-    FM_CONT_ERROR="$path names target '${to:-nothing}'; only local continuations exist"
+  fm_continuation_target_valid "$to" || {
+    FM_CONT_ERROR="$path names target '${to:-nothing}', which is not local or a worker host id"
     return 1
   }
   fm_continuation_fields_valid "$kind" "$remote" "$branch" "$head" || {
@@ -179,6 +195,36 @@ fm_continuation_read() {  # <data-dir> <new-id> <old-id>
     FM_CONT_REMOTE=$remote
     FM_CONT_BRANCH=$branch
     FM_CONT_HEAD=$head
+  }
+}
+
+# Verify that <copy> carries a ship's work so cleanup can accept it: the copy
+# is clean (untracked agent settings under .claude/ aside), <branch> there is
+# at <head>, <remote> has <branch> at <head>, and the copy's remote-tracking
+# <remote>/<branch> contains <head>, which is what cleanup's landed-work test
+# reads. bin/fm-handoff.sh runs it on a local copy, and the worker-host leg
+# (bin/fm-remote-worker-control.sh `carried`) on a placed task's copy.
+fm_continuation_verify_copy() {  # <copy> <remote> <branch> <head>
+  local copy=$1 remote=$2 branch=$3 head=$4 dirty local_head remote_head
+  FM_CONT_ERROR=
+  dirty=$(git -C "$copy" status --porcelain --untracked-files=all 2>/dev/null | grep -v '^?? \.claude/' || true)
+  [ -z "$dirty" ] || {
+    FM_CONT_ERROR="the copy still has uncommitted changes; ask the worker to commit them:"$'\n'"$dirty"
+    return 1
+  }
+  local_head=$(git -C "$copy" rev-parse --verify --quiet "refs/heads/$branch^{commit}" 2>/dev/null || true)
+  [ "$local_head" = "$head" ] || {
+    FM_CONT_ERROR="branch $branch in the copy is at '${local_head:-nothing}', not the reported $head"
+    return 1
+  }
+  remote_head=$(git -C "$copy" ls-remote --exit-code "$remote" "refs/heads/$branch" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)
+  [ "$remote_head" = "$head" ] || {
+    FM_CONT_ERROR="remote $remote has branch $branch at '${remote_head:-nothing}', not $head; ask the worker to push it"
+    return 1
+  }
+  git -C "$copy" merge-base --is-ancestor "$head" "refs/remotes/$remote/$branch" 2>/dev/null || {
+    FM_CONT_ERROR="the copy has no remote-tracking $remote/$branch containing $head, so cleanup could not prove the work landed; ask the worker to push with the remote's name"
+    return 1
   }
 }
 
