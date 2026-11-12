@@ -53,7 +53,9 @@ With no machine named and automatic placement on, the spawn treats the superviso
 - The admitting machines are ranked by their open share of their own cap, so a small and a large machine compare fairly; a tie goes to more open lanes, then to the supervisor's machine, then to worker hosts in registry order.
 
 The spawn prints every machine it considered with its open lanes, load, and free memory, or why it was skipped, and then its choice.
-It then runs the ordinary placement on the best machine; a machine that still defers at spawn passes the task to the next, and when none admits it the task stays queued with exit 75, exactly like a full machine today.
+It then runs the ordinary placement on the best machine, rechecking lane admission under that destination's task-set lock; a machine that still defers at spawn passes the task to the next, and when none admits it the task stays queued with exit 75, exactly like a full machine today.
+Local-only options (`--account`, `--hermes-profile`, `--herdr-resume-lock-wait`, or a raw launch command) keep automatic work here but still require that locked admission check; an explicitly named machine skips the lane check.
+Pending-placement ownership and note changes also hold the task-set lock, so an overlapping dispatch cannot overwrite the recorded destination or launch elsewhere while the earlier outcome remains unknown.
 Run [`bin/fm-placement.sh`](../bin/fm-placement.sh) `<project>` to see the same decision without spawning anything; its header owns the rules above in full, and the [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns retries, including how a placement whose answer was lost goes back to the same host instead of starting a second worker.
 
 ## Reaching a placed worker

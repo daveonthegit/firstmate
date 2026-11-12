@@ -497,10 +497,114 @@ test_spawn_rechecks_lane_admission() {
   pass "automatic destinations recheck lanes while named destinations override"
 }
 
+test_pending_placement_is_serialized() {
+  local destination delayed_pid spins rc real_ln
+  real_ln=$(command -v ln)
+  for destination in local spare automatic; do
+    make_case "serialized-$destination"
+    : > "$PARENT/config/auto-placement"
+    set_cap "$PARENT" 1
+    set_cap "$HOST_A" 4
+    busy "$HOST_A" 3
+    make_brief s1 --mode local-only
+    add_item s1
+    cat > "$PRIMARY_BIN/ln" <<SH
+#!/usr/bin/env bash
+for target in "\$@"; do :; done
+if [ -n "\${FM_PAUSE_LOCK:-}" ] && [ "\$target" = "$PARENT/state/.task-set.lock" ]; then
+  : > "\$FM_PAUSE_LOCK.ready"
+  n=0
+  while [ ! -f "\$FM_PAUSE_LOCK.go" ]; do
+    n=\$((n + 1))
+    [ "\$n" -lt 400 ] || exit 90
+    sleep 0.05
+  done
+fi
+exec "$real_ln" "\$@"
+SH
+    chmod +x "$PRIMARY_BIN/ln"
+    (
+      rc=0
+      if [ "$destination" = automatic ]; then
+        FM_PAUSE_LOCK="$CASE/pause" auto_spawn s1
+      else
+        FM_PAUSE_LOCK="$CASE/pause" auto_spawn s1 --host "$destination"
+      fi
+      printf '%s\n' "$SPAWN_OUT" > "$CASE/delayed.out"
+      printf '%s\n' "$SPAWN_RC" > "$CASE/delayed.rc"
+    ) &
+    delayed_pid=$!
+    spins=0
+    while [ ! -f "$CASE/pause.ready" ]; do
+      spins=$((spins + 1))
+      [ "$spins" -lt 400 ] || { kill "$delayed_pid" 2>/dev/null; fail "spawn never reached lock boundary"; }
+      sleep 0.05
+    done
+    rm -f "$HOST_A"/state/busy-*.meta
+    busy "$PARENT" 1
+    FM_FAKE_SSH_LOSE_SPAWN=1 auto_spawn s1
+    expect_code 255 "$SPAWN_RC" "overlapping remote launch ($SPAWN_OUT)"
+    assert_equals mbp "$(cat "$PARENT/state/s1.placement")" "remote launch lost pending owner"
+    rm -f "$PARENT"/state/busy-*.meta
+    : > "$CASE/pause.go"
+    wait "$delayed_pid" || fail "delayed spawn did not finish"
+    SPAWN_OUT=$(cat "$CASE/delayed.out")
+    rc=$(cat "$CASE/delayed.rc")
+    if [ "$destination" = automatic ]; then
+      expect_code 0 "$rc" "overlapping unnamed recovery ($SPAWN_OUT)"
+      assert_equals mbp "$(meta_value s1 remote_worker_host)" "automatic retry changed destination"
+      assert_absent "$PARENT/state/s1.placement" "recovery retained pending note"
+    else
+      expect_code 1 "$rc" "overlapping different destination ($SPAWN_OUT)"
+      assert_contains "$SPAWN_OUT" "re-run with --host mbp" "locked refusal did not identify owner"
+      assert_equals mbp "$(cat "$PARENT/state/s1.placement")" "different destination overwrote pending owner"
+    fi
+    assert_equals 0 "$(windows "$PRIMARY_BIN")" "overlap launched duplicate locally"
+    assert_equals 1 "$(windows "$HOST_BIN")" "overlap launched duplicate remotely"
+  done
+  pass "overlapping dispatch cannot bypass or overwrite pending ownership"
+}
+
+test_local_only_automatic_choices_check_admission() {
+  local choice
+  for choice in account profile wait raw; do
+    make_case "local-only-$choice"
+    : > "$PARENT/config/auto-placement"
+    set_cap "$PARENT" 1
+    busy "$PARENT" 1
+    set_cap "$HOST_A" 4
+    make_brief c1 --mode local-only
+    add_item c1
+    case "$choice" in
+      account)
+        mkdir -p "$CASE/account"
+        printf '%s\n' "$CASE/account" > "$PARENT/config/claude-accounts"
+        auto_spawn c1 --account "$CASE/account" ;;
+      profile) auto_spawn c1 --harness hermes --hermes-profile work ;;
+      wait) auto_spawn c1 --herdr-resume-lock-wait ;;
+      raw) auto_spawn c1 --harness 'printf hello' ;;
+    esac
+    expect_code 75 "$SPAWN_RC" "full local-only automatic $choice ($SPAWN_OUT)"
+    assert_equals queued "$(row_state c1)" "local-only refusal moved queued task"
+    assert_absent "$PARENT/state/c1.meta" "local-only refusal published task"
+    assert_absent "$CASE/ssh.log" "local-only choice reached a remote host"
+    assert_equals 0 "$(windows "$PRIMARY_BIN")" "local-only choice exceeded lane cap"
+    if [ "$choice" = raw ]; then
+      rm -f "$PARENT"/state/busy-*.meta
+      auto_spawn c1 --harness 'printf hello'
+      expect_code 0 "$SPAWN_RC" "admitted local-only command ($SPAWN_OUT)"
+      assert_equals 1 "$(windows "$PRIMARY_BIN")" "admitted local-only command did not launch"
+      assert_absent "$CASE/ssh.log" "admitted local-only command reached a remote host"
+    fi
+  done
+  pass "all automatic local-only choices defer at lane capacity"
+}
+
 fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_machine \
   test_unreachable_and_uncapped_hosts_are_skipped test_this_machine_needs_its_cap \
   test_placed_tasks_count_on_their_host \
   test_spawn_off_by_default test_spawn_places_on_the_emptier_host \
   test_spawn_stays_here_when_this_machine_is_emptier test_spawn_named_machine_wins \
   test_spawn_nothing_admits_stays_queued test_spawn_deferral_falls_to_next_machine \
-  test_spawn_lost_answer_reruns_on_same_host test_spawn_rechecks_lane_admission
+  test_spawn_lost_answer_reruns_on_same_host test_spawn_rechecks_lane_admission \
+  test_pending_placement_is_serialized test_local_only_automatic_choices_check_admission

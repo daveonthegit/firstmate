@@ -1292,7 +1292,9 @@ It is off by default: without the flag a spawn with no `--host` runs on this mac
 It is not inherited, and it is ignored in a secondmate home and in a worker host home, which never place work elsewhere.
 
 With the flag on, this machine needs its own `config/lane-capacity` cap, and the spawn refuses until it has one; each worker host is judged by its own cap.
-A machine named for the task always wins: `--host <id>` places it on that worker host, and `--host local` keeps it on this machine on purpose.
+A machine named for the task always wins: `--host <id>` places it on that worker host, and `--host local` keeps it on this machine on purpose; these explicit choices do not check lane admission.
+Local-only options (`--account`, `--hermes-profile`, `--herdr-resume-lock-wait`, or a raw launch command) restrict automatic placement to this machine but still check lane admission under its task-set lock, deferring with exit 75 when full.
+A pending `state/<task-id>.placement` binds retries to its recorded host even after the setting is removed: an unnamed retry recovers there, and naming a different destination refuses until the earlier outcome is reconciled.
 [`bin/fm-placement.sh`](../bin/fm-placement.sh) owns eligibility, the load signal, the ranking and its tie-breaks, and its output; [remote workers](remote-workers.md#how-placement-is-chosen) explains the choice, and the [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns how the spawn tries the ranked machines.
 
 ## Rescue remote (config/rescue-ssh)

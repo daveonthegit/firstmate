@@ -116,6 +116,7 @@
 #   destination rechecks lane admission under its task-set lock before launch.
 #   A pending state/<task-id>.placement binds every fresh retry to that host,
 #   even with automatic placement disabled; another destination is refused.
+#   Pending ownership and note changes are guarded by the task-set lock.
 #   Automatic placement (docs/configuration.md "Automatic placement"): when
 #   config/auto-placement exists in this home, which is neither a secondmate
 #   nor a worker host home, a fresh ship or scout spawn with no --host and no
@@ -126,14 +127,15 @@
 #   next; when none is left, or none admitted it, the spawn exits 75 and the
 #   backlog item stays queued. Any other failure stops there and is returned
 #   unchanged. Before trying a worker host it writes state/<task-id>.placement
-#   naming that host, and removes it unless the host's answer was lost (exit
-#   255): a later spawn of the same task without --host then re-runs on that
+#   naming that host, and removes it on success or exit 75. If the answer is
+#   lost (exit 255), a later spawn of the same task without --host re-runs on that
 #   host; naming that same host also recovers it, and success or exit 75 clears
 #   the note. It never places it elsewhere, so an unconfirmed placement
 #   never becomes two workers. An existing record placed on a worker host is
 #   likewise finished on its host. --account, --hermes-profile,
 #   --herdr-resume-lock-wait, and a raw launch command keep the spawn on this
-#   machine, because no worker host receives them.
+#   machine, because no worker host receives them; automatic local-only choices
+#   still recheck lane admission under the task-set lock.
 #   Ship/scout launches always put fm-dod-lib.sh's current worker role scope
 #   first in the private launch-brief overlay, including the exact task-owned
 #   steering inbox. This never rewrites a project's instruction files or a
@@ -2228,10 +2230,6 @@ spawn_worker_host() {
   fm_lock_release "$SPAWN_META_LOCK" || true
   SPAWN_TASK_LOCK_HELD=0
   fm_lock_release "$SPAWN_TASK_LOCK" || true
-  if [ "$SPAWN_TASK_SET_LOCK_HELD" = 1 ]; then
-    SPAWN_TASK_SET_LOCK_HELD=0
-    fm_lock_release "$SPAWN_TASK_SET_LOCK" || true
-  fi
   "$SCRIPT_DIR/fm-home-summary-refresh.sh" --best-effort || true
   if ! "$SCRIPT_DIR/fm-procevent-remote-worker.sh" arm "$HOST_ARG" >/dev/null; then
     echo "error: $ID is placed on worker host $HOST_ARG and recorded here, but its status mirror could not be armed; re-run this same spawn, or bin/fm-procevent-remote-worker.sh arm $HOST_ARG" >&2
@@ -2893,14 +2891,10 @@ spawn_require_relocated_queued_work() {
 # re-runs this spawn with an explicit --host, so the chosen machine's spawn is
 # exactly the explicit one, with every check and recovery it already has.
 spawn_placement_try() {  # <machine>: the exit status of that machine's spawn
-  local machine=$1 marker="$STATE/$ID.placement" tmp rc=0
-  if [ "$machine" != local ]; then
-    tmp="$marker.tmp.$$"
-    if ! mkdir -p "$STATE" || ! printf '%s\n' "$machine" > "$tmp" || ! mv -f -- "$tmp" "$marker"; then
-      rm -f -- "$tmp"
-      echo "error: could not record the placement of $ID on worker host $machine at $marker; nothing was placed" >&2
-      return 1
-    fi
+  local machine=$1 rc=0
+  if [ "$SPAWN_TASK_SET_LOCK_HELD" = 1 ]; then
+    SPAWN_TASK_SET_LOCK_HELD=0
+    fm_lock_release "$SPAWN_TASK_SET_LOCK" || return 1
   fi
   FM_SPAWN_NO_GUARD=1 "$FM_ROOT/bin/fm-spawn.sh" "${SPAWN_ARGV[@]}" --host "$machine" || rc=$?
   return "$rc"
@@ -2923,12 +2917,14 @@ spawn_auto_placement() {
   fi
   if [ "$ACCOUNT_SET" -eq 1 ] || [ "$HERMES_PROFILE_SET" -eq 1 ] || [ "$HERDR_RESUME_LOCK_WAIT" -eq 1 ]; then
     echo "placement: this machine - --account, --hermes-profile, and --herdr-resume-lock-wait are not forwarded to a worker host" >&2
+    FM_SPAWN_AUTO_PLACEMENT=1
     return 0
   fi
   harness=${HARNESS_ARG:-${POS[2]:-}}
   case "$harness" in
   *[!A-Za-z0-9._-]*)
     echo "placement: this machine - a raw launch command is not forwarded to a worker host" >&2
+    FM_SPAWN_AUTO_PLACEMENT=1
     return 0
     ;;
   esac
@@ -2988,8 +2984,6 @@ spawn_pending_placement() {
     exit "$rc"
   fi
 }
-spawn_pending_placement
-spawn_auto_placement
 if [ "$RELAUNCH" -eq 1 ]; then
   SPAWN_CONTROL_LOCK="$STATE/.control-$ID.lock"
   control_owner=$(cat "$SPAWN_CONTROL_LOCK/pid" 2>/dev/null || true)
@@ -3059,7 +3053,18 @@ if [ "$RELAUNCH" -eq 0 ]; then
   fi
   SPAWN_TASK_SET_LOCK_HELD=1
 fi
+spawn_pending_placement
+spawn_auto_placement
 if [ "$HOST_SET" -eq 1 ]; then
+  if [ "${FM_SPAWN_AUTO_PLACEMENT:-0}" = 1 ]; then
+    placement_marker="$STATE/$ID.placement"
+    placement_tmp="$placement_marker.tmp.$$"
+    if ! printf '%s\n' "$HOST_ARG" > "$placement_tmp" || ! mv -f -- "$placement_tmp" "$placement_marker"; then
+      rm -f -- "$placement_tmp"
+      echo "error: could not record the placement of $ID on worker host $HOST_ARG at $placement_marker; nothing was placed" >&2
+      exit 1
+    fi
+  fi
   spawn_worker_host
 fi
 if [ "$RELAUNCH" -eq 0 ] && [ "${FM_SPAWN_AUTO_PLACEMENT:-0}" = 1 ]; then
