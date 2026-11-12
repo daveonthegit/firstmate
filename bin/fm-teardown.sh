@@ -1976,33 +1976,16 @@ EOF
 # PR head, no PR is found, or any forge read error occurs - the caller then
 # falls back to the content check.
 pr_is_merged() {
-  local branch=$1 target view state remainder head resolved_url current landed=0
+  local branch=$1 target head resolved_url current landed=0
   if [ -n "$PR_URL" ]; then
     target=$PR_URL
   else
     target=$(fm_pr_number_from_branch "$WT" "$branch") || return 1
   fi
   [ -n "$target" ] || return 1
-  if fm_pr_url_parse "$target" && [ "$FM_PR_PROVIDER" = forgejo ]; then
-    fm_pr_forgejo_read_record "$FM_PR_HOST" "$FM_PR_PATH" "$FM_PR_NUMBER" || return 1
-    [ "$FM_PR_RECORD_MERGED" = true ] || return 1
-    head=$FM_PR_RECORD_HEAD
-    fm_pr_head_valid "$head" || return 1
-    resolved_url=$FM_PR_URL
-  else
-    view=$(cd "$WT" && "$SCRIPT_DIR/fm-gh-account.sh" exec --dir "$WT" -- gh pr view "$target" --json state,headRefOid,url -q '.state + "\t" + .headRefOid + "\t" + .url' 2>/dev/null) || return 1
-    state=${view%%$'\t'*}
-    remainder=${view#*$'\t'}
-    [ "$state" != "$view" ] || return 1
-    head=${remainder%%$'\t'*}
-    resolved_url=${remainder#*$'\t'}
-    [ "$head" != "$remainder" ] || return 1
-    case "$state" in
-      MERGED|merged) ;;
-      *) return 1 ;;
-    esac
-  fi
-  [ -n "$head" ] || return 1
+  fm_pr_read_merged_head "$WT" "$target" || return 1
+  head=$FM_PR_MERGED_HEAD
+  resolved_url=$FM_PR_MERGED_URL
   ensure_commit_object "$target" "$head" || return 1
   current=$(git -C "$WT" rev-parse --verify HEAD 2>/dev/null) || return 1
   if git -C "$WT" merge-base --is-ancestor "$current" "$head" 2>/dev/null; then
@@ -4354,6 +4337,9 @@ teardown_retire_status "$STATE" "$ID" || exit 1
 fm_wake_queue_prune_task "$STATE" "$ID" "$T" 2>/dev/null || true
 # The atomic backlog transition removes metadata; keep journal input before it.
 VAULT_META_SNAPSHOT=$(cat "$META" 2>/dev/null || true)
+if [ "$KIND" = ship ] && [ -n "$PR_URL" ] && [ -f "$DATA/$ID/continuation" ]; then
+  printf 'pr=%s\n' "$PR_URL" > "$DATA/$ID/rescue-pr" || exit 1
+fi
 rm -f "$STATE/$ID.turn-ended" "$STATE/$ID.progress" \
   "$(fm_wake_signal_seen_path "$STATE" "$STATE/$ID.turn-ended")" \
   "$STATE/$ID.claude-settings.json" \

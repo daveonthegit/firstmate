@@ -29,6 +29,9 @@
 #   contained in a remote-tracking base branch, excluding fm-rescue and
 #   no-mistakes. The base is recorded in the source task's hand-off request,
 #   or is the project's default branch when no explicit base was selected.
+#   A verified merged PR whose head contains the carried commit also proves
+#   landing. Cleanup preserves the tip's recorded pr= in data/<tip>/rescue-pr
+#   before removing its task record; prune reads that PR live from the forge.
 #   Refresh remote-tracking refs before pruning. --abandoned is the owner's
 #   explicit word that the work is abandoned and needs no landing proof.
 #   Unreachable objects leave the rescue repository through git's own garbage
@@ -144,9 +147,9 @@ delete_ref_at() {  # <git-path> <ref> <head>
 }
 
 carried_landed() {
-  local project=$1 from=$2 head=$3 base ref remote
+  local project=$1 from=$2 head=$3 tip=$4 base ref remote target merged_head
   base=$(meta_get "$DATA/$from/handoff-request" base_branch)
-  [ -n "$base" ] || base=$(fm_default_branch "$project") || return 1
+  [ -n "$base" ] || base=$(fm_default_branch "$project" || true)
   while IFS= read -r ref; do
     remote=${ref#refs/remotes/}
     remote=${remote%%/*}
@@ -156,7 +159,15 @@ carried_landed() {
       return 0
     fi
   done < <(git -C "$project" for-each-ref --format='%(refname)' refs/remotes/)
-  return 1
+  target=$(meta_get "$DATA/$tip/rescue-pr" pr)
+  [ -n "$target" ] || return 1
+  fm_pr_read_merged_head "$project" "$target" || return 1
+  merged_head=$FM_PR_MERGED_HEAD
+  if ! git -C "$project" cat-file -e "$merged_head^{commit}" 2>/dev/null; then
+    fm_pr_url_parse "$target" || return 1
+    git -C "$project" fetch --quiet origin "refs/pull/$FM_PR_NUMBER/head" >/dev/null 2>&1 || return 1
+  fi
+  git -C "$project" merge-base --is-ancestor "$head" "$merged_head" 2>/dev/null
 }
 
 do_prune() {  # <task-id> <project-dir> <flag>
@@ -187,8 +198,8 @@ do_prune() {  # <task-id> <project-dir> <flag>
     fm_continuation_read "$DATA" "$cur" "$next" || die "$FM_CONT_ERROR"
     if [ "$FM_CONT_KIND" = ship ] && [ "$FM_CONT_REMOTE" = "$RESCUE_REMOTE" ]; then
       carried=1
-      if [ "$flag" != --abandoned ] && ! carried_landed "$project" "$FM_CONT_FROM" "$FM_CONT_HEAD"; then
-        echo "retained: $FM_CONT_BRANCH; no proof of landing on its remote base branch" >&2
+      if [ "$flag" != --abandoned ] && ! carried_landed "$project" "$FM_CONT_FROM" "$FM_CONT_HEAD" "$tip"; then
+        echo "retained: $FM_CONT_BRANCH; no proof of landing on its remote base branch or in a merged PR" >&2
         rc=1
         cur=$next
         continue
