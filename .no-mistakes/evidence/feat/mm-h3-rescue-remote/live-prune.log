@@ -1,0 +1,86 @@
+=== Ensure refuses conflicting remote and non-bare destination ===
+error: task ensure's copy already has a remote 'fm-rescue' at '{run-worktree}/.l/conflict.git', not '{run-worktree}/.l/user/fm-rescue/widget.git'; it is left unchanged
+error: {run-worktree}/.l/user/fm-rescue/widget.git exists but is not a bare git repository; it is left unchanged
+ready: task ensure's copy pushes to remote 'fm-rescue' at {run-worktree}/.l/user/fm-rescue/widget.git
+=== Unchanged continuation cleanup retains rescue ===
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget. Run 'treehouse return {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget' to release it.
+error: task a-c2, the last continuation of a, still has a task record; its rescued work is in use until it is cleaned up
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+widget: already current
+retained: rescue refs for a-c2 after cleanup: retained: fm/a; no proof of landing on its remote base branch or in a merged PR
+teardown a-c2 complete (window primary:fm-a-c2, worktree {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget)
+Backlog: a-c2 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.l/data/backlog.md - move a-c2 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+retained: fm/a; no proof of landing on its remote base branch or in a merged PR
+Unchanged continuation cleaned; rescue d808553a1a1ca4220ba814d3b07719e83e8f04a6 retained.
+=== Feature push, mirrors, and wrong base do not prove landing ===
+retained: fm/a; no proof of landing on its remote base branch or in a merged PR
+pruned: fm/a at d808553a1a1ca4220ba814d3b07719e83e8f04a6 from {run-worktree}/.l/user/fm-rescue/widget.git (carried from a to a-c2)
+already pruned: fm/a from {run-worktree}/.l/user/fm-rescue/widget.git (carried from a to a-c2)
+Recorded remote base landing pruned both refs, idempotently.
+=== Abandon guards active handoff, live task, and moved rescue tip ===
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget. Run 'treehouse return {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget' to release it.
+error: task guard-c2, the last continuation of guard, still has a task record; its rescued work is in use until it is cleaned up
+error: task guard-c2 has a hand-off request in progress; finish or cancel it first
+retained: fm/guard; no proof of landing on its remote base branch or in a merged PR
+warning: {run-worktree}/.l/user/fm-rescue/widget.git has fm/guard at 2f54ec0e33666023ff3d20d94e4914e9e310f1cc, not the carried 4f9ca1498b07521a234ef94c582cc0b076ceb615; left in place
+warning: {run-worktree}/.l/projects/widget has fm-rescue/fm/guard at 2f54ec0e33666023ff3d20d94e4914e9e310f1cc, not the carried 4f9ca1498b07521a234ef94c582cc0b076ceb615; left in place
+pruned: fm/guard at 4f9ca1498b07521a234ef94c582cc0b076ceb615 from {run-worktree}/.l/user/fm-rescue/widget.git (carried from guard to guard-c2)
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+=== Other preservation remotes are untouched ===
+nothing to prune: no hand-off in other's chain carried work through fm-rescue
+=== Actual local squash with real gh against synthetic localhost forge ===
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget. Run 'treehouse return {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget' to release it.
+Updating 819d4d5..c088ed0
+Fast-forward
+Squash commit -- not updating HEAD
+ widget.txt | 2 ++
+ 1 file changed, 2 insertions(+)
+{"headRefOid":"c088ed0cfd29e341ccb903792bd56fe42f3d002f","state":"MERGED","url":"https://localhost/example/repo/pull/7"}
+retained: fm/s; no proof of landing on its remote base branch or in a merged PR
+retained: fm/s; no proof of landing on its remote base branch or in a merged PR
+retained: fm/s; no proof of landing on its remote base branch or in a merged PR
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+widget: already current
+pruned: fm/s at 538f39ea7b8db39a4cb25d9a157b62f83ea6c99c from {run-worktree}/.l/user/fm-rescue/widget.git (carried from s to s-c2)
+teardown s-c2 complete (window primary:fm-s-c2, worktree {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget)
+Backlog: s-c2 just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.l/data/backlog.md - move s-c2 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+Squash commit 05840f87adbbe7922b72b46bb0dc23620b19dc1f excludes carried ancestry 538f39ea7b8db39a4cb25d9a157b62f83ea6c99c; merged PR head c088ed0cfd29e341ccb903792bd56fe42f3d002f allowed cleanup and pruned rescue.
+already pruned: fm/s from {run-worktree}/.l/user/fm-rescue/widget.git (carried from s to s-c2)
+PRUNE-LIVE-PASS

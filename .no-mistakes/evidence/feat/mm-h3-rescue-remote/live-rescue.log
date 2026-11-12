@@ -1,0 +1,32 @@
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Leased worktree at {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget. Run 'treehouse return {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget' to release it.
+=== Handoff request creates rescue remote on demand ===
+created: rescue repository {run-worktree}/.l/user/fm-rescue/widget.git
+ready: task a's copy pushes to remote 'fm-rescue' at {run-worktree}/.l/user/fm-rescue/widget.git
+requested: a asked to commit, push, and write its notes for continuation as a-c2; re-run this command after its 'paused: handoff ready' line
+if the worker cannot answer (stopped, out of context, or out of usage), recover it as a stuck worker first; firstmate never commits inside a project copy
+bare=true permissions=700
+ready: task a's copy pushes to remote 'fm-rescue' at {run-worktree}/.l/user/fm-rescue/widget.git
+cancelled: the hand-off of a as a-c2
+=== Cleanup refuses unpreserved work ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+REFUSED: worktree {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget has work not on any remote and not landed.
+unpushed commits:
+d808553 carried
+Push the branch, land its PR, or get the captain's explicit OK to discard, then --force.
+=== Push rescue, cleanup without force ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+widget: already current
+teardown a complete (window primary:fm-a, worktree {run-worktree}/.l/pool/.treehouse/widget-47ce0b/1/widget)
+Backlog: a just finished (config/backlog-backend selects manual editing). Update {run-worktree}/.l/data/backlog.md - move a to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+Rescued commit d808553a1a1ca4220ba814d3b07719e83e8f04a6 survives outside returned copy; origin has only main.
+BASE-LIVE-PASS

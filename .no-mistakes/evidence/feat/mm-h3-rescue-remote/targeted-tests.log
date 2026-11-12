@@ -1,0 +1,8 @@
+1..6
+ok - fm-rescue ensure creates a private bare repository and a shared fm-rescue remote, and refuses conflicts
+ok - ordinary cleanup accepts work pushed only to the rescue remote, with no --force
+ok - cleanup retains unchanged or pushed work until merged, and landing prunes rescue refs
+ok - prune retains unmerged work and moved refs, and --abandoned prunes
+ok - prune requires the recorded base, excluding feature branches and local mirrors
+ok - prune leaves hand-offs carried through other remotes alone
+FM_TEST_COMPLETE
