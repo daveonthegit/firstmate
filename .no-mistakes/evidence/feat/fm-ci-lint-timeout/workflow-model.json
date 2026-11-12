@@ -1,0 +1,23 @@
+{
+  "job": "lint",
+  "matrix": {
+    "partition": [
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "timeout_minutes": 30,
+  "fail_fast": false,
+  "runner": "ubuntu-24.04",
+  "lint_step": {
+    "name": "Lint canonical partition",
+    "env": {
+      "FM_LINT_REQUIRE_BOUNDS": "1",
+      "FM_LINT_JOBS": "1"
+    },
+    "run": "set -eu\nmkdir -p \"$RUNNER_TEMP/fm-lint\"\nbin/fm-lint.sh --partition \"${{ matrix.partition }}of${{ strategy.job-total }}\" \\\n  --telemetry \"$RUNNER_TEMP/fm-lint/partition-${{ matrix.partition }}.tsv\"\n"
+  },
+  "scope": "Parsed workflow semantics only; GitHub Actions and ShellCheck not executed."
+}

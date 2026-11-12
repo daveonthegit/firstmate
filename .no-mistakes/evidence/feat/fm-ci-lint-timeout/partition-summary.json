@@ -1,0 +1,28 @@
+{
+  "1of4": {
+    "roots": 154,
+    "bytes": 5433931
+  },
+  "2of4": {
+    "roots": 154,
+    "bytes": 5433942
+  },
+  "3of4": {
+    "roots": 154,
+    "bytes": 5434025
+  },
+  "4of4": {
+    "roots": 154,
+    "bytes": 5434179
+  },
+  "1of2": {
+    "roots": 308,
+    "bytes": 10867941
+  },
+  "2of2": {
+    "roots": 308,
+    "bytes": 10868136
+  },
+  "oracle_inventory_roots": 616,
+  "result": "all inventory and refusal assertions passed; no analysis tools executed"
+}
