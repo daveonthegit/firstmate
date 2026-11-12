@@ -50,8 +50,8 @@
 # canonical inventory across N CI runners, each with those same
 # concurrency-limited workers. Partitions are complete, disjoint, and
 # byte-weight balanced; --list-files exposes their actual roots.
-# Byte weight is only a proxy for ShellCheck time, so CI keeps enough
-# partitions that an unlucky byte split still fits its job limit.
+# Byte weight is only a proxy for ShellCheck time; more partitions reduce
+# concentration risk but do not guarantee completion within CI's job limit.
 # Partition mode starts with full source-aware analysis, never changed-only
 # or --fast, and does not accept explicit paths. Each partition also runs
 # workflow lint and backend-purity checks, keeping either invocation

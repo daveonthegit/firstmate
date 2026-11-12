@@ -136,7 +136,7 @@ Portable shards, each portable serial shard, and the Herdr lane upload runner-ge
 CI requires its per-root bounds, so an unenforceable deadline or address-space limit refuses lint rather than running uncapped; the script header owns the envelope, per-root execution contract, and memory fallback.
 Its `--list-files` interface exposes partition membership; `tests/fm-lint.test.sh` verifies complete/disjoint executed roots, initial analysis flags, and fallback reporting.
 The workflow uploads each partition's quiet telemetry plus its per-root lifecycle sidecar to distinguish analysis cost, memory use, and host contention.
-Partition membership balances file bytes, not ShellCheck time, so the slowest roots can land together; four partitions keep an unlucky byte split well inside the 30-minute tier bound, where two did not.
+The script header owns the byte-balancing contract and its runtime limitation; the workflow's expanded lint matrix aims to reduce concentration risk without increasing the normal-tier timeout.
 No fast mode, path skips, or paid runner provisioning is part of this layout.
 
 The longer-term performance objective remains a complete green run under fifteen minutes including start delay, but the three watch-triage members still sum to about 26 minutes of CI test time.
