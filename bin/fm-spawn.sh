@@ -126,11 +126,14 @@
 #   one. A machine that defers at spawn with exit 75 passes the task to the
 #   next; when none is left, or none admitted it, the spawn exits 75 and the
 #   backlog item stays queued. Any other failure stops there and is returned
-#   unchanged. Before trying a worker host it writes state/<task-id>.placement
-#   naming that host, and removes it on success or exit 75. If the answer is
-#   lost (exit 255), a later spawn of the same task without --host re-runs on that
-#   host; naming that same host also recovers it, and success or exit 75 clears
-#   the note. It never places it elsewhere, so an unconfirmed placement
+#   unchanged. After validating any existing task record, before trying a
+#   worker host it writes state/<task-id>.placement naming that host, and removes
+#   it on success or exit 75. Other failures retain the note, including a lost
+#   answer (exit 255). A later spawn of the same task without --host re-runs on
+#   that host with automatic admission still enforced for a fresh launch, even
+#   if config/auto-placement was removed. Naming that same host also recovers
+#   it, but preserves the explicit machine's admission override; success or
+#   exit 75 clears the note. It never places it elsewhere, so an unconfirmed placement
 #   never becomes two workers. An existing record placed on a worker host is
 #   likewise finished on its host. --account, --hermes-profile,
 #   --herdr-resume-lock-wait, and a raw launch command keep the spawn on this

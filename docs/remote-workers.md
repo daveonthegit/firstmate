@@ -43,20 +43,9 @@ See that header's worker-host cleanup contract for document refresh, the scout c
 
 ## How placement is chosen
 
-A machine named for the task always wins: `--host <id>` places it on that worker host, and `--host local` keeps it on the supervisor's machine on purpose.
-With no machine named and automatic placement on, the spawn treats the supervisor's machine and every worker host as equals and asks each one for its own capacity report, the host through its leg's `headroom` verb.
-
-- A machine is eligible only when it already has the project's clone; a host's clone comes from its seed, and placement never seeds one.
-- A machine admits the task when its own lane cap has an open lane and none of its host checks (load, memory, disk, pressure, a reserve flag, battery) holds it closed.
-- A host that cannot be reached, does not answer in time, has no lane cap, or lacks the project is skipped, never treated as free.
-- Each task counts against the machine it runs on: a task placed on a host holds a lane there and none on the supervisor's machine.
-- The admitting machines are ranked by their open share of their own cap, so a small and a large machine compare fairly; a tie goes to more open lanes, then to the supervisor's machine, then to worker hosts in registry order.
-
-The spawn prints every machine it considered with its open lanes, load, and free memory, or why it was skipped, and then its choice.
-It then runs the ordinary placement on the best machine, rechecking lane admission under that destination's task-set lock; a machine that still defers at spawn passes the task to the next, and when none admits it the task stays queued with exit 75, exactly like a full machine today.
-Local-only options (`--account`, `--hermes-profile`, `--herdr-resume-lock-wait`, or a raw launch command) keep automatic work here but still require that locked admission check; an explicitly named machine skips the lane check.
-Pending-placement ownership and note changes also hold the task-set lock, so an overlapping dispatch cannot overwrite the recorded destination or launch elsewhere while the earlier outcome remains unknown.
-Run [`bin/fm-placement.sh`](../bin/fm-placement.sh) `<project>` to see the same decision without spawning anything; its header owns the rules above in full, and the [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns retries, including how a placement whose answer was lost goes back to the same host instead of starting a second worker.
+[Automatic placement configuration](configuration.md#automatic-placement-configauto-placement) owns enabling placement and the operator's machine override.
+The [`fm-placement.sh` header](../bin/fm-placement.sh) owns eligibility, capacity signals, ranking, tie-breaks, and the read-only decision preview.
+The [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns locked admission, local-only options, deferral, and pending-placement recovery that prevents duplicate workers.
 
 ## Reaching a placed worker
 
