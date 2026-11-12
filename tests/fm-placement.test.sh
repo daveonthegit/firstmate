@@ -566,7 +566,7 @@ SH
 }
 
 test_local_only_automatic_choices_check_admission() {
-  local choice
+  local choice cap_state expected_rc
   for choice in account profile wait raw; do
     make_case "local-only-$choice"
     : > "$PARENT/config/auto-placement"
@@ -575,20 +575,31 @@ test_local_only_automatic_choices_check_admission() {
     set_cap "$HOST_A" 4
     make_brief c1 --mode local-only
     add_item c1
-    case "$choice" in
-      account)
-        mkdir -p "$CASE/account"
-        printf '%s\n' "$CASE/account" > "$PARENT/config/claude-accounts"
-        auto_spawn c1 --account "$CASE/account" ;;
-      profile) auto_spawn c1 --harness hermes --hermes-profile work ;;
-      wait) auto_spawn c1 --herdr-resume-lock-wait ;;
-      raw) auto_spawn c1 --harness 'printf hello' ;;
-    esac
-    expect_code 75 "$SPAWN_RC" "full local-only automatic $choice ($SPAWN_OUT)"
-    assert_equals queued "$(row_state c1)" "local-only refusal moved queued task"
-    assert_absent "$PARENT/state/c1.meta" "local-only refusal published task"
-    assert_absent "$CASE/ssh.log" "local-only choice reached a remote host"
-    assert_equals 0 "$(windows "$PRIMARY_BIN")" "local-only choice exceeded lane cap"
+    for cap_state in absent unreadable full; do
+      rm -rf "$PARENT/config/lane-capacity"
+      expected_rc=1
+      case "$cap_state" in
+        unreadable) mkdir "$PARENT/config/lane-capacity" ;;
+        full) set_cap "$PARENT" 1; expected_rc=75 ;;
+      esac
+      case "$choice" in
+        account)
+          mkdir -p "$CASE/account"
+          printf '%s\n' "$CASE/account" > "$PARENT/config/claude-accounts"
+          auto_spawn c1 --account "$CASE/account" ;;
+        profile) auto_spawn c1 --harness hermes --hermes-profile work ;;
+        wait) auto_spawn c1 --herdr-resume-lock-wait ;;
+        raw) auto_spawn c1 --harness 'printf hello' ;;
+      esac
+      expect_code "$expected_rc" "$SPAWN_RC" "$cap_state local-only automatic $choice ($SPAWN_OUT)"
+      if [ "$cap_state" != full ]; then
+        assert_contains "$SPAWN_OUT" "readable config/lane-capacity" "missing prerequisite was not reported"
+      fi
+      assert_equals queued "$(row_state c1)" "local-only refusal moved queued task"
+      assert_absent "$PARENT/state/c1.meta" "local-only refusal published task"
+      assert_absent "$CASE/ssh.log" "local-only choice reached a remote host"
+      assert_equals 0 "$(windows "$PRIMARY_BIN")" "local-only choice launched without admission"
+    done
     if [ "$choice" = raw ]; then
       rm -f "$PARENT"/state/busy-*.meta
       auto_spawn c1 --harness 'printf hello'
@@ -597,7 +608,74 @@ test_local_only_automatic_choices_check_admission() {
       assert_absent "$CASE/ssh.log" "admitted local-only command reached a remote host"
     fi
   done
-  pass "all automatic local-only choices defer at lane capacity"
+  pass "automatic local-only choices require a readable cap and defer when full"
+}
+
+test_stale_destination_cannot_claim_existing_task() {
+  local destination delayed_pid spins rc real_ln
+  real_ln=$(command -v ln)
+  for destination in local spare; do
+    make_case "existing-$destination"
+    : > "$PARENT/config/auto-placement"
+    set_cap "$PARENT" 4
+    busy "$PARENT" 2
+    set_cap "$HOST_A" 4
+    if [ "$destination" = spare ]; then
+      fm_git_worktree "$HOST_B/projects/sample" "$HOST_B.wt" pooled
+      printf '%s\n' "$HOST_B.wt" > "$HOST_B/.fake-pane"
+    fi
+    make_brief p1 --mode local-only
+    add_item p1
+    cat > "$PRIMARY_BIN/ln" <<SH
+#!/usr/bin/env bash
+for target in "\$@"; do :; done
+if [ "\${FM_SPAWN_AUTO_PLACEMENT:-0}" = 1 ] && [ "\$target" = "$PARENT/state/.task-set.lock" ]; then
+  : > "$CASE/child.ready"
+  n=0
+  while [ ! -f "$CASE/child.go" ]; do
+    n=\$((n + 1))
+    [ "\$n" -lt 400 ] || exit 90
+    sleep 0.05
+  done
+fi
+exec "$real_ln" "\$@"
+SH
+    chmod +x "$PRIMARY_BIN/ln"
+    (
+      auto_spawn p1
+      printf '%s\n' "$SPAWN_OUT" > "$CASE/delayed.out"
+      printf '%s\n' "$SPAWN_RC" > "$CASE/delayed.rc"
+    ) &
+    delayed_pid=$!
+    spins=0
+    while [ ! -f "$CASE/child.ready" ]; do
+      spins=$((spins + 1))
+      [ "$spins" -lt 400 ] || { kill "$delayed_pid" 2>/dev/null; fail "automatic child never reached lock boundary"; }
+      sleep 0.05
+    done
+    auto_spawn p1 --host "$destination"
+    expect_code 0 "$SPAWN_RC" "concurrent explicit publication ($SPAWN_OUT)"
+    cp "$PARENT/state/p1.meta" "$CASE/published.meta"
+    : > "$CASE/child.go"
+    wait "$delayed_pid" || fail "stale child did not finish"
+    rc=$(cat "$CASE/delayed.rc")
+    SPAWN_OUT=$(cat "$CASE/delayed.out")
+    expect_code 1 "$rc" "stale automatic destination ($SPAWN_OUT)"
+    assert_contains "$SPAWN_OUT" "refusing to place it again" "stale child was not rejected for existing ownership"
+    assert_absent "$PARENT/state/p1.placement" "rejected destination poisoned pending ownership"
+    cmp -s "$CASE/published.meta" "$PARENT/state/p1.meta" || fail "stale child changed existing task record"
+    if [ "$destination" = spare ]; then
+      assert_equals 0 "$(windows "$PRIMARY_BIN")" "stale child launched locally"
+      assert_equals 1 "$(windows "$HOST_BIN")" "stale child launched another remote worker"
+      auto_spawn p1 --host spare
+      expect_code 0 "$SPAWN_RC" "published host recovery ($SPAWN_OUT)"
+      assert_equals 1 "$(windows "$HOST_BIN")" "host recovery launched a duplicate"
+    else
+      assert_equals 1 "$(windows "$PRIMARY_BIN")" "local publication did not survive"
+      assert_equals 0 "$(windows "$HOST_BIN")" "stale child launched remotely"
+    fi
+  done
+  pass "a stale automatic destination cannot claim an already-published task"
 }
 
 fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_machine \
@@ -607,4 +685,5 @@ fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_m
   test_spawn_stays_here_when_this_machine_is_emptier test_spawn_named_machine_wins \
   test_spawn_nothing_admits_stays_queued test_spawn_deferral_falls_to_next_machine \
   test_spawn_lost_answer_reruns_on_same_host test_spawn_rechecks_lane_admission \
-  test_pending_placement_is_serialized test_local_only_automatic_choices_check_admission
+  test_pending_placement_is_serialized test_local_only_automatic_choices_check_admission \
+  test_stale_destination_cannot_claim_existing_task

@@ -1929,7 +1929,7 @@ spawn_worker_host() {
   local proj_name harness brief body_file err_file out rc=0 meta tmp existing_target
   local brief_mode brief_branch brief_consent brief_forge brief_shape brief_pr address_line
   local route_kind route_backend route_target route_worktree route_project route_harness
-  local route_model route_effort route_branch route_base value key commit_rc
+  local route_model route_effort route_branch route_base value key commit_rc placement_marker placement_tmp
   local -a host_args
   [ "${#POS[@]}" -ge 2 ] && [ "${#POS[@]}" -le 3 ] || {
     echo "error: --host takes <task-id> <project> [harness]" >&2
@@ -2108,6 +2108,16 @@ spawn_worker_host() {
     spawn_refuse_if_away_spend_cap
     spawn_require_relocated_queued_work
     spawn_backlog_preflight
+  fi
+
+  if [ "${FM_SPAWN_AUTO_PLACEMENT:-0}" = 1 ]; then
+    placement_marker="$STATE/$ID.placement"
+    placement_tmp="$placement_marker.tmp.$$"
+    if ! printf '%s\n' "$HOST_ARG" > "$placement_tmp" || ! mv -f -- "$placement_tmp" "$placement_marker"; then
+      rm -f -- "$placement_tmp"
+      echo "error: could not record the placement of $ID on worker host $HOST_ARG at $placement_marker; nothing was placed" >&2
+      exit 1
+    fi
   fi
 
   if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
@@ -3056,18 +3066,13 @@ fi
 spawn_pending_placement
 spawn_auto_placement
 if [ "$HOST_SET" -eq 1 ]; then
-  if [ "${FM_SPAWN_AUTO_PLACEMENT:-0}" = 1 ]; then
-    placement_marker="$STATE/$ID.placement"
-    placement_tmp="$placement_marker.tmp.$$"
-    if ! printf '%s\n' "$HOST_ARG" > "$placement_tmp" || ! mv -f -- "$placement_tmp" "$placement_marker"; then
-      rm -f -- "$placement_tmp"
-      echo "error: could not record the placement of $ID on worker host $HOST_ARG at $placement_marker; nothing was placed" >&2
-      exit 1
-    fi
-  fi
   spawn_worker_host
 fi
 if [ "$RELAUNCH" -eq 0 ] && [ "${FM_SPAWN_AUTO_PLACEMENT:-0}" = 1 ]; then
+  [ -f "$CONFIG/lane-capacity" ] && [ -r "$CONFIG/lane-capacity" ] || {
+    echo "error: automatic placement needs this machine's readable config/lane-capacity (docs/configuration.md \"Lane capacity\")" >&2
+    exit 1
+  }
   admission_rc=0
   "$SCRIPT_DIR/fm-capacity.sh" --admit || admission_rc=$?
   [ "$admission_rc" -eq 0 ] || exit "$admission_rc"
