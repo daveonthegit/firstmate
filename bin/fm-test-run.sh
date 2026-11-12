@@ -813,6 +813,7 @@ tests/fm-grok-continuity-live-e2e.test.sh 46
 tests/fm-grok-stop-live-e2e.test.sh 48
 tests/fm-guard-stale-banner.test.sh 17234
 tests/fm-handoff-compose.test.sh 4429
+tests/fm-handoff-host.test.sh 216099
 tests/fm-handoff.test.sh 56777
 tests/fm-harness-adapter-instructions-live-e2e.test.sh 72
 tests/fm-harness-adapter-references.test.sh 64
@@ -1630,11 +1631,12 @@ families_for_changed_path() {
       ;;
     bin/fm-remote-worker-control.sh|bin/fm-procevent-remote-worker.sh)
       # The worker-host leg and status mirror: their own drivers, plus the
-      # primary-side cleanup that calls both.
+      # primary-side cleanup and cross-machine hand-off that call both.
       printf '%s\n' secondmate
       printf '%s\n' "__script__:fm-remote-worker-control.test.sh"
       printf '%s\n' "__script__:fm-remote-worker-mirror.test.sh"
       printf '%s\n' "__script__:fm-teardown-host.test.sh"
+      printf '%s\n' "__script__:fm-handoff-host.test.sh"
       ;;
     bin/fm-remote*|bin/fm-on.sh|bin/fm-home-seed.sh|\
     bin/fm-backlog-handoff.sh|bin/fm-backlog-receive.sh|bin/fm-procevent-remote-reply.sh|\

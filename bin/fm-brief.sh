@@ -14,8 +14,8 @@
 # charters still use a single `{TASK}` charter fill. Firstmate may adjust other
 # sections when the task genuinely deviates (e.g. working an existing external
 # PR instead of shipping a new one).
-# Usage: fm-brief.sh <task-id> <repo-name> --mode <no-mistakes|direct-PR|local-only> [--branch-prefix <prefix>] [--base-branch <branch>] [--forge <none|gerrit|forgejo|external> [--shape squash]] [--pr <auto|manual>] [--herdr-lab] [--journal] [--continue-from <old-id>]
-#        fm-brief.sh <task-id> <repo-name> --scout [--base-branch <branch>] [--herdr-lab] [--journal] [--continue-from <old-id>]
+# Usage: fm-brief.sh <task-id> <repo-name> --mode <no-mistakes|direct-PR|local-only> [--branch-prefix <prefix>] [--base-branch <branch>] [--forge <none|gerrit|forgejo|external> [--shape squash]] [--pr <auto|manual>] [--herdr-lab] [--journal] [--continue-from <old-id> [--continue-source <brief>]]
+#        fm-brief.sh <task-id> <repo-name> --scout [--base-branch <branch>] [--herdr-lab] [--journal] [--continue-from <old-id> [--continue-source <brief>]]
 #        fm-brief.sh <task-id> --secondmate {<project>...|--no-projects}
 #   --scout writes the scout contract instead: the deliverable is a report at
 #   data/<task-id>/report.md (no branch, no push, no PR) and the worktree is scratch.
@@ -52,6 +52,10 @@
 #   Setup also says its copy starts at the carried commit, and a
 #   `# Continuation` section after the Task points the worker at
 #   data/<task-id>/handoff.md. Refused on --secondmate.
+#   --continue-source <brief> reads the two subsections from that file instead
+#   of <old-id>'s brief in this home; the worker-host leg passes the
+#   supervisor's carried Task this way, because the source brief stays on the
+#   supervisor (bin/fm-remote-worker-control.sh).
 # For ship tasks, --mode is REQUIRED and shapes the definition of done. Firstmate
 # resolves it per task at intake (AGENTS.md section 7); data/projects.md holds the
 # captain's standing posture as context, and this script never reads it:
@@ -256,6 +260,7 @@ PROJECT_DIR=
 PROJECT_DIR_SET=0
 CONTINUE_FROM=
 CONTINUE_FROM_SET=0
+CONTINUE_SOURCE=
 POS=()
 want_value=
 for a in "$@"; do
@@ -273,6 +278,7 @@ for a in "$@"; do
       upstream-consent) UPSTREAM_CONSENT=$a; UPSTREAM_CONSENT_SET=1 ;;
       project) PROJECT_DIR=$a; PROJECT_DIR_SET=1 ;;
       continue-from) CONTINUE_FROM=$a; CONTINUE_FROM_SET=1 ;;
+      continue-source) CONTINUE_SOURCE=$a ;;
       *) echo "error: internal parser state for --$want_value" >&2; exit 1 ;;
     esac
     want_value=
@@ -302,6 +308,8 @@ for a in "$@"; do
     --project=*) PROJECT_DIR=${a#--project=}; PROJECT_DIR_SET=1 ;;
     --continue-from) want_value="continue-from" ;;
     --continue-from=*) CONTINUE_FROM=${a#--continue-from=}; CONTINUE_FROM_SET=1 ;;
+    --continue-source) want_value="continue-source" ;;
+    --continue-source=*) CONTINUE_SOURCE=${a#--continue-source=} ;;
     # yolo never reaches the worker: it is firstmate's merge authority, not a
     # brief input. Refuse it loudly so it is never silently dropped here and then
     # believed to have been recorded.
@@ -425,6 +433,10 @@ BRANCH="$BRANCH_PREFIX$ID"
 # commit, both of which must be readable before anything is written.
 CONT_INTENT=
 CONT_SPEC=
+if [ -n "$CONTINUE_SOURCE" ] && [ "$CONTINUE_FROM_SET" -eq 0 ]; then
+  echo "error: --continue-source applies only with --continue-from" >&2
+  exit 1
+fi
 if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
   [ "$KIND" != secondmate ] || {
     echo "error: --continue-from applies only to ship and scout briefs; a secondmate is never handed off" >&2
@@ -438,7 +450,7 @@ if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
     echo "error: --continue-from $CONTINUE_FROM: the continuation record is for a $FM_CONT_KIND, not a $KIND brief" >&2
     exit 1
   }
-  CONT_SOURCE_BRIEF="$DATA/$CONTINUE_FROM/brief.md"
+  CONT_SOURCE_BRIEF=${CONTINUE_SOURCE:-$DATA/$CONTINUE_FROM/brief.md}
   if ! fm_brief_task_heading_present "$CONT_SOURCE_BRIEF" "## Captain's intent" ||
     ! fm_brief_task_heading_present "$CONT_SOURCE_BRIEF" "## Firstmate spec"; then
     echo "error: --continue-from $CONTINUE_FROM: $CONT_SOURCE_BRIEF has no # Task with both ## Captain's intent and ## Firstmate spec to carry over" >&2

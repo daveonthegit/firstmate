@@ -230,9 +230,9 @@ test_handoff_refuses_what_it_cannot_carry() {
   out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to local --remote origin --as custom)
   expect_code 2 $? "custom continuation identities must not be accepted"
 
-  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to m1)
-  expect_code 2 $? "a cross-machine target should be a usage refusal"
-  assert_contains "$out" "only a local hand-off exists" "the cross-machine refusal was not explained"
+  out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to m1 --remote origin)
+  expect_code 1 $? "an unregistered worker host target must be refused"
+  assert_contains "$out" "no worker host 'm1' is registered" "the unregistered target was not named"
 
   status_append "$case_dir" old-r1 "needs-decision [at=$(date +%s)] [key=pick]: which colour"
   out=$(in_case "$case_dir" "$case_dir/wt1" "$HANDOFF" old-r1 --to local --remote origin)
@@ -253,7 +253,7 @@ test_handoff_refuses_what_it_cannot_carry() {
   [ ! -e "$home/data/old-r1/handoff-request" ] || fail "a refused hand-off left a request behind"
   [ ! -d "$home/state/old-r1.inbox" ] || [ -z "$(find "$home/state/old-r1.inbox" -maxdepth 1 -name '*.msg')" ] ||
     fail "a refused hand-off steered the worker"
-  pass "fm-handoff refuses a remote target, an open decision, a recorded PR, and a missing remote before steering"
+  pass "fm-handoff refuses an unregistered target, an open decision, a recorded PR, and a missing remote before steering"
 }
 
 test_ship_handoff_end_to_end() {

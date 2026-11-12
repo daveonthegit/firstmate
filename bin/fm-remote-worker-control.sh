@@ -10,8 +10,13 @@
 #   fm-remote-worker-control.sh control <task-id> {interrupt|exit}
 #   fm-remote-worker-control.sh answer <task-id> [<request-id> <answers-json>]
 #   fm-remote-worker-control.sh capture <task-id> [lines]
-#   fm-remote-worker-control.sh file <task-id> {report|journal|brief}
+#   fm-remote-worker-control.sh file <task-id> {report|journal|brief|handoff-notes}
 #   fm-remote-worker-control.sh teardown <task-id> [--force]
+#   fm-remote-worker-control.sh admit <task-id> <project>
+#   fm-remote-worker-control.sh rescue <task-id> <url>
+#   fm-remote-worker-control.sh carried <task-id> <remote> <branch> <head>
+#   fm-remote-worker-control.sh handoff <task-id> <new-id> <to> <ran-on> [--reason <text>] [--carried <remote> <branch> <head>]
+#   fm-remote-worker-control.sh stage <new-id> <old-id> {handoff|report}  # content on stdin
 #
 # A worker host runs a headless Firstmate home: no firstmate or secondmate
 # agent, only the workers a primary places there (docs/remote-workers.md). The
@@ -43,6 +48,16 @@
 #   --herdr-lab                  the Herdr isolation contract
 #   --journal                    include the work-journal section
 #   --harness <h> --model <m> --effort <e> --backend <b>  launch profile
+#   --continue-from <old-id>     continue <old-id> (bin/fm-handoff.sh --to <host>)
+#   --carried-remote <r> --carried-branch <b> --carried-head <sha>  a ship's carried work
+#   --rescue-url <url>           the supervisor's rescue repository, as `fm-rescue`
+# A continuation needs its hand-off document staged first (`stage ... handoff`
+# below). Its spawn writes this home's own continuation record, naming `to`
+# local (bin/fm-continuation-lib.sh), adds the rescue remote to the project
+# clone when a URL is given (refusing another URL already named fm-rescue),
+# and renders the brief with --continue-from, its Task taken from the
+# primary's body (bin/fm-brief.sh --continue-source); this home's fm-spawn
+# then plants the copy at the carried commit as for a local continuation.
 # This host's fm-spawn then re-validates the brief against this home's own
 # data/projects.md, capacity declarations, and backend, exactly as for a local
 # spawn; its `deferred:` line and exit 75 pass through unchanged, and nothing
@@ -68,6 +83,28 @@
 # claim nor a record here reports that no task record remains and succeeds,
 # so the primary can re-run its cleanup after an unconfirmed answer (exit 255)
 # without this home inventing work; a record without a claim still refuses.
+#
+# The hand-off verbs serve bin/fm-handoff.sh on the primary:
+#   admit    preflight for a continuation placed here: the home is a worker
+#            host home, <project> is cloned here, <task-id> is free, and this
+#            home's bin/fm-capacity.sh --admit admits it (its exit 75 passes
+#            through). It changes nothing.
+#   rescue   adds <url>, the supervisor's rescue repository over SSH, to the
+#            placed task's copy as the remote `fm-rescue` (refusing another
+#            URL already under that name), then proves this host reaches it
+#            with git ls-remote.
+#   carried  verifies the placed ship's copy carries its work at <head>:
+#            bin/fm-continuation-lib.sh's fm_continuation_verify_copy.
+#   handoff  composes the hand-off document here with bin/fm-handoff-compose.sh,
+#            reading this home's brief, status, notes, copy, and T3 thread, and
+#            prints it; the primary stores it. <to> and <ran-on> name where the
+#            continuation runs and this host's id, so the document says when
+#            the work moved between machines.
+#   stage    writes a continuation's hand-off document to data/<new-id>/handoff.md,
+#            or a scout's interim report to data/<old-id>/report.md, from
+#            stdin, before that continuation's spawn. It refuses an id this
+#            home holds for its own work, and replacing a different report or,
+#            once the continuation runs, a different document.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -80,7 +117,7 @@ SCHEMA=fm-remote-worker-control.v1
 CAPTURE_MAX_LINES=100
 
 die() { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
-usage() { sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
+usage() { sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
 
 validate_id() {
   case "$1" in ''|-*|.*|*[!A-Za-z0-9._-]*) die "invalid task id: $1" ;; esac
@@ -92,6 +129,8 @@ validate_id() {
 . "$SCRIPT_DIR/fm-backend.sh"
 # shellcheck source=bin/fm-tasks-axi-lib.sh
 . "$SCRIPT_DIR/fm-tasks-axi-lib.sh"
+# shellcheck source=bin/fm-continuation-lib.sh
+. "$SCRIPT_DIR/fm-continuation-lib.sh"
 
 validate_home() {
   [ -d "$TARGET_HOME" ] && [ ! -L "$TARGET_HOME" ] || die "worker host home is unavailable or unsafe: $TARGET_HOME"
@@ -165,6 +204,7 @@ replace_task_section() { # <brief> <body-file>
 
 cmd_spawn() {
   local id=$1 project=$2 kind=ship flag value proj_dir meta claim brief body out rc=0 lock
+  local cont_from='' cont_remote='' cont_branch='' cont_head='' rescue_url='' source_brief=''
   local -a brief_args spawn_args
   shift 2
   validate_id "$id"
@@ -187,6 +227,11 @@ cmd_spawn() {
         brief_args+=("$flag" "$value"); spawn_args+=("$flag" "$value") ;;
       --forge|--shape|--pr) brief_args+=("$flag" "$value") ;;
       --yolo|--harness|--model|--effort|--backend) spawn_args+=("$flag" "$value") ;;
+      --continue-from) validate_id "$value"; cont_from=$value ;;
+      --carried-remote) cont_remote=$value ;;
+      --carried-branch) cont_branch=$value ;;
+      --carried-head) cont_head=$value ;;
+      --rescue-url) validate_url "$value"; rescue_url=$value ;;
       *) die "unsupported remote worker spawn flag: $flag" ;;
     esac
   done
@@ -198,6 +243,15 @@ cmd_spawn() {
   case " ${brief_args[*]} " in
     *' --upstream-consent '*) brief_args+=(--project "$proj_dir") ;;
   esac
+  if [ -n "$cont_from" ]; then
+    [ "$cont_from" != "$id" ] || die "task $id cannot continue itself"
+    fm_continuation_fields_valid "$kind" "$cont_remote" "$cont_branch" "$cont_head" \
+      || die "continuation of $cont_from: $FM_CONT_ERROR"
+    [ -s "$DATA/$id/handoff.md" ] && [ ! -L "$DATA/$id/handoff.md" ] \
+      || die "continuation $id has no staged hand-off document; the primary stages it first"
+  elif [ -n "$cont_remote$cont_branch$cont_head$rescue_url" ]; then
+    die "--carried-* and --rescue-url apply only with --continue-from"
+  fi
 
   meta=$(meta_path "$id")
   claim=$(claim_path "$id")
@@ -213,6 +267,8 @@ cmd_spawn() {
       || die "task $id already runs here as a $(fm_meta_get "$meta" kind), not a $kind"
     [ "$(fm_meta_get "$meta" project)" = "$proj_dir" ] \
       || die "task $id already runs here on project $(fm_meta_get "$meta" project), not $proj_dir"
+    [ "$(fm_meta_get "$meta" continued_from)" = "$cont_from" ] \
+      || die "task $id already runs here continuing '$(fm_meta_get "$meta" continued_from)', not '$cont_from'"
     printf 'notice: task %s is already placed on this worker host; reporting its existing route\n' "$id" >&2
     print_route "$id"
     return 0
@@ -232,6 +288,18 @@ cmd_spawn() {
   trap "rm -f -- '$body'; fm_lock_release '$lock' >/dev/null 2>&1 || true" EXIT
   cat > "$body"
   [ -n "$(tr -d '[:space:]' < "$body")" ] || die "the primary sent an empty # Task body for $id"
+  if [ -n "$cont_from" ]; then
+    # The carried Task comes from the primary's body, not a brief of this home.
+    source_brief=$(mktemp "${TMPDIR:-/tmp}/fm-remote-worker-source.XXXXXX") || die "cannot stage the carried Task"
+    # shellcheck disable=SC2064 # every path is fixed for this invocation.
+    trap "rm -f -- '$body' '$source_brief'; fm_lock_release '$lock' >/dev/null 2>&1 || true" EXIT
+    { printf '# Task\n'; cat "$body"; } > "$source_brief"
+    [ -z "$rescue_url" ] || add_rescue_remote "$proj_dir" "$rescue_url" "project $project"
+    fm_continuation_write "$DATA" "$id" "$cont_from" "$kind" "$cont_remote" "$cont_branch" "$cont_head" local \
+      || die "$FM_CONT_ERROR"
+    brief_args+=(--continue-from "$cont_from" --continue-source "$source_brief")
+    spawn_args+=(--continue-from "$cont_from")
+  fi
 
   printf 'placed_at=%s\n' "$(date +%s)" > "$claim" || die "could not write the placement claim $claim"
   spawn_abandon() {
@@ -326,8 +394,8 @@ cmd_capture() {
 cmd_file() {
   local id=$1 which=$2
   case "$which" in
-    report|journal|brief) ;;
-    *) die "remote worker file must be report, journal, or brief, not: $which" ;;
+    report|journal|brief|handoff-notes) ;;
+    *) die "remote worker file must be report, journal, brief, or handoff-notes, not: $which" ;;
   esac
   require_claim "$id"
   "$SCRIPT_DIR/fm-remote-file.sh" get "data/$id/$which.md"
@@ -357,6 +425,125 @@ cmd_teardown() {
   return "$rc"
 }
 
+validate_url() {
+  case "$1" in
+    ''|-*|*[[:space:][:cntrl:]]*) die "invalid rescue repository URL: $1" ;;
+  esac
+}
+
+# Add or confirm the remote fm-rescue at <url> in <checkout>, then prove this
+# host reaches it.
+add_rescue_remote() { # <checkout> <url> <what>
+  local checkout=$1 url=$2 what=$3 current
+  if current=$(git -C "$checkout" remote get-url fm-rescue 2>/dev/null); then
+    [ "$current" = "$url" ] \
+      || die "$what already has a remote 'fm-rescue' at '$current', not '$url'; it is left unchanged"
+  else
+    git -C "$checkout" remote add fm-rescue "$url" || die "could not add remote 'fm-rescue' to $what"
+  fi
+  git -C "$checkout" ls-remote fm-rescue >/dev/null \
+    || die "this worker host cannot reach the supervisor's rescue repository at $url; check its SSH access to the supervisor"
+}
+
+# The id is free for a continuation here: nothing of this home's own uses it.
+require_free_id() { # <id>
+  local id=$1
+  [ ! -e "$(meta_path "$id")" ] && [ ! -L "$(meta_path "$id")" ] \
+    || die "task id $id already has a task record on this worker host"
+  [ ! -e "$DATA/$id/brief.md" ] || [ -e "$(claim_path "$id")" ] \
+    || die "task id $id already has a brief on this worker host that no primary placed there"
+}
+
+cmd_admit() {
+  local id=$1 project=$2 rc=0
+  case "$project" in ''|-*|.*|*[!A-Za-z0-9._-]*) die "invalid project name: $project" ;; esac
+  validate_home
+  if [ ! -d "$TARGET_HOME/projects/$project" ] || [ -L "$TARGET_HOME/projects/$project" ] \
+     || ! git -C "$TARGET_HOME/projects/$project" rev-parse --git-dir >/dev/null 2>&1; then
+    die "project $project is not cloned on this worker host"
+  fi
+  require_free_id "$id"
+  "$SCRIPT_DIR/fm-capacity.sh" --admit >/dev/null || rc=$?
+  [ "$rc" -eq 0 ] || { printf 'error: this worker host does not admit another task now (exit %s)\n' "$rc" >&2; return "$rc"; }
+  printf 'admitted: %s on project %s\n' "$id" "$project"
+}
+
+cmd_rescue() {
+  local id=$1 url=$2 copy
+  validate_url "$url"
+  require_task "$id"
+  copy=$(fm_meta_get "$(meta_path "$id")" worktree)
+  if [ -z "$copy" ] || ! git -C "$copy" rev-parse --git-dir >/dev/null 2>&1; then
+    die "task $id's copy '${copy:-unrecorded}' is not a git checkout"
+  fi
+  add_rescue_remote "$copy" "$url" "task $id's copy"
+  printf 'ready: task %s pushes to fm-rescue at %s\n' "$id" "$url"
+}
+
+cmd_carried() {
+  local id=$1 remote=$2 branch=$3 head=$4 meta copy
+  require_task "$id"
+  meta=$(meta_path "$id")
+  fm_continuation_fields_valid ship "$remote" "$branch" "$head" || die "$FM_CONT_ERROR"
+  [ "$(fm_meta_get "$meta" branch)" = "$branch" ] \
+    || die "the ready line names branch '$branch', but task $id records '$(fm_meta_get "$meta" branch)'"
+  copy=$(fm_meta_get "$meta" worktree)
+  fm_continuation_verify_copy "$copy" "$remote" "$branch" "$head" || die "task $id: $FM_CONT_ERROR"
+  printf 'carried: %s %s at %s on %s\n' "$id" "$branch" "$head" "$remote"
+}
+
+cmd_handoff() {
+  local id=$1 new_id=$2 to=$3 ran_on=$4 reason='' remote='' branch='' head='' kind dir rc=0
+  shift 4
+  validate_id "$new_id"
+  fm_continuation_target_valid "$to" || die "invalid continuation target: $to"
+  fm_continuation_target_valid "$ran_on" || die "invalid worker host id: $ran_on"
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --reason) [ "$#" -ge 2 ] || usage; reason=$2; shift 2 ;;
+      --carried) [ "$#" -ge 4 ] || usage; remote=$2; branch=$3; head=$4; shift 4 ;;
+      *) die "unknown handoff option: $1" ;;
+    esac
+  done
+  require_task "$id"
+  kind=$(fm_meta_get "$(meta_path "$id")" kind)
+  dir=$(mktemp -d "${TMPDIR:-/tmp}/fm-remote-worker-handoff.XXXXXX") || die "cannot stage the continuation record"
+  # shellcheck disable=SC2064 # the path is fixed for this invocation.
+  trap "rm -rf -- '$dir'" EXIT
+  fm_continuation_write "$dir" "$new_id" "$id" "${kind:-ship}" "$remote" "$branch" "$head" "$to" || die "$FM_CONT_ERROR"
+  "$SCRIPT_DIR/fm-handoff-compose.sh" "$id" "$new_id" --reason "$reason" --record-dir "$dir" --ran-on "$ran_on" || rc=$?
+  return "$rc"
+}
+
+cmd_stage() {
+  local new_id=$1 old_id=$2 which=$3 target tmp
+  validate_id "$old_id"
+  case "$which" in
+    handoff) target="$DATA/$new_id/handoff.md" ;;
+    report) target="$DATA/$old_id/report.md" ;;
+    *) die "a staged continuation file must be handoff or report, not: $which" ;;
+  esac
+  if [ -e "$(meta_path "$new_id")" ] || [ -L "$(meta_path "$new_id")" ]; then
+    require_claim "$new_id"
+  else
+    require_free_id "$new_id"
+  fi
+  mkdir -p "$(dirname "$target")" && [ ! -L "$(dirname "$target")" ] && [ ! -L "$target" ] \
+    || die "cannot stage $target"
+  tmp=$(mktemp "$target.stage.XXXXXX") || die "cannot stage $target"
+  cat > "$tmp"
+  [ -s "$tmp" ] || { rm -f -- "$tmp"; die "the primary sent an empty $which for $new_id"; }
+  if [ -e "$target" ]; then
+    if cmp -s "$tmp" "$target"; then rm -f -- "$tmp"; printf 'staged: %s (unchanged)\n' "$target"; return 0; fi
+    if [ "$which" = report ] || [ -e "$(meta_path "$new_id")" ]; then
+      rm -f -- "$tmp"
+      die "$target already holds different content; it is left unchanged"
+    fi
+  fi
+  mv -f -- "$tmp" "$target" || { rm -f -- "$tmp"; die "cannot stage $target"; }
+  printf 'staged: %s\n' "$target"
+}
+
 VERB=${1:-}
 case "$VERB" in
   ''|-h|--help|help) usage ;;
@@ -375,5 +562,10 @@ case "$VERB" in
   capture) [ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage; validate_home; cmd_capture "$@" ;;
   file) [ "$#" -eq 2 ] || usage; validate_home; cmd_file "$@" ;;
   teardown) [ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage; validate_home; cmd_teardown "$@" ;;
+  admit) [ "$#" -eq 2 ] || usage; cmd_admit "$@" ;;
+  rescue) [ "$#" -eq 2 ] || usage; validate_home; cmd_rescue "$@" ;;
+  carried) [ "$#" -eq 4 ] || usage; validate_home; cmd_carried "$@" ;;
+  handoff) [ "$#" -ge 4 ] || usage; validate_home; cmd_handoff "$@" ;;
+  stage) [ "$#" -eq 3 ] || usage; validate_home; cmd_stage "$@" ;;
   *) die "unknown command: $VERB" ;;
 esac

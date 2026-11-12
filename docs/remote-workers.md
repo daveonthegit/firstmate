@@ -12,6 +12,7 @@ The worker host runs a headless Firstmate home with its own project clones, work
 - This build provides the worker host registry, its route, the host-local leg, the status mirror, the seed and doctor that prepare and check a host, placement from the primary with `fm-spawn.sh --host`, steering, state, peek, interrupt, exit, and answering of a placed task from the primary, and cleanup from the primary with `fm-teardown.sh`, all described below.
 - The primary cannot yet relaunch a placed task: `fm-control relaunch` recognizes its placement and refuses.
 - Placement is an explicit per-task choice; automatic placement by load or by project is not built.
+- A running task moves between the primary and a worker host, or between two worker hosts, with `fm-handoff.sh <task> --to <host-id|local>` (Moving a task between machines below); the rescue repository lives only on the primary, and neither mirroring it to another machine nor fetching placed copies' branches into it on a schedule is built.
 
 ## How it works
 
@@ -85,11 +86,20 @@ No credential, token, `config/` file, or `state/` record crosses from the primar
 
 A worker host runs its workers with every credential placed on it, so treat it as sensitive as the primary.
 
+## Moving a task between machines
+
+[`bin/fm-handoff.sh`](../bin/fm-handoff.sh) `<task> --to <host-id>` hands a task running on the primary to a worker host, and `--to local` or `--to <other-host-id>` hands a placed task back or onward; its header owns the steps, preflight, and refusals.
+The work crosses as commits on a remote both machines reach: origin, or the primary's private rescue repository ([`bin/fm-rescue.sh`](../bin/fm-rescue.sh)), which a worker host reaches over SSH at the destination named in `config/rescue-ssh` ([configuration](configuration.md#rescue-remote-configrescue-ssh)).
+That needs SSH from the worker host back to the primary, with the same key and host-key policy as the primary's own SSH to the host.
+The old task is cleaned up by the ordinary two-leg cleanup above, whose landed-work test on the host accepts the pushed branch, and the continuation is placed with `fm-spawn.sh --host <id> --continue-from <old-id>`.
+A worker that cannot be steered, or does not report its pushed work, stops the hand-off before anything changes.
+
 ## Verification
 
 [`tests/fm-remote-worker-control.test.sh`](../tests/fm-remote-worker-control.test.sh) drives the host leg against a fake worker-host home with the real brief, spawn, steer, file, and cleanup scripts.
 [`tests/fm-spawn-host.test.sh`](../tests/fm-spawn-host.test.sh) drives placement from a primary through a fake SSH into that same host leg, covering capacity deferral, a re-run after an unknown SSH result, and mirror-arm recovery under away admission limits.
 [`tests/fm-teardown-host.test.sh`](../tests/fm-teardown-host.test.sh) drives two-leg cleanup through a fake SSH into that host leg, covering success, an unreachable host, a lost answer and its re-run, a host refusal for unlanded work, a drifted route, a shared mirror, and a scout's report and captain-call gate.
+[`tests/fm-handoff-host.test.sh`](../tests/fm-handoff-host.test.sh) drives `fm-handoff.sh --to <host>` through a fake SSH into two worker-host homes and a fake git SSH transport into the primary's rescue repository, covering a ship moving to a host, back to the primary, and between hosts, a scout with its interim report, and the target, worker, and record refusals.
 [`tests/fm-task-route-lib.test.sh`](../tests/fm-task-route-lib.test.sh) covers shared route discrimination and placed operations that never touch a local backend.
 [`tests/fm-placed-task-control.test.sh`](../tests/fm-placed-task-control.test.sh) drives steering, state, peek, control, and answering of a placed task from a primary through a fake SSH into the host leg, covering a resend that reuses its delivery id and `unknown-remote` on SSH exit 255.
 [`tests/fm-on.test.sh`](../tests/fm-on.test.sh) covers worker host routing beside remote second-mate routes.
