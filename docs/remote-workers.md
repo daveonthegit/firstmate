@@ -27,7 +27,8 @@ The worker host runs a headless Firstmate home with its own project clones, work
 A host at capacity defers the placement exactly as a local spawn defers, and the backlog item stays queued.
 The [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns the forwarded flags, local checks, recorded keys, and placement recovery, including a re-run after a failed mirror arm.
 
-Only the brief's `# Task` section crosses the machine boundary.
+Of the brief itself, only its `# Task` section crosses the machine boundary.
+For a continuation, the [`fm-spawn.sh` header](../bin/fm-spawn.sh) also owns the carried documents and preservation metadata sent to the host.
 The host re-renders the rest of the brief itself, so every path a worker is told - its status file, steering inbox, report, and journal - is a path in the host's home.
 The primary forwards the facts that shape the scaffold as explicit flags; the [controller header](../bin/fm-remote-worker-control.sh) owns that flag set and the route block it prints.
 A brief section the primary edited by hand outside `# Task` is not carried.
@@ -90,9 +91,8 @@ A worker host runs its workers with every credential placed on it, so treat it a
 
 [`bin/fm-handoff.sh`](../bin/fm-handoff.sh) `<task> --to <host-id>` hands a task running on the primary to a worker host, and `--to local` or `--to <other-host-id>` hands a placed task back or onward; its header owns the steps, preflight, and refusals.
 The work crosses as commits on a remote both machines reach: origin, or the primary's private rescue repository ([`bin/fm-rescue.sh`](../bin/fm-rescue.sh)), which a worker host reaches over SSH at the destination named in `config/rescue-ssh` ([configuration](configuration.md#rescue-remote-configrescue-ssh)).
-That needs SSH from the worker host back to the primary, with the same key and host-key policy as the primary's own SSH to the host.
-The old task is cleaned up by the ordinary two-leg cleanup above, whose landed-work test on the host accepts the pushed branch, and the continuation is placed with `fm-spawn.sh --host <id> --continue-from <old-id>`.
-A worker that cannot be steered, or does not report its pushed work, stops the hand-off before anything changes.
+Using the rescue repository needs SSH from the worker host back to the primary, with strict host-key checking and no agent forwarding as in the [transport prerequisites](remote-secondmates.md#prerequisites).
+The [`fm-handoff.sh` header](../bin/fm-handoff.sh) owns readiness and preservation checks before cleanup, including waiting for an unresponsive worker and retrying a partial finish.
 
 ## Verification
 
