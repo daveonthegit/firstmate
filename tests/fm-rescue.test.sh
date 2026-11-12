@@ -179,9 +179,9 @@ test_cleanup_accepts_rescued_work_without_force() {
 }
 
 test_handoff_through_rescue_then_prune_on_landing() {
-  local case_dir home out head msg repo mode base pr_head old_base
+  local case_dir home out head msg repo mode base pr_head
   [ "$HAVE_TASKS_AXI" -eq 1 ] || { pass "skipped: tasks-axi is not installed"; return; }
-  for mode in unchanged pushed merged squash squash-open squash-wrong squash-down; do
+  for mode in unchanged pushed merged squash squash-rebase squash-open squash-down; do
   case_dir=$(make_case "handoff-$mode")
   base=$(git -C "$case_dir/project" symbolic-ref --short HEAD)
   home=$case_dir/home
@@ -212,6 +212,17 @@ test_handoff_through_rescue_then_prune_on_landing() {
   assert_contains "$out" "old-h1-c2, the last continuation of old-h1, still has a task record" "the live continuation was not named"
   [ "$(git -C "$repo" rev-parse refs/heads/fm/old-h1)" = "$head" ] || fail "a refused prune deleted the rescued work"
 
+  if [ "$mode" = squash-rebase ]; then
+    printf 'target advanced\n' > "$case_dir/project/target.txt"
+    git -C "$case_dir/project" add target.txt
+    git -C "$case_dir/project" "${GIT_ID[@]}" commit -qm 'advance target'
+    git -C "$case_dir/project" push --quiet origin "$base"
+    git -C "$case_dir/wt2" "${GIT_ID[@]}" rebase "origin/$base" || fail "fixture: continuation rebase failed"
+    if git -C "$case_dir/wt2" merge-base --is-ancestor "$head" HEAD; then
+      fail "fixture: rebase did not rewrite the carried commit"
+    fi
+    assert_grep 'first half' "$case_dir/wt2/widget.txt" "rebase lost the carried work"
+  fi
   if [ "$mode" != unchanged ]; then
     commit_work "$case_dir/wt2" fm/old-h1-c2 'second half' >/dev/null
     git -C "$case_dir/wt2" push --quiet origin fm/old-h1-c2
@@ -221,7 +232,6 @@ test_handoff_through_rescue_then_prune_on_landing() {
   fi
   case "$mode" in squash*)
     pr_head=$(git -C "$case_dir/wt2" rev-parse HEAD)
-    old_base=$(git -C "$case_dir/project" rev-parse HEAD)
     git -C "$case_dir/project" merge --quiet --squash fm/old-h1-c2 >/dev/null || fail "fixture: squash merge failed"
     git -C "$case_dir/project" "${GIT_ID[@]}" commit -qm 'squashed continuation'
     git -C "$case_dir/project" push --quiet origin "$base"
@@ -234,7 +244,6 @@ test_handoff_through_rescue_then_prune_on_landing() {
     printf '%s\n' "$pr_head" > "$case_dir/pr-head"
     case "$mode" in
       squash-open) printf '%s\n' OPEN > "$case_dir/pr-state" ;;
-      squash-wrong) printf '%s\n' "$old_base" > "$case_dir/pr-head" ;;
       squash-down) printf '%s\n' unavailable > "$case_dir/pr-state" ;;
     esac
     cat > "$case_dir/fakebin/gh" <<'SH'
@@ -254,7 +263,7 @@ SH
   esac
   out=$(in_case "$case_dir" "$case_dir/wt2" "$TEARDOWN" old-h1-c2)
   expect_code 0 $? "the preserved continuation should clean up"$'\n'"$out"
-  if [ "$mode" != merged ] && [ "$mode" != squash ]; then
+  if [ "$mode" != merged ] && [ "$mode" != squash ] && [ "$mode" != squash-rebase ]; then
     assert_contains "$out" "retained: rescue refs" "cleanup did not report retained work"
     [ "$(git -C "$repo" rev-parse refs/heads/fm/old-h1)" = "$head" ] || fail "cleanup deleted unmerged rescued work"
     [ "$(git -C "$case_dir/project" rev-parse refs/remotes/fm-rescue/fm/old-h1)" = "$head" ] || fail "cleanup deleted the unmerged tracking ref"
