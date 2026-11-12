@@ -46,8 +46,12 @@
 # mode the pre-validation `done: {summary}` is the pipeline handoff and is
 # not gated; only the later CI-ready `done: PR <url> checks green` is, or on a
 # Gerrit project the later `done: PR <change url> published for review`. The
-# named head is the worker copy's HEAD, except that a done naming the task's
-# recorded pr= passes when the forge holds that head: a forge-reported
+# named head is the worker copy's HEAD, except that GitHub PR registration in
+# no-mistakes mode can use the live forge-reported head instead, including on
+# configured GitHub Enterprise hosts. The worker-host named-head leg performs
+# that lookup on the host when the primary has no worktree; a pipeline rewrite
+# need not leave its published head in the worker copy's remote-tracking refs.
+# A done naming the task's recorded pr= passes when the forge holds that head: a forge-reported
 # pr_head= in no-mistakes mode, or a recorded merge
 # (state/<id>.pr-poll-merge-notified). A push to Gerrit's refs/for/ leaves no
 # ref a fetch can see, so a done naming a Gerrit change skips the remote-tracking
@@ -991,8 +995,9 @@ fm_dod_named_head_reachable_outside_worktree() {  # <worktree> <project> <mode> 
 # record (worktree, project, mode, forge) with bin/fm-remote-worker-control.sh
 # named-head, so a head that exists only in the host's disposable copy is
 # refused exactly as a local one is. The read is bounded by
-# FM_DOD_REMOTE_BUDGET seconds (default 30). 0 when the host accepts; 1 when it
-# refuses, with its reason on stdout; 2 when the head cannot be verified now -
+# FM_DOD_REMOTE_BUDGET seconds (default 30). 0 when the host accepts; 1 when
+# the registry cannot resolve the host, its root/home differ from the recorded
+# route, or the host refuses, with the reason on stdout; 2 when the head cannot be verified now -
 # the host is unreachable, its answer was lost (SSH exit 255), it timed out, or
 # it gave no gate answer, such as a host build without the verb - with a
 # one-line reason on stdout. 2 is never an acceptance and never a verdict on
