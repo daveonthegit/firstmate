@@ -214,10 +214,23 @@ test_canonical_partitions_preserve_full_lint() {
       || fail "partition $part did not stream an end record per root"
   done
   [ "$(LC_ALL=C sort "$tmp/union")" = "$all" ] || fail "lint partitions lose or duplicate canonical roots"
-  for option in 0of4 5of4 1of1 1of9 1of10 Kof4; do
-    rc=0
-    "$LINT" --partition "$option" --list-files > "$tmp/refused" 2>&1 || rc=$?
-    [ "$rc" = 2 ] || fail "invalid partition $option was not refused"
+  : > "$tmp/legacy-union"
+  for part in 1of2 2of2; do
+    "$LINT" --partition="$part" --list-files >> "$tmp/legacy-union" \
+      || fail "legacy partition $part was refused"
+  done
+  [ "$(LC_ALL=C sort "$tmp/legacy-union")" = "$all" ] \
+    || fail "legacy lint partitions lose or duplicate canonical roots"
+  for option in 0of4 5of4 3of2 1of1 1of3 1of5 1of6 1of7 1of8 1of9 1of10 Kof4; do
+    for form in separate equals; do
+      rc=0
+      if [ "$form" = separate ]; then
+        "$LINT" --partition "$option" --list-files > "$tmp/refused" 2>&1 || rc=$?
+      else
+        "$LINT" --partition="$option" --list-files > "$tmp/refused" 2>&1 || rc=$?
+      fi
+      [ "$rc" = 2 ] || fail "invalid partition $option ($form) was not refused"
+    done
   done
   rc=0
   "$LINT" --partition 1of2 --fast > "$tmp/refused" 2>&1 || rc=$?

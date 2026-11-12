@@ -46,7 +46,7 @@
 # run holds at most JOBS concurrent ShellCheck processes. Diagnostics replay
 # in stable shard/root order. FM_LINT_JOBS=1 changes concurrency, not diagnostics
 # or exit selection.
-# --partition KofN (N from 2 to 8, K from 1 to N) splits the entire
+# --partition KofN (N is 2 or 4, K from 1 to N) splits the entire
 # canonical inventory across N CI runners, each with those same
 # concurrency-limited workers. Partitions are complete, disjoint, and
 # byte-weight balanced; --list-files exposes their actual roots.
@@ -109,7 +109,7 @@
 #   fm-lint.sh --fast [path]...       local lint with extended analysis disabled
 #   fm-lint.sh <path>...               lint explicit roots with the same config
 #   fm-lint.sh --jobs <1|2> [path]...  override concurrent worker count
-#   fm-lint.sh --partition <KofN>      lint one of N canonical CI partitions (2 <= N <= 8)
+#   fm-lint.sh --partition <KofN>      lint one of N canonical CI partitions (N is 2 or 4)
 #   fm-lint.sh --telemetry <path> ...  write a quiet metrics snapshot
 #   fm-lint.sh --required-version      print the ShellCheck pin
 #   fm-lint.sh --list-files            print the file set that would be linted
@@ -784,19 +784,15 @@ case "$PARTITION" in
       exit 2
     fi
     ;;
-  [1-8]of[2-8])
+  [1-2]of2|[1-4]of4)
     PARTITION_INDEX=${PARTITION%%of*}
     PARTITION_TOTAL=${PARTITION##*of}
-    if [ "$PARTITION_INDEX" -gt "$PARTITION_TOTAL" ]; then
-      printf 'fm-lint.sh: --partition must be KofN with 1 <= K <= N <= 8 and N >= 2, got %s.\n' "$PARTITION" >&2
-      exit 2
-    fi
     if [ "$FAST" -eq 1 ] || [ "$#" -gt 0 ]; then
       printf 'fm-lint.sh: --partition requires full canonical lint; omit --fast and explicit paths.\n' >&2
       exit 2
     fi
     ;;
-  *) printf 'fm-lint.sh: --partition must be KofN with 1 <= K <= N <= 8 and N >= 2, got %s.\n' "$PARTITION" >&2; exit 2 ;;
+  *) printf 'fm-lint.sh: --partition must be KofN with N equal to 2 or 4 and 1 <= K <= N, got %s.\n' "$PARTITION" >&2; exit 2 ;;
 esac
 
 if [ "$FAST" -eq 1 ] && { [ "${GITHUB_ACTIONS:-}" = true ] || [ "${CI:-}" = true ]; }; then
