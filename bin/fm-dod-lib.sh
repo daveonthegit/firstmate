@@ -997,11 +997,23 @@ fm_dod_named_head_reachable_outside_worktree() {  # <worktree> <project> <mode> 
 # it gave no gate answer, such as a host build without the verb - with a
 # one-line reason on stdout. 2 is never an acceptance and never a verdict on
 # the work: a caller retries later.
-fm_dod_accept_placed_done() {  # <host> <id> <line>
-  local host=$1 id=$2 line=$3 budget out rc=0 dir reason
+fm_dod_accept_placed_done() {  # <host> <id> <line> <meta>
+  local host=$1 id=$2 line=$3 meta=$4 budget out rc=0 dir reason data
+  dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  data=${FM_DATA_OVERRIDE:-${FM_HOME:-${FM_ROOT_OVERRIDE:-${dir%/bin}}}/data}
+  # shellcheck source=bin/fm-worker-host-lib.sh
+  . "$dir/fm-worker-host-lib.sh"
+  if ! worker_host_lookup "$data" "$host"; then
+    printf 'worker host %s is not resolvable in its registry\n' "$host"
+    return 1
+  fi
+  if [ "$WORKER_HOST_ROOT" != "$(fm_dod_meta_value "$meta" remote_root)" ] \
+    || [ "$WORKER_HOST_HOME" != "$(fm_dod_meta_value "$meta" remote_home)" ]; then
+    printf 'task %s recorded worker host route no longer matches worker host %s registry record (route drift)\n' "$id" "$host"
+    return 1
+  fi
   budget=${FM_DOD_REMOTE_BUDGET:-30}
   case "$budget" in ''|*[!0-9]*|0) budget=30 ;; esac
-  dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   out=$(fm_run_timed "$budget" env ${FM_HOME:+FM_HOME="$FM_HOME"} "$dir/fm-on.sh" "$host" \
     fm-remote-worker-control.sh named-head "$id" "$line" < /dev/null 2>/dev/null) || rc=$?
   if [ "$rc" -eq 0 ] && printf '%s\n' "$out" | grep -q '^accepted: '; then
@@ -1048,7 +1060,7 @@ fm_dod_accept_ship_done() {  # <kind> <mode> <worktree> <project> <line> [<state
           && fm_dod_recorded_pr_on_forge "$state" "$id" "$meta" "$mode" "$url"; then
           return 0
         fi
-        fm_dod_accept_placed_done "${route#worker-host }" "$id" "$line"
+        fm_dod_accept_placed_done "${route#worker-host }" "$id" "$line" "$meta"
         return
         ;;
     esac

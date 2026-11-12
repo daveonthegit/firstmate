@@ -555,7 +555,7 @@ cmd_stage() {
 }
 
 cmd_named_head() {
-  local id=$1 line=$2 meta kind reason
+  local id=$1 line=$2 meta kind reason mode wt url remote_head
   if ! reason=$(require_task "$id" 2>&1); then
     printf 'refused: %s\n' "${reason#error: }"
     exit 1
@@ -565,8 +565,20 @@ cmd_named_head() {
   kind=$(fm_meta_get "$meta" kind)
   # shellcheck source=bin/fm-dod-lib.sh
   . "$SCRIPT_DIR/fm-dod-lib.sh"
-  if reason=$(fm_dod_accept_ship_done "${kind:-ship}" "$(fm_meta_get "$meta" mode)" \
-    "$(fm_meta_get "$meta" worktree)" "$(fm_meta_get "$meta" project)" "$line" "$STATE" "$id" "$meta"); then
+  mode=$(fm_meta_get "$meta" mode)
+  wt=$(fm_meta_get "$meta" worktree)
+  if fm_dod_forge_head_is_named_head "$mode" \
+    && url=$(fm_dod_pr_url_from_done_note "$(status_line_note "$line")") \
+    && [[ "$url" = https://github.com/* ]] && [ -d "$wt" ] && command -v gh >/dev/null 2>&1; then
+    if remote_head=$(fm_run_timed 10 "$SCRIPT_DIR/fm-gh-account.sh" exec --dir "$wt" -- \
+      bash -c 'cd "$1" && gh pr view "$2" --json headRefOid -q .headRefOid 2>/dev/null' _ "$wt" "$url") \
+      && fm_pr_head_valid "$remote_head"; then
+      printf 'accepted: %s\n' "$id"
+      return 0
+    fi
+  fi
+  if reason=$(fm_dod_accept_ship_done "${kind:-ship}" "$mode" \
+    "$wt" "$(fm_meta_get "$meta" project)" "$line" "$STATE" "$id" "$meta"); then
     printf 'accepted: %s\n' "$id"
     return 0
   fi

@@ -70,6 +70,8 @@ exit 0
 SH
   chmod +x "$fakebin/tmux"
   fm_fake_exit0 "$fakebin" treehouse no-mistakes
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$fakebin/gh"
+  chmod +x "$fakebin/gh"
   HOST_BIN=$fakebin
 
   # The primary has no copy of the work and no local backend: its tmux logs
@@ -209,4 +211,51 @@ test_unreachable_host_is_retryable() {
   pass "the PR-register scan retries an unreachable host silently and records once it answers"
 }
 
-fm_test_run test_pushed_host_head_registers test_copy_only_head_is_refused test_unreachable_host_is_retryable
+test_rewritten_forge_head_registers() {
+  local out rc mode
+  for mode in direct-PR local-only no-mistakes ''; do
+    make_case "rewritten-${mode:-default}"
+    commit_on_host rewritten.txt
+    git -C "$WT_DIR" checkout --quiet --detach
+    git -C "$WT_DIR" update-ref -d refs/heads/fm/t1
+    printf '#!/usr/bin/env bash\nprintf "%%s\\n" 1111111111111111111111111111111111111111\n' > "$HOST_BIN/gh"
+    printf 'mode=%s\n' "$mode" >> "$HOST_HOME/state/t1.meta"
+    rc=0
+    out=$(primary bash "$ROOT/bin/fm-pr-check.sh" t1 "$URL" 2>&1) || rc=$?
+    case "$mode" in
+      direct-PR|local-only)
+        assert_equals 1 "$rc" "a forge head bypassed the $mode copy check: $out"
+        assert_equals '' "$(recorded_pr)" "a refused head recorded the PR"
+        assert_absent "$PARENT/state/t1.check.sh" "a refused head armed monitoring"
+        ;;
+      *)
+        assert_equals 0 "$rc" "the rewritten forge head was not accepted: $out"
+        assert_equals "$URL" "$(recorded_pr)" "the forge-held PR was not recorded"
+        assert_present "$PARENT/state/t1.check.sh" "the forge-held PR did not arm monitoring"
+        ;;
+    esac
+  done
+  pass "a forge-held rewritten head registers only in no-mistakes mode, including its default"
+}
+
+test_route_drift_is_refused() {
+  local axis out rc
+  for axis in root home; do
+    make_case "drift-$axis"
+    commit_on_host drift.txt
+    git -C "$WT_DIR" push --quiet origin fm/t1 2>/dev/null || fail "could not publish host head"
+    printf '%s\n' "- mbp - repointed host (host: remote-mac; root: $ROOT; home: $HOST_HOME; added 2026-11-10)" \
+      | sed "s|$axis: [^;]*;|$axis: $CASE/other;|" > "$PARENT/data/worker-hosts.md"
+    rc=0
+    out=$(primary bash "$ROOT/bin/fm-pr-check.sh" t1 "$URL" 2>&1) || rc=$?
+    assert_equals 1 "$rc" "a drifted $axis route was not refused: $out"
+    assert_contains "$out" 'route drift' "the refusal did not name route drift"
+    assert_equals '' "$(recorded_pr)" "a drifted route recorded the PR"
+    assert_absent "$PARENT/state/t1.check.sh" "a drifted route armed monitoring"
+    assert_equals '' "$(cat "$CASE/ssh.log")" "a drifted route dispatched verification"
+  done
+  pass "registry root or home drift refuses before dispatch and records nothing"
+}
+
+fm_test_run test_pushed_host_head_registers test_copy_only_head_is_refused test_unreachable_host_is_retryable \
+  test_rewritten_forge_head_registers test_route_drift_is_refused
