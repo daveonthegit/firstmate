@@ -155,7 +155,7 @@ delete_ref_at() {  # <git-path> <ref> <head>
 }
 
 carried_landed() {
-  local project=$1 from=$2 head=$3 tip=$4 base ref remote target
+  local project=$1 from=$2 head=$3 tip=$4 base ref remote target fork patches merges patch
   base=$(meta_get "$DATA/$from/handoff-request" base_branch)
   [ -n "$base" ] || base=$(fm_default_branch "$project" || true)
   while IFS= read -r ref; do
@@ -169,7 +169,22 @@ carried_landed() {
   done < <(git -C "$project" for-each-ref --format='%(refname)' refs/remotes/)
   target=$(meta_get "$DATA/$tip/rescue-pr" pr)
   [ -n "$target" ] || return 1
-  fm_pr_read_merged_head "$project" "$target"
+  fm_pr_read_merged_head "$project" "$target" || return 1
+  git -C "$project" merge-base --is-ancestor "$head" "$FM_PR_MERGED_HEAD" 2>/dev/null && return 0
+
+  # Rebase rewrites carried commits. Require every commit since the shared
+  # base to have a patch-equivalent commit in the verified merged PR head.
+  # Missing objects, merge commits (which cherry omits), or unmatched patches
+  # leave the rescue refs intact rather than guessing that the work landed.
+  fork=$(git -C "$project" merge-base "$head" "$FM_PR_MERGED_HEAD" 2>/dev/null) || return 1
+  merges=$(git -C "$project" rev-list --merges "$fork..$head" 2>/dev/null) || return 1
+  [ -z "$merges" ] || return 1
+  patches=$(git -C "$project" cherry "$FM_PR_MERGED_HEAD" "$head" "$fork" 2>/dev/null) || return 1
+  [ -n "$patches" ] || return 1
+  while IFS= read -r patch; do
+    case "$patch" in '- '*) ;; *) return 1 ;; esac
+  done <<< "$patches"
+  return 0
 }
 
 do_prune() {  # <task-id> <project-dir> <flag>

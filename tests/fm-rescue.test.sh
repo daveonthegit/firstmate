@@ -343,6 +343,60 @@ test_prune_refusals_and_abandon() {
   pass "prune retains unmerged work and moved refs, and --abandoned prunes"
 }
 
+# Oracle: a merged PR that omits either carried commit is not landing proof.
+# Real Git histories distinguish unrelated/partial work from a complete rebase;
+# only the forge boundary is mocked.
+test_prune_requires_carried_work_in_merged_head() {
+  local mode case_dir home repo head base first pr_head out rc
+  for mode in dropped partial rebased; do
+    case_dir=$(make_case "merged-head-$mode")
+    home=$case_dir/home
+    repo=$(rescue_repo "$case_dir")
+    base=$(git -C "$case_dir/project" rev-parse HEAD)
+    printf '%s\n' "project=$case_dir/project" "worktree=$case_dir/wt1" > "$home/state/old-m1.meta"
+    in_case "$case_dir" "$case_dir/wt1" "$RESCUE" ensure old-m1 >/dev/null || fail "fixture: ensure failed"
+    rm "$home/state/old-m1.meta"
+    first=$(commit_work "$case_dir/wt1" fm/old-m1 'first carried change')
+    printf 'second carried change\n' > "$case_dir/wt1/second.txt"
+    git -C "$case_dir/wt1" add second.txt
+    git -C "$case_dir/wt1" "${GIT_ID[@]}" commit -qm 'second carried change'
+    head=$(git -C "$case_dir/wt1" rev-parse HEAD)
+    git -C "$case_dir/wt1" push --quiet fm-rescue fm/old-m1
+    bash -c '. "$1/bin/fm-continuation-lib.sh"; fm_continuation_write "$2" old-m1-c2 old-m1 ship fm-rescue fm/old-m1 "$3"' _ "$ROOT" "$home/data" "$head" ||
+      fail "fixture: continuation record failed"
+    printf 'unrelated feature\n' > "$case_dir/project/unrelated.txt"
+    git -C "$case_dir/project" add unrelated.txt
+    git -C "$case_dir/project" "${GIT_ID[@]}" commit -qm 'unrelated feature'
+    case "$mode" in
+      partial) git -C "$case_dir/project" "${GIT_ID[@]}" cherry-pick "$first" >/dev/null || fail "fixture: partial cherry-pick failed" ;;
+      rebased) git -C "$case_dir/project" "${GIT_ID[@]}" cherry-pick "$base..$head" >/dev/null || fail "fixture: rebase failed" ;;
+    esac
+    pr_head=$(git -C "$case_dir/project" rev-parse HEAD)
+    git -C "$case_dir/project" push --quiet origin HEAD
+    git -C "$case_dir/project" merge-base --is-ancestor "$head" "$pr_head" && fail "fixture: carried ancestry survived"
+    printf 'pr=https://github.com/example/repo/pull/7\n' > "$home/data/old-m1-c2/rescue-pr"
+    printf '%s\n' "$pr_head" > "$case_dir/pr-head"
+    cat > "$case_dir/fakebin/gh" <<'SH'
+#!/usr/bin/env bash
+printf 'MERGED\t%s\thttps://github.com/example/repo/pull/7\n' "$(cat "$(dirname "$(dirname "$0")")/pr-head")"
+SH
+    chmod +x "$case_dir/fakebin/gh"
+    out=$(in_case "$case_dir" "$case_dir/wt1" "$RESCUE" prune old-m1 "$case_dir/project")
+    rc=$?
+    if [ "$mode" = rebased ]; then
+      expect_code 0 "$rc" "equivalent rewritten carried commits should prune"$'\n'"$out"
+      if git -C "$repo" rev-parse --verify --quiet refs/heads/fm/old-m1 >/dev/null; then
+        fail "rebased carried work was not pruned"
+      fi
+    else
+      expect_code 1 "$rc" "a merged PR omitting carried work must retain rescue refs ($mode)"$'\n'"$out"
+      [ "$(git -C "$repo" rev-parse refs/heads/fm/old-m1)" = "$head" ] || fail "unlanded rescue ref was deleted"
+      [ "$(git -C "$case_dir/project" rev-parse refs/remotes/fm-rescue/fm/old-m1)" = "$head" ] || fail "unlanded tracking ref was deleted"
+    fi
+  done
+  pass "merged PR pruning requires all carried work, allowing equivalent rebased commits"
+}
+
 test_prune_requires_the_recorded_base() {
   local case_dir home out repo head base
   case_dir=$(make_case named-base)
@@ -394,5 +448,6 @@ fm_test_run \
   test_cleanup_accepts_rescued_work_without_force \
   test_handoff_through_rescue_then_prune_on_landing \
   test_prune_refusals_and_abandon \
+  test_prune_requires_carried_work_in_merged_head \
   test_prune_requires_the_recorded_base \
   test_prune_ignores_hand_offs_through_other_remotes
