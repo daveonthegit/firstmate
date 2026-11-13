@@ -1289,12 +1289,13 @@ A malformed record stops routing rather than being skipped.
 
 The optional local, gitignored `config/auto-placement` presence flag lets a ship or scout spawned with no machine named run on whichever machine has the most room: this supervisor's own machine or any [worker host](#worker-hosts-dataworker-hostsmd), all treated as equals.
 Create it with `touch "$FM_HOME/config/auto-placement"`; remove it to restore the default.
-It is off by default: without the flag a spawn with no `--host` runs on this machine exactly as before, and no worker host is asked anything.
+It is off by default: without the flag a fresh, unplaced task with no pending placement and no `--host` runs on this machine, without probing worker hosts.
 It is not inherited, and it is ignored in a secondmate home and in a worker host home, which never place work elsewhere.
 
-With the flag on, this machine needs its own `config/lane-capacity` cap, and the spawn refuses until it has one; each worker host is judged by its own cap.
+Automatic selection requires this machine's readable `config/lane-capacity` cap when its project clone is eligible; local-only automatic launches also require that cap.
+Each worker host is judged by its own cap.
 For an unplaced task with no pending placement, a machine named for the task always wins: `--host <id>` places it on that worker host, and `--host local` keeps it on this machine on purpose; these explicit choices do not check lane admission.
-Local-only options (`--account`, `--hermes-profile`, `--herdr-resume-lock-wait`, or a raw launch command) restrict automatic placement to this machine but still check lane admission under its task-set lock, deferring with exit 75 when full.
+The [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns local-only options and their automatic admission checks.
 Pending-placement recovery, including its destination binding even after this setting is removed, is owned by the [`fm-spawn.sh` header](../bin/fm-spawn.sh), along with continuation exclusions and how the spawn tries the ranked machines.
 The [`fm-placement.sh` header](../bin/fm-placement.sh) owns eligibility, the load signal, the ranking and its tie-breaks, and its decision preview.
 

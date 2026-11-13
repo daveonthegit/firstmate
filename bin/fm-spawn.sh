@@ -106,9 +106,9 @@
 #   re-run finishes a placement whose record, backlog move, or mirror arm
 #   failed after the host launched. --relaunch, --secondmate, --account,
 #   --hermes-profile, --herdr-resume-lock-wait, and a raw launch command are
-#   refused with --host. An existing worker-host placement also refuses a
-#   local spawn without --host or a direct --relaunch; re-run the same --host
-#   spawn for placement recovery, not to replace its worker.
+#   refused with --host. An existing worker-host placement refuses a local
+#   launch or a direct --relaunch; placement recovery below finishes it on
+#   its recorded host, never replaces its worker.
 #   --host local names this machine on purpose: the spawn runs exactly as a
 #   plain local spawn and automatic placement is skipped. A worker host whose
 #   registry id is `local` therefore cannot be named with --host.
