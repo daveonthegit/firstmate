@@ -24,7 +24,7 @@
 #
 # Report: the first line is machine-readable, one space-separated key=value
 # list in this fixed order:
-#   capacity: free_lanes=<N|unknown> reason=<reason> lanes=<N> target=<N|none|invalid>
+#   capacity: free_lanes=<N|unknown> reason=<reason> lanes=<N> target=<N|none|invalid|unknown>
 #     secondmates=<N> load1=<X|unknown> cores=<N|unknown>
 #     mem_free_pct=<N|unknown> disk_free_mb=<N|unknown> placed=<N>
 # (one physical line). A short human summary follows it. load1, cores,
@@ -38,12 +38,13 @@
 # no lane on this machine. secondmates counts persistent secondmates
 # separately; they hold no lane.
 #
-# target is the cap from config/lane-capacity. Absent means no target, so
+# target is the fixed cap from config/lane-capacity, or the current auto budget
+# as described below (unknown when computation is unavailable). Absent means no target, so
 # free_lanes=unknown reason=no-target and the counts are still printed. A
 # malformed file reports target=invalid reason=invalid-target, names the
 # problem and its line on stderr, and exits 1.
 #
-# With a target, free_lanes is target minus lanes (never below 0), unless a
+# With a fixed target, free_lanes is target minus lanes (never below 0), unless a
 # constraint holds, in which case free_lanes=0 and reason names every
 # constraint, comma-separated, in this order:
 #   cpu       probe basis: 1-minute load average >= logical cores
@@ -86,7 +87,7 @@
 #   .fm-secondmate-home), machine (the first readable beat's host, else the
 #   short host name),
 #   lanes {count, pr_ready (records with a pr= line), ids, placed},
-#   cap {target (number or null), status ok|none|invalid},
+#   cap {target (number or null), status ok|none|invalid|unavailable},
 #   projects (clone directory names under projects/),
 #   pressure {level ok|warn|critical|unknown, why[], basis beat|probe|none,
 #     beat_age_s, avail_gb, total_gb, runq_per_core (probe basis: load1 over
@@ -128,12 +129,16 @@
 # Auto mode. A first line of `auto` replaces the fixed cap with a lane budget
 # measured on every call; an integer first line keeps everything above exactly.
 # Auto-only keys: max-lanes N (the one optional ceiling, published as
-# cap.target) and min-gpu-free-gb X (count the GPU). admit-spawns (the spawn
+# budget.by.ceiling headroom) and min-gpu-free-gb X (count the GPU).
+# cap.target is budget.lanes, not max-lanes; cap.status is unavailable with a
+# null target when computation is unavailable. admit-spawns (the spawn
 # gate) applies to both modes. Auto mode needs jq; without it nothing is
 # admitted.
 #   Lanes: this home's records, plus the records of every other local home on
 #   this machine (fm_local_firstmate_state_dirs) for young lanes and the
-#   ceiling; an unreadable walk counts this home only and says so in notes.
+#   ceiling, excluding worker-host-routed records from every home before
+#   sampling, reservations, damping, learning, and reclaim recommendations;
+#   an unreadable walk counts this home only and says so in notes.
 #   A lane is young for 180 s after its spawn_gen time and reserves one full
 #   per-lane cost, because its footprint is not yet visible to the probes.
 #   Footprint: --publish samples every lane of this home through
@@ -206,7 +211,7 @@
 #   30 min); ranked in that order, then by memory held, then idle time. The
 #   report names the first three with their class, idle age, next step, and
 #   evidence.
-#   The document adds cap.mode "auto", budget {lanes, open, raw,
+#   The document adds cap.mode "auto", budget {lanes, open, raw, measured,
 #   machine_lanes, by {memory, cpu, disk, ceiling}, binding, young, damped,
 #   notes[]}, footprint {mem_gb, cpu_cores, disk_gb, source
 #   default|learned, samples}, vitals {load5, psi {cpu_some10,
@@ -217,8 +222,11 @@
 #   util_pct, mem_used_gb, mem_total_gb}]}, gates [{name, state
 #   open|closed|unknown, since_epoch, clear_count}], and reclaim [{id, class,
 #   idle_s, mem_gb, cpu_pct, evidence[], next cleanup|recover|retire-pane|
-#   review}]. The report line appends mode=auto budget=<lanes>, and reason
-#   names the closed gates, the binding resource (or damped) when nothing is
+#   review}]. The report line appends mode=auto budget=<lanes>
+#   budget_measured=<true|false>; unavailable computation appends only
+#   mode=auto budget=unknown. budget.measured is false for the ceiling-only
+#   fallback, which bin/fm-placement.sh skips even if the verdict admits.
+#   reason names the closed gates, the binding resource (or damped) when nothing is
 #   open, or ok.
 #   GPU never counts unless min-gpu-free-gb is set: agent workers do not use it.
 #

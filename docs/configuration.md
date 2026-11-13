@@ -1435,9 +1435,10 @@ Create it with `touch "$FM_HOME/config/auto-placement"`; remove it to restore th
 It is off by default: without the flag a fresh, unplaced task with no pending placement and no `--host` runs on this machine, without probing worker hosts.
 It is not inherited, and it is ignored in a secondmate home and in a worker host home, which never place work elsewhere.
 
-Automatic selection requires this machine's readable `config/lane-capacity` cap when its project clone is eligible; local-only automatic launches also require that cap.
-Each worker host is judged by its own cap.
-For an unplaced task with no pending placement, a machine named for the task always wins: `--host <id>` places it on that worker host, and `--host local` keeps it on this machine on purpose; these explicit choices do not check lane admission.
+Automatic selection requires this machine's readable `config/lane-capacity` configuration when its project clone is eligible; local-only automatic launches also require it.
+Each worker host is judged by its own configuration; fixed and adaptive targets follow the [`fm-placement.sh` load-signal contract](../bin/fm-placement.sh).
+For an unplaced task with no pending placement, a machine named for the task always wins: `--host <id>` places it on that worker host, and `--host local` keeps it on this machine on purpose.
+These explicit choices bypass automatic placement's admission check, but not the destination's opt-in [spawn gate](#lane-capacity-configlane-capacity).
 The [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns local-only options and their automatic admission checks.
 Pending-placement recovery, including its destination binding even after this setting is removed, is owned by the [`fm-spawn.sh` header](../bin/fm-spawn.sh), along with continuation exclusions and how the spawn tries the ranked machines.
 The [`fm-placement.sh` header](../bin/fm-placement.sh) owns eligibility, the load signal, the ranking and its tie-breaks, and its decision preview.

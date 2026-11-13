@@ -22,12 +22,15 @@
 # because `local` names this machine.
 #
 # Load signal. Each machine's own bin/fm-capacity.sh report: its open lanes
-# against its own config/lane-capacity cap, with free_lanes forced to 0 by any
+# against its own config/lane-capacity target, with free_lanes forced to 0 by any
 # host constraint (cpu load, memory, disk, pressure, max-load1, reserve,
 # battery). A host's report counts the tasks placed on it, and this machine's
 # report does not count them (bin/fm-capacity.sh), so each task counts once,
 # against the machine it runs on. A machine admits the task when its report
-# says reason=ok with free lanes above 0.
+# says reason=ok with free lanes above 0. In auto mode, the target is the
+# current adaptive budget, not the optional max-lanes ceiling. An unavailable
+# budget or budget_measured=false (ceiling-only fallback) skips that machine,
+# even if direct capacity admission allows the ceiling-only fallback.
 #
 # Skipped, never treated as free and never an error: a host that cannot be
 # reached (SSH exit 255) or does not answer within FM_PLACEMENT_PROBE_TIMEOUT
@@ -38,8 +41,8 @@
 # machine's share cannot be judged.
 #
 # Ranking among the machines that admit: the larger open share of the
-# machine's own cap first (free lanes divided by its cap, so a 3-lane and a
-# 6-lane machine are compared fairly); on a tie, more open lanes; on a further
+# machine's own target first (free lanes divided by its fixed cap or current
+# adaptive budget); on a tie, more open lanes; on a further
 # tie, this machine before worker hosts, then worker hosts in registry order.
 #
 # Output: one human line per machine on stdout, each starting "placement: ",
