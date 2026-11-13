@@ -1951,10 +1951,27 @@ make_poll_fixture() {
 
 run_poll() {
   local dir=$1
-  FM_TEST_GH_LOG="$dir/gh.log" FM_TEST_GLAB_LOG="$dir/glab.log" \
+  FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$dir/home" \
+    FM_TEST_GH_LOG="$dir/gh.log" FM_TEST_GLAB_LOG="$dir/glab.log" \
     FM_TEST_GERRIT_AXI_LOG="$dir/gerrit-axi.log" FM_TEST_JQ="$REAL_JQ" \
     PATH="$dir/fakebin:$BASE_PATH" \
     bash "$dir/home/state/task-a.check.sh"
+}
+
+test_poll_uses_repository_account() {
+  local dir out
+  dir=$(make_case poll-repository-account)
+  make_poll_fixture "$dir"
+  out=$(FM_TEST_REPO_ACCOUNT=1 FM_TEST_GH_STATE=MERGED run_poll "$dir")
+  assert_equals merged "$out" "merged poll must select the repository account"
+  : > "$dir/home/config/pr-degraded-watch"
+  out=$(FM_TEST_REPO_ACCOUNT=1 FM_TEST_GH_ROLLUP='[{"conclusion":"FAILURE","name":"ci"}]' run_poll "$dir")
+  assert_contains "$out" 'degraded head=' "degraded poll must select the repository account"
+  out=$(FM_HOME="$dir/home" FM_TEST_REPO_ACCOUNT=1 FM_TEST_GH_STATE=MERGED \
+    FM_TEST_GH_LOG="$dir/gh.log" FM_TEST_JQ="$REAL_JQ" PATH="$dir/fakebin:$BASE_PATH" \
+    "$POLL" --baseline github https://github.com/o/r/pull/1 github.com o/r 1)
+  assert_equals merged "$out" "standalone baseline must select the repository account"
+  pass "merged, degraded, and standalone baseline polls use the repository account"
 }
 
 test_static_poll_contract() {
@@ -4392,7 +4409,7 @@ test_merged_poll_stays_armed_when_cleanup_queue_fails() {
 #!/usr/bin/env bash
 dest=\${!#}
 [ "\$dest" != "$state/task-a.review-park-land" ] || exit 1
-exec /bin/mv "\$@"
+exec "$REAL_MV" "\$@"
 SH
   chmod +x "$dir/fakebin/mv"
   set +e
@@ -5736,6 +5753,7 @@ test_watcher_queues_a_scan_cut_at_the_check_bound
 test_watcher_sweep_records_a_reported_pr
 test_valid_recording_and_merge_derivation
 test_rejected_metacharacter_bytes_are_inert
+test_poll_uses_repository_account
 test_static_poll_contract
 test_degraded_watch_opt_in_absent_preserves_merged_only_behavior
 test_degraded_watch_flag_refreshes_each_sweep

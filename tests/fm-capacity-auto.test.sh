@@ -267,7 +267,9 @@ test_unmeasurable_memory_never_admits_on_cpu_alone() {
     "$(json "$home" "$fakebin" '[.budget.by.cpu, .budget.binding, .verdict.reasons]')" "the verdict must say memory was never measured"
   printf 'auto\nmax-lanes 3\n' > "$home/config/lane-capacity"
   out=$(run_cap "$home" "$fakebin")
-  assert_contains "$out" 'free_lanes=3 reason=ok ' "an unmeasurable host must fall back to the static ceiling"
+  assert_contains "$out" 'free_lanes=3 reason=ok ' "local admission must retain the static ceiling fallback"
+  assert_contains "$out" 'budget_measured=false' "placement must be told that this target is not measured"
+  assert_equals false "$(json "$home" "$fakebin" '.budget.measured')" "the published budget must identify ceiling-only fallback"
   assert_equals '["ceiling",true,["memory unmeasurable: admitting up to the static max-lanes ceiling only"]]' \
     "$(json "$home" "$fakebin" '[.budget.binding, .verdict.admit, .verdict.reasons]')" "the fallback must be bound by the ceiling and say so"
   write_lane "$home" a "$home/none"
@@ -580,7 +582,8 @@ SH
   out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$home" FM_PROC_ROOT_OVERRIDE="$proc" "$CAPACITY" --json 2>/dev/null |
     jq -c '[.verdict.free_lanes, .budget.binding, .verdict.reasons, .budget.notes]')
   assert_equals '[4,"ceiling",["memory unmeasurable: admitting up to the static max-lanes ceiling only"],["Windows host view unavailable"]]' "$out" \
-    "without the host view native Windows must fall back to the static ceiling and say so"
+    "without the host view native Windows must retain local fallback admission"
+  assert_equals false "$(json "$home" "$fakebin" '.budget.measured')" "Windows fallback must not appear measured to placement"
   pass "a native Windows home reads memory, cores, load, and power from the PowerShell host view, and falls back to the ceiling without it"
 }
 

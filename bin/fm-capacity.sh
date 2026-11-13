@@ -895,7 +895,7 @@ def dur: if . == null then "?" elif . >= 86400 then "\(. / 86400 | floor)d" elif
    admit: (($closed | length) == 0 and $open > 0),
    free_lanes: (if ($closed | length) == 0 then $open else 0 end),
    names: $names, reasons: ($gate_reasons + $unmeasured_reasons + $budget_reasons),
-   doc: {budget: {lanes: ($mlanes + $open), open: $open, raw: $raw, machine_lanes: $mlanes, by: $by,
+   doc: {budget: {lanes: ($mlanes + $open), open: $open, raw: $raw, machine_lanes: $mlanes, by: $by, measured: $measurable,
            binding: (if ($closed | length) > 0 then "gate" elif $damped_out then "damped" elif $bind == null then "unmeasurable" else $bind.key end),
            young: $young, damped: ($open < $raw),
            notes: (($notes | split("\n") | map(select(. != "")))
@@ -1193,7 +1193,7 @@ fi
 if [ "$mode" = report ]; then
   auto_tail=
   if [ -n "$auto_doc" ]; then
-    auto_tail=" mode=auto budget=$(printf '%s' "$auto_doc" | jq -r '.budget.lanes')"
+    auto_tail=" mode=auto budget=$(printf '%s' "$auto_doc" | jq -r '.budget.lanes') budget_measured=$(printf '%s' "$auto_doc" | jq -r '.budget.measured')"
   elif [ "$cap_mode" = auto ]; then
     auto_tail=" mode=auto budget=unknown"
   fi

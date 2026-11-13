@@ -406,7 +406,8 @@ snapshot() {  # <pr-url> [--required]
       command -v gh >/dev/null 2>&1 || return 1
       fm_pr_github_host_export "$FM_PR_HOST"
       secs=$(step_secs "$READ_SECS") || return 1
-      raw=$(fm_run_timed "$secs" gh api graphql --paginate --slurp -f query="$GITHUB_QUERY" \
+      raw=$(fm_run_timed "$secs" bash -c '. "$1/fm-pr-lib.sh"; shift; fm_pr_github_exec "$@"' \
+        _ "$SCRIPT_DIR" "$FM_PR_PATH" gh api graphql --paginate --slurp -f query="$GITHUB_QUERY" \
         -F "owner=${FM_PR_PATH%%/*}" -F "repo=${FM_PR_PATH#*/}" -F "number=$FM_PR_NUMBER" 2>/dev/null) || return 1
       raw=$(printf '%s' "$raw" | jq -ce '
         select(type == "array" and length > 0)

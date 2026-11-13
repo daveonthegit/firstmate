@@ -111,6 +111,10 @@ judge() {
   mem=$(report_field "$report" mem_free_pct)
   detail="load ${load1:-unknown} on ${cores:-unknown} cores, memory ${mem:-unknown}% free"
   [ "${mem:-unknown}" != unknown ] || detail="load ${load1:-unknown} on ${cores:-unknown} cores, memory unknown"
+  if [ "$(report_field "$report" budget_measured)" = false ]; then
+    printf 'placement: %s skipped - no measured adaptive budget yet (ceiling-only fallback)\n' "$label"
+    return 1
+  fi
   case "$target" in
     unknown)
       printf 'placement: %s skipped - adaptive lane budget unavailable (%s)\n' "$label" "$reason"

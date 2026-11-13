@@ -368,18 +368,18 @@ test_post_enqueue_bookkeeping_failure_is_not_retryable() {
   dir=$(setup_case bookkeeping-failure)
   err="$dir/send.err"
   fm_write_secondmate_meta "$dir/home/state/domain.meta" "$dir/home" "sess:fm-domain"
-  cat >"$dir/fakebin/mv" <<'SH'
+  cat >"$dir/fakebin/mv" <<SH
 #!/usr/bin/env bash
 set -u
-source_arg=${@: -2:1}
-target_arg=${@: -1}
-if [ "${FM_FAIL_DELIVERY_CONFIRM:-0}" = 1 ] \
-  && grep -q '^confirmed=' "$source_arg" 2>/dev/null; then
+source_arg=\${@: -2:1}
+target_arg=\${@: -1}
+if [ "\${FM_FAIL_DELIVERY_CONFIRM:-0}" = 1 ] \
+  && grep -q '^confirmed=' "\$source_arg" 2>/dev/null; then
   # Simulate losing both the delivery commit and its prepared recovery marker.
-  rm -f "$target_arg"
+  rm -f "\$target_arg"
   exit 1
 fi
-exec /bin/mv "$@"
+exec "$(command -v mv)" "\$@"
 SH
   chmod +x "$dir/fakebin/mv"
 
@@ -410,23 +410,24 @@ SH
 }
 
 test_delivery_lock_serializes_enqueue() {
-  local dir err lock sender rc=0 waiting i=0
+  local dir err lock sender rc=0 waiting i=0 real_sleep
+  real_sleep=$(command -v sleep)
   dir=$(setup_case delivery-lock)
   err="$dir/send.err"
   waiting="$dir/delivery-lock-waiting"
   . "$ROOT/bin/fm-task-inbox-lib.sh"
   lock=$(fm_task_inbox_delivery_lock_path "$dir/home/state" t1)
   fm_task_inbox_lock_acquire "$lock" || fail "could not acquire the inbox delivery lock"
-  cat > "$dir/fakebin/sleep" <<'SH'
+  cat > "$dir/fakebin/sleep" <<SH
 #!/usr/bin/env bash
-[ "${FM_TEST_DELIVERY_LOCK_WAITING:-}" = "" ] || : > "$FM_TEST_DELIVERY_LOCK_WAITING"
-exec /bin/sleep "$@"
+[ "\${FM_TEST_DELIVERY_LOCK_WAITING:-}" = "" ] || : > "\$FM_TEST_DELIVERY_LOCK_WAITING"
+exec "$real_sleep" "\$@"
 SH
   chmod +x "$dir/fakebin/sleep"
   run_send "$dir" "$err" FM_TASK_INBOX_LOCK_WAIT_SECS=10 FM_TEST_DELIVERY_LOCK_WAITING="$waiting" -- t1 "arrived during parking" &
   sender=$!
   while [ ! -e "$waiting" ] && [ "$i" -lt 200 ]; do
-    /bin/sleep 0.01
+    "$real_sleep" 0.01
     i=$((i + 1))
   done
   [ -e "$waiting" ] || {

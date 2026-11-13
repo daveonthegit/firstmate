@@ -248,7 +248,7 @@ cmd_spawn() {
       --mode|--branch-prefix|--base-branch|--upstream-consent)
         brief_args+=("$flag" "$value"); spawn_args+=("$flag" "$value") ;;
       --forge|--shape|--pr) brief_args+=("$flag" "$value") ;;
-      --yolo|--harness|--model|--effort|--backend) spawn_args+=("$flag" "$value") ;;
+      --yolo|--harness|--model|--effort|--backend|--dispatch-override) spawn_args+=("$flag" "$value") ;;
       --continue-from) validate_id "$value"; cont_from=$value ;;
       --carried-remote) cont_remote=$value ;;
       --carried-branch) cont_branch=$value ;;

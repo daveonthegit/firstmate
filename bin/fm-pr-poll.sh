@@ -91,8 +91,12 @@ case "$provider" in
       .|..|*[!A-Za-z0-9._-]*) exit 0 ;;
     esac
     [ "$url" = "https://$host/$owner/$repo/pull/$number" ] || exit 0
+    poll_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd) || exit $unknown
+    [ -f "$poll_root/bin/fm-pr-lib.sh" ] || poll_root=${FM_ROOT_OVERRIDE:-$poll_home}
+    [ -f "$poll_root/bin/fm-pr-lib.sh" ] || exit $unknown
+    . "$poll_root/bin/fm-pr-lib.sh"
     if [ "$degraded_enabled" != 1 ]; then
-      result=$(GH_HOST=$host gh pr view "$url" --json state --jq '.state' 2>/dev/null) || exit $unknown
+      result=$(GH_HOST=$host fm_pr_github_exec "$path" gh pr view "$url" --json state --jq '.state' 2>/dev/null) || exit $unknown
       [ "$result" = MERGED ] && printf '%s\n' merged
       exit 0
     fi
@@ -109,7 +113,7 @@ case "$provider" in
     # this branch, and the head is validated here so the watcher's dedupe
     # marker never sees another byte.
     # shellcheck disable=SC2016  # The filter's $f and $r are jq variables, expanded by jq, not the shell.
-    result=$(GH_HOST=$host gh pr view "$url" --json state,headRefOid,statusCheckRollup --jq '
+    result=$(GH_HOST=$host fm_pr_github_exec "$path" gh pr view "$url" --json state,headRefOid,statusCheckRollup --jq '
       if .state == "MERGED" then
         "merged"
       elif .state == "OPEN"

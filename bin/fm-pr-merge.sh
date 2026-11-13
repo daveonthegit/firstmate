@@ -546,7 +546,7 @@ github_add_squash_summary() {
   esac
   [ -e "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}/pr-squash-summary" ] || return 0
   caller_has_commit_text "$@" && return 0
-  if ! json=$(gh pr view "$URL" --json title,body 2>/dev/null) \
+  if ! json=$(fm_pr_github_exec "$PR_OWNER/$PR_REPO" gh pr view "$URL" --json title,body 2>/dev/null) \
     || ! title=$(printf '%s' "$json" | jq -er '.title | strings | select(length > 0)' 2>/dev/null) \
     || ! body=$(printf '%s' "$json" | jq -r '.body // "" | strings' 2>/dev/null); then
     printf 'note: could not read the title and body of %s; the squash commit keeps the repository default text\n' "$URL" >&2
@@ -1324,7 +1324,7 @@ github_update_behind_branch() {
   local poll=${mergeable_retry_delay:-3} deadline
   deadline=$((SECONDS + poll * 5))
   attempt_error=$(mktemp "${TMPDIR:-/tmp}/fm-pr-merge-update.XXXXXX") || return 1
-  if ! gh api --method PUT "repos/$PR_OWNER/$PR_REPO/pulls/$PR_NUMBER/update-branch" \
+  if ! fm_pr_github_exec "$PR_OWNER/$PR_REPO" gh api --method PUT "repos/$PR_OWNER/$PR_REPO/pulls/$PR_NUMBER/update-branch" \
     -f "expected_head_sha=$old_head"; then
     rm -f "$attempt_error"
     return 1

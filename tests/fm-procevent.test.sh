@@ -245,7 +245,7 @@ done
 LEASE_INHERITED="$TMP_ROOT/lease-inherited"; new_home "$LEASE_INHERITED"
 fm_test_track_procevent_home "$LEASE_INHERITED"
 lease_pe "$LEASE_INHERITED" register leaseplain lease-inherited-src -- \
-  "$STARTED_BLOCKER" "$TMP_ROOT/lease-inherited.started" /bin/sleep 30 >/dev/null
+  "$STARTED_BLOCKER" "$TMP_ROOT/lease-inherited.started" "$(command -v sleep)" 30 >/dev/null
 wait_stale_lease "$LEASE_INHERITED" || fail "the inherited caller fixture lease never expired"
 lease_before=$(cat "$LEASE_INHERITED/state/procevent/.owner-lease")
 FM_PROCEVENT_IN_RUNNER=1 lease_pe "$LEASE_INHERITED" ensure-listening lease-inherited-src \

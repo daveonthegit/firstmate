@@ -2079,6 +2079,7 @@ spawn_worker_host() {
   [ -z "$harness" ] || host_args+=(--harness "$harness")
   [ -z "$MODEL" ] || host_args+=(--model "$MODEL")
   [ -z "$EFFORT" ] || host_args+=(--effort "$EFFORT")
+  [ -z "$DISPATCH_OVERRIDE" ] || host_args+=(--dispatch-override "$DISPATCH_OVERRIDE")
   [ "${FM_SPAWN_AUTO_PLACEMENT:-0}" != 1 ] || host_args+=(--auto-placement)
   [ "$BACKEND_SET" -eq 0 ] || host_args+=(--backend "$BACKEND_ARG")
   if [ "$CONTINUE_FROM_SET" -eq 1 ]; then
@@ -3094,6 +3095,31 @@ if [ "$RELAUNCH" -eq 0 ]; then
   fi
   SPAWN_TASK_SET_LOCK_HELD=1
 fi
+case "$DISPATCH_OVERRIDE" in *[![:print:]]*) echo 'error: --dispatch-override must be a printable reason' >&2; exit 1 ;; esac
+DISPATCH_RECORD="$DATA/$ID/dispatch-resolution.json"
+if [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] && [ -f "$CONFIG/crew-dispatch.json" ]; then
+  if [ ! -e "$DISPATCH_RECORD" ]; then
+    echo "error: config/crew-dispatch.json is active and task $ID has no recorded dispatch resolution; run bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name> first" >&2
+    exit 1
+  fi
+  dispatch_fields=$(jq -r --arg id "$ID" '
+    select(.task == $id and (.status | IN("clear", "ambiguous", "escalate", "error", "off"))
+      and (if .status == "clear" then (.profile.harness | type) == "string" and .profile.harness != "" else true end))
+    | .status, (.profile.harness // ""), (.profile.model // ""), (.profile.effort // "")' "$DISPATCH_RECORD" 2>/dev/null) || dispatch_fields=
+  { read -r dispatch_status; read -r selected_harness; read -r selected_model; read -r selected_effort; } <<<"$dispatch_fields" || true
+  if [ -z "$dispatch_status" ]; then
+    echo "error: malformed dispatch resolution $DISPATCH_RECORD for task $ID; rerun bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name>" >&2
+    exit 1
+  fi
+  if [ "$dispatch_status" = clear ] && [ -z "$DISPATCH_OVERRIDE" ] \
+    && { [ "${HARNESS_ARG:-${POS[2]:-}}" != "$selected_harness" ] \
+      || { [ -n "$selected_model" ] && [ "${MODEL:-}" != "$selected_model" ]; } \
+      || { [ -n "$selected_effort" ] && [ "${EFFORT:-}" != "$selected_effort" ]; }; }; then
+    echo "error: launch flags do not match the clear dispatch selection --harness $selected_harness${selected_model:+ --model $selected_model}${selected_effort:+ --effort $selected_effort} recorded in $DISPATCH_RECORD; pass those flags with no raw launch command, or record this task's override with --dispatch-override <reason>" >&2
+    exit 1
+  fi
+fi
+
 spawn_pending_placement
 spawn_auto_placement
 if [ "$HOST_SET" -eq 1 ]; then
@@ -4011,31 +4037,6 @@ case "$ARG3" in
   }
   ;;
 esac
-
-case "$DISPATCH_OVERRIDE" in *[![:print:]]*) echo 'error: --dispatch-override must be a printable reason' >&2; exit 1 ;; esac
-DISPATCH_RECORD="$DATA/$ID/dispatch-resolution.json"
-if [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] && [ -f "$CONFIG/crew-dispatch.json" ]; then
-  if [ ! -e "$DISPATCH_RECORD" ]; then
-    echo "error: config/crew-dispatch.json is active and task $ID has no recorded dispatch resolution; run bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name> first" >&2
-    exit 1
-  fi
-  dispatch_fields=$(jq -r --arg id "$ID" '
-    select(.task == $id and (.status | IN("clear", "ambiguous", "escalate", "error", "off"))
-      and (if .status == "clear" then (.profile.harness | type) == "string" and .profile.harness != "" else true end))
-    | .status, (.profile.harness // ""), (.profile.model // ""), (.profile.effort // "")' "$DISPATCH_RECORD" 2>/dev/null) || dispatch_fields=
-  { read -r dispatch_status; read -r selected_harness; read -r selected_model; read -r selected_effort; } <<<"$dispatch_fields" || true
-  if [ -z "$dispatch_status" ]; then
-    echo "error: malformed dispatch resolution $DISPATCH_RECORD for task $ID; rerun bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name>" >&2
-    exit 1
-  fi
-  if [ "$dispatch_status" = clear ] && [ -z "$DISPATCH_OVERRIDE" ] \
-    && { [ "$RAW_LAUNCH" -eq 1 ] || [ "$HARNESS" != "$selected_harness" ] \
-      || { [ -n "$selected_model" ] && [ "${MODEL:-}" != "$selected_model" ]; } \
-      || { [ -n "$selected_effort" ] && [ "${EFFORT:-}" != "$selected_effort" ]; }; }; then
-    echo "error: launch flags do not match the clear dispatch selection --harness $selected_harness${selected_model:+ --model $selected_model}${selected_effort:+ --effort $selected_effort} recorded in $DISPATCH_RECORD; pass those flags with no raw launch command, or record this task's override with --dispatch-override <reason>" >&2
-    exit 1
-  fi
-fi
 
 # muse, gemini, devin, commandcode, polytoken, cortex, and kiro are verified as CREWMATE/SCOUT adapters only. A secondmate is
 # a firstmate instance, so it needs a primary supervision protocol.
