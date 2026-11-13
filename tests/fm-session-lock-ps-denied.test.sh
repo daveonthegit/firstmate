@@ -684,8 +684,8 @@ test_procinfo_helper_fails_closed() {
 # control byte, in place, with every printable and UTF-8 byte intact, so
 # a byte-for-byte comparison here would pin one procps build instead of
 # the rule and fail on the other. A route that spells control bytes with
-# characters ps itself prints (BSD and the macOS provider render them as
-# ^I / ^J) keeps them through the fold, which is why this touches only
+# characters ps itself prints (macOS renders tabs/newlines as octal
+# escapes) keeps them through the fold, which is why this touches only
 # the space and non-printable bytes.
 normalize_control_bytes() {  # <text>
   printf '%s' "$1" \
@@ -694,8 +694,22 @@ normalize_control_bytes() {  # <text>
 }
 
 test_control_bytes_match_ps_route() {
+  if [ "$(uname -s)" = Darwin ]; then
+    # Native ps is the independent identity oracle. Check both byte and
+    # UTF-8 locales: Python's locale coercion must not change the result.
+    ( export LC_ALL=C; check_control_bytes_match_ps_route ) \
+      || fail "control-byte identity differs in the C locale"
+    ( export LC_ALL=en_US.UTF-8; check_control_bytes_match_ps_route ) \
+      || fail "control-byte identity differs in the UTF-8 locale"
+  else
+    check_control_bytes_match_ps_route
+  fi
+}
+
+check_control_bytes_match_ps_route() {
   command -v python3 >/dev/null 2>&1 || { pass "control bytes: python3 absent, skipped"; return; }
   local marker="$TMP_ROOT/control-ready" child i got expected
+  rm -f "$marker"
   python3 -c 'import os, sys
 os.execv(sys.executable, [os.fsencode(sys.executable), b"-c", b"import sys,time; open(sys.argv[1], chr(119)).close(); time.sleep(40)", os.fsencode(sys.argv[1]), b"tab\tnewline\nhigh\xc3\xa9"])' "$marker" &
   child=$!
@@ -712,6 +726,10 @@ os.execv(sys.executable, [os.fsencode(sys.executable), b"-c", b"import sys,time;
     || { kill "$child"; fail "provider refused control-byte child"; }
   kill "$child" 2>/dev/null
   wait "$child" 2>/dev/null || :
+  if [ "$(uname -s)" = Darwin ]; then
+    [ "$got" = "$expected" ] \
+      || fail "macOS identity differs in $LC_ALL: provider '$got', ps '$expected'"
+  fi
   # ppid and comm carry no control bytes, so those fields stay a raw
   # comparison; only the argv field is compared by shape.
   [ "${got%$'\t'*}" = "${expected%$'\t'*}" ] \
@@ -721,8 +739,8 @@ os.execv(sys.executable, [os.fsencode(sys.executable), b"-c", b"import sys,time;
   # Non-vacuity: every fixture word that sits around a control byte must
   # still arrive from both routes, so a route that swallowed that text
   # cannot pass by matching a loss on the other route. The words are
-  # asserted without their placeholder, because a BSD ps and the macOS
-  # provider spell it ^I / ^J while a Linux one spells it as one byte.
+  # asserted without their placeholder, because macOS uses octal escapes
+  # while Linux spells each control byte as one placeholder byte.
   local word
   for word in tab newline high; do
     case $got in

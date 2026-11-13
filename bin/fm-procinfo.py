@@ -29,6 +29,7 @@ Usage: fm-procinfo.py <pid>
 import ctypes
 import ctypes.util
 import os
+import locale
 import struct
 import sys
 
@@ -145,15 +146,26 @@ def _procargs(pid):
 
 
 def _ps_visible(raw):
+    # ps uses the caller's locale, not Python's coerced UTF-8 locale.
+    # Its VIS_TAB | VIS_NL | VIS_NOSLASH rendering preserves printable
+    # multibyte characters but spells tabs/newlines as octal escapes.
+    locale.setlocale(locale.LC_CTYPE, "")
+    text = raw.decode(locale.nl_langinfo(locale.CODESET), "surrogateescape")
     result = []
-    for byte in raw:
-        if byte >= 128:
-            result.append("M-")
-            byte -= 128
-        if byte < 32 or byte == 127:
-            result.append("^" + chr(byte ^ 64))
+    for char in text:
+        if char in "\t\n":
+            result.append("\\%03o" % ord(char))
+        elif libc().iswprint(ord(char)):
+            result.append(char)
         else:
-            result.append(chr(byte))
+            for byte in char.encode(locale.nl_langinfo(locale.CODESET), "surrogateescape"):
+                if byte >= 128:
+                    result.append("M-")
+                    byte -= 128
+                if byte < 32 or byte == 127:
+                    result.append("^" + chr(byte ^ 64))
+                else:
+                    result.append(chr(byte))
     return "".join(result)
 
 
