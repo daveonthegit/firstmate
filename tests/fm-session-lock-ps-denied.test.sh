@@ -697,9 +697,9 @@ test_control_bytes_match_ps_route() {
   if [ "$(uname -s)" = Darwin ]; then
     # Native ps is the independent identity oracle. Check both byte and
     # UTF-8 locales: Python's locale coercion must not change the result.
-    ( export LC_ALL=C; check_control_bytes_match_ps_route ) \
+    LC_ALL=C check_control_bytes_match_ps_route \
       || fail "control-byte identity differs in the C locale"
-    ( export LC_ALL=en_US.UTF-8; check_control_bytes_match_ps_route ) \
+    LC_ALL=en_US.UTF-8 check_control_bytes_match_ps_route \
       || fail "control-byte identity differs in the UTF-8 locale"
   else
     check_control_bytes_match_ps_route
