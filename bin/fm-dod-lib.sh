@@ -33,15 +33,25 @@
 # rendered as an `upstream-consent=<scope>` suffix token on the Delivery
 # contract line so brief, spawn record, and worker instructions agree.
 # Callers of the gate are bin/fm-crew-state.sh (current-state done),
-# bin/fm-pr-check.sh (PR registration), and bin/fm-inactive-reconcile.sh
-# (secondmate ledger-first publish of a child done). A ship `done:` is not
+# bin/fm-pr-check.sh (PR registration), bin/fm-review-check.sh (external review
+# registration), and bin/fm-inactive-reconcile.sh (secondmate ledger-first
+# publish of a child done). A ship `done:` is not
 # accepted while the named head exists only in the worker's disposable copy.
+# For a task placed on a worker host (bin/fm-task-route-lib.sh's worker-host
+# route, docs/remote-workers.md) that copy is on the host, so after the
+# primary-held recorded-PR shortcut the host's own gate answers through
+# bin/fm-on.sh and bin/fm-remote-worker-control.sh named-head, run against the
+# host's own record; fm_dod_accept_placed_done owns that leg and its outcomes.
 # The check tests that head, not whether some branch moved. In no-mistakes
 # mode the pre-validation `done: {summary}` is the pipeline handoff and is
 # not gated; only the later CI-ready `done: PR <url> checks green` is, or on a
 # Gerrit project the later `done: PR <change url> published for review`. The
-# named head is the worker copy's HEAD, except that a done naming the task's
-# recorded pr= passes when the forge holds that head: a forge-reported
+# named head is the worker copy's HEAD, except that GitHub PR registration in
+# no-mistakes mode can use the live forge-reported head instead, including on
+# configured GitHub Enterprise hosts. The worker-host named-head leg performs
+# that lookup on the host when the primary has no worktree; a pipeline rewrite
+# need not leave its published head in the worker copy's remote-tracking refs.
+# A done naming the task's recorded pr= passes when the forge holds that head: a forge-reported
 # pr_head= in no-mistakes mode, or a recorded merge
 # (state/<id>.pr-poll-merge-notified). A push to Gerrit's refs/for/ leaves no
 # ref a fetch can see, so a done naming a Gerrit change skips the remote-tracking
@@ -144,6 +154,11 @@
 . "$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd)/fm-brief-heading-lib.sh"
 # shellcheck source=bin/fm-external-review-lib.sh
 . "$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd)/fm-external-review-lib.sh"
+# Sourced only when absent, because sourcing resets its route globals.
+if ! declare -F fm_task_route >/dev/null; then
+  # shellcheck source=bin/fm-task-route-lib.sh
+  . "$(d=${BASH_SOURCE[0]%/*}; [ "$d" != "${BASH_SOURCE[0]}" ] || d=.; cd "${d:-/}" && pwd)/fm-task-route-lib.sh"
+fi
 
 fm_brief_worker_role() {  # <state-dir> <task-id> <code-root>
   local state=$1 task_id=$2 root=$3
@@ -975,6 +990,54 @@ fm_dod_named_head_reachable_outside_worktree() {  # <worktree> <project> <mode> 
   [ "$mode" = local-only ] && fm_dod_ref_contains "$project" refs/heads "$sha"
 }
 
+# The worker-host half of the gate, for a record bin/fm-task-route-lib.sh
+# routes to worker host <host>: the host runs this same gate over its own task
+# record (worktree, project, mode, forge) with bin/fm-remote-worker-control.sh
+# named-head, so a head that exists only in the host's disposable copy is
+# refused exactly as a local one is. The read is bounded by
+# FM_DOD_REMOTE_BUDGET seconds (default 30). 0 when the host accepts; 1 when
+# the registry cannot resolve the host, its root/home differ from the recorded
+# route, or the host refuses, with the reason on stdout; 2 when the head cannot be verified now -
+# the host is unreachable, its answer was lost (SSH exit 255), it timed out, or
+# it gave no gate answer, such as a host build without the verb - with a
+# one-line reason on stdout. 2 is never an acceptance and never a verdict on
+# the work: a caller retries later.
+fm_dod_accept_placed_done() {  # <host> <id> <line> <meta>
+  local host=$1 id=$2 line=$3 meta=$4 budget out rc=0 dir reason data
+  dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  data=${FM_DATA_OVERRIDE:-${FM_HOME:-${FM_ROOT_OVERRIDE:-${dir%/bin}}}/data}
+  # shellcheck source=bin/fm-worker-host-lib.sh
+  . "$dir/fm-worker-host-lib.sh"
+  if ! worker_host_lookup "$data" "$host"; then
+    printf 'worker host %s is not resolvable in its registry\n' "$host"
+    return 1
+  fi
+  if [ "$WORKER_HOST_ROOT" != "$(fm_dod_meta_value "$meta" remote_root)" ] \
+    || [ "$WORKER_HOST_HOME" != "$(fm_dod_meta_value "$meta" remote_home)" ]; then
+    printf 'task %s recorded worker host route no longer matches worker host %s registry record (route drift)\n' "$id" "$host"
+    return 1
+  fi
+  budget=${FM_DOD_REMOTE_BUDGET:-30}
+  case "$budget" in ''|*[!0-9]*|0) budget=30 ;; esac
+  out=$(fm_run_timed "$budget" env ${FM_HOME:+FM_HOME="$FM_HOME"} "$dir/fm-on.sh" "$host" \
+    fm-remote-worker-control.sh named-head "$id" "$line" < /dev/null 2>/dev/null) || rc=$?
+  if [ "$rc" -eq 0 ] && printf '%s\n' "$out" | grep -q '^accepted: '; then
+    return 0
+  fi
+  reason=$(printf '%s\n' "$out" | sed -n 's/^refused: //p' | tail -1)
+  if [ "$rc" -eq 1 ] && [ -n "$reason" ]; then
+    printf 'on worker host %s: %s\n' "$host" "$reason"
+    return 1
+  fi
+  case "$rc" in
+    124) reason="worker host $host did not answer within ${budget}s" ;;
+    255) reason="worker host $host is unreachable or its answer was lost" ;;
+    *) reason="worker host $host gave no named-head answer (exit $rc)" ;;
+  esac
+  printf 'named head cannot be verified now: %s; retry once the host answers\n' "$reason"
+  return 2
+}
+
 # 0 when <line> is not a ship done: to gate, when the task's meta records
 # forge=external and fm_dod_accept_external_review_done accepts it, when it
 # names the task's recorded PR whose head the forge holds, when it names a
@@ -987,9 +1050,26 @@ fm_dod_named_head_reachable_outside_worktree() {  # <worktree> <project> <mode> 
 # output. <state> <id> <meta> supply pr=,
 # pr_head=, and the merge-notified marker; <meta> may be a captured copy
 # (bin/fm-fleet-snapshot.sh), so the marker is read from <state>.
+# A <meta> routed to a worker host ignores <worktree> and <project>: after the
+# recorded-PR shortcut, fm_dod_accept_placed_done answers, and its return 2
+# (cannot verify now) passes through. A record that cannot be routed takes the
+# local checks below, which refuse a record with no local worktree.
 fm_dod_accept_ship_done() {  # <kind> <mode> <worktree> <project> <line> [<state> <id> <meta> [meta-locked]]
-  local kind=$1 mode=$2 wt=$3 project=$4 line=$5 state=${6:-} id=${7:-} meta=${8:-} url sha gerrit captured=''
+  local kind=$1 mode=$2 wt=$3 project=$4 line=$5 state=${6:-} id=${7:-} meta=${8:-} url sha gerrit captured='' route
   fm_dod_should_gate_ship_done "$kind" "$mode" "$line" || return 0
+  if [ -n "$meta" ]; then
+    route=$(fm_task_route "$meta" && printf '%s %s\n' "$FM_TASK_ROUTE" "$FM_TASK_ROUTE_HOST") || route=
+    case "$route" in
+      'worker-host '?*)
+        if url=$(fm_dod_pr_url_from_done_note "$(status_line_note "$line")") \
+          && fm_dod_recorded_pr_on_forge "$state" "$id" "$meta" "$mode" "$url"; then
+          return 0
+        fi
+        fm_dod_accept_placed_done "${route#worker-host }" "$id" "$line" "$meta"
+        return
+        ;;
+    esac
+  fi
   if [ "$mode" = local-only ] && [ -n "$meta" ]; then
     captured=$(cat "$meta") || return 1
     if [ "$(fm_dod_meta_value "$meta" worktree)" != "$wt" ] \

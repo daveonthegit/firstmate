@@ -862,6 +862,7 @@ tests/fm-pi-windows-shell-invocation.test.sh 5121
 tests/fm-placed-task-control.test.sh 47000
 tests/fm-polytoken-harness.test.sh 21090
 tests/fm-polytoken-signals-live-e2e.test.sh 103
+tests/fm-pr-check-host.test.sh 27000
 tests/fm-pr-check-security.test.sh 300675
 tests/fm-pr-reviewers.test.sh 157
 tests/fm-pr-state-live-e2e.test.sh 47
@@ -1631,9 +1632,11 @@ families_for_changed_path() {
       ;;
     bin/fm-remote-worker-control.sh|bin/fm-procevent-remote-worker.sh)
       # The worker-host leg and status mirror: their own drivers, plus the
-      # primary-side cleanup and cross-machine hand-off that call both.
+      # primary-side cleanup, ready-PR recording, and cross-machine hand-off
+      # that call both.
       printf '%s\n' secondmate
       printf '%s\n' "__script__:fm-remote-worker-control.test.sh"
+      printf '%s\n' "__script__:fm-pr-check-host.test.sh"
       printf '%s\n' "__script__:fm-remote-worker-mirror.test.sh"
       printf '%s\n' "__script__:fm-teardown-host.test.sh"
       printf '%s\n' "__script__:fm-handoff-host.test.sh"
@@ -1774,6 +1777,7 @@ families_for_changed_path() {
     bin/fm-pr-*|bin/fm-merge-local.sh|bin/fm-review-diff.sh|\
     bin/fm-x-*|bin/fm-check*|bin/fm-pipeline-spend.sh)
       printf '%s\n' pr-forge
+      printf '%s\n' "__script__:fm-pr-check-host.test.sh"
       ;;
     bin/fm-gh-account.sh|bin/fm-gh-shim.sh|bin/fm-install-gh-shim.sh)
       printf '%s\n' backend-dispatch
