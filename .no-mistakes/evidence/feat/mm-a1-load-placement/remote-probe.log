@@ -1,0 +1,6 @@
+{run-worktree}/l
+$ FM_HOME=<marked-worktree-lab> bin/fm-on.sh labhost fm-remote-worker-control.sh headroom sample
+Warning: Permanently added '[127.0.0.1]:22237' (ED25519) to the list of known hosts.
+error: remote root and home must be separate, non-overlapping directories
+real SSH remote-protocol exit=64
+Remote bootstrap cannot accept a home nested inside the tracked code root. No account worker or production configuration was changed.

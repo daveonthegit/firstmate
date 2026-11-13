@@ -1,0 +1,116 @@
+{run-worktree}/l
+scaffolded: {run-worktree}/l/data/named/brief.md (ship, mode=local-only; replace {TASK} and {FIRSTMATE_SPEC})
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+notice: named ships mode=local-only while the standing posture for sample is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+spawned named harness=claude kind=ship mode=local-only yolo=off window=primary:fm-named worktree={run-worktree}/l/pool/.treehouse/sample-332b7b/1/sample
+NAMED_SPAWN_EXIT=0
+primary:0: 2.1.322* (1 panes) [120x40] 
+primary:1: fm-named (1 panes) [120x40] 
+window=primary:fm-named
+worktree={run-worktree}/l/pool/.treehouse/sample-332b7b/1/sample
+project={run-worktree}/l/projects/sample
+harness=claude
+kind=ship
+bash-5.3$ treehouse get
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.no-mistakes/worktrees/747da666653e/01M78R1VKSNRBXSR58MW0VQF7H/l/pool/.treehouse/sample-332b7b/
+1/sample. Type 'exit' to return.
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+bash-3.2$ cd -- '{run-worktree}/l/pool/.treehouse/sampl
+e-332b7b/1/sample'
+bash-3.2$ export GOTMPDIR=/tmp/fm-named/gotmp
+bash-3.2$ export COMPACT_ADVISER_DISABLE=1
+bash-3.2$ export FM_TASK_ID=named
+bash-3.2$ . '/tmp/fm-named+9ee3f091e0cb943adeeb7883a9352a37fa144bf79482ef7e1985fa3ff224809e/launch.s1794529803.56310.609
+9.sh'
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Allow external CLAUDE.md file imports?
+
+  This project's CLAUDE.md or .claude/rules imports files outside the current working directory. Never allow this for
+  third-party repositories.
+
+  External imports:
+    {run-worktree}/AGENTS.md
+
+  Important: Only use Claude Code with files you trust. Accessing untrusted files may pose security risks
+  https://code.claude.com/docs/en/security
+
+  ❯ No, disable external imports
+    Yes, allow external imports
+
+  Enter to confirm · Esc to cancel
+
+
+
+
+
+scaffolded: {run-worktree}/l/data/auto/brief.md (scout; replace {TASK} and {FIRSTMATE_SPEC})
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+placement: this machine admits - 2 of 3 lanes open (1 running; load 5.21 on 10 cores, memory 68% free)
+placement: chose this machine
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+spawned auto harness=claude kind=scout window=primary:fm-auto worktree={run-worktree}/l/pool/.treehouse/sample-332b7b/2/sample
+AUTOMATIC_SCOUT_SPAWN_EXIT=0
+primary:0: 2.1.322* (1 panes) [120x40] 
+primary:1: fm-named (1 panes) [120x40] 
+primary:2: fm-auto (1 panes) [120x40] 
+window=primary:fm-auto
+worktree={run-worktree}/l/pool/.treehouse/sample-332b7b/2/sample
+project={run-worktree}/l/projects/sample
+harness=claude
+kind=scout
+bash-5.3$ treehouse get
+A new version of treehouse is available: v3.1.2 → v3.1.8
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.no-mistakes/worktrees/747da666653e/01M78R1VKSNRBXSR58MW0VQF7H/l/pool/.treehouse/sample-332b7b/
+2/sample. Type 'exit' to return.
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+bash-3.2$ cd -- '{run-worktree}/l/pool/.treehouse/sampl
+e-332b7b/2/sample'
+bash-3.2$ export GOTMPDIR=/tmp/fm-auto/gotmp
+bash-3.2$ export COMPACT_ADVISER_DISABLE=1
+bash-3.2$ export FM_TASK_ID=auto
+bash-3.2$ . '/tmp/fm-auto+9ee3f091e0cb943adeeb7883a9352a37fa144bf79482ef7e1985fa3ff224809e/launch.s1794529814.60043.1769
+0.sh'
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  Allow external CLAUDE.md file imports?
+
+  This project's CLAUDE.md or .claude/rules imports files outside the current working directory. Never allow this for
+  third-party repositories.
+
+  External imports:
+    {run-worktree}/AGENTS.md
+
+  Important: Only use Claude Code with files you trust. Accessing untrusted files may pose security risks
+  https://code.claude.com/docs/en/security
+
+  ❯ No, disable external imports
+    Yes, allow external imports
+
+  Enter to confirm · Esc to cancel
+
+
+
+
+

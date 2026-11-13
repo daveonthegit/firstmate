@@ -1,0 +1,93 @@
+{run-worktree}/l
+ok: added queued (ship) -> Queued
+task:
+  id: queued
+  title: Disposable queue-preservation check
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-12
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+help[2]:
+  - Run `tasks-axi start queued --file={run-worktree}/l/data/backlog.md` to move it to in flight
+  - Run `tasks-axi block queued --by <other> --file={run-worktree}/l/data/backlog.md` to record a dependency
+
+$ bin/fm-spawn.sh queued projects/sample --mode local-only --yolo off --harness claude
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+placement: this machine does not admit - full, 1 of 1 lanes running (load 11.33 on 10 cores, memory 65% free)
+placement: worker host absent skipped - unreachable
+placement: no machine admits the task now
+deferred: no machine admits task queued now; nothing was placed and its backlog item stays queued - dispatch it again once a machine has room
+exit=75 (expected 75)
+task:
+  id: queued
+  title: Disposable queue-preservation check
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: 2026-11-12
+  closed: "-"
+  deps: none
+  links: none
+  body: ""
+
+$ bin/fm-spawn.sh nocap projects/sample --mode local-only --yolo off --harness claude
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: automatic placement is on but this machine declares no lane cap; write config/lane-capacity (docs/configuration.md "Lane capacity")
+
+error: automatic placement could not judge where nocap runs (bin/fm-placement.sh exit 1); nothing was placed
+exit=1 (expected 1)
+
+$ bin/fm-spawn.sh raw projects/sample --mode local-only --yolo off --harness claude\ --model\ sonnet
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+placement: this machine - a raw launch command is not forwarded to a worker host
+error: automatic placement needs this machine's readable config/lane-capacity (docs/configuration.md "Lane capacity")
+exit=1 (expected 1)
+
+$ bin/fm-spawn.sh raw projects/sample --mode local-only --yolo off --harness claude\ --model\ sonnet
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+placement: this machine - a raw launch command is not forwarded to a worker host
+deferred: lane capacity of this home ({run-worktree}/l/config/lane-capacity) does not admit another lane: full: 1 of 1 lanes
+exit=75 (expected 75)
+
+$ bin/fm-spawn.sh pending projects/sample --mode local-only --yolo off --host local
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: earlier placement of pending on absent must be reconciled first; re-run with --host absent
+exit=1 (expected 1)
+
+$ bin/fm-spawn.sh pending projects/sample --mode local-only --yolo off --host other
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/l
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+error: earlier placement of pending on absent must be reconciled first; re-run with --host absent
+exit=1 (expected 1)
+Retained ownership: absent
+
+All local guard scenarios completed; disposable home will be removed.
