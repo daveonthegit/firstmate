@@ -5,8 +5,7 @@
 # cpu, disk, and the optional max-lanes ceiling, young lanes reserving a full
 # per-lane cost, gates that close at once and reopen only after three clean
 # publishes with damped growth that admission honours between publishes,
-# pressure, thermal, and battery gates, the memory-unmeasurable fallback to the
-# static ceiling, the learned footprint and the unmeasured lanes it ignores,
+# pressure, thermal, and battery gates, refusal without measurable memory, the learned footprint and the unmeasured lanes it ignores,
 # the published ledger and its history, the ranked reclaim list, the Windows
 # host view inside WSL (cached for every mode but --publish) and on native
 # Windows, a closed gate held while its reading cannot be taken, even past the
@@ -255,7 +254,7 @@ test_pressure_thermal_and_battery_gates() {
 }
 
 test_unmeasurable_memory_never_admits_on_cpu_alone() {
-  local home fakebin p out
+  local home fakebin p out rc
   home=$(make_home unmeasurable)
   p="$TMP_ROOT/p-unmeasurable"
   fakebin=$(make_probes "$p")
@@ -263,26 +262,28 @@ test_unmeasurable_memory_never_admits_on_cpu_alone() {
   printf 'auto\n' > "$home/config/lane-capacity"
   out=$(run_cap "$home" "$fakebin")
   assert_contains "$out" 'free_lanes=0 reason=unmeasurable ' "auto mode must not admit on cpu alone"
-  assert_equals '[5,"unmeasurable",["memory unmeasurable: no memory probe, and no max-lanes ceiling to fall back on"]]' \
+  assert_equals '[5,"unmeasurable",["memory unmeasurable: no memory probe available"]]' \
     "$(json "$home" "$fakebin" '[.budget.by.cpu, .budget.binding, .verdict.reasons]')" "the verdict must say memory was never measured"
-  printf 'auto\nmax-lanes 3\n' > "$home/config/lane-capacity"
+  # Authorized admission contract: an optional ceiling is not a measured budget.
+  # Rejects the unsafe alternative of admitting three lanes on CPU alone.
+  printf 'auto\nmax-lanes 3\nadmit-spawns\n' > "$home/config/lane-capacity"
   out=$(run_cap "$home" "$fakebin")
-  assert_contains "$out" 'free_lanes=3 reason=ok ' "local admission must retain the static ceiling fallback"
+  assert_contains "$out" 'free_lanes=0 reason=unmeasurable ' "a ceiling must not substitute for measured memory"
   assert_contains "$out" 'budget_measured=false' "placement must be told that this target is not measured"
-  assert_equals false "$(json "$home" "$fakebin" '.budget.measured')" "the published budget must identify ceiling-only fallback"
-  assert_equals '["ceiling",true,["memory unmeasurable: admitting up to the static max-lanes ceiling only"]]' \
-    "$(json "$home" "$fakebin" '[.budget.binding, .verdict.admit, .verdict.reasons]')" "the fallback must be bound by the ceiling and say so"
+  assert_equals '[false,"unavailable",null,"unmeasurable",false,["memory unmeasurable: no memory probe available"]]' \
+    "$(json "$home" "$fakebin" '[.budget.measured, .cap.status, .cap.target, .budget.binding, .verdict.admit, .verdict.reasons]')" "publication must report unavailable capacity without admission"
+  rc=0
+  run_cap "$home" "$fakebin" --spawn-gate >/dev/null || rc=$?
+  expect_code 75 "$rc" "opted-in spawn gate must defer without measured memory"
   write_lane "$home" a "$home/none"
   write_lane "$home" b "$home/none"
   write_lane "$home" c "$home/none"
   out=$(run_cap "$home" "$fakebin")
-  assert_contains "$out" 'free_lanes=0 reason=ceiling ' "the static ceiling must still fill"
-  assert_equals '["memory unmeasurable: admitting up to the static max-lanes ceiling only","ceiling: 3 of 3 lanes on this machine (max-lanes)"]' \
-    "$(json "$home" "$fakebin" '.verdict.reasons')" "a full fallback ceiling must explain both"
+  assert_contains "$out" 'free_lanes=0 reason=unmeasurable ' "existing lanes must not restore unmeasured admission"
   rm -f "$p/v/load1" "$p/v/cores"
   out=$(run_cap "$home" "$fakebin")
-  assert_contains "$out" 'free_lanes=0 reason=ceiling ' "no probe at all must still fall back to the ceiling"
-  pass "unmeasurable memory never admits on cpu alone: the budget is the static max-lanes ceiling, or nothing, and the verdict says so"
+  assert_contains "$out" 'free_lanes=0 reason=unmeasurable ' "no probe at all must refuse admission"
+  pass "unmeasurable memory refuses admission and spawn even with a ceiling"
 }
 
 test_learned_footprint() {
@@ -581,10 +582,10 @@ SH
   printf 'auto\nmax-lanes 4\n' > "$home/config/lane-capacity"
   out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$home" FM_PROC_ROOT_OVERRIDE="$proc" "$CAPACITY" --json 2>/dev/null |
     jq -c '[.verdict.free_lanes, .budget.binding, .verdict.reasons, .budget.notes]')
-  assert_equals '[4,"ceiling",["memory unmeasurable: admitting up to the static max-lanes ceiling only"],["Windows host view unavailable"]]' "$out" \
-    "without the host view native Windows must retain local fallback admission"
+  assert_equals '[0,"unmeasurable",["memory unmeasurable: no memory probe available"],["Windows host view unavailable"]]' "$out" \
+    "without the host view native Windows must refuse admission even with a ceiling"
   assert_equals false "$(json "$home" "$fakebin" '.budget.measured')" "Windows fallback must not appear measured to placement"
-  pass "a native Windows home reads memory, cores, load, and power from the PowerShell host view, and falls back to the ceiling without it"
+  pass "native Windows uses the host view and refuses admission without it"
 }
 
 test_admission_honours_the_damped_budget() {
