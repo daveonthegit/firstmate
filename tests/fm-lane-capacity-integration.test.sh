@@ -26,7 +26,7 @@
 # and after the load with timestamps in FM_TEST_LANE_LIVE_LOG when set.
 #
 # FM_LANE_CAPACITY_BASELINE_REF names the git revision whose bin/ the fixed-cap
-# comparison runs against (default: 5c935cfb, the last fixed-cap-only
+# comparison runs against (default: 6cb004af, this fork's last fixed-cap-only
 # revision); when the history lacks it that one comparison reports a skip line
 # and the rest runs.
 # shellcheck disable=SC2016 # fake commands are written as single-quoted scripts.
@@ -420,7 +420,7 @@ test_idle_reclaim_from_real_workers() {
 
 # --- E: the fixed-cap path is byte-identical to the baseline ------------------
 
-BASELINE_REF_DEFAULT=5c935cfbaf8a649ccc3656c1cdabd23fe1fcc0b9
+BASELINE_REF_DEFAULT=6cb004af14806edca5fc4ab757d0124f1f425d4a
 
 baseline_bin() {  # -> a directory holding the baseline revision's bin/
   local ref=${FM_LANE_CAPACITY_BASELINE_REF:-$BASELINE_REF_DEFAULT} dir="$TMP_ROOT/baseline"

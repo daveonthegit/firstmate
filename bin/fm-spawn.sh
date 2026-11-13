@@ -3098,6 +3098,10 @@ fi
 case "$DISPATCH_OVERRIDE" in *[![:print:]]*) echo 'error: --dispatch-override must be a printable reason' >&2; exit 1 ;; esac
 DISPATCH_RECORD="$DATA/$ID/dispatch-resolution.json"
 if [ "$KIND" != secondmate ] && [ "$RELAUNCH" -eq 0 ] && [ -f "$CONFIG/crew-dispatch.json" ]; then
+  if [ -z "${HARNESS_ARG:-${POS[2]:-}}" ]; then
+    echo "error: config/crew-dispatch.json is active - pass an explicit harness resolved from the dispatch rules (the consultation backstop, so the rules are never silently skipped)." >&2
+    exit 1
+  fi
   if [ ! -e "$DISPATCH_RECORD" ]; then
     echo "error: config/crew-dispatch.json is active and task $ID has no recorded dispatch resolution; run bin/fm-dispatch-resolve.sh $DATA/$ID/brief.md --project <name> first" >&2
     exit 1

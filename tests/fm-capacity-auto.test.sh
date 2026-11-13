@@ -583,7 +583,9 @@ SH
     jq -c '[.verdict.free_lanes, .budget.binding, .verdict.reasons, .budget.notes]')
   assert_equals '[4,"ceiling",["memory unmeasurable: admitting up to the static max-lanes ceiling only"],["Windows host view unavailable"]]' "$out" \
     "without the host view native Windows must retain local fallback admission"
-  assert_equals false "$(json "$home" "$fakebin" '.budget.measured')" "Windows fallback must not appear measured to placement"
+  out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$home" FM_PROC_ROOT_OVERRIDE="$proc" "$CAPACITY" --json 2>/dev/null |
+    jq -c '.budget.measured')
+  assert_equals false "$out" "Windows fallback must not appear measured to placement"
   pass "a native Windows home reads memory, cores, load, and power from the PowerShell host view, and falls back to the ceiling without it"
 }
 

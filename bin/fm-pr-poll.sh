@@ -73,7 +73,8 @@ esac
 # spelled URL. The host is one of those components: a GitHub Enterprise host is
 # recorded only by bin/fm-pr-lib.sh after this home named it in
 # config/github-hosts, and it is re-checked for shape here like every other
-# provider's, because this static body sources nothing and cannot read config.
+# provider's, because this static body reads no config (its GitHub branch sources
+# only bin/fm-pr-lib.sh, for repository account selection).
 case "$provider" in
   github)
     [ "${#host}" -ge 1 ] && [ "${#host}" -le 253 ] || exit 0
@@ -91,12 +92,18 @@ case "$provider" in
       .|..|*[!A-Za-z0-9._-]*) exit 0 ;;
     esac
     [ "$url" = "https://$host/$owner/$repo/pull/$number" ] || exit 0
-    poll_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd) || exit $unknown
+    # Run from a code root (the watcher runs bin/fm-pr-poll.sh itself), the
+    # read goes through bin/fm-pr-lib.sh's repository-keyed account selection;
+    # a copy run where no code root is reachable reads with gh's own account.
+    poll_gh() { "$@"; }
+    poll_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd) || poll_root=
     [ -f "$poll_root/bin/fm-pr-lib.sh" ] || poll_root=${FM_ROOT_OVERRIDE:-$poll_home}
-    [ -f "$poll_root/bin/fm-pr-lib.sh" ] || exit $unknown
-    . "$poll_root/bin/fm-pr-lib.sh"
+    if [ -f "$poll_root/bin/fm-pr-lib.sh" ]; then
+      . "$poll_root/bin/fm-pr-lib.sh"
+      poll_gh() { fm_pr_github_exec "$path" "$@"; }
+    fi
     if [ "$degraded_enabled" != 1 ]; then
-      result=$(GH_HOST=$host fm_pr_github_exec "$path" gh pr view "$url" --json state --jq '.state' 2>/dev/null) || exit $unknown
+      result=$(GH_HOST=$host poll_gh gh pr view "$url" --json state --jq '.state' 2>/dev/null) || exit $unknown
       [ "$result" = MERGED ] && printf '%s\n' merged
       exit 0
     fi
@@ -113,7 +120,7 @@ case "$provider" in
     # this branch, and the head is validated here so the watcher's dedupe
     # marker never sees another byte.
     # shellcheck disable=SC2016  # The filter's $f and $r are jq variables, expanded by jq, not the shell.
-    result=$(GH_HOST=$host fm_pr_github_exec "$path" gh pr view "$url" --json state,headRefOid,statusCheckRollup --jq '
+    result=$(GH_HOST=$host poll_gh gh pr view "$url" --json state,headRefOid,statusCheckRollup --jq '
       if .state == "MERGED" then
         "merged"
       elif .state == "OPEN"
@@ -170,20 +177,20 @@ case "$provider" in
     # A GitLab project sits under at least one group at no fixed depth, and
     # GitLab reserves the "-" segment as its route separator.
     rest=$path
-    segments=0
+    segment_count=0
     while [ -n "$rest" ]; do
       case "$rest" in
         */*) segment=${rest%%/*}; rest=${rest#*/} ;;
         *) segment=$rest; rest= ;;
       esac
-      segments=$((segments + 1))
-      [ "$segments" -le 20 ] || exit 0
+      segment_count=$((segment_count + 1))
+      [ "$segment_count" -le 20 ] || exit 0
       [ "${#segment}" -ge 1 ] && [ "${#segment}" -le 255 ] || exit 0
       case "$segment" in
         .|..|-*|*.git|*.atom|*[!A-Za-z0-9._-]*) exit 0 ;;
       esac
     done
-    [ "$segments" -ge 2 ] || exit 0
+    [ "$segment_count" -ge 2 ] || exit 0
     [ "$url" = "https://$host/$path/-/merge_requests/$number" ] || exit 0
     if [ "$degraded_enabled" != 1 ]; then
       raw=$(GITLAB_HOST=$host glab mr view "$number" -R "https://$host/$path" 2>/dev/null) || exit $unknown
@@ -216,7 +223,7 @@ case "$provider" in
     gitlab_detail_read() {  # <api path>
         # Each detail read gets its own hard limit of five seconds, so a hung
         # read is cut rather than holding the poll until the watcher's check
-        # timeout kills it before it prints. This body sources nothing, so the
+        # timeout kills it before it prints. This branch sources nothing, so the
         # limit is the same perl fork-and-kill bound the watcher falls back to
         # for its own checks: the read runs in its own process group, which
         # gets TERM then KILL at the deadline. A bare alarm is not enough,
@@ -446,20 +453,20 @@ case "$provider" in
     # group, so one segment is canonical here where GitLab needs two, and Gerrit
     # reserves no route segment inside it.
     rest=$path
-    segments=0
+    segment_count=0
     while [ -n "$rest" ]; do
       case "$rest" in
         */*) segment=${rest%%/*}; rest=${rest#*/} ;;
         *) segment=$rest; rest= ;;
       esac
-      segments=$((segments + 1))
-      [ "$segments" -le 20 ] || exit 0
+      segment_count=$((segment_count + 1))
+      [ "$segment_count" -le 20 ] || exit 0
       [ "${#segment}" -ge 1 ] && [ "${#segment}" -le 255 ] || exit 0
       case "$segment" in
         .|..|-*|*.git|*[!A-Za-z0-9._-]*) exit 0 ;;
       esac
     done
-    [ "$segments" -ge 1 ] || exit 0
+    [ "$segment_count" -ge 1 ] || exit 0
     [ "$url" = "https://$host/c/$path/+/$number" ] || exit 0
     # gerrit-axi resolves its server from the current directory's origin remote
     # first, and the watcher runs in no repository, so the host must be passed
