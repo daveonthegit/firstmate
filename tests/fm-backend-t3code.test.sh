@@ -3551,6 +3551,10 @@ test_seat_shared_quota_opt_out() {
   rm -f "$CASE_DIR/state/t3code-exhausted/claude_b" "$CASE_DIR/state/t3code-rotation-claude"
   id=$(t3_uid t3sharedspawn)
   t3_worker_setup "$id"
+  # An active config/crew-dispatch.json requires the task's recorded dispatch
+  # resolution, so record the clear selection this spawn's flags carry.
+  printf '{"task":"%s","status":"clear","profile":{"harness":"claude","model":"claude-sonnet-5"}}\n' "$id" \
+    > "$CASE_DIR/data/$id/dispatch-resolution.json"
   out=$(PATH="$fb:$PATH" FM_T3_QUOTA_CALL_LOG="$calls" FM_T3_QUOTA_TEST_SNAPSHOT="$snap" FM_T3CODE_QUOTA_SNAPSHOT='' \
     t3_worker_spawn "$id" claude --model claude-sonnet-5); rc=$?
   expect_code 0 "$rc" "a shared-budget spawn must succeed"$'\n'"$out"

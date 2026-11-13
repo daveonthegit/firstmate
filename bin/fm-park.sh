@@ -546,7 +546,6 @@ park_preflight() {  # <id>
   [ -f "$meta" ] || { echo "no task record"; return 1; }
   backend=$(fm_backend_of_meta "$meta")
   if ! fm_control_backend_state_verified "$backend" ||
-    ! fm_control_backend_exit_supported "$backend" ||
     ! fm_control_backend_relaunch_supported "$backend"; then
     echo "the ${backend:-unknown} backend cannot stop and relaunch the agent"; return 1
   fi

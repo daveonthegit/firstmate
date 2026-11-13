@@ -55,7 +55,10 @@ make_world() {
 #!/usr/bin/env bash
 # The base branch's required checks: gh.branch.json (unprotected by default,
 # gh.branch.fail fails the read), with no rulesets.
+# No account is logged in, so bin/fm-gh-account.sh's account probe selects
+# nothing and is not counted as a forge read.
 case "\$*" in
+  "auth "*) exit 1 ;;
   *"/rules/branches/"*) echo '[]'; exit 0 ;;
   *"/branches/"*) [ ! -e "$world/gh.branch.fail" ] || exit 1; cat "$world/gh.branch.json" 2>/dev/null || echo '{"protected":false}'; exit 0 ;;
 esac
