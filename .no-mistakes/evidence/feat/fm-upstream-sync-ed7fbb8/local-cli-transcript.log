@@ -1,0 +1,329 @@
+$ git clone --quiet --no-hardlinks {run-worktree} {run-worktree}/.test-phase/live/primary
+exit=0
+
+$ {run-worktree}/bin/fm-stow-guard.sh
+exit=0
+
+$ {run-worktree}/bin/fm-stow-guard.sh
+exit=0
+{"decision":"block","reason":"fm-stow-guard: context is 1200 tokens, near auto-compaction. Run the /stow skill now (full pass), then continue the turn you were in."}
+
+$ {run-worktree}/bin/fm-stow-guard.sh
+exit=0
+
+$ {run-worktree}/bin/fm-stow-guard.sh
+exit=0
+
+$ {run-worktree}/bin/fm-stow-guard.sh
+exit=0
+{"decision":"block","reason":"fm-stow-guard: context is 1200 tokens, near auto-compaction. Run the /stow skill now (full pass), then continue the turn you were in."}
+
+OBSERVED: opt-out is silent; crossing blocks; repeated stop is silent; low usage rearms next crossing.
+
+$ {run-worktree}/bin/fm-lab-home.sh create {run-worktree}/.test-phase/live/home
+exit=0
+{run-worktree}/.test-phase/live/home
+
+$ {run-worktree}/bin/fm-capacity.sh --json
+exit=0
+{
+  "schema": "fm-lane-capacity.v1",
+  "generated_epoch": 1794593520,
+  "home": "main",
+  "machine": "MacBookPro",
+  "lanes": {
+    "count": 0,
+    "pr_ready": 0,
+    "ids": [],
+    "placed": 2
+  },
+  "cap": {
+    "target": 2,
+    "status": "ok",
+    "mode": "auto"
+  },
+  "projects": [],
+  "pressure": {
+    "level": "ok",
+    "why": [],
+    "basis": "probe",
+    "beat_age_s": null,
+    "avail_gb": 12,
+    "total_gb": 16,
+    "runq_per_core": 0.49,
+    "swap_rate_pps_1m": null,
+    "mem_stall_pct": null,
+    "load1": 4.87,
+    "on_battery": null,
+    "disks": [
+      {
+        "label": "home",
+        "free_gb": 57.6
+      }
+    ]
+  },
+  "uptime_s": 230497,
+  "boot_id": "1794363023",
+  "boots": [
+    1794363023
+  ],
+  "watcher_beat_age_s": null,
+  "reserve": {
+    "flag": "not-configured",
+    "label": null
+  },
+  "captain": "not-configured",
+  "quota": null,
+  "limits": {
+    "min_avail_gb": null,
+    "min_disk_gb": null,
+    "max_load1": null
+  },
+  "verdict": {
+    "admit": true,
+    "free_lanes": 2,
+    "reasons": []
+  },
+  "budget": {
+    "lanes": 2,
+    "open": 2,
+    "raw": 2,
+    "machine_lanes": 0,
+    "by": {
+      "memory": 5,
+      "cpu": 3,
+      "disk": 15,
+      "ceiling": 2
+    },
+    "measured": true,
+    "binding": "ceiling",
+    "young": 0,
+    "damped": false,
+    "notes": []
+  },
+  "footprint": {
+    "mem_gb": 2,
+    "cpu_cores": 1,
+    "disk_gb": 3,
+    "source": "default",
+    "samples": 0
+  },
+  "vitals": {
+    "load5": 5.04,
+    "psi": {
+      "cpu_some10": null,
+      "mem_some10": null,
+      "mem_some60": null,
+      "mem_full10": null,
+      "io_full10": null,
+      "io_full60": null
+    },
+    "swapin_total": 111428050,
+    "swap_in_pps": null,
+    "vm_pressure_level": 1,
+    "thermal": "ok",
+    "battery_pct": 100,
+    "on_ac": true,
+    "wsl": false,
+    "windows": false,
+    "host": null,
+    "gpu": [
+      {
+        "name": "Apple M1 Pro",
+        "util_pct": 1,
+        "mem_used_gb": null,
+        "mem_total_gb": null
+      }
+    ]
+  },
+  "gates": [
+    {
+      "name": "cpu",
+      "state": "open",
+      "since_epoch": null,
+      "clear_count": 0
+    },
+    {
+      "name": "memory-pressure",
+      "state": "open",
+      "since_epoch": null,
+      "clear_count": 0
+    },
+    {
+      "name": "thermal",
+      "state": "open",
+      "since_epoch": null,
+      "clear_count": 0
+    },
+    {
+      "name": "battery",
+      "state": "open",
+      "since_epoch": null,
+      "clear_count": 0
+    }
+  ],
+  "reclaim": []
+}
+
+$ {run-worktree}/bin/fm-capacity.sh --json
+exit=0
+{
+  "schema": "fm-lane-capacity.v1",
+  "generated_epoch": 1794593521,
+  "home": "main",
+  "machine": "MacBookPro",
+  "lanes": {
+    "count": 1,
+    "pr_ready": 0,
+    "ids": [
+      "local"
+    ],
+    "placed": 2
+  },
+  "cap": {
+    "target": 2,
+    "status": "ok",
+    "mode": "auto"
+  },
+  "projects": [],
+  "pressure": {
+    "level": "ok",
+    "why": [],
+    "basis": "probe",
+    "beat_age_s": null,
+    "avail_gb": 11.84,
+    "total_gb": 16,
+    "runq_per_core": 0.49,
+    "swap_rate_pps_1m": null,
+    "mem_stall_pct": null,
+    "load1": 4.87,
+    "on_battery": null,
+    "disks": [
+      {
+        "label": "home",
+        "free_gb": 57.6
+      }
+    ]
+  },
+  "uptime_s": 230498,
+  "boot_id": "1794363023",
+  "boots": [
+    1794363023
+  ],
+  "watcher_beat_age_s": null,
+  "reserve": {
+    "flag": "not-configured",
+    "label": null
+  },
+  "captain": "not-configured",
+  "quota": null,
+  "limits": {
+    "min_avail_gb": null,
+    "min_disk_gb": null,
+    "max_load1": null
+  },
+  "verdict": {
+    "admit": true,
+    "free_lanes": 1,
+    "reasons": []
+  },
+  "budget": {
+    "lanes": 2,
+    "open": 1,
+    "raw": 1,
+    "machine_lanes": 1,
+    "by": {
+      "memory": 3,
+      "cpu": 2,
+      "disk": 14,
+      "ceiling": 1
+    },
+    "measured": true,
+    "binding": "ceiling",
+    "young": 1,
+    "damped": false,
+    "notes": [
+      "1 of 1 lanes have no attributed process"
+    ]
+  },
+  "footprint": {
+    "mem_gb": 2,
+    "cpu_cores": 1,
+    "disk_gb": 3,
+    "source": "default",
+    "samples": 0
+  },
+  "vitals": {
+    "load5": 5.04,
+    "psi": {
+      "cpu_some10": null,
+      "mem_some10": null,
+      "mem_some60": null,
+      "mem_full10": null,
+      "io_full10": null,
+      "io_full60": null
+    },
+    "swapin_total": 111428050,
+    "swap_in_pps": null,
+    "vm_pressure_level": 1,
+    "thermal": "ok",
+    "battery_pct": 100,
+    "on_ac": true,
+    "wsl": false,
+    "windows": false,
+    "host": null,
+    "gpu": [
+      {
+        "name": "Apple M1 Pro",
+        "util_pct": 0,
+        "mem_used_gb": null,
+        "mem_total_gb": null
+      }
+    ]
+  },
+  "gates": [
+    {
+      "name": "cpu",
+      "state": "open",
+      "since_epoch": null,
+      "clear_count": 0
+    },
+    {
+      "name": "memory-pressure",
+      "state": "open",
+      "since_epoch": null,
+      "clear_count": 0
+    },
+    {
+      "name": "thermal",
+      "state": "open",
+      "since_epoch": null,
+      "clear_count": 0
+    },
+    {
+      "name": "battery",
+      "state": "open",
+      "since_epoch": null,
+      "clear_count": 0
+    }
+  ],
+  "reclaim": []
+}
+
+$ {run-worktree}/bin/fm-capacity.sh --spawn-gate
+exit=1
+fm-capacity: config/lane-capacity: line 2: max-lanes needs one non-negative integer
+
+$ {run-worktree}/bin/fm-spawn.sh d1 demo --host not-configured --harness claude --mode local-only --yolo off
+exit=1
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.test-phase/live/home
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  3 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+error: launch flags do not match the clear dispatch selection --harness codex recorded in {run-worktree}/.test-phase/live/home/data/d1/dispatch-resolution.json; pass those flags with no raw launch command, or record this task's override with --dispatch-override <reason>
+
+OBSERVED: real capacity excludes placed workers, counts local workers, publishes a measured target, rejects malformed config; conflicting remote dispatch is refused before routing.

@@ -1,0 +1,12 @@
+Disposable home seeded with stale lock pid 9999999. Real Claude CLI, private fm-lab tmux socket, 120x40 grid.
+
+$ bin/fm-lock.sh; echo "EXIT=$?"
+This Bash command contains multiple operations. The following part requires approval: echo "EXIT=$?"
+$ bin/fm-lock.sh
+$ bin/fm-lock.sh status
+lock acquired: harness pid 11596
+lock: held by live harness pid 11596
+CLI result: success
+Persisted owner: 11596
+CLI exit: 0
+Lab tmux server stopped and home removed.

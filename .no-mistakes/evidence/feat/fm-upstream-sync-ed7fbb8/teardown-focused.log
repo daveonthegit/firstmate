@@ -1,0 +1,4 @@
+ok - work landed on another origin branch from another clone is proven after a refresh
+ok - a failed refresh refuses and names the remote it could not reach
+ok - commits on no remote branch still refuse after a successful refresh
+FOCUSED_COMPLETE
