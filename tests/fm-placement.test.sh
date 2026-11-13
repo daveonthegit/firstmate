@@ -218,6 +218,49 @@ auto_spawn() {  # <id> [extra args] -> SPAWN_OUT SPAWN_RC
 
 # --- the placement decision -------------------------------------------------
 
+test_adaptive_machines_rank_by_measured_budget() {
+  local tools
+  make_case adaptive
+  for tools in "$PRIMARY_BIN" "$HOST_BIN"; do
+    printf '#!/usr/bin/env bash\necho Darwin\n' > "$tools/uname"
+    cat > "$tools/sysctl" <<'SH'
+#!/usr/bin/env bash
+case "$2" in
+  vm.loadavg) echo '{ 0.50 0.50 0.50 }' ;;
+  kern.memorystatus_level) echo 50 ;;
+  hw.logicalcpu) echo 8 ;;
+  hw.memsize) echo 17179869184 ;;
+  kern.memorystatus_vm_pressure_level) echo 1 ;;
+esac
+SH
+    cat > "$tools/pmset" <<'SH'
+#!/usr/bin/env bash
+case "$2" in
+  batt) echo "Now drawing from 'AC Power'" ;;
+  therm) echo 'Note: No thermal warning level has been recorded' ;;
+esac
+SH
+    printf '#!/usr/bin/env bash\nexit 0\n' > "$tools/vm_stat"
+    chmod +x "$tools/uname" "$tools/sysctl" "$tools/pmset" "$tools/vm_stat"
+  done
+  set_cap "$PARENT" auto
+  set_cap "$HOST_A" auto
+  printf 'max-lanes 100\n' >> "$PARENT/config/lane-capacity"
+  printf 'max-lanes 200\n' >> "$HOST_A/config/lane-capacity"
+  busy "$PARENT" 1
+  place
+  expect_code 0 "$PLACE_RC" "adaptive placement ($PLACE_OUT)"
+  assert_contains "$PLACE_OUT" 'placement: this machine admits' "adaptive local machine was excluded"
+  assert_contains "$PLACE_OUT" 'placement: worker host mbp admits' "adaptive worker host was excluded"
+  assert_equals 'mbp local' "$(order)" "an empty adaptive host must outrank a busy local machine, regardless of ceilings"
+  rm "$PARENT/state/busy-0.meta"
+  busy "$HOST_A" 1
+  place
+  expect_code 0 "$PLACE_RC" "adaptive local placement ($PLACE_OUT)"
+  assert_equals 'local mbp' "$(order)" "an empty adaptive local machine must outrank a busy worker host"
+  pass "adaptive local and fake-SSH worker hosts rank by measured budgets rather than ceilings"
+}
+
 test_share_of_own_cap_wins() {
   make_case share
   set_cap "$PARENT" 2
@@ -709,7 +752,7 @@ test_pending_recovery_rechecks_admission() {
   pass "unnamed pending recovery defers when its host filled before launch"
 }
 
-fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_machine \
+fm_test_run test_adaptive_machines_rank_by_measured_budget test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_machine \
   test_unreachable_and_uncapped_hosts_are_skipped test_this_machine_needs_its_cap \
   test_placed_tasks_count_on_their_host \
   test_spawn_off_by_default test_spawn_places_on_the_emptier_host \

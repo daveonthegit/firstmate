@@ -673,6 +673,9 @@ auto_lane_rows() {
   for meta in "$dir"/*.meta; do
     [ -f "$meta" ] || continue
     grep -qx 'kind=secondmate' "$meta" 2>/dev/null && continue
+    if fm_task_route "$meta" && [ "$FM_TASK_ROUTE" = worker-host ]; then
+      continue
+    fi
     id=$(basename "$meta" .meta)
     wt=$(sed -n 's/^worktree=//p' "$meta" 2>/dev/null | head -1)
     harness=$(sed -n 's/^harness=//p' "$meta" 2>/dev/null | head -1)
@@ -1079,6 +1082,7 @@ auto_budget() {
     return 0
   fi
   auto_doc=$(printf '%s' "$out" | jq -c '.doc')
+  target=$(printf '%s' "$auto_doc" | jq -r '.budget.lanes')
   auto_ledger=$(printf '%s' "$out" | jq -c '.ledger')
   v=$(printf '%s' "$out" | jq -r '.reasons[]')
   if [ -n "$v" ]; then
@@ -1149,6 +1153,7 @@ free_lanes=unknown
 admit=false
 auto_doc=
 if [ "$cap_mode" = auto ]; then
+  target=unknown
   auto_budget
 else
 case "$target" in
@@ -1315,7 +1320,7 @@ if [ -n "$quota_provider" ]; then
 fi
 
 cap_status=ok
-case "$target" in none) cap_status=none ;; invalid) cap_status=invalid ;; esac
+case "$target" in none) cap_status=none ;; invalid) cap_status=invalid ;; unknown) cap_status=unavailable ;; esac
 verdict_reasons=$pub_reasons
 [ "$target" != none ] || [ "$cap_mode" = auto ] || verdict_reasons="no lane cap declared (config/lane-capacity absent)
 "

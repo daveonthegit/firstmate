@@ -144,12 +144,12 @@ test_budget_binds_the_scarcest_resource() {
   printf 'auto\n' > "$home/config/lane-capacity"
   out=$(run_cap "$home" "$fakebin"); rc=$?
   expect_code 0 "$rc" "an auto report"
-  assert_contains "$(printf '%s\n' "$out" | head -1)" 'capacity: free_lanes=3 reason=ok lanes=0 target=none ' "memory must bind at 3"
+  assert_contains "$(printf '%s\n' "$out" | head -1)" 'capacity: free_lanes=3 reason=ok lanes=0 target=3 ' "memory must bind at 3"
   assert_contains "$(printf '%s\n' "$out" | head -1)" ' mode=auto budget=3' "the report line must end with the auto keys"
   assert_contains "$out" 'auto budget 3 (3 open, bound by memory)' "the summary must name the binding resource"
   assert_contains "$out" 'Per lane: 2 GB, 1 core, 3 GB disk (default until 5 lanes are measured).' "the default footprint must be stated"
   assert_equals '{"memory":3,"cpu":5,"disk":30,"ceiling":null}' "$(json "$home" "$fakebin" '.budget.by')" "every resource must be computed"
-  assert_equals '["none","auto"]' "$(json "$home" "$fakebin" '[.cap.status, .cap.mode]')" "auto without a ceiling has no cap target"
+  assert_equals '["ok","auto",3]' "$(json "$home" "$fakebin" '[.cap.status, .cap.mode, .cap.target]')" "auto must publish its measured admission target"
   set_v "$p" load1 6.50
   set_v "$p" load5 6.00
   out=$(run_cap "$home" "$fakebin")
@@ -565,7 +565,7 @@ SH
   chmod +x "$fakebin"/*
   printf 'auto\n' > "$home/config/lane-capacity"
   out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$home" FM_PROC_ROOT_OVERRIDE="$proc" "$CAPACITY" 2>&1)
-  assert_contains "$(printf '%s\n' "$out" | head -1)" 'free_lanes=2 reason=ok lanes=0 target=none secondmates=0 load1=4.00 cores=16 ' \
+  assert_contains "$(printf '%s\n' "$out" | head -1)" 'free_lanes=2 reason=ok lanes=0 target=2 secondmates=0 load1=4.00 cores=16 ' \
     "native Windows must take memory, cores, and the load proxy from the host view"
   out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$home" FM_PROC_ROOT_OVERRIDE="$proc" "$CAPACITY" --json 2>/dev/null |
     jq -c '[.vitals.windows, .vitals.wsl, .vitals.host.cores, .vitals.on_ac, .budget.by.memory, .budget.by.cpu, .budget.binding, ([.gates[].name] | index("host-memory"))]')
@@ -723,8 +723,27 @@ test_auto_config_validation() {
   rc=0
   out=$(run_cap "$home" "$fakebin") || rc=$?
   expect_code 0 "$rc" "a full valid auto config: $out"
-  assert_contains "$out" 'target=6 ' "max-lanes must be the published target"
+  assert_contains "$out" 'target=3 ' "the measured target must replace the optional ceiling"
   pass "auto-only keys need auto, flags take no value, removed keys are unknown, and malformed values are refused"
+}
+
+test_remote_routes_do_not_consume_adaptive_lanes() {
+  local home sibling fakebin h
+  home=$(make_home routed)
+  sibling=$(make_home routed-sibling)
+  fakebin=$(make_probes "$TMP_ROOT/p-routed")
+  mkdir -p "$home/data"
+  printf -- '- mate - local mate (home: %s; scope: project work; projects: sample; added 2026-09-01)\n' "$sibling" > "$home/data/secondmates.md"
+  printf 'auto\nmax-lanes 2\n' > "$home/config/lane-capacity"
+  for h in "$home" "$sibling"; do
+    write_lane "$h" far "$h/wt" 'remote_worker_host=mbp' "spawn_gen=s$(date +%s).1.1"
+    printf '2026-01-01T00:00Z idle\n' > "$h/state/far.status"
+  done
+  run_cap "$home" "$fakebin" --publish >/dev/null
+  assert_equals '[2,2,true]' "$(jq -c '[.verdict.free_lanes, .cap.target, .verdict.admit]' "$home/state/lane-capacity.json")" "remote workers must leave both local lanes open"
+  assert_equals '[0,[],[],0]' "$(jq -c '[.budget.machine_lanes, .reclaim, .lanes.ids, .budget.young]' "$home/state/lane-capacity.json")" "remote workers must not enter machine accounting or reclaim"
+  assert_equals '{}' "$(jq -c '.lanes' "$home/state/lane-footprint.json")" "remote workers must not enter the footprint ledger"
+  pass "remote routes in this and sibling homes leave adaptive capacity available"
 }
 
 test_real_host_auto_smoke() {
@@ -737,6 +756,7 @@ test_real_host_auto_smoke() {
   pass "auto mode runs against this real host"
 }
 
+test_remote_routes_do_not_consume_adaptive_lanes
 test_fixed_mode_is_unchanged
 test_budget_binds_the_scarcest_resource
 test_ceiling_and_young_lanes

@@ -112,6 +112,10 @@ judge() {
   detail="load ${load1:-unknown} on ${cores:-unknown} cores, memory ${mem:-unknown}% free"
   [ "${mem:-unknown}" != unknown ] || detail="load ${load1:-unknown} on ${cores:-unknown} cores, memory unknown"
   case "$target" in
+    unknown)
+      printf 'placement: %s skipped - adaptive lane budget unavailable (%s)\n' "$label" "$reason"
+      return 1
+      ;;
     none)
       printf 'placement: %s skipped - no lane cap declared (config/lane-capacity), so its share cannot be compared\n' "$label"
       return 1
