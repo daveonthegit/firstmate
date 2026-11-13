@@ -189,7 +189,7 @@ A secondmate additionally receives the launch prefix every other backend types (
 A `claude` ship or scout worker also receives the task-worker channel statement that a pane launch appends to the system prompt, written as a `CLAUDE.local.md` in its worktree because T3 owns the system prompt; a secondmate does not, as on every backend.
 Without it a Claude worker can refuse the launch brief as prompt injection, which happened live.
 The statement's pull-request-tool workaround follows the [verified version boundary](verification/runtime-backends.md#claude-pull-request-tools); an older or unreadable server keeps the clause, while a server at or past the verified build gets none.
-Firstmate records the PR from the worker's `done: PR <url>` status line either way.
+Firstmate records the PR from a worker's ready `done:` report; [`config/pr-register-scan`](configuration.md#pr-registration-scan-configpr-register-scan) describes the scan's accepted forms.
 A `claude` task checks the leased worktree and refuses a tracked, existing, or symlinked `CLAUDE.local.md`, because that file is the backend's channel and teardown removes it.
 
 ### Pi workers
@@ -335,9 +335,9 @@ Resolve ambiguity by explicitly setting both `FM_SUPERVISOR_BACKEND=t3code` and 
 Injection is a `t3_thread_send` only into a settled supervisor thread, one the [thread status table](#restart-and-liveness-behavior) reads idle/alive with no pending request; any other row, including `blocked` and an unreadable thread, defers the digest exactly as a busy pane does on every other backend.
 An unknown native busy verdict defers new-turn delivery but does not prove that work resumed.
 Away housekeeping keeps an overdue stale alert pending and buffers one possible-wedge report while the verdict remains unknown, including a failed run or a transient thread-read failure.
-Delivered warnings stay suppressed while the same unknown condition persists.
-If a fresh daemon entry discards a queued, undelivered warning, it clears that warning's reported marker and preserves its stale timer, so the next housekeeping pass queues exactly one replacement.
-Refreshing a live daemon preserves the queue; a failed start restores the previous queue and reported markers.
+Within the same away session, delivered warnings stay suppressed while the same unknown condition persists.
+The [stale-artifact lifecycle](../.agents/skills/afk/SKILL.md#stale-artifact-lifecycle) owns session-boundary cleanup and recheck-window resets.
+Refreshing a live daemon preserves the queue and episode markers; a failed start restores the previous queue and episode markers.
 Confirmed busy activity, a missing thread, or an idle verdict after the unknown condition was reported clears the stale and reported markers without another report, so a later unknown condition can report again.
 Declared external-wait rechecks also survive native uncertainty; the worker's declaration still controls their cadence.
 `stale_window_is_busy` and `housekeeping` in `bin/fm-supervise-daemon.sh` own stale tracking; `fm_afk_clear_stale_artifacts` in `bin/fm-afk-start.sh` and the launcher in `bin/fm-afk-launch.sh` own queue discard and startup rollback.
@@ -370,7 +370,7 @@ If a task's thread no longer reads back, release the task by hand:
 - T3 Code remains experimental and runs only `claude`, `codex`, and `pi`; `pi-signed`, `cursor`, `agy`, and every other harness are refused.
 - [Pi workers](#pi-workers) require per-thread launch environment support.
   Pi secondmates are refused because their own thread id belongs in the launch environment but T3 assigns it only after launch.
-- A non-empty `config/crew-exclude-tools` refuses a T3 spawn: T3 owns the provider command, so Firstmate cannot add Pi's `--exclude-tools` flag.
+- A non-empty `config/crew-exclude-tools` refuses a T3 spawn: T3 owns the provider command, so Firstmate cannot add Claude's `--disallowedTools` or Pi's `--exclude-tools` flag.
 - T3 starts the agent at `full-access` with its provider instance's account and environment, so a spawn refuses `config/claude-permission-mode=auto` for `claude`, `config/codex-approval-mode=approve-for-me` or `config/codex-permission-mode=restricted` for `codex`, `config/launch-env-allowlist`, a worker account pin or a [declared Claude account list](configuration.md#several-claude-accounts-configclaude-accounts) entry, and a raw launch command; select the account through `config/t3code-instances` instead.
 - T3 owns the Claude provider command, so Firstmate cannot add its command-line prompt-suggestion, feedback-draft, or attribution controls; configure equivalent provider-instance settings in T3 when those policies are required.
   Unless `config/keep-ai-trailers` is present, the per-worktree environment selects Firstmate's Git commit hook to strip known AI trailers, including on T3 workers.
