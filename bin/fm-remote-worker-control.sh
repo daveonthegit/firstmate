@@ -14,6 +14,7 @@
 #   fm-remote-worker-control.sh teardown <task-id> [--force]
 #   fm-remote-worker-control.sh named-head <task-id> <done-line>
 #   fm-remote-worker-control.sh admit <task-id> <project>
+#   fm-remote-worker-control.sh headroom <project>
 #   fm-remote-worker-control.sh rescue <task-id> <url>
 #   fm-remote-worker-control.sh carried <task-id> <remote> <branch> <head>
 #   fm-remote-worker-control.sh handoff <task-id> <new-id> <to> <ran-on> [--reason <text>] [--carried <remote> <branch> <head>]
@@ -66,6 +67,9 @@
 # idempotent: it prints the existing route instead of launching twice, which is
 # what makes a re-run after an unconfirmed SSH spawn (exit 255) safe.
 #
+# Internal spawn flag --auto-placement carries automatic dispatch admission:
+# FM_SPAWN_AUTO_PLACEMENT=1 makes fm-spawn recheck lanes under its task-set lock.
+# Named-host spawns do not set it.
 # spawn and route print one route block the primary records:
 #   schema=fm-remote-worker-control.v1
 #   task=<id> kind=<ship|scout> backend=<b> target=<t> worktree=<path>
@@ -93,6 +97,13 @@
 # `refused: <reason>` and exits 1, including for a task this home holds no
 # claimed record for; every other answer is no verdict, and the
 # primary's fm_dod_accept_placed_done owns treating it as cannot-verify-now.
+#
+# headroom serves automatic placement on the primary (bin/fm-placement.sh): it
+# prints the schema line, project=<project>, cloned=yes|no (whether this home
+# has that project's clone), and this home's own bin/fm-capacity.sh report
+# line unchanged, which counts the tasks placed here as this machine's lanes.
+# It exits 0 even when the report flags an unreadable lane cap (target=invalid),
+# so the primary reads the reason instead of a bare failure. It changes nothing.
 #
 # The hand-off verbs serve bin/fm-handoff.sh on the primary:
 #   admit    preflight for a continuation placed here: the home is a worker
@@ -214,7 +225,7 @@ replace_task_section() { # <brief> <body-file>
 
 cmd_spawn() {
   local id=$1 project=$2 kind=ship flag value proj_dir meta claim brief body out rc=0 lock
-  local cont_from='' cont_remote='' cont_branch='' cont_head='' rescue_url='' source_brief=''
+  local cont_from='' cont_remote='' cont_branch='' cont_head='' rescue_url='' source_brief='' auto_placement=0
   local -a brief_args spawn_args
   shift 2
   validate_id "$id"
@@ -226,6 +237,7 @@ cmd_spawn() {
     shift
     case "$flag" in
       --scout) kind=scout; brief_args+=(--scout); spawn_args+=(--scout); continue ;;
+      --auto-placement) auto_placement=1; continue ;;
       --herdr-lab) brief_args+=(--herdr-lab); continue ;;
       --journal) brief_args+=(--journal); continue ;;
     esac
@@ -326,7 +338,7 @@ cmd_spawn() {
     spawn_abandon
     die "the rendered brief for $id has no # Task section to fill"
   fi
-  if out=$("$SCRIPT_DIR/fm-spawn.sh" "$id" "$proj_dir" "${spawn_args[@]}" 2>&1); then
+  if out=$(FM_SPAWN_AUTO_PLACEMENT=$auto_placement "$SCRIPT_DIR/fm-spawn.sh" "$id" "$proj_dir" "${spawn_args[@]}" 2>&1); then
     rc=0
   else
     rc=$?
@@ -478,6 +490,25 @@ cmd_admit() {
   printf 'admitted: %s on project %s\n' "$id" "$project"
 }
 
+cmd_headroom() {
+  local project=$1 cloned=no report
+  case "$project" in ''|-*|.*|*[!A-Za-z0-9._-]*) die "invalid project name: $project" ;; esac
+  validate_home
+  if [ -d "$TARGET_HOME/projects/$project" ] && [ ! -L "$TARGET_HOME/projects/$project" ] \
+     && git -C "$TARGET_HOME/projects/$project" rev-parse --git-dir >/dev/null 2>&1; then
+    cloned=yes
+  fi
+  report=$("$SCRIPT_DIR/fm-capacity.sh" 2>/dev/null | head -n 1 || true)
+  case "$report" in
+    'capacity: '*) ;;
+    *) die "this worker host's fm-capacity.sh printed no capacity report" ;;
+  esac
+  printf 'schema=%s\n' "$SCHEMA"
+  printf 'project=%s\n' "$project"
+  printf 'cloned=%s\n' "$cloned"
+  printf '%s\n' "$report"
+}
+
 cmd_rescue() {
   local id=$1 url=$2 copy
   validate_url "$url"
@@ -610,6 +641,7 @@ case "$VERB" in
   teardown) [ "$#" -ge 1 ] && [ "$#" -le 2 ] || usage; validate_home; cmd_teardown "$@" ;;
   named-head) [ "$#" -eq 2 ] || usage; validate_home; cmd_named_head "$@" ;;
   admit) [ "$#" -eq 2 ] || usage; cmd_admit "$@" ;;
+  headroom) [ "$#" -eq 1 ] || usage; cmd_headroom "$1" ;;
   rescue) [ "$#" -eq 2 ] || usage; validate_home; cmd_rescue "$@" ;;
   carried) [ "$#" -eq 4 ] || usage; validate_home; cmd_carried "$@" ;;
   handoff) [ "$#" -ge 4 ] || usage; validate_home; cmd_handoff "$@" ;;

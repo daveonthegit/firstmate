@@ -20,13 +20,17 @@
 # list in this fixed order:
 #   capacity: free_lanes=<N|unknown> reason=<reason> lanes=<N> target=<N|none|invalid>
 #     secondmates=<N> load1=<X|unknown> cores=<N|unknown>
-#     mem_free_pct=<N|unknown> disk_free_mb=<N|unknown>
+#     mem_free_pct=<N|unknown> disk_free_mb=<N|unknown> placed=<N>
 # (one physical line). A short human summary follows it. load1, cores,
 # mem_free_pct and disk_free_mb are always this host's own probes.
 #
 # lanes counts task metadata records whose kind is not secondmate (ship and
-# scout work, including records not yet reconciled after an endpoint died).
-# secondmates counts persistent secondmates separately; they hold no lane.
+# scout work, including records not yet reconciled after an endpoint died),
+# except a ship or scout this primary placed on a worker host
+# (bin/fm-task-route-lib.sh's worker-host route): that worker runs on the host,
+# whose own home counts it, so placed counts it here separately and it holds
+# no lane on this machine. secondmates counts persistent secondmates
+# separately; they hold no lane.
 #
 # target is the cap from config/lane-capacity. Absent means no target, so
 # free_lanes=unknown reason=no-target and the counts are still printed. A
@@ -75,7 +79,7 @@
 #   schema, generated_epoch (this host's clock), home ("main", or the id in
 #   .fm-secondmate-home), machine (the first readable beat's host, else the
 #   short host name),
-#   lanes {count, pr_ready (records with a pr= line), ids},
+#   lanes {count, pr_ready (records with a pr= line), ids, placed},
 #   cap {target (number or null), status ok|none|invalid},
 #   projects (clone directory names under projects/),
 #   pressure {level ok|warn|critical|unknown, why[], basis beat|probe|none,
@@ -162,6 +166,9 @@ file_mtime() {
   is_uint "$m" && printf '%s\n' "$m"
 }
 
+# shellcheck source=bin/fm-task-route-lib.sh
+. "$SCRIPT_DIR/fm-task-route-lib.sh"
+
 now=$(date +%s)
 
 case "$mode" in
@@ -186,12 +193,15 @@ fi
 # --- lanes ------------------------------------------------------------------
 lanes=0
 secondmates=0
+placed=0
 pr_ready=0
 lane_ids=
 for meta in "$STATE"/*.meta; do
   [ -f "$meta" ] || continue
   if grep -qx 'kind=secondmate' "$meta" 2>/dev/null; then
     secondmates=$((secondmates + 1))
+  elif fm_task_route "$meta" && [ "$FM_TASK_ROUTE" = worker-host ]; then
+    placed=$((placed + 1))
   else
     lanes=$((lanes + 1))
     lane_ids="$lane_ids$(basename "$meta" .meta)
@@ -560,8 +570,8 @@ fi
 
 # --- report -----------------------------------------------------------------
 if [ "$mode" = report ]; then
-  printf 'capacity: free_lanes=%s reason=%s lanes=%s target=%s secondmates=%s load1=%s cores=%s mem_free_pct=%s disk_free_mb=%s\n' \
-    "$free_lanes" "$reason" "$lanes" "$target" "$secondmates" "$load1" "$cores" "$mem_free_pct" "$disk_free_mb"
+  printf 'capacity: free_lanes=%s reason=%s lanes=%s target=%s secondmates=%s load1=%s cores=%s mem_free_pct=%s disk_free_mb=%s placed=%s\n' \
+    "$free_lanes" "$reason" "$lanes" "$target" "$secondmates" "$load1" "$cores" "$mem_free_pct" "$disk_free_mb" "$placed"
 
   case "$target" in
     none) echo "Lanes: $lanes running, no target set (config/lane-capacity absent)." ;;
@@ -569,6 +579,7 @@ if [ "$mode" = report ]; then
     *) echo "Lanes: $lanes running of $target target, $free_lanes open." ;;
   esac
   [ "$secondmates" -eq 0 ] || echo "Secondmates: $secondmates (hold no lane)."
+  [ "$placed" -eq 0 ] || echo "Placed on worker hosts: $placed (each counts on its own host)."
   mem_text="${mem_free_pct}%"; [ "$mem_free_pct" != unknown ] || mem_text=unknown
   disk_text="$disk_free_mb MB"; [ "$disk_free_mb" != unknown ] || disk_text=unknown
   echo "Host: load $load1 on $cores cores, memory free $mem_text, disk free $disk_text."
@@ -673,7 +684,7 @@ verdict_reasons=$pub_reasons
 
 doc=$(jq -n \
   --argjson now "$now" --arg home "$home" --arg machine "$machine" \
-  --arg lanes "$lanes" --arg pr_ready "$pr_ready" --arg lane_ids "$lane_ids" \
+  --arg lanes "$lanes" --arg pr_ready "$pr_ready" --arg lane_ids "$lane_ids" --arg placed "$placed" \
   --arg target "$target" --arg cap_status "$cap_status" --arg projects "$project_names" \
   --arg level "$level" --arg why "$pub_why" --arg basis "$basis" --arg beat_age "$beat_age_s" \
   --arg avail "$avail_gb" --arg total "$total_gb" --arg runq "$runq_per_core" \
@@ -688,7 +699,8 @@ doc=$(jq -n \
   def num: if . == "" then null else tonumber + 0 end;
   def lines: split("\n") | map(select(. != ""));
   {schema: "fm-lane-capacity.v1", generated_epoch: $now, home: $home, machine: $machine,
-   lanes: {count: ($lanes | tonumber), pr_ready: ($pr_ready | tonumber), ids: ($lane_ids | lines)},
+   lanes: {count: ($lanes | tonumber), pr_ready: ($pr_ready | tonumber), ids: ($lane_ids | lines),
+     placed: ($placed | tonumber)},
    cap: {target: (if $cap_status == "ok" then ($target | tonumber) else null end), status: $cap_status},
    projects: ($projects | lines),
    pressure: {level: $level, why: ($why | lines), basis: $basis, beat_age_s: ($beat_age | num),

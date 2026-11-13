@@ -106,6 +106,25 @@ test_target_yields_open_lanes_and_full() {
   pass "a target yields open lanes, full, and never a negative count"
 }
 
+test_placed_tasks_hold_no_lane_here() {
+  local home fakebin out doc
+  home=$(make_home placed 1 0)
+  fakebin=$(make_probes "$TMP_ROOT/p-placed" 0.50 60 8 20971520)
+  fm_write_meta "$home/state/far-1.meta" "kind=ship" "remote_worker_host=mbp" "remote_home=/hosts/mbp"
+  fm_write_meta "$home/state/far-2.meta" "kind=scout" "remote_worker_host=mbp" "remote_home=/hosts/mbp"
+  printf '3\n' > "$home/config/lane-capacity"
+  out=$(run_capacity "$home" "$fakebin")
+  assert_contains "$out" 'capacity: free_lanes=2 reason=ok lanes=1 target=3 ' \
+    "tasks placed on a worker host must not hold lanes on this machine"
+  assert_contains "$(printf '%s\n' "$out" | head -1)" ' placed=2' "placed tasks must be reported separately"
+  if command -v jq >/dev/null 2>&1; then
+    doc=$(capacity_doc "$home" "$fakebin")
+    assert_equals '1 2 ["ship-0"]' "$(printf '%s' "$doc" | jq -r '"\(.lanes.count) \(.lanes.placed) \(.lanes.ids | tojson)"')" \
+      "the document must count placed tasks apart from this machine's lanes"
+  fi
+  pass "a task placed on a worker host counts against that host, not this machine"
+}
+
 test_host_constraints_close_lanes() {
   local home fakebin out
   home=$(make_home constrained 1 0)
@@ -527,6 +546,7 @@ test_watcher_publishes_only_when_opted_in() {
 test_no_target_prints_counts_only
 test_no_target_never_prints_constrained_line
 test_target_yields_open_lanes_and_full
+test_placed_tasks_hold_no_lane_here
 test_host_constraints_close_lanes
 test_unavailable_probes_degrade
 test_invalid_target_is_reported

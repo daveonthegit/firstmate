@@ -860,6 +860,7 @@ tests/fm-pi-seeded-home-trust-live-e2e.test.sh 45
 tests/fm-pi-watch-extension.test.sh 56515
 tests/fm-pi-windows-shell-invocation.test.sh 5121
 tests/fm-placed-task-control.test.sh 47000
+tests/fm-placement.test.sh 90000
 tests/fm-polytoken-harness.test.sh 21090
 tests/fm-polytoken-signals-live-e2e.test.sh 103
 tests/fm-pr-check-host.test.sh 27000
@@ -1637,6 +1638,7 @@ families_for_changed_path() {
       printf '%s\n' secondmate
       printf '%s\n' "__script__:fm-remote-worker-control.test.sh"
       printf '%s\n' "__script__:fm-pr-check-host.test.sh"
+      printf '%s\n' "__script__:fm-placement.test.sh"
       printf '%s\n' "__script__:fm-remote-worker-mirror.test.sh"
       printf '%s\n' "__script__:fm-teardown-host.test.sh"
       printf '%s\n' "__script__:fm-handoff-host.test.sh"
@@ -1677,6 +1679,10 @@ families_for_changed_path() {
       ;;
     bin/fm-capacity.sh)
       printf '%s\n' "__script__:fm-capacity.test.sh"
+      printf '%s\n' "__script__:fm-placement.test.sh"
+      ;;
+    bin/fm-placement.sh)
+      printf '%s\n' "__script__:fm-placement.test.sh"
       ;;
     bin/fm-env-lib.sh)
       # The one .env accessor, sourced by bin/fm-x-lib.sh (Relay token) and

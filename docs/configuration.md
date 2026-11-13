@@ -868,7 +868,7 @@ The file is a home-local site choice and is not inherited by secondmate homes; `
 The optional local, gitignored `config/lane-capacity` file says how many ship and scout lanes this home should run at once, and when it should stop taking more.
 `bin/fm-capacity.sh` reads it to report how many lanes are open for queued work, alongside running lanes, 1-minute load against logical cores, free memory, and free disk.
 With the file absent nothing changes: the report prints counts and host figures only, never invents a target, never advises holding dispatch, and nothing is published; a malformed value is reported as invalid rather than guessed.
-Persistent secondmates hold no lane.
+Persistent secondmates hold no lane, and a ship or scout placed on a worker host holds its lane on that host, never on the supervisor's machine.
 The file is a per-machine choice and is not inherited by secondmate homes, so each home owns its own numbers.
 
 The first non-comment line is the cap, one non-negative integer, so a file holding only that integer keeps its earlier meaning.
@@ -894,9 +894,10 @@ A pressure file is any producer of the `lookout.beat` 1.x shape, read by its own
 `quota-provider` is the only key that makes the script reach the network, through `quota-axi`, bounded to five seconds.
 
 While the file exists, the watcher runs `bin/fm-capacity.sh --publish` detached at most every 30 seconds, writing this home's lane facts to `state/lane-capacity.json`: its lanes, its cap and limits, its machine's pressure and boots, its watcher's freshness, and its own admission verdict.
-Publishing is best-effort and never changes what the watcher does; no spawn reads the verdict.
-`bin/fm-capacity.sh --admit` is an advisory check of the same verdict: it exits 0 when the verdict admits or the file is absent, and reports the reasons on stderr with exit 75 when it does not.
-No Firstmate script calls it.
+Publishing is best-effort and never changes what the watcher does; no spawn reads the published document.
+`bin/fm-capacity.sh --admit` checks the same verdict: it exits 0 when the verdict admits or the file is absent, and reports the reasons on stderr with exit 75 when it does not.
+A cross-machine hand-off asks it of the machine it moves a task to; [automatic placement](#automatic-placement-configauto-placement) ranks machines from their reports and rechecks admission under the destination's task-set lock before a fresh launch.
+An ordinary spawn on an explicitly named machine does not ask it.
 The script's header owns the report line, the published document's fields, the verdict, the beat freshness rules, the host-constraint thresholds, and the probe fallbacks.
 
 ## PR-ready line after green (config/ready-after-green)
@@ -1283,6 +1284,20 @@ Each line beginning with `- ` must be a record; other lines are ignored prose:
 
 `bin/fm-worker-host-lib.sh` owns parsing; the [`fm-on.sh` header](../bin/fm-on.sh) owns route selection across the worker host and remote second-mate registries.
 A malformed record stops routing rather than being skipped.
+
+## Automatic placement (config/auto-placement)
+
+The optional local, gitignored `config/auto-placement` presence flag lets a ship or scout spawned with no machine named run on whichever machine has the most room: this supervisor's own machine or any [worker host](#worker-hosts-dataworker-hostsmd), all treated as equals.
+Create it with `touch "$FM_HOME/config/auto-placement"`; remove it to restore the default.
+It is off by default: without the flag a fresh, unplaced task with no pending placement and no `--host` runs on this machine, without probing worker hosts.
+It is not inherited, and it is ignored in a secondmate home and in a worker host home, which never place work elsewhere.
+
+Automatic selection requires this machine's readable `config/lane-capacity` cap when its project clone is eligible; local-only automatic launches also require that cap.
+Each worker host is judged by its own cap.
+For an unplaced task with no pending placement, a machine named for the task always wins: `--host <id>` places it on that worker host, and `--host local` keeps it on this machine on purpose; these explicit choices do not check lane admission.
+The [`fm-spawn.sh` header](../bin/fm-spawn.sh) owns local-only options and their automatic admission checks.
+Pending-placement recovery, including its destination binding even after this setting is removed, is owned by the [`fm-spawn.sh` header](../bin/fm-spawn.sh), along with continuation exclusions and how the spawn tries the ranked machines.
+The [`fm-placement.sh` header](../bin/fm-placement.sh) owns eligibility, the load signal, the ranking and its tie-breaks, and its decision preview.
 
 ## Rescue remote (config/rescue-ssh)
 
