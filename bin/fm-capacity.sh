@@ -805,7 +805,7 @@ def dur: if . == null then "?" elif . >= 86400 then "\(. / 86400 | floor)d" elif
 | (if $cfg.max_lanes != null then $cfg.max_lanes - $mlanes else null end) as $ceil_open
 | {memory: $mem_open, cpu: $cpu_open, disk: $dbind.open, ceiling: $ceil_open} as $by
 | (if $measurable then ($by | to_entries | map(select(.value != null)) | if length == 0 then null else min_by(.value) end)
-   else null end) as $bind
+   elif $ceil_open != null then {key: "ceiling", value: $ceil_open} else null end) as $bind
 | (if $bind == null then 0 else ([$bind.value, 0] | max) end) as $raw
 | ($pd.verdict.free_lanes // null) as $prev_free
 | (if $pd == null then 0 else ([ $lanes[] | select(.spawn != null and .spawn >= $pd.generated_epoch) ] | length) end) as $since_publish
@@ -858,8 +858,8 @@ def dur: if . == null then "?" elif . >= 86400 then "\(. / 86400 | floor)d" elif
   ] as $gates
 | [ $gates[] | select(.state == "closed") ] as $closed
 | ($closed | map("\(.name): \(.what)" + (if .clear_count > 0 then " (clearing \(.clear_count) of \($reopen))" else "" end))) as $gate_reasons
-| (if $measurable or ($closed | length) > 0 then []
-   else ["memory unmeasurable: no memory probe available"] end) as $unmeasured_reasons
+| (if $measurable or ($closed | length) > 0 then [] elif $bind == null then ["memory unmeasurable: no memory probe, and no max-lanes ceiling to fall back on"]
+   else ["memory unmeasurable: admitting up to the static max-lanes ceiling only"] end) as $unmeasured_reasons
 | (($closed | length) == 0 and $open == 0 and $raw > 0) as $damped_out
 | (if ($closed | length) > 0 or $open > 0 or ($measurable | not) then []
    elif $damped_out then ["damped: \($since_publish) lanes started since the last publish against a published budget of \($prev_free)"]
@@ -867,6 +867,8 @@ def dur: if . == null then "?" elif . >= 86400 then "\(. / 86400 | floor)d" elif
       elif $bind.key == "cpu" then "cpu: load \($cpu_load | n2) of \($cores * 0.85 | r2) usable on \($cores) cores, \($young) starting, a lane needs \($fp.cpu_cores) core"
       elif $bind.key == "disk" then "disk: \($dbind.label) \($dbind.free_gb | n2) GB free, \($min_disk) GB kept, \($young) starting, a lane needs \($fp.disk_gb) GB"
       else "ceiling: \($mlanes) of \($cfg.max_lanes) lanes on this machine (max-lanes)" end) ] end) as $budget_reasons
+| ($unmeasured_reasons + (if $measurable or ($closed | length) > 0 or $open > 0 or $bind == null then []
+   else ["ceiling: \($mlanes) of \($cfg.max_lanes) lanes on this machine (max-lanes)"] end)) as $unmeasured_reasons
 | (if ($closed | length) > 0 then ($closed | map(.name)) elif $open > 0 then ["ok"] elif $damped_out then ["damped"]
    elif $bind == null then ["unmeasurable"] else [$bind.key] end) as $names
 | ($own | map(. as $l | $ll[$l.id] as $e
@@ -1080,7 +1082,7 @@ auto_budget() {
     return 0
   fi
   auto_doc=$(printf '%s' "$out" | jq -c '.doc')
-  target=$(printf '%s' "$auto_doc" | jq -r 'if .budget.measured then .budget.lanes else "unknown" end')
+  target=$(printf '%s' "$auto_doc" | jq -r '.budget.lanes')
   auto_ledger=$(printf '%s' "$out" | jq -c '.ledger')
   v=$(printf '%s' "$out" | jq -r '.reasons[]')
   if [ -n "$v" ]; then
