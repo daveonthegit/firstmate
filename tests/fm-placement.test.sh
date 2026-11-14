@@ -218,6 +218,89 @@ auto_spawn() {  # <id> [extra args] -> SPAWN_OUT SPAWN_RC
 
 # --- the placement decision -------------------------------------------------
 
+test_adaptive_machines_rank_by_measured_budget() {
+  local tools
+  make_case adaptive
+  for tools in "$PRIMARY_BIN" "$HOST_BIN"; do
+    printf '#!/usr/bin/env bash\necho Darwin\n' > "$tools/uname"
+    cat > "$tools/sysctl" <<'SH'
+#!/usr/bin/env bash
+case "$2" in
+  vm.loadavg) echo '{ 0.50 0.50 0.50 }' ;;
+  kern.memorystatus_level) echo 50 ;;
+  hw.logicalcpu) echo 8 ;;
+  hw.memsize) echo 17179869184 ;;
+  kern.memorystatus_vm_pressure_level) echo 1 ;;
+esac
+SH
+    cat > "$tools/pmset" <<'SH'
+#!/usr/bin/env bash
+case "$2" in
+  batt) echo "Now drawing from 'AC Power'" ;;
+  therm) echo 'Note: No thermal warning level has been recorded' ;;
+esac
+SH
+    printf '#!/usr/bin/env bash\nexit 0\n' > "$tools/vm_stat"
+    chmod +x "$tools/uname" "$tools/sysctl" "$tools/pmset" "$tools/vm_stat"
+  done
+  set_cap "$PARENT" auto
+  set_cap "$HOST_A" auto
+  printf 'max-lanes 100\n' >> "$PARENT/config/lane-capacity"
+  printf 'max-lanes 200\n' >> "$HOST_A/config/lane-capacity"
+  busy "$PARENT" 1
+  place
+  expect_code 0 "$PLACE_RC" "adaptive placement ($PLACE_OUT)"
+  assert_contains "$PLACE_OUT" 'placement: this machine admits' "adaptive local machine was excluded"
+  assert_contains "$PLACE_OUT" 'placement: worker host mbp admits' "adaptive worker host was excluded"
+  assert_equals 'mbp local' "$(order)" "an empty adaptive host must outrank a busy local machine, regardless of ceilings"
+  rm "$PARENT/state/busy-0.meta"
+  busy "$HOST_A" 1
+  place
+  expect_code 0 "$PLACE_RC" "adaptive local placement ($PLACE_OUT)"
+  assert_equals 'local mbp' "$(order)" "an empty adaptive local machine must outrank a busy worker host"
+  for tools in "$PRIMARY_BIN" "$HOST_BIN"; do
+    cat > "$tools/sysctl" <<'SH'
+#!/usr/bin/env bash
+case "$2" in
+  vm.loadavg) echo '{ 0.50 0.50 0.50 }' ;;
+  hw.logicalcpu) echo 8 ;;
+esac
+SH
+  done
+  for tools in "$PARENT" "$HOST_A"; do
+    jq 'del(.machine.mem)' "$tools/beat.json" > "$tools/beat.tmp"
+    mv "$tools/beat.tmp" "$tools/beat.json"
+  done
+  place
+  expect_code 0 "$PLACE_RC" "unmeasured adaptive placement ($PLACE_OUT)"
+  assert_contains "$PLACE_OUT" 'this machine skipped - no measured adaptive budget yet' "local ceiling fallback was ranked as free"
+  assert_contains "$PLACE_OUT" 'worker host mbp skipped - no measured adaptive budget yet' "remote ceiling fallback was ranked as free"
+  assert_equals '' "$(order)" "unmeasured machines must never be ranked"
+  pass "adaptive local and fake-SSH hosts rank measured budgets and skip ceiling-only fallbacks"
+}
+
+test_remote_dispatch_binding_and_override() {
+  make_case dispatch-binding
+  printf '{}\n' > "$PARENT/config/crew-dispatch.json"
+  set_cap "$PARENT" 2
+  set_cap "$HOST_A" 2
+  make_brief d1 --mode local-only
+  add_item d1
+  printf '{"task":"d1","status":"clear","profile":{"harness":"codex"}}\n' > "$PARENT/data/d1/dispatch-resolution.json"
+  auto_spawn d1 --host mbp
+  expect_code 1 "$SPAWN_RC" "mismatched explicit remote dispatch"
+  assert_contains "$SPAWN_OUT" 'launch flags do not match the clear dispatch selection' "remote dispatch bypassed the recorded choice"
+  assert_equals 0 "$(windows "$HOST_BIN")" "rejected dispatch launched remotely"
+  : > "$PARENT/config/auto-placement"
+  auto_spawn d1
+  expect_code 1 "$SPAWN_RC" "mismatched automatic dispatch"
+  assert_contains "$SPAWN_OUT" 'launch flags do not match the clear dispatch selection' "automatic dispatch bypassed the recorded choice"
+  auto_spawn d1 --host mbp --dispatch-override 'authorized test override'
+  expect_code 0 "$SPAWN_RC" "authorized remote dispatch ($SPAWN_OUT)"
+  assert_grep 'dispatch_override=authorized test override' "$HOST_A/state/d1.meta" "remote spawn lost its override reason"
+  pass "remote and automatic dispatch enforce recorded choices and forward authorized overrides"
+}
+
 test_share_of_own_cap_wins() {
   make_case share
   set_cap "$PARENT" 2
@@ -709,7 +792,7 @@ test_pending_recovery_rechecks_admission() {
   pass "unnamed pending recovery defers when its host filled before launch"
 }
 
-fm_test_run test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_machine \
+fm_test_run test_remote_dispatch_binding_and_override test_adaptive_machines_rank_by_measured_budget test_share_of_own_cap_wins test_ties_break_on_open_lanes_then_this_machine \
   test_unreachable_and_uncapped_hosts_are_skipped test_this_machine_needs_its_cap \
   test_placed_tasks_count_on_their_host \
   test_spawn_off_by_default test_spawn_places_on_the_emptier_host \
