@@ -1359,7 +1359,7 @@ FIELDS
 # a line-oriented split the name where it expects the url, and arming would
 # then refuse every host. A login matches when its url's host - scheme,
 # userinfo, port, and path stripped - is exactly <host>. bin/fm-pr-poll.sh keeps
-# its own copy of this filter because the watcher body sources nothing.
+# its own copy of this filter because its Forgejo branch sources nothing.
 # shellcheck disable=SC2016 # $h is a jq variable bound by --arg, not a shell one.
 FM_PR_FORGEJO_LOGIN_JQ='
   if type == "array" then

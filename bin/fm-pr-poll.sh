@@ -73,8 +73,8 @@ esac
 # spelled URL. The host is one of those components: a GitHub Enterprise host is
 # recorded only by bin/fm-pr-lib.sh after this home named it in
 # config/github-hosts, and it is re-checked for shape here like every other
-# provider's, because this static body reads no config (its GitHub branch sources
-# only bin/fm-pr-lib.sh, for repository account selection).
+# provider's. This static body does not re-read config/github-hosts; its GitHub
+# branch can source bin/fm-pr-lib.sh for repository account selection.
 case "$provider" in
   github)
     [ "${#host}" -ge 1 ] && [ "${#host}" -le 253 ] || exit 0

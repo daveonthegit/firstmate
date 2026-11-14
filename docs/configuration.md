@@ -2412,6 +2412,7 @@ Secondmates inherit the mapping.
 Spawn resolves a ship or scout lane's account before endpoint creation and records `gh_account=` separately from upstream's model-provider `account=` pin.
 A secondmate launch selects and carries no account, because its home resolves each repository from its own mapping; relaunch removes the previous launch's account pin and clears its pane's `GH_TOKEN`.
 Forge reads and merges likewise use the repository's account.
+A standalone copy of `bin/fm-pr-poll.sh` falls back to `gh`'s own account only when it cannot locate the Firstmate code root's `bin/fm-pr-lib.sh`; normal watcher polls use repository-keyed selection.
 
 A lane-wide credential cannot reach no-mistakes' shared daemon.
 [`bin/fm-install-gh-shim.sh`](../bin/fm-install-gh-shim.sh) can install the repository-aware [`fm-gh-shim.sh`](../bin/fm-gh-shim.sh) ahead of real `gh` on PATH, without restarting the daemon or changing account state.
