@@ -64,6 +64,10 @@ The new `tests/fm-remote-herdr-identity.test.sh` serial hint is provisionally 61
 ## Parallel lanes
 
 The two parallel lanes use longest-processing-time assignment over those hints.
+The parallel hints were refreshed from every completed, passing `FM_TEST_END` sample in Ubuntu run [43577651653](https://github.com/daveonthegit/firstmate/actions/runs/43577651653), retaining older hints where higher, and both lane lists were rebalanced.
+That run's parallel lane 2 completed all 14 scripts successfully in 1793088 ms but reached the 30-minute job cap; stale hints had underestimated the fork's merged suites, including PR merge, lint, and the test runner.
+The refreshed lane estimates are 1564363 ms and 1564804 ms, leaving roughly four minutes below the unchanged job cap before setup and artifact overhead.
+These are modeled sums of passing script measurements, not completed rebalanced-job timings or a guarantee of future headroom.
 [`tests/fm-pi-primary-types.test.sh`](../tests/fm-pi-primary-types.test.sh) owns its typecheck dependencies independently of the lane's installed Pi runtime.
 [`bin/fm-test-run.sh`](../bin/fm-test-run.sh) holds the duration values in `portable_parallel_weight_hints` and the ordered memberships and lane-specific prerequisite constraints beside `list_portable_parallel_1` and `list_portable_parallel_2`.
 Read the derived packing estimates with that runner's `--check-coverage`; its header and `--help` own the output fields and the selection-specific `--list-scheduled` weight rules.
