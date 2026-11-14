@@ -1,0 +1,5 @@
+ok - fm-pr-merge sends a matching --expected-head to each forge
+ok - fm-pr-merge refuses before any merge write when the live head differs from --expected-head
+ok - fm-pr-merge binds the forge write to the supplied head after that head moves
+ok - fm-pr-merge refuses a malformed, abbreviated, missing, or conflicting --expected-head before any effect
+FOCUSED_CHECK_COMPLETE

@@ -1,0 +1,7 @@
+ok - disposable watcher refuses inherited state outside its marked lab
+ok - tombstone cleanup respects a live reaper and recovers a recycled reaper pid
+ok - dead real-directory primary and steal locks recover without leaked owners
+ok - a live nested owner blocks reclamation even in an old directory
+ok - unreapable real-directory locks refuse promptly naming the wedged path
+ok - inaccessible primary and steal directories refuse by name on both session claim paths
+FOCUSED_CHECK_COMPLETE

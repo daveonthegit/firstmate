@@ -1,0 +1,5 @@
+# all fm-capacity-auto tests passed
+ok - remote routes in this and sibling homes leave adaptive capacity available
+ok - an integer first line keeps fixed mode and its document unchanged
+ok - auto mode runs against this real host
+FOCUSED_CHECK_COMPLETE

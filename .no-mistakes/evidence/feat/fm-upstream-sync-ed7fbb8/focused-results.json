@@ -1,0 +1,55 @@
+{
+  "fm-stow-guard": {
+    "exit": 0,
+    "selectors": [
+      "existing file"
+    ]
+  },
+  "fm-watcher-lock": {
+    "exit": 0,
+    "selectors": [
+      "test_lock_real_directory_residue",
+      "test_lock_real_directory_live_nested_owner",
+      "test_lock_real_directory_named_refusal",
+      "test_lock_real_directory_permission_refusal"
+    ]
+  },
+  "fm-capacity-auto": {
+    "exit": 0,
+    "selectors": [
+      "test_remote_routes_do_not_consume_adaptive_lanes",
+      "test_fixed_mode_is_unchanged",
+      "test_real_host_auto_smoke"
+    ]
+  },
+  "fm-teardown": {
+    "exit": 0,
+    "selectors": [
+      "test_record_export_archives_before_teardown_or_preserves_sources_on_failure",
+      "test_landed_on_other_origin_branch_with_stale_refs_allows",
+      "test_refresh_failure_does_not_read_as_landed",
+      "test_refreshed_refs_still_refuse_unreachable_commits"
+    ]
+  },
+  "fm-pr-merge": {
+    "exit": 0,
+    "selectors": [
+      "test_expected_head_matching_reaches_each_forge",
+      "test_expected_head_mismatch_refuses_before_merge",
+      "test_expected_head_push_after_verify_is_refused_by_the_forge",
+      "test_expected_head_bad_inputs_refuse_before_effects"
+    ]
+  },
+  "fm-placement": {
+    "exit": "timeout",
+    "selectors": [
+      "existing file"
+    ]
+  },
+  "fm-placement-adaptive": {
+    "exit": 0,
+    "selectors": [
+      "test_adaptive_machines_rank_by_measured_budget"
+    ]
+  }
+}

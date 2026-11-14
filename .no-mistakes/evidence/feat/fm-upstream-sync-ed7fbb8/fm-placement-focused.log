@@ -1,0 +1,17 @@
+1..19
+ok - remote and automatic dispatch enforce recorded choices and forward authorized overrides
+ok - adaptive local and fake-SSH hosts rank measured budgets and skip ceiling-only fallbacks
+ok - machines are ranked by open share of their own cap, and a host without the project is skipped
+ok - an equal share prefers more open lanes, then this machine
+ok - an unreachable host and a host without a lane cap are skipped, never treated as free
+ok - automatic placement refuses to judge without this machine's own lane cap
+ok - a task placed on a worker host holds no lane on the supervisor's machine
+ok - without config/auto-placement a spawn runs here exactly as before
+ok - a spawn with no machine named goes to the host with the larger open share
+ok - a spawn stays on this machine when it has the larger open share
+ok - --host local keeps a task on this machine on purpose
+ok - when no machine admits the task it stays queued with exit 75
+ok - a machine that defers at spawn passes the task to the next one
+ok - a placement whose answer was lost is re-run on the same host, never placed twice
+ok - automatic destinations recheck lanes while named destinations override
+ok - overlapping dispatch cannot bypass or overwrite pending ownership
