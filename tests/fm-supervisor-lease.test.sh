@@ -458,6 +458,63 @@ test_sync_commits_and_pushes() {
   pass "sync commits what data/.gitignore admits and pushes it"
 }
 
+test_outgoing_history_secret_scan() {
+  local w verb variant out status before head expected secret_blob
+  local -a args=()
+  for verb in sync push acquire release steal; do
+    for variant in present deleted replaced; do
+      w=$(new_pair "history-$verb-$variant")
+      records_home "$w" a
+      before=$(git -C "$w/remote.git" rev-parse main)
+      printf 'GH_TOKEN ghp_%s\n' 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12' > "$w/a/data/notes.md"
+      git -C "$w/a/data" add notes.md
+      git -C "$w/a/data" commit -qm 'local record'
+      secret_blob=$(git -C "$w/a/data" rev-parse HEAD:notes.md)
+      case "$variant" in
+        deleted) git -C "$w/a/data" rm -q notes.md; git -C "$w/a/data" commit -qm 'remove record' ;;
+        replaced)
+          printf 'clean replacement\n' > "$w/a/data/notes.md"
+          git -C "$w/a/data" commit -qam 'replace record'
+          ;;
+      esac
+      head=$(git -C "$w/a/data" rev-parse HEAD)
+      args=("$verb")
+      [ "$verb" != steal ] || args+=(--owner-approved)
+      expected=1
+      case "$verb" in sync|push) expected=4 ;; esac
+      status=0
+      out=$(lease "$w/a" "${args[@]}") || status=$?
+      expect_code "$expected" "$status" "$verb with a $variant secret in outgoing history"
+      assert_contains "$out" "$secret_blob:1: github-token" "outgoing scan did not identify the secret blob"
+      assert_not_contains "$out" 'ghp_ABCDEF' "outgoing scan disclosed the credential"
+      assert_equals "$before" "$(git -C "$w/remote.git" rev-parse main)" "$verb published credential-bearing history"
+      assert_equals "$head" "$(git -C "$w/a/data" rev-parse HEAD)" "$verb changed local history after scan refusal"
+      git -C "$w/remote.git" cat-file -e "$secret_blob" 2>/dev/null && fail "$verb transmitted the credential blob"
+      if [ "$verb" = sync ]; then
+        assert_contains "$(cat "$w/a/state/records-sync.last")" 'withheld:' "history refusal was not recorded as withheld"
+      fi
+    done
+  done
+  pass "all publication commands withhold current, deleted, and replaced credentials in local history"
+}
+
+test_clean_outgoing_history() {
+  local w out status
+  w=$(new_pair clean-history)
+  records_home "$w" a
+  printf 'clean local record\n' > "$w/a/data/notes.md"
+  git -C "$w/a/data" add notes.md
+  git -C "$w/a/data" commit -qm 'clean local record'
+  git -C "$w/a/data" rm -q notes.md
+  git -C "$w/a/data" commit -qm 'remove clean record'
+  status=0
+  out=$(lease "$w/a" sync) || status=$?
+  expect_code 0 "$status" 'sync with clean outgoing history'
+  assert_equals "$(git -C "$w/a/data" rev-parse HEAD)" "$(git -C "$w/remote.git" rev-parse main)" 'clean history was not published'
+  assert_equals 'clean local record' "$(git -C "$w/remote.git" show main~1:notes.md)" 'intermediate clean content was lost'
+  pass "clean intermediate local history still publishes"
+}
+
 test_sync_takeover_with_secret() {
   local w out status head
   w=$(new_pair sync-secret-takeover)
@@ -615,6 +672,8 @@ fm_test_run \
   test_lock_refuses_while_stood_down \
   test_sync_commits_and_pushes \
   test_sync_secret_scan_withholds \
+  test_outgoing_history_secret_scan \
+  test_clean_outgoing_history \
   test_sync_takeover_with_secret \
   test_sync_exclude_tracked_record \
   test_sync_off_homes \

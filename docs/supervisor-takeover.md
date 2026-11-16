@@ -8,7 +8,7 @@ It applies only to a home whose `data/` is a records repository with a remote, t
 The records remote holds tracked and non-ignored records: the backlog, captain preferences, learnings, briefs, reports, and the other curated records. Adding an already tracked file to `data/.gitignore` does not exclude it: also run `git -C data rm --cached -- <file>` and commit the removal before retrying sync; this retains the local copy.
 It never holds `state/` (task records, status logs, the wake queue), `config/`, or `projects/`, so those start empty or stale on the other machine.
 The supervising machine keeps the remote current with the records sync: after every `/stow`, after every task cleanup, and at least hourly while its watcher runs.
-A sync withheld by its secret scan, or one that could not reach the remote, leaves the remote behind until a later sync succeeds; `state/records-sync.last` on the supervising machine records the last outcome.
+The publication scan also checks unpushed history, including files deleted in later local commits; committed credentials must be removed from that history before retrying, not merely deleted in a new commit. A sync withheld by its secret scan, or one that could not reach the remote, leaves the remote behind until a later sync succeeds; `state/records-sync.last` on the supervising machine records the last outcome.
 The [`bin/fm-supervisor-lease.sh` header](../bin/fm-supervisor-lease.sh) owns the sync, its scan, and its allowlist.
 
 ## Take over

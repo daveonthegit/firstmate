@@ -95,7 +95,10 @@
 #          known false positives belong in the allowlist.
 #       5. A clean change is committed as `records: sync <UTC> (<reason>)` and
 #          data/'s index is reset to it. Nothing changed commits nothing.
-#       6. push runs, with its exit status (a deferred push keeps the commit).
+#       6. push scans every outgoing blob, including earlier local commits
+#          and files later deleted, before publishing. Findings exit 4; remove
+#          credentials from unpushed history before retrying, never allowlist
+#          them. A deferred or withheld push keeps the local commits.
 #       Every sync past the off checks touches state/.last-records-sync, the
 #       cadence bin/fm-watch.sh's hourly sync reads, and records its outcome in
 #       state/records-sync.last. --notify (the watcher's run) also queues one
@@ -298,11 +301,39 @@ fast_forward() {
   return 0
 }
 
-# push_commit <commit>: 0 accepted, 1 rejected, 2 transport failure.
+scan_outgoing() (
+  local dir objects oid kind out rc
+  local -a revisions=("$1")
+  [ -z "$REMOTE_TIP" ] || revisions+=("^$REMOTE_TIP")
+  dir=$(mktemp -d "${TMPDIR:-/tmp}/fm-records-outgoing.XXXXXX") || return 4
+  trap 'rm -rf "$dir"' EXIT
+  objects=$(g rev-list --objects --no-object-names "${revisions[@]}") || return 4
+  while IFS= read -r oid; do
+    [ -n "$oid" ] || continue
+    kind=$(g cat-file -t "$oid") || return 4
+    [ "$kind" = blob ] || continue
+    g cat-file blob "$oid" > "$dir/$oid" || return 4
+    out=$(cd "$dir" && "$SCRIPT_DIR/fm-secret-scan.sh" \
+      --allowlist "$CONFIG/secret-scan-allowlist" -- "$oid" 2>&1) && rc=0 || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      printf '%s\n' "$out"
+      return 4
+    fi
+    rm -f "$dir/$oid"
+  done <<< "$objects"
+)
+
+# push_commit <commit>: 0 accepted, 1 rejected, 2 transport failure, 4 withheld.
 PUSH_ERR=
 push_commit() {
   local out rc
   PUSH_ERR=
+  out=$(scan_outgoing "$1") && rc=0 || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    PUSH_ERR="the outgoing records secret scan withheld publication${out:+: $out}"
+    say "withheld: $PUSH_ERR"
+    return 4
+  fi
   out=$(net push --porcelain "$REMOTE" "$1:refs/heads/$REMOTE_BRANCH" 2>&1) && rc=0 || rc=$?
   [ "$rc" -ne 0 ] || return 0
   if printf '%s\n' "$out" | grep -q '^!'; then
@@ -475,6 +506,7 @@ cmd_acquire() {
       say "held by this machine at epoch $((L_EPOCH + 1))"
       exit 0
       ;;
+    4) refuse "$PUSH_ERR; the lease was not taken" ;;
     1)
       refuse "the records push was rejected ($PUSH_ERR): another machine moved the lease first"
       ;;
@@ -549,6 +581,7 @@ cmd_steal() {
     || { say "refused: could not write the steal commit"; exit 1; }
   if [ "$reachable" -eq 1 ]; then
     push_commit "$new" && rc=0 || rc=$?
+    [ "$rc" -ne 4 ] || refuse "$PUSH_ERR; the lease was not stolen"
     if [ "$rc" -eq 1 ]; then
       refuse "the steal push was rejected ($PUSH_ERR); the records moved meanwhile - run steal again"
     fi
@@ -608,6 +641,7 @@ cmd_push() {
   push_commit "$head" && rc=0 || rc=$?
   case "$rc" in
     0) say "pushed: records at $(g rev-parse --short HEAD) with the lease at epoch $epoch"; exit 0 ;;
+    4) exit 4 ;;
     1) stand_down_push "the records push was rejected ($PUSH_ERR)" ;;
     *) say "deferred: the records push did not complete ($PUSH_ERR); commits stay local until the next push"; exit 3 ;;
   esac
@@ -741,6 +775,7 @@ cmd_sync() {
   case "$rc" in
     0) sync_finish 0 "synced: $(g rev-parse --short HEAD)" ;;
     3) sync_finish 3 "deferred: the records push did not reach the remote" ;;
+    4) sync_finish 4 "withheld: $out" ;;
     *) sync_finish "$rc" "refused: $(printf '%s\n' "$out" | grep -m 1 -E '^supervisor-lease: (refused|STOOD DOWN)' | sed 's/^supervisor-lease: //')" ;;
   esac
 }
