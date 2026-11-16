@@ -74,23 +74,25 @@
 #       An unreachable remote is not a stand-down: it exits 3 and the commits
 #       wait for the next push.
 #   fm-supervisor-lease.sh sync [--if-active] [--notify] [--reason <text>]
-#       The routine records sync: commit what data/.gitignore admits, then push.
+#       The routine records sync: commit tracked and non-ignored records, then push.
 #       Off (exit 0, no git run) for a home with no active records repository,
 #       a worker-host home, and a secondmate home (.fm-secondmate-home);
 #       --if-active makes those cases silent, for triggers that run everywhere.
 #       Otherwise, holding state/.records-sync.lock (another sync holding it past
 #       the wait is deferred, exit 3):
 #       1. A recorded stand-down refuses (exit 1) without committing.
-#       2. A local lease that no longer names this machine commits nothing and
-#          goes straight to push, which stands the session down.
-#       3. Everything data/.gitignore admits is staged into a private index
+#       2. Check local and reachable remote lease ownership before staging;
+#          a lost lease stands the session down even if scanning would refuse.
+#       3. Tracked and non-ignored records are staged into a private index
 #          built from HEAD; data/'s own index and work tree are not touched.
 #       4. bin/fm-secret-scan.sh scans exactly the staged content that differs
 #          from HEAD, with config/secret-scan-allowlist as its allowlist. Any
 #          finding (or a scan that cannot complete) commits and pushes nothing
 #          and exits 4, printing each finding as `<file>:<line>: <rule>` and
-#          never the matched value; exclude the file in data/.gitignore or
-#          allowlist the false positive, and the next sync carries it.
+#          never the matched value; exclude the file in data/.gitignore. For
+#          tracked files, also git rm --cached -- <file> in data/ and commit
+#          that removal before retrying; the local copy is retained. Only
+#          known false positives belong in the allowlist.
 #       5. A clean change is committed as `records: sync <UTC> (<reason>)` and
 #          data/'s index is reset to it. Nothing changed commits nothing.
 #       6. push runs, with its exit status (a deferred push keeps the commit).
@@ -562,8 +564,8 @@ cmd_steal() {
   exit 0
 }
 
-cmd_push() {
-  local me head text remote_text rc
+check_push_lease() {
+  local me head text remote_text
   if worker_host_home; then
     say "refused: this is a worker-host home (.fm-worker-host), which never pushes records"
     exit 1
@@ -596,6 +598,13 @@ cmd_push() {
     fi
     stand_down_push "the records remote moved past this machine's records"
   fi
+}
+
+cmd_push() {
+  local head epoch rc
+  check_push_lease
+  head=$(g rev-parse HEAD)
+  epoch=$L_EPOCH
   push_commit "$head" && rc=0 || rc=$?
   case "$rc" in
     0) say "pushed: records at $(g rev-parse --short HEAD) with the lease at epoch $epoch"; exit 0 ;;
@@ -640,7 +649,7 @@ sync_finish() {
   exit "$rc"
 }
 
-# sync_stage: builds SYNC_IDX from HEAD plus everything data/.gitignore admits.
+# sync_stage: builds SYNC_IDX from HEAD plus tracked and non-ignored records.
 sync_stage() {
   SYNC_IDX=$(mktemp "${TMPDIR:-/tmp}/fm-records-index.XXXXXX") || return 1
   rm -f "$SYNC_IDX"
@@ -692,6 +701,11 @@ cmd_sync() {
     say "refused: this home already stood down ($(head -n 1 "$LOST_MARKER" 2>/dev/null)); no records sync"
     sync_finish 1 "refused: this home stood down"
   fi
+  out=$(check_push_lease) && rc=0 || rc=$?
+  if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then
+    [ -z "$out" ] || printf '%s\n' "$out"
+    sync_finish "$rc" "refused: $out"
+  fi
   me=$(machine_id) || sync_finish 1 "refused: this machine's id is unknown"
   head=$(g rev-parse --verify --quiet HEAD 2>/dev/null || true)
   [ -n "$head" ] || { say "nothing to sync: data/ has no commits"; sync_finish 0 "nothing to sync"; }
@@ -703,7 +717,8 @@ cmd_sync() {
       count=$(printf '%s\n' "$SYNC_FINDINGS" | grep -c .)
       printf '%s\n' "$SYNC_FINDINGS" | sed 's/^/supervisor-lease: secret scan: /'
       say "withheld: the secret scan flagged $count staged record line(s); nothing was committed or pushed"
-      say "exclude each file in data/.gitignore, or allowlist a false positive in config/secret-scan-allowlist, then sync again"
+      say "exclude each file in data/.gitignore; for tracked files, also run git rm --cached -- <file> in data/ and commit that removal before retrying (the local copy stays)"
+      say "only allowlist known false positives in config/secret-scan-allowlist; never allowlist a real credential"
       sync_finish 4 "withheld: $(printf '%s\n' "$SYNC_FINDINGS" | tr '\n' ' ' | sed 's/ $//')"
     fi
     tree=$(GIT_INDEX_FILE=$SYNC_IDX g write-tree) || sync_finish 1 "refused: could not write the records tree"

@@ -458,6 +458,43 @@ test_sync_commits_and_pushes() {
   pass "sync commits what data/.gitignore admits and pushes it"
 }
 
+test_sync_takeover_with_secret() {
+  local w out status head
+  w=$(new_pair sync-secret-takeover)
+  records_home "$w" a
+  head=$(git -C "$w/a/data" rev-parse HEAD)
+  printf 'GH_TOKEN ghp_%s\n' 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12' > "$w/a/data/notes.md"
+  lease "$w/b" steal --owner-approved >/dev/null || fail "takeover failed"
+  status=0
+  out=$(lease "$w/a" sync --notify) || status=$?
+  expect_code 1 "$status" "sync after takeover with a credential"
+  assert_contains "$out" "STOOD DOWN" "scan refusal masked lease loss"
+  [ -f "$w/a/state/.supervisor-lease-lost" ] || fail "sync did not persist stand-down"
+  assert_equals "$head" "$(git -C "$w/a/data" rev-parse HEAD)" "lost holder committed records"
+  git -C "$w/remote.git" cat-file -e main:notes.md 2>/dev/null && fail "credential reached the remote"
+  pass "sync detects takeover before a credential can withhold it"
+}
+
+test_sync_exclude_tracked_record() {
+  local w status out
+  w=$(new_pair sync-exclude-tracked)
+  records_home "$w" a
+  printf 'clean\n' > "$w/a/data/notes.md"
+  lease "$w/a" sync >/dev/null || fail "initial notes sync failed"
+  printf 'GH_TOKEN ghp_%s\n' 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12' > "$w/a/data/notes.md"
+  printf '/notes.md\n' >> "$w/a/data/.gitignore"
+  status=0
+  out=$(lease "$w/a" sync) || status=$?
+  expect_code 4 "$status" "ignore rules do not exclude tracked records"
+  git -C "$w/a/data" rm -q --cached -- notes.md || fail "could not untrack notes"
+  git -C "$w/a/data" add .gitignore
+  git -C "$w/a/data" commit -qm 'exclude local notes'
+  lease "$w/a" sync >/dev/null || fail "documented exclusion recovery failed"
+  [ -f "$w/a/data/notes.md" ] || fail "exclusion removed the local copy"
+  git -C "$w/remote.git" cat-file -e main:notes.md 2>/dev/null && fail "excluded notes stayed on the remote"
+  pass "committing tracked-file exclusion retains the local copy and unblocks sync"
+}
+
 test_sync_secret_scan_withholds() {
   local w out status head before remote_head queued
   w=$(new_pair scan)
@@ -578,6 +615,8 @@ fm_test_run \
   test_lock_refuses_while_stood_down \
   test_sync_commits_and_pushes \
   test_sync_secret_scan_withholds \
+  test_sync_takeover_with_secret \
+  test_sync_exclude_tracked_record \
   test_sync_off_homes \
   test_sync_unreachable_and_lost_lease \
   test_watcher_surfaces_a_withheld_hourly_sync
