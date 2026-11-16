@@ -73,6 +73,33 @@
 #       local lease that no longer names this host stands this session down.
 #       An unreachable remote is not a stand-down: it exits 3 and the commits
 #       wait for the next push.
+#   fm-supervisor-lease.sh sync [--if-active] [--notify] [--reason <text>]
+#       The routine records sync: commit what data/.gitignore admits, then push.
+#       Off (exit 0, no git run) for a home with no active records repository,
+#       a worker-host home, and a secondmate home (.fm-secondmate-home);
+#       --if-active makes those cases silent, for triggers that run everywhere.
+#       Otherwise, holding state/.records-sync.lock (another sync holding it past
+#       the wait is deferred, exit 3):
+#       1. A recorded stand-down refuses (exit 1) without committing.
+#       2. A local lease that no longer names this machine commits nothing and
+#          goes straight to push, which stands the session down.
+#       3. Everything data/.gitignore admits is staged into a private index
+#          built from HEAD; data/'s own index and work tree are not touched.
+#       4. bin/fm-secret-scan.sh scans exactly the staged content that differs
+#          from HEAD, with config/secret-scan-allowlist as its allowlist. Any
+#          finding (or a scan that cannot complete) commits and pushes nothing
+#          and exits 4, printing each finding as `<file>:<line>: <rule>` and
+#          never the matched value; exclude the file in data/.gitignore or
+#          allowlist the false positive, and the next sync carries it.
+#       5. A clean change is committed as `records: sync <UTC> (<reason>)` and
+#          data/'s index is reset to it. Nothing changed commits nothing.
+#       6. push runs, with its exit status (a deferred push keeps the commit).
+#       Every sync past the off checks touches state/.last-records-sync, the
+#       cadence bin/fm-watch.sh's hourly sync reads, and records its outcome in
+#       state/records-sync.last. --notify (the watcher's run) also queues one
+#       `check: records-sync` wake when a scan finding or refusal differs from
+#       the previously recorded outcome; a stand-down queues only its own
+#       supervisor-lease-lost wake.
 #
 # STAND-DOWN. state/.supervisor-lease-lost (one line: reason and UTC time)
 # records that this home no longer holds the lease. While it exists,
@@ -83,12 +110,14 @@
 # steal clears it.
 #
 # Output lines start with `supervisor-lease:`. Exit status: 0 held, confirmed,
-# unconfirmed, released, or off; 1 refused (stay read-only); 2 usage; 3 push
-# deferred because the remote is unreachable.
+# unconfirmed, released, synced, or off; 1 refused (stay read-only); 2 usage;
+# 3 push or sync deferred because the remote is unreachable or another sync is
+# running; 4 sync withheld by the secret scan.
 #
 # Environment: FM_HOME, FM_DATA_OVERRIDE, FM_STATE_OVERRIDE, FM_CONFIG_OVERRIDE
 # select the home. FM_SUPERVISOR_LEASE_TIMEOUT bounds each network call in
-# seconds (default 15).
+# seconds (default 15). FM_RECORDS_SYNC_LOCK_WAIT bounds sync's wait for another
+# sync in seconds (default 60).
 set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -575,6 +604,132 @@ cmd_push() {
   esac
 }
 
+# --- records sync --------------------------------------------------------------
+
+SYNC_LOCK="$STATE/.records-sync.lock"
+SYNC_LAST="$STATE/records-sync.last"
+SYNC_IDX='' SYNC_SCAN_DIR=''
+
+sync_off() {  # <message>
+  [ "$SYNC_IF_ACTIVE" -eq 1 ] || say "$1"
+  exit 0
+}
+
+sync_cleanup() {
+  [ -z "$SYNC_IDX" ] || rm -f "$SYNC_IDX" 2>/dev/null || true
+  [ -z "$SYNC_SCAN_DIR" ] || rm -rf "$SYNC_SCAN_DIR" 2>/dev/null || true
+  fm_lock_release "$SYNC_LOCK" 2>/dev/null || true
+}
+
+# sync_finish <exit> <outcome>: records the outcome, queues a --notify wake when
+# an actionable outcome changed, and exits.
+sync_finish() {
+  local rc=$1 outcome=$2 previous
+  previous=$(head -n 1 "$SYNC_LAST" 2>/dev/null || true)
+  printf '%s\n' "$outcome" > "$SYNC_LAST" 2>/dev/null || true
+  if [ "$SYNC_NOTIFY" -eq 1 ] && [ "$outcome" != "$previous" ]; then
+    case "$outcome" in
+      # A stand-down already queued its own supervisor-lease-lost wake.
+      *'stood down'*|*'STOOD DOWN'*) ;;
+      withheld:*|refused:*)
+        fm_wake_append check records-sync "check: records-sync $outcome" >/dev/null 2>&1 || true
+        ;;
+    esac
+  fi
+  sync_cleanup
+  exit "$rc"
+}
+
+# sync_stage: builds SYNC_IDX from HEAD plus everything data/.gitignore admits.
+sync_stage() {
+  SYNC_IDX=$(mktemp "${TMPDIR:-/tmp}/fm-records-index.XXXXXX") || return 1
+  rm -f "$SYNC_IDX"
+  GIT_INDEX_FILE=$SYNC_IDX g read-tree HEAD || return 1
+  GIT_INDEX_FILE=$SYNC_IDX g add -A -- . >/dev/null 2>&1 || return 1
+}
+
+# sync_scan: writes the staged content that differs from HEAD into a private
+# directory and scans it there. 0 clean, 4 withheld (findings printed).
+SYNC_FINDINGS=''
+sync_scan() {
+  local -a paths=()
+  local p out rc
+  while IFS= read -r -d '' p; do paths+=("$p"); done < <(
+    GIT_INDEX_FILE=$SYNC_IDX g diff --cached --name-only -z --no-renames --diff-filter=AMT HEAD
+  )
+  [ "${#paths[@]}" -gt 0 ] || return 0
+  SYNC_SCAN_DIR=$(mktemp -d "${TMPDIR:-/tmp}/fm-records-scan.XXXXXX") || return 4
+  printf '%s\0' "${paths[@]}" \
+    | GIT_INDEX_FILE=$SYNC_IDX g checkout-index -z --stdin --prefix="$SYNC_SCAN_DIR/" || return 4
+  out=$(cd "$SYNC_SCAN_DIR" && "$SCRIPT_DIR/fm-secret-scan.sh" \
+    --allowlist "$CONFIG/secret-scan-allowlist" -- "${paths[@]}" 2>&1) && rc=0 || rc=$?
+  [ "$rc" -ne 0 ] || return 0
+  SYNC_FINDINGS=$(printf '%s\n' "$out" | sed 's/^secret-scan: //')
+  [ -n "$SYNC_FINDINGS" ] || SYNC_FINDINGS="the secret scan could not complete (exit $rc)"
+  return 4
+}
+
+cmd_sync() {
+  local me head text tree new rc out count
+  if worker_host_home; then
+    sync_off "off: this is a worker-host home, which never syncs records"
+  fi
+  if [ -e "$FM_HOME/.fm-secondmate-home" ] || [ -L "$FM_HOME/.fm-secondmate-home" ]; then
+    sync_off "off: this is a secondmate home, whose records are not shared between machines"
+  fi
+  resolve_repo || { say "refused: the records repository cannot be resolved"; exit 1; }
+  [ "$MODE" = active ] || sync_off "off: data/ is not a git repository with a remote; nothing to sync"
+  # shellcheck source=bin/fm-wake-lib.sh
+  . "$SCRIPT_DIR/fm-wake-lib.sh"
+  mkdir -p "$STATE" 2>/dev/null || true
+  if ! fm_lock_acquire_wait_max "$SYNC_LOCK" "${FM_RECORDS_SYNC_LOCK_WAIT:-60}"; then
+    say "deferred: another records sync is still running; the next sync carries these records"
+    exit 3
+  fi
+  trap 'sync_cleanup' EXIT
+  touch "$STATE/.last-records-sync" 2>/dev/null || true
+  if [ -f "$LOST_MARKER" ]; then
+    say "refused: this home already stood down ($(head -n 1 "$LOST_MARKER" 2>/dev/null)); no records sync"
+    sync_finish 1 "refused: this home stood down"
+  fi
+  me=$(machine_id) || sync_finish 1 "refused: this machine's id is unknown"
+  head=$(g rev-parse --verify --quiet HEAD 2>/dev/null || true)
+  [ -n "$head" ] || { say "nothing to sync: data/ has no commits"; sync_finish 0 "nothing to sync"; }
+  text=$(lease_at HEAD)
+  if parse_lease "$text" && [ "$L_HOST" = "$me" ]; then
+    sync_stage || { say "refused: could not stage the records"; sync_finish 1 "refused: could not stage the records"; }
+    sync_scan && rc=0 || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      count=$(printf '%s\n' "$SYNC_FINDINGS" | grep -c .)
+      printf '%s\n' "$SYNC_FINDINGS" | sed 's/^/supervisor-lease: secret scan: /'
+      say "withheld: the secret scan flagged $count staged record line(s); nothing was committed or pushed"
+      say "exclude each file in data/.gitignore, or allowlist a false positive in config/secret-scan-allowlist, then sync again"
+      sync_finish 4 "withheld: $(printf '%s\n' "$SYNC_FINDINGS" | tr '\n' ' ' | sed 's/ $//')"
+    fi
+    tree=$(GIT_INDEX_FILE=$SYNC_IDX g write-tree) || sync_finish 1 "refused: could not write the records tree"
+    if [ "$tree" != "$(g rev-parse "HEAD^{tree}")" ]; then
+      identity_env
+      new=$(printf 'records: sync %s (%s)\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$SYNC_REASON" \
+        | g commit-tree "$tree" -p "$head") || sync_finish 1 "refused: could not write the records commit"
+      if ! g update-ref "refs/heads/$BRANCH" "$new" "$head"; then
+        say "deferred: data/ moved during the sync; the next sync carries these records"
+        sync_finish 3 "deferred: data/ moved during the sync"
+      fi
+      g reset -q 2>/dev/null || say "warning: committed, but data/'s index could not be refreshed; run git reset in data/"
+      say "committed: records at $(g rev-parse --short HEAD)"
+    else
+      say "nothing to commit: the records are unchanged"
+    fi
+  fi
+  out=$(cmd_push) && rc=0 || rc=$?
+  [ -z "$out" ] || printf '%s\n' "$out"
+  case "$rc" in
+    0) sync_finish 0 "synced: $(g rev-parse --short HEAD)" ;;
+    3) sync_finish 3 "deferred: the records push did not reach the remote" ;;
+    *) sync_finish "$rc" "refused: $(printf '%s\n' "$out" | grep -m 1 -E '^supervisor-lease: (refused|STOOD DOWN)' | sed 's/^supervisor-lease: //')" ;;
+  esac
+}
+
 stand_down_push() {  # <reason>
   record_stand_down "$1" wake
   say "STOOD DOWN: $1"
@@ -600,6 +755,23 @@ case "${1:-}" in
     cmd_steal
     ;;
   push) cmd_push ;;
+  sync)
+    shift
+    SYNC_IF_ACTIVE=0 SYNC_NOTIFY=0 SYNC_REASON=manual
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --if-active) SYNC_IF_ACTIVE=1; shift ;;
+        --notify) SYNC_NOTIFY=1; shift ;;
+        --reason)
+          [ "$#" -ge 2 ] || { usage >&2; exit 2; }
+          SYNC_REASON=$(printf '%s' "$2" | tr -c 'A-Za-z0-9 ._:/-' ' ')
+          shift 2
+          ;;
+        *) usage >&2; exit 2 ;;
+      esac
+    done
+    cmd_sync
+    ;;
   -h|--help) usage; exit 0 ;;
   *) usage >&2; exit 2 ;;
 esac

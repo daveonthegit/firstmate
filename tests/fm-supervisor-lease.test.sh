@@ -15,6 +15,12 @@
 #   - a context rebuild confirms without writing and never re-takes the lease
 #   - a worker-host home refuses the lease
 #   - fm-lock.sh refuses the session lock while the home is stood down
+#   - sync commits what data/.gitignore admits and pushes it
+#   - a secret-scan finding withholds the sync and leaves data/ untouched
+#   - sync is a quiet no-op for off, worker-host, and secondmate homes
+#   - an unreachable remote keeps the sync commit local, and a lost lease still
+#     stands the session down
+#   - the real watcher runs the hourly sync and surfaces a withheld one once
 set -u
 
 # shellcheck source=tests/lib.sh
@@ -411,6 +417,152 @@ test_lock_refuses_while_stood_down() {
   pass "fm-lock.sh refuses the session lock while the home is stood down"
 }
 
+# records_home <world> <home>: seeds data/.gitignore like a real records home and
+# takes the lease, so later sync changes are only the case's own.
+records_home() {
+  local w=$1 h=$2
+  printf '/*\n!/.gitignore\n!/*.md\n!/*/\n/*/*\n!/*/*.md\n' > "$w/$h/data/.gitignore"
+  git -C "$w/$h/data" add .gitignore
+  git -C "$w/$h/data" commit -qm "records ignore rules"
+  git -C "$w/$h/data" push -q origin main
+  lease "$w/$h" acquire >/dev/null || fail "acquire failed in $w/$h"
+}
+
+test_sync_commits_and_pushes() {
+  local w out status
+  w=$(new_pair sync)
+  records_home "$w" a
+  printf '# backlog\n- one\n' > "$w/a/data/backlog.md"
+  mkdir -p "$w/a/data/t1"
+  printf 'report\n' > "$w/a/data/t1/report.md"
+  printf 'noise\n' > "$w/a/data/t1/build.log"
+  status=0
+  out=$(lease "$w/a" sync --reason "cleanup t1") || status=$?
+  expect_code 0 "$status" "sync of changed records"
+  assert_contains "$out" "committed: records at" "sync did not report its commit"
+  assert_contains "$out" "pushed: records at" "sync did not push"
+  assert_contains "$(git -C "$w/remote.git" log -1 --format=%s main)" "(cleanup t1)" "the commit message lost the reason"
+  git -C "$w/remote.git" cat-file -e main:backlog.md || fail "the backlog never reached the remote"
+  git -C "$w/remote.git" cat-file -e main:t1/report.md || fail "the report never reached the remote"
+  git -C "$w/remote.git" cat-file -e main:t1/build.log 2>/dev/null && fail "an ignored file reached the remote"
+  assert_equals "" "$(git -C "$w/a/data" status --porcelain)" "sync left data/ dirty or its index stale"
+  [ -e "$w/a/state/.last-records-sync" ] || fail "sync did not stamp its cadence"
+  assert_contains "$(cat "$w/a/state/records-sync.last")" "synced:" "sync did not record its outcome"
+  status=0
+  out=$(lease "$w/a" sync) || status=$?
+  expect_code 0 "$status" "sync with nothing changed"
+  assert_contains "$out" "nothing to commit" "an unchanged sync did not say so"
+  rm "$w/a/data/backlog.md"
+  lease "$w/a" sync >/dev/null || fail "a sync carrying a deletion failed"
+  git -C "$w/remote.git" cat-file -e main:backlog.md 2>/dev/null && fail "a deleted record stayed on the remote"
+  pass "sync commits what data/.gitignore admits and pushes it"
+}
+
+test_sync_secret_scan_withholds() {
+  local w out status head before remote_head queued
+  w=$(new_pair scan)
+  records_home "$w" a
+  printf 'clean line\nGH_TOKEN ghp_%s\n' "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12" > "$w/a/data/notes.md"
+  printf 'fine\n' > "$w/a/data/backlog.md"
+  git -C "$w/a/data" add backlog.md
+  head=$(git -C "$w/a/data" rev-parse HEAD)
+  remote_head=$(git -C "$w/remote.git" rev-parse main)
+  before=$(git -C "$w/a/data" status --porcelain)
+  status=0
+  out=$(lease "$w/a" sync --notify) || status=$?
+  expect_code 4 "$status" "sync with a secret-shaped record"
+  assert_contains "$out" "notes.md:2: github-token" "the finding did not name the file, line, and rule"
+  assert_not_contains "$out" "ghp_ABCDEF" "the finding printed the matched value"
+  assert_contains "$out" "nothing was committed or pushed" "the withheld sync did not say nothing moved"
+  assert_equals "$head" "$(git -C "$w/a/data" rev-parse HEAD)" "a withheld sync committed"
+  assert_equals "$remote_head" "$(git -C "$w/remote.git" rev-parse main)" "a withheld sync pushed"
+  assert_equals "$before" "$(git -C "$w/a/data" status --porcelain)" "a withheld sync changed data/'s index or work tree"
+  queued=$(grep -c 'records-sync' "$w/a/state/.wake-queue" 2>/dev/null || true)
+  assert_equals 1 "$queued" "a notifying withheld sync did not queue exactly one wake"
+  lease "$w/a" sync --notify >/dev/null
+  queued=$(grep -c 'records-sync' "$w/a/state/.wake-queue" 2>/dev/null || true)
+  assert_equals 1 "$queued" "an unchanged withheld outcome queued a second wake"
+
+  printf '^ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12$\n' > "$w/a/config/secret-scan-allowlist"
+  status=0
+  out=$(lease "$w/a" sync) || status=$?
+  expect_code 0 "$status" "sync once the false positive is allowlisted"
+  git -C "$w/remote.git" cat-file -e main:notes.md || fail "the allowlisted record never reached the remote"
+  pass "a secret-scan finding withholds the sync, names file and line only, and leaves data/ untouched"
+}
+
+test_sync_off_homes() {
+  local w out status home
+  w=$(new_pair sync-off)
+  mkdir -p "$w/plain/data" "$w/plain/state"
+  : > "$w/a/.fm-worker-host"
+  : > "$w/b/.fm-secondmate-home"
+  printf 'change\n' > "$w/b/data/notes.md"
+  for home in "$w/plain" "$w/a" "$w/b"; do
+    status=0
+    out=$(lease "$home" sync) || status=$?
+    expect_code 0 "$status" "sync in $home"
+    assert_contains "$out" "off:" "sync did not report off for $home"
+    status=0
+    out=$(lease "$home" sync --if-active) || status=$?
+    expect_code 0 "$status" "quiet sync in $home"
+    assert_equals "" "$out" "a quiet sync printed output for $home"
+  done
+  [ -z "$(remote_lease "$w")" ] || fail "an off sync wrote the lease"
+  assert_equals 1 "$(git -C "$w/remote.git" rev-list --count main)" "an off sync pushed records"
+  pass "sync is a quiet no-op for off, worker-host, and secondmate homes"
+}
+
+test_sync_unreachable_and_lost_lease() {
+  local w out status
+  w=$(new_pair sync-net)
+  records_home "$w" a
+  printf 'one\n' > "$w/a/data/backlog.md"
+  mv "$w/remote.git" "$w/remote.gone"
+  status=0
+  out=$(lease "$w/a" sync) || status=$?
+  expect_code 3 "$status" "sync with the remote unreachable"
+  assert_contains "$out" "committed: records at" "an unreachable sync did not keep its local commit"
+  assert_contains "$out" "deferred:" "an unreachable sync was not reported deferred"
+  [ ! -e "$w/a/state/.supervisor-lease-lost" ] || fail "an unreachable sync stood the session down"
+  mv "$w/remote.gone" "$w/remote.git"
+
+  lease "$w/b" steal --owner-approved >/dev/null || fail "steal failed"
+  printf 'two\n' >> "$w/a/data/backlog.md"
+  status=0
+  out=$(lease "$w/a" sync) || status=$?
+  expect_code 1 "$status" "sync after the lease moved"
+  assert_contains "$out" "STOOD DOWN" "a sync after the lease moved did not stand down"
+  [ -f "$w/a/state/.supervisor-lease-lost" ] || fail "a lost-lease sync recorded no stand-down"
+  status=0
+  out=$(lease "$w/a" sync) || status=$?
+  expect_code 1 "$status" "sync in a stood-down home"
+  assert_contains "$out" "already stood down" "a stood-down sync did not refuse"
+  pass "an unreachable remote keeps the sync commit local, and a lost lease still stands the session down"
+}
+
+test_watcher_surfaces_a_withheld_hourly_sync() {
+  local w out queued before
+  w=$(new_pair watch)
+  records_home "$w" a
+  before=$(git -C "$w/remote.git" rev-parse main)
+  printf 'GH ghp_%s\n' "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij12" > "$w/a/data/notes.md"
+  fm_test_track_watcher_state "$w/a/state"
+  declare -F fm_run_timed >/dev/null || . "$ROOT/bin/fm-timeout-lib.sh"
+  # No stamp yet, so the sync is due on the first poll; every other cadence is
+  # pushed out of the way so the records-sync wake is the one that surfaces.
+  out=$(FM_HOME="$w/a" FM_POLL=1 FM_SIGNAL_GRACE=1 FM_CHECK_INTERVAL=999999 FM_HEARTBEAT=999999 \
+    FM_HOME_SUMMARY_INTERVAL=999999 fm_run_timed 90 bash "$ROOT/bin/fm-watch.sh" 2>/dev/null) || true
+  assert_contains "$out" "check: records-sync withheld: notes.md:1: github-token" \
+    "the watcher did not surface the withheld hourly sync"
+  assert_not_contains "$out" "ghp_ABCDEF" "the watcher's wake printed the matched value"
+  queued=$(grep -c 'records-sync' "$w/a/state/.wake-queue" 2>/dev/null || true)
+  assert_equals 1 "$queued" "the withheld hourly sync did not leave exactly one durable wake"
+  [ -e "$w/a/state/.last-records-sync" ] || fail "the watcher did not stamp the hourly cadence"
+  assert_equals "$before" "$(git -C "$w/remote.git" rev-parse main)" "the watcher's withheld sync moved the records remote"
+  pass "the real watcher runs the hourly sync and surfaces a withheld one with a durable wake"
+}
+
 fm_test_run \
   test_off_home_is_untouched \
   test_second_home_refuses \
@@ -423,4 +575,9 @@ fm_test_run \
   test_reserved_identity_refuses \
   test_multiple_remotes_refuse \
   test_release_and_steal_failures_stand_down \
-  test_lock_refuses_while_stood_down
+  test_lock_refuses_while_stood_down \
+  test_sync_commits_and_pushes \
+  test_sync_secret_scan_withholds \
+  test_sync_off_homes \
+  test_sync_unreachable_and_lost_lease \
+  test_watcher_surfaces_a_withheld_hourly_sync

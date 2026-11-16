@@ -13,7 +13,7 @@ Start with the directory layout, then use the setting reference for the behavior
 | Backlog, preferences, and memory | [Backlog backend](#backlog-backend-taskstoml--configbacklog-backend), [captain preferences](#captain-preferences-datacaptainmd--datacaptain-sharedmd), [external memory tiers](#external-memory-tiers-memory-layering-section), [record export](#record-export-configrecord-export-root), [startup memory budget](#startup-memory-budget-configstartup-memory-budget), and [stow guard](#stow-guard-configstow-guard) |
 | Supervision and presentation | [Pi supervision branch](#pi-supervision-branch), [supervision host](#supervision-host-configsupervision-host), [Codex native Stop park](#codex-native-stop-park-configcodex-stop-park), [warm-cache compaction](#warm-cache-compaction-configwarm-compact), and [Calm preference](#calm-preference-configcalm) |
 | Persistent secondmates | [Secondmate routes](#secondmate-routes-datasecondmatesmd) |
-| Sharing one fleet's records between machines | [Supervisor lease](#supervisor-lease-datasupervisorlease) |
+| Sharing one fleet's records between machines | [Supervisor lease](#supervisor-lease-datasupervisorlease) and [supervising from another machine](supervisor-takeover.md) |
 | Review bots on owned GitHub pull requests | [Contribution review bots](#contribution-review-bots-configcontribution-review-bots) |
 | Stopping idle workers while a PR awaits review, and cleanup on merge | [Park on review](#park-on-review) |
 | Per-run overrides and tuning | [Environment variables](#environment-variables) |
@@ -162,6 +162,13 @@ A worker-host home, marked by `.fm-worker-host`, never holds the lease.
 `bin/fm-supervisor-lease.sh` adds `status`, `release` (hand the lease off before moving the supervisor), `steal --owner-approved` (only on the owner's explicit word), and `push` (the records push for a running session, which stands the session down when the push is rejected or the lease moved).
 While a home is stood down, `bin/fm-lock.sh` refuses the session lock and no supervision owner treats the session as the lock holder, until a later session start re-acquires the lease.
 The [`bin/fm-supervisor-lease.sh` header](../bin/fm-supervisor-lease.sh) owns the record format, the remote and branch it uses, the unreachable-remote rule, the stand-down record, exit codes, and `FM_SUPERVISOR_LEASE_TIMEOUT`.
+
+`fm-supervisor-lease.sh sync` keeps the records remote current: it commits what `data/.gitignore` admits and pushes it through `push`, so a lost lease still stands the session down.
+It runs after every `/stow`, after every successful task cleanup, and, while the watcher runs, at least every `FM_RECORDS_SYNC_INTERVAL` seconds (default 3600); a sync that does not complete is reported and never fails the operation that ran it.
+Worker-host and secondmate homes never sync.
+Before committing, [`bin/fm-secret-scan.sh`](../bin/fm-secret-scan.sh) scans every file the sync would add or change for credential shapes, and any finding withholds the whole sync and names each file and line, never the value.
+Exclude such a file in `data/.gitignore`, or list a known false positive as one extended regular expression per line in the local `config/secret-scan-allowlist`; each scanner header owns its rules and exit codes.
+To supervise from another machine while this one is unreachable, follow [Supervising from another machine](supervisor-takeover.md).
 
 ## Orchestrator behavior (AGENTS.md)
 
@@ -3619,6 +3626,8 @@ FM_GUARD_READ_ONLY=0    # internal/read-only guard mode: keep alarms but suppres
 FM_GUARD_CONTINUE_LINE='This is a supervision warning only; the guarded operation WILL still run.'   # banner continuation line; fm-send.sh overrides it to name the requested message specifically
 FM_POLL=15              # seconds between watcher poll cycles
 FM_HOME_SUMMARY_INTERVAL=300   # seconds before a live watcher refreshes this home's state/home-summary.json even without a status signal; invalid or zero values use 300
+FM_RECORDS_SYNC_INTERVAL=3600   # seconds between the watcher's detached records syncs in a home whose data/ is a repository top (bin/fm-supervisor-lease.sh sync); invalid or zero values use 3600
+FM_RECORDS_SYNC_LOCK_WAIT=60    # seconds a records sync waits for another one before reporting itself deferred
 FM_HOME_SUMMARY_TIMEOUT=60     # seconds bounding the complete best-effort home-summary refresh, including lock acquisition, validation, atomic publication, and worker-side failure logging; invalid or zero values use 60
 FM_HOME_SUMMARY_ERROR_LOG_MAX_BYTES=65536   # approximate size cap for state/.home-summary-refresh.log before it is trimmed to the newest 200 lines; invalid or zero values use 65536
 FM_HOME_SUMMARY_FAILURE_REPORT=2   # recorded publication failures since the ledger's own last publication before session start reports a HOME_SUMMARY line; invalid or zero values use 2

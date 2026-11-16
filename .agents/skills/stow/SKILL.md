@@ -269,6 +269,12 @@ The first pass after adoption performs a one-time revalidation sweep of editable
 - Only an entry that already carried `<!--g-->` when this invocation began is on the next-pass branch: replace that marker with the normal dated tier marker if independent current-session evidence confirms the entry; otherwise archive it with provenance `legacy-unvalidated`.
 - The grace period is one full stow cycle, not a time window, and the same persisted transition applies when a hand edit later leaves an entry unmarked in `data/learnings.md`.
 
+## Records sync
+
+After every other write this `/stow` makes, including the cascade below, run `bin/fm-supervisor-lease.sh sync --if-active --reason stow` once so the records remote carries what this pass recorded.
+It is silent and changes nothing in a home without a records repository, and a secondmate home never syncs; the [script header](../../../bin/fm-supervisor-lease.sh) owns its scan, exit codes, and push behavior.
+A sync that is withheld, deferred, or refused never undoes or fails the pass: report its outcome in the receipt, and for a withheld sync name each flagged file and line so the captain can exclude the file or allowlist the false positive.
+
 ## Completion receipt
 
 Report the outcome in plain captain-facing language with all of these facts:
@@ -280,6 +286,7 @@ Report the outcome in plain captain-facing language with all of these facts:
 - each archived entry's reason, each autonomous offload's live destination and actual relief, and, when a pinned candidate was proposed, the `proposed-offload` section with every candidate's fields;
 - every unresolved exception, including a primary-owned shared-file constraint in a secondmate home, and every concrete captain decision opened for an over-budget result;
 - each open record this pass filed or corrected, and each one it deliberately left alone with the judgment it is waiting on;
+- the records sync outcome when the home has a records repository: pushed, nothing to push, deferred until the remote is reachable, withheld with each flagged file and line, or refused with its reason;
 - whether the session is safe to reset, only when all durable findings are captured, no tier-owned finding is waiting on an unreachable declared tier, every open record this session held is filed or explicitly left with its reason, and the post-pass result is within budget with no exception or pending budget decision.
 
 State what reset-safe means in the same breath as the claim: nothing this session knew has been lost.

@@ -766,6 +766,57 @@ test_teardown_closes_the_backlog_item_itself() {
   pass "teardown closes its own backlog item before reporting success"
 }
 
+# A home whose data/ is a records repository holding the supervisor lease
+# syncs the closed backlog after cleanup, and a sync that cannot complete is
+# reported without changing cleanup's success.
+test_teardown_syncs_records_without_changing_its_outcome() {
+  local case_dir out status lease="$ROOT/bin/fm-supervisor-lease.sh"
+  case_dir=$(make_case records-sync)
+  write_meta "$case_dir" no-mistakes ship
+  printf '%s\n' 'pr=https://github.com/example/repo/pull/7' >> "$case_dir/state/task-x1.meta"
+  seed_backlog_in_flight "$case_dir"
+  printf 'm-test\n' > "$case_dir/config/machine-id"
+  git init -q --bare -b main "$case_dir/records.git"
+  git -C "$case_dir/data" init -q -b main
+  git -C "$case_dir/data" add -A
+  git -C "$case_dir/data" commit -qm "records"
+  git -C "$case_dir/data" remote add origin "$case_dir/records.git"
+  git -C "$case_dir/data" push -q -u origin main
+  FM_HOME="$case_dir" FM_ROOT_OVERRIDE="$ROOT" FM_STATE_OVERRIDE="$case_dir/state" \
+    FM_DATA_OVERRIDE="$case_dir/data" FM_CONFIG_OVERRIDE="$case_dir/config" \
+    bash "$lease" acquire >/dev/null || fail "the records fixture could not take the lease"
+
+  out=$(run_teardown "$case_dir" 2>&1) || fail "teardown failed in a records home: $out"
+  assert_contains "$(git -C "$case_dir/records.git" log -1 --format=%s main)" "(cleanup task-x1)" \
+    "teardown did not sync the records after cleanup"
+  git -C "$case_dir/records.git" show main:backlog.md | grep -F 'https://github.com/example/repo/pull/7' >/dev/null \
+    || fail "the synced backlog does not carry the closed task"
+
+  # Second case: the records remote declines every push.
+  case_dir=$(make_case records-sync-fail)
+  write_meta "$case_dir" no-mistakes ship
+  printf '%s\n' 'pr=https://github.com/example/repo/pull/7' >> "$case_dir/state/task-x1.meta"
+  seed_backlog_in_flight "$case_dir"
+  printf 'm-test\n' > "$case_dir/config/machine-id"
+  git init -q --bare -b main "$case_dir/records.git"
+  git -C "$case_dir/data" init -q -b main
+  git -C "$case_dir/data" add -A
+  git -C "$case_dir/data" commit -qm "records"
+  git -C "$case_dir/data" remote add origin "$case_dir/records.git"
+  git -C "$case_dir/data" push -q -u origin main
+  FM_HOME="$case_dir" FM_ROOT_OVERRIDE="$ROOT" FM_STATE_OVERRIDE="$case_dir/state" \
+    FM_DATA_OVERRIDE="$case_dir/data" FM_CONFIG_OVERRIDE="$case_dir/config" \
+    bash "$lease" acquire >/dev/null || fail "the records fixture could not take the lease"
+  printf '#!/bin/sh\nexit 1\n' > "$case_dir/records.git/hooks/pre-receive"
+  chmod +x "$case_dir/records.git/hooks/pre-receive"
+  status=0
+  out=$(run_teardown "$case_dir" 2>&1) || status=$?
+  expect_code 0 "$status" "teardown whose records sync was rejected"
+  assert_contains "$out" "the records sync did not complete" "a failed records sync was not reported"
+  [ "$(backlog_row_state "$case_dir")" = "done" ] || fail "a failed records sync changed the backlog close"
+  pass "teardown syncs the records after cleanup, and a failed sync never changes its outcome"
+}
+
 test_teardown_closes_a_gerrit_task_with_its_change_url_as_a_note() {
   local case_dir out real_tasks_axi gerrit_url=https://gerrit.example.com/c/project/+/12345
   case_dir=$(make_case tasks-axi-close-gerrit)
@@ -6779,6 +6830,7 @@ test_forced_secondmate_own_missing_adapter_sibling_refuses_before_child_cleanup
 test_retained_sources_still_reach_the_ordinary_refusal
 test_local_only_fork_remote_allows
 test_teardown_closes_the_backlog_item_itself
+test_teardown_syncs_records_without_changing_its_outcome
 test_teardown_closes_a_gerrit_task_with_its_change_url_as_a_note
 test_teardown_closes_a_gitlab_task_with_its_merge_request_url_as_a_note
 test_teardown_manual_backend_leaves_the_backlog_to_the_operator

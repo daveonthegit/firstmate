@@ -154,6 +154,14 @@
 #                          fm-pr-check.sh scan could not record, or whose
 #                          merge watch it could not arm in time; the line
 #                          names the task, the PR, and the refusal or timeout
+#   check: records-sync <outcome>
+#                          the hourly records sync (fm-supervisor-lease.sh
+#                          sync --notify, started detached once per
+#                          FM_RECORDS_SYNC_INTERVAL in a home whose data/ is a
+#                          repository top) finished withheld by the secret
+#                          scan or refused, and queued a new records-sync row;
+#                          the outcome names the file:line: rule findings or
+#                          the refusal, never a matched value
 #   check: record hygiene: <lines>
 #                          with config/record-hygiene present, the heartbeat's
 #                          background record-hygiene scan found a new set of
@@ -367,6 +375,10 @@ CHECK_TIMEOUT=${FM_CHECK_TIMEOUT:-30}     # seconds allowed per *.check.sh
 HOME_SUMMARY_INTERVAL=${FM_HOME_SUMMARY_INTERVAL:-300}
 case "$HOME_SUMMARY_INTERVAL" in
   ''|*[!0-9]*|0) HOME_SUMMARY_INTERVAL=300 ;;
+esac
+RECORDS_SYNC_INTERVAL=${FM_RECORDS_SYNC_INTERVAL:-3600}  # seconds between records syncs
+case "$RECORDS_SYNC_INTERVAL" in
+  ''|*[!0-9]*|0) RECORDS_SYNC_INTERVAL=3600 ;;
 esac
 SIGNAL_GRACE=${FM_SIGNAL_GRACE:-30}   # seconds to linger after a signal so trailing
                                       # signals (a status write, then the same turn's
@@ -3996,6 +4008,33 @@ home_summary_refresh_detached() {
   HOME_SUMMARY_PID=$!
 }
 
+# Hourly records sync (bin/fm-supervisor-lease.sh `sync`), detached for the
+# same beacon-freshness reason: its network calls are bounded, but far longer
+# than one poll. The stamp is touched before the start so a home where sync is
+# off or failing still runs it at most once per interval. sync's --notify
+# queues the one durable records-sync row an actionable outcome earns, and
+# records_sync_reap surfaces that row when this watcher sees its run finish.
+RECORDS_SYNC_PID=
+records_sync_reap() {
+  local rc=0 outcome
+  [ -n "$RECORDS_SYNC_PID" ] || return 0
+  ! kill -0 "$RECORDS_SYNC_PID" 2>/dev/null || return 0
+  wait "$RECORDS_SYNC_PID" 2>/dev/null || rc=$?
+  RECORDS_SYNC_PID=
+  case "$rc" in 1|4) ;; *) return 0 ;; esac
+  fm_wake_queued_keys check | grep -Fx records-sync >/dev/null 2>&1 || return 0
+  outcome=$(head -n 1 "$STATE/records-sync.last" 2>/dev/null | fm_wake_clean_field)
+  wake "check: records-sync ${outcome:-did not complete}"
+}
+
+records_sync_detached() {
+  [ -z "$RECORDS_SYNC_PID" ] || return 0
+  touch "$STATE/.last-records-sync" 2>/dev/null || true
+  FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE FM_DATA_OVERRIDE=$DATA FM_CONFIG_OVERRIDE=$CONFIG \
+    "$SCRIPT_DIR/fm-supervisor-lease.sh" sync --if-active --notify --reason hourly </dev/null >/dev/null 2>&1 &
+  RECORDS_SYNC_PID=$!
+}
+
 # Opt-in lane capacity facts (docs/configuration.md "Lane capacity"): publish
 # state/lane-capacity.json detached for the same beacon-freshness reason as the
 # home summary above. bin/fm-capacity.sh's header owns the document.
@@ -4157,6 +4196,11 @@ while :; do
 
   if [ "$(age_of "$STATE/home-summary.json")" -ge "$HOME_SUMMARY_INTERVAL" ]; then
     home_summary_refresh_detached
+  fi
+  # A home whose data/ is not a repository top costs one file test.
+  records_sync_reap
+  if [ -e "$DATA/.git" ] && [ "$(age_of "$STATE/.last-records-sync")" -ge "$RECORDS_SYNC_INTERVAL" ]; then
+    records_sync_detached
   fi
   # Opt-in lane capacity facts: off costs one file test.
   if [ -e "$CONFIG/lane-capacity" ] && [ "$(age_of "$STATE/lane-capacity.json")" -ge 30 ]; then
