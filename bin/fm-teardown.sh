@@ -4,7 +4,9 @@
 # clear volatile state, and transition this home's backlog item for ship and
 # scout tasks before reporting success (a secondmate teardown transitions none,
 # since secondmates are not backlog items), then refresh/prune the project's
-# clone for PR-based ship tasks.
+# clone for PR-based ship tasks. A successful cleanup ends with the best-effort
+# records sync (bin/fm-supervisor-lease.sh `sync`), which reports a sync that
+# did not complete but never changes cleanup's outcome or exit status.
 # An endpoint whose close could not do its job REFUSES before any record naming
 # it is removed: those records are the only thing that names what survived, so
 # reporting such a close as a completed cleanup strands the endpoint instead of
@@ -1402,6 +1404,21 @@ backlog_done_args() {
 # printed instruction for a later turn (bin/fm-backlog-transition-lib.sh owns the
 # invariant). This prints what already happened, so the follow-up wording stays
 # only where a human still owes the edit.
+# Records sync after a cleanup (bin/fm-supervisor-lease.sh `sync`), so the
+# records remote carries the closed task. Best effort: it never changes
+# cleanup's outcome, is silent where the home has no records repository, and
+# reports only a sync that did not complete.
+teardown_records_sync() {
+  local out rc
+  [ -d "$STATE" ] || return 0
+  out=$(FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
+    "$SCRIPT_DIR/fm-supervisor-lease.sh" sync --if-active --reason "cleanup $ID" 2>&1) && rc=0 || rc=$?
+  [ "$rc" -ne 0 ] || return 0
+  echo "warning: $ID is cleaned up, but the records sync did not complete (exit $rc); run bin/fm-supervisor-lease.sh sync to retry:" >&2
+  printf '%s\n' "$out" | sed 's/^/  /' >&2
+  return 0
+}
+
 backlog_refresh_reminder() {
   local backlog_display root backend=markdown
   [ "$KIND" = secondmate ] && return 0
@@ -1550,6 +1567,7 @@ worker_host_teardown() {
   printf '%s\n' "$VAULT_META_SNAPSHOT" \
     | FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
       "$FM_ROOT/bin/fm-vault.sh" journal "$ID" --meta - 2>&1 || true
+  teardown_records_sync
   [ "$lost_slot" = 0 ] || return "$TEARDOWN_LOST_SLOT_EXIT"
 }
 
@@ -4551,4 +4569,5 @@ if [ "$KIND" != secondmate ]; then
     | FM_HOME="$FM_HOME" FM_STATE_OVERRIDE="$STATE" FM_DATA_OVERRIDE="$DATA" FM_CONFIG_OVERRIDE="$CONFIG" \
       "$FM_ROOT/bin/fm-vault.sh" journal "$ID" --meta - 2>&1 || true
 fi
+teardown_records_sync
 [ "$TEARDOWN_POOL_SLOT_LOST" = 0 ] || exit "$TEARDOWN_LOST_SLOT_EXIT"

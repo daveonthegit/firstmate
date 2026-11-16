@@ -547,6 +547,10 @@
       "audience": "maintainer-architecture"
     },
     {
+      "path": "docs/supervisor-takeover.md",
+      "audience": "operator-current"
+    },
+    {
       "path": "docs/t3code-backend.md",
       "audience": "operator-current"
     },
