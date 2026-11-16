@@ -1,0 +1,12 @@
+=== Persisted lab /stow results ===
+70d32cc records: sync 2026-11-16T18:05:11Z (stow)
+# Learnings
+<!-- memory tiers: see the stow skill -->
+- Disposable lab-only memory with no corroborating session evidence. <!--g-->
+=== Withheld pass remains local; remote lacks synthetic credential-shaped note ===
+ M learnings.md
+?? memory-archive.md
+?? notes.md
+withheld: notes.md:2: github-token
+Local archive retained, remote unchanged.
+Synthetic credential-shaped note remains byte-identical locally.

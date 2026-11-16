@@ -1,0 +1,41 @@
+<!doctype html><meta charset="utf-8"><title>Live Claude lab stow terminal capture</title><style>body{background:#171717;color:#e7e7e7;padding:24px}pre{font:14px/1.5 monospace;white-space:pre-wrap}</style><pre>  ├──────────────────────────┼───────────┼───────────────────────────────────────────────────────────────────────────┤
+  │ l/data/captain.md        │ unchanged │ Header only; the pointer was already correct                              │
+  ├──────────────────────────┼───────────┼───────────────────────────────────────────────────────────────────────────┤
+  │ l/data/captain-shared.md │ unchanged │ Header only; the pointer was already correct. This is the primary home,   │
+  │                          │           │ so the file is editable here                                              │
+  ├──────────────────────────┼───────────┼───────────────────────────────────────────────────────────────────────────┤
+  │ l/data/learnings.md      │ rewritten │ One legacy-migration marker added; nothing else changed                   │
+  └──────────────────────────┴───────────┴───────────────────────────────────────────────────────────────────────────┘
+
+  The synthetic learnings entry
+  - It had no marker and nothing in this session confirms it, so I followed the documented migration path: I appended
+    the grace marker &lt;!--g--&gt; and kept the entry.
+  - I did not give it a date and did not archive it this pass.
+  - On the next pass, it gets a dated marker only if that session has its own evidence for it. Otherwise it moves to the
+    cold archive with the reason legacy-unvalidated.
+
+  Everything else
+  - Archive and offload: nothing was archived, offloaded or proposed for offload, so the cold archive still doesn&#x27;t
+    exist.
+  - Knowledge found: none to capture, and no external memory store is declared.
+  - Open work: none was held. The backlog is empty and untouched.
+  - Secondmates: none are registered, so the pass didn&#x27;t reach any other home.
+  - Records sync: the change was committed as 70d32cc and pushed to the lab&#x27;s disposable local remote, with the lease
+    still at epoch 1. The remote now matches.
+  - Sync commit identity: the commit is authored as firstmate with your real email, not Lab &lt;lab@example.invalid&gt;. I
+    didn&#x27;t set the Lab identity on the sync command this time. The commit only reached the disposable remote under
+    .test-tmp/, so the email went nowhere outside this machine, and global git config is unchanged. I can rewrite the
+    commit with the Lab identity, but that means a force-push to the lab remote, so I haven&#x27;t done it without your word.
+
+  Safe to reset? Yes, for what this pass covers: nothing this session knew has been lost. The home is within budget, no
+  external memory store is waiting on a capture, no open work was held, and no exceptions are left. This doesn&#x27;t mean
+  the home&#x27;s records were checked against reality. The commit identity above is the only loose end, and it doesn&#x27;t
+  affect reset safety.
+
+✻ Churned for 20s · done 1:05 PM
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Rerun the same /stow pass for the next grace cycle
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle)
+</pre>

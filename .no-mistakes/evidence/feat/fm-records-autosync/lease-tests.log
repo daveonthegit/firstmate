@@ -1,0 +1,23 @@
+1..21
+ok - a home whose data/ is not a git repository with a remote gets no lease, no output, and no refusal
+ok - the second home refuses while the first holds the lease and records a stand-down
+ok - a rejected records push stands the session down, queues a wake, and blocks further pushes
+ok - release then acquire moves the lease to the other home at the next epoch
+ok - steal needs the owner flag and bumps the epoch past every epoch seen
+ok - an unreachable remote continues only for the recorded holder, and an offline steal publishes later
+ok - a context rebuild confirms without writing and never re-takes a released lease
+ok - a worker-host home refuses the supervisor lease
+ok - configured and fallback identities cannot publish the free-record sentinel
+ok - every mutating verb refuses multiple remotes even with an upstream
+ok - release and steal failures revoke supervision, including uncertain release delivery
+ok - fm-lock.sh refuses the session lock while the home is stood down
+ok - sync commits what data/.gitignore admits and pushes it
+ok - a secret-scan finding withholds the sync, names file and line only, and leaves data/ untouched
+ok - all publication commands withhold current, deleted, and replaced credentials in local history
+ok - clean intermediate local history still publishes
+ok - sync detects takeover before a credential can withhold it
+ok - committing tracked-file exclusion retains the local copy and unblocks sync
+ok - sync is a quiet no-op for off, worker-host, and secondmate homes
+ok - an unreachable remote keeps the sync commit local, and a lost lease still stands the session down
+ok - the real watcher runs the hourly sync and surfaces a withheld one with a durable wake
+FM_TEST_COMPLETE

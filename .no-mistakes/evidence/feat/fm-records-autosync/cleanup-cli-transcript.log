@@ -1,0 +1,72 @@
+{run-worktree}/c
+supervisor-lease: held by this machine at epoch 1
+=== User cleans up cleanup-clean via real fm-teardown ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/c
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  repair a missing or failed watcher cycle with the Pi tool fm_watch_arm_pi, or restart Pi with -e {run-worktree}/.pi/extensions/fm-primary-turnend-guard.ts -e {run-worktree}/.pi/extensions/fm-primary-pi-watch.ts if the extensions are not loaded.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+teardown cleanup-clean complete (window none, worktree {run-worktree}/c/missing-clean, legacy record accepted without spawn_gen: endpoint missing, incarnation legacy-20261116T180642Z-40797)
+Backlog: cleanup-clean is closed in {run-worktree}/c/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+cleanup exit=0
+task:
+  id: cleanup-clean
+  title: Synthetic finished task with already-gone scratch copy
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-16
+  deps: none
+  links: none
+  body: local main
+records: sync 2026-11-16T18:06:44Z (cleanup cleanup-clean)
+# Backlog
+
+## In flight
+## Queued
+## Done
+- [x] cleanup-clean - Synthetic finished task with already-gone scratch copy (kind: ship) (done 2026-11-16)
+  local main
+=== User cleans up cleanup-withheld via real fm-teardown ===
+fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/c
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+teardown cleanup-withheld complete (window none, worktree {run-worktree}/c/missing-withheld, legacy record accepted without spawn_gen: endpoint missing, incarnation legacy-20261116T180646Z-44865)
+Backlog: cleanup-withheld is closed in {run-worktree}/c/data/backlog.md. Run bin/fm-tasks-axi.sh ready for dependency-cleared candidates, check date gates, and dispatch only work whose blockers are gone and date is due.
+warning: cleanup-withheld is cleaned up, but the records sync did not complete (exit 4); run bin/fm-supervisor-lease.sh sync to retry:
+  supervisor-lease: secret scan: notes.md:1: github-token
+  supervisor-lease: withheld: the secret scan flagged 1 staged record line(s); nothing was committed or pushed
+  supervisor-lease: exclude each file in data/.gitignore; for tracked files, also run git rm --cached -- <file> in data/ and commit that removal before retrying (the local copy stays)
+  supervisor-lease: only allowlist known false positives in config/secret-scan-allowlist; never allowlist a real credential
+cleanup exit=0
+task:
+  id: cleanup-withheld
+  title: Synthetic finished task with already-gone scratch copy
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: ship
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-16
+  deps: none
+  links: none
+  body: local main
+Withheld records result:
+withheld: notes.md:1: github-token
+Secret-shaped note absent from remote; cleanup remained successful.

@@ -1,0 +1,10 @@
+=== Take over while former holder has credential-shaped local edits ===
+supervisor-lease: stolen: held by this machine at epoch 2
+takeover exit=0
+supervisor-lease: STOOD DOWN: the lease moved to host=lab-b epoch=2 since=2026-11-16T18:05:40Z by=session-24914
+supervisor-lease: this session no longer holds the supervisor lease and is now read-only: do not spawn, steer, merge, or drain
+former owner sync exit=1
+the lease moved to host=lab-b epoch=2 since=2026-11-16T18:05:40Z by=session-24914 at=2026-11-16T18:05:41Z
+host=lab-b epoch=2 since=2026-11-16T18:05:40Z by=session-24914
+supervisor-lease: refused: this home already stood down (the lease moved to host=lab-b epoch=2 since=2026-11-16T18:05:40Z by=session-24914 at=2026-11-16T18:05:41Z); no records sync
+stood-down retry exit=1

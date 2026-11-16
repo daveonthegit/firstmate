@@ -1,0 +1,110 @@
+{run-worktree}/.test-tmp/live/a
+{run-worktree}/.test-tmp/live/b
+
+$ fm-supervisor-lease.sh acquire
+supervisor-lease: held by this machine at epoch 1
+exit=0
+
+=== Clean stow-style sync / ignored record / idempotence / deletion ===
+
+$ fm-supervisor-lease.sh sync --reason stow
+supervisor-lease: committed: records at 8fe589a
+supervisor-lease: pushed: records at 8fe589a with the lease at epoch 1
+exit=0
+A durable synthetic note
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: nothing to commit: the records are unchanged
+supervisor-lease: pushed: records at 8fe589a with the lease at epoch 1
+exit=0
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: committed: records at f76086c
+supervisor-lease: pushed: records at f76086c with the lease at epoch 1
+exit=0
+Remote contains the admitted note, omits ignored noise, and later removes the deleted note; unchanged sync created no commit.
+
+=== Secret withholding / redaction / repeated notification deduplication ===
+
+$ fm-supervisor-lease.sh sync --notify
+supervisor-lease: secret scan: notes.md:2: github-token
+supervisor-lease: withheld: the secret scan flagged 1 staged record line(s); nothing was committed or pushed
+supervisor-lease: exclude each file in data/.gitignore; for tracked files, also run git rm --cached -- <file> in data/ and commit that removal before retrying (the local copy stays)
+supervisor-lease: only allowlist known false positives in config/secret-scan-allowlist; never allowlist a real credential
+exit=4
+
+$ fm-supervisor-lease.sh sync --notify
+supervisor-lease: secret scan: notes.md:2: github-token
+supervisor-lease: withheld: the secret scan flagged 1 staged record line(s); nothing was committed or pushed
+supervisor-lease: exclude each file in data/.gitignore; for tracked files, also run git rm --cached -- <file> in data/ and commit that removal before retrying (the local copy stays)
+supervisor-lease: only allowlist known false positives in config/secret-scan-allowlist; never allowlist a real credential
+exit=4
+Remote/index unchanged; wake queue:
+1794852441 1 check
+
+=== Tracked-file exclusion recovery retains local credential-shaped copy ===
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: committed: records at 65a4d0d
+supervisor-lease: pushed: records at 65a4d0d with the lease at epoch 1
+exit=0
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: secret scan: notes.md:1: github-token
+supervisor-lease: withheld: the secret scan flagged 1 staged record line(s); nothing was committed or pushed
+supervisor-lease: exclude each file in data/.gitignore; for tracked files, also run git rm --cached -- <file> in data/ and commit that removal before retrying (the local copy stays)
+supervisor-lease: only allowlist known false positives in config/secret-scan-allowlist; never allowlist a real credential
+exit=4
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: nothing to commit: the records are unchanged
+supervisor-lease: pushed: records at 0baa2c7 with the lease at epoch 1
+exit=0
+Local notes retained; remote notes absent after documented index removal and commit.
+
+=== Already committed secrets, including deleted outgoing history, cannot publish ===
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: nothing to commit: the records are unchanged
+supervisor-lease: withheld: the outgoing records secret scan withheld publication: secret-scan: 2d39a8bd258baa8479f2bd70c246c626b9c4c3a8:1: github-token
+exit=4
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: nothing to commit: the records are unchanged
+supervisor-lease: withheld: the outgoing records secret scan withheld publication: secret-scan: 2d39a8bd258baa8479f2bd70c246c626b9c4c3a8:1: github-token
+exit=4
+Neither current nor subsequently deleted secret-bearing outgoing blob reached the remote.
+
+=== Offline local commit, retry on restored remote ===
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: committed: records at 04d4f93
+supervisor-lease: deferred: the records remote is unreachable (and the repository exists.); commits stay local until the next push
+exit=3
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: nothing to commit: the records are unchanged
+supervisor-lease: pushed: records at 04d4f93 with the lease at epoch 1
+exit=0
+offline durable record
+
+=== Real hourly watcher publishes then surfaces a withheld sync ===
+hourly durable note
+clean watcher stop exit=143
+withheld watcher exit=0
+check: records-sync withheld: hourly.md:1: github-token 
+
+=== Takeover despite withheld local edit stands former owner down ===
+supervisor-lease: stolen: held by this machine at epoch 2
+
+$ fm-supervisor-lease.sh sync --notify
+supervisor-lease: STOOD DOWN: the lease moved to host=lab-b epoch=2 since=2026-11-16T18:07:33Z by=session-24914
+supervisor-lease: this session no longer holds the supervisor lease and is now read-only: do not spawn, steer, merge, or drain
+exit=1
+the lease moved to host=lab-b epoch=2 since=2026-11-16T18:07:33Z by=session-24914 at=2026-11-16T18:07:33Z
+host=lab-b epoch=2 since=2026-11-16T18:07:33Z by=session-24914
+
+$ fm-supervisor-lease.sh sync
+supervisor-lease: refused: this home already stood down (the lease moved to host=lab-b epoch=2 since=2026-11-16T18:07:33Z by=session-24914 at=2026-11-16T18:07:33Z); no records sync
+exit=1
+All local records scenarios completed.
