@@ -1077,6 +1077,7 @@ test_stalled_state_read_is_bounded_and_scan_progresses() {
   write_child "$MAIN" a 'working: state read will stall'
   cat > "$WORLD/fakebin/fm-crew-state.sh" <<'SH'
 #!/usr/bin/env bash
+printf '%s\n' "$1" >> "$(dirname "$0")/state-reads.log"
 if [ "$1" = a ]; then
   sleep 30
 else
@@ -1091,7 +1092,12 @@ SH
   [ "$elapsed" -le 3 ] || fail "stalled state read exceeded aggregate scan budget (${elapsed}s)"
 
   write_child "$MAIN" b 'done: green'
-  FM_INACTIVE_RECONCILE_BUDGET_SECS=1 run_reconcile "$MAIN" --startup
+  : > "$WORLD/fakebin/state-reads.log"
+  # Recovery tests cursor order, not how quickly a healthy child publishes on
+  # a loaded runner. Keep the tiny budget only for the stalled invocation.
+  FM_INACTIVE_RECONCILE_BUDGET_SECS=10 run_reconcile "$MAIN" --startup
+  [ "$(head -n 1 "$WORLD/fakebin/state-reads.log")" = b ] \
+    || fail "next scan did not read the following child first"
   grep -Fq 'child=b state=done' "$MAIN/state/.wake-queue" \
     || fail "next bounded scan did not resume with the following child"
   pass "stalled state reads are bounded without starving later children"
@@ -1104,6 +1110,7 @@ test_stalled_liveness_read_is_bounded_and_scan_progresses() {
   age "$MAIN/state/a.meta" "$MAIN/state/a.status"
   cat > "$WORLD/fakebin/fm-crew-state.sh" <<'SH'
 #!/usr/bin/env bash
+printf '%s\n' "$1" >> "$(dirname "$0")/state-reads.log"
 if [ "$1" = a ]; then
   sleep 1
   printf 'state: failed · source: fake\n'
@@ -1125,7 +1132,11 @@ SH
 
   rm -f "$WORLD/fakebin/stall"
   write_child "$MAIN" b 'done: green'
-  FM_INACTIVE_RECONCILE_BUDGET_SECS=2 run_reconcile "$MAIN" --startup
+  : > "$WORLD/fakebin/state-reads.log"
+  # As above, retain the short timeout for the stall, not healthy recovery.
+  FM_INACTIVE_RECONCILE_BUDGET_SECS=10 run_reconcile "$MAIN" --startup
+  [ "$(head -n 1 "$WORLD/fakebin/state-reads.log")" = b ] \
+    || fail "next scan did not read the following child first"
   grep -Fq 'child=b state=done' "$MAIN/state/.wake-queue" \
     || fail "next bounded scan did not resume with the following child"
   pass "stalled liveness reads are bounded without starving later children"
