@@ -163,11 +163,12 @@ A worker-host home, marked by `.fm-worker-host`, never holds the lease.
 While a home is stood down, `bin/fm-lock.sh` refuses the session lock and no supervision owner treats the session as the lock holder, until a later session start re-acquires the lease.
 The [`bin/fm-supervisor-lease.sh` header](../bin/fm-supervisor-lease.sh) owns the record format, the remote and branch it uses, the unreachable-remote rule, the stand-down record, exit codes, and `FM_SUPERVISOR_LEASE_TIMEOUT`.
 
-`fm-supervisor-lease.sh sync` keeps the records remote current: it commits tracked and non-ignored records and pushes them through `push`. It checks lease ownership before staging or scanning, so a lost lease still stands the session down even when the scan would withhold the sync.
-It runs after every `/stow`, after every successful task cleanup, and, while the watcher runs, at least every `FM_RECORDS_SYNC_INTERVAL` seconds (default 3600); a sync that does not complete is reported and never fails the operation that ran it.
+`fm-supervisor-lease.sh sync` keeps the records remote current by committing tracked and non-ignored records and publishing through the lease-checked, credential-shape-scanned push.
+It runs after every `/stow` and successful task cleanup, and periodically while the watcher runs; the environment variable reference below owns the watcher interval.
+A sync that does not complete never fails the operation that ran it; cleanup warns, `/stow` reports the outcome in its receipt, and the watcher queues changed actionable outcomes.
 Worker-host and secondmate homes never sync.
-Before committing, [`bin/fm-secret-scan.sh`](../bin/fm-secret-scan.sh) scans every file the sync would add or change for credential shapes, and any finding withholds the whole sync and names each file and line, never the value. Every records push also scans newly outgoing blobs, including earlier local commits and files deleted in later commits; a finding withholds publication and identifies the blob, line, and rule without the value. This publication check applies to sync, push, acquire, release, and steal. Credentials already committed locally must be removed from all unpushed history before retrying; deleting the file in another commit is insufficient.
-Exclude such a file in `data/.gitignore`. For an already tracked file, also run `git -C data rm --cached -- <file>` to retain the local copy, and commit that removal in `data/` before retrying sync (sync builds from HEAD, not the local index). Ignore rules alone do not exclude tracked files. Only known false positives, never real credentials, belong as extended regular expressions, one per line, in the local `config/secret-scan-allowlist`; each scanner header owns its rules and exit codes.
+The [script header](../bin/fm-supervisor-lease.sh) owns sync ordering, exclusion recovery for tracked files, publication scanning of unpushed history, allowlist configuration, and outcome files.
+Follow its recovery instructions when a scan withholds publication; ignore rules alone do not exclude tracked files, and only known false positives, never real credentials, may be allowlisted.
 To supervise from another machine while this one is unreachable, follow [Supervising from another machine](supervisor-takeover.md).
 
 ## Orchestrator behavior (AGENTS.md)

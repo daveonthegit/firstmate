@@ -95,16 +95,23 @@
 #          known false positives belong in the allowlist.
 #       5. A clean change is committed as `records: sync <UTC> (<reason>)` and
 #          data/'s index is reset to it. Nothing changed commits nothing.
-#       6. push scans every outgoing blob, including earlier local commits
-#          and files later deleted, before publishing. Findings exit 4; remove
-#          credentials from unpushed history before retrying, never allowlist
-#          them. A deferred or withheld push keeps the local commits.
+#       6. Publish through push with the publication scan below. A deferred
+#          or withheld push keeps the local commits.
 #       Every sync past the off checks touches state/.last-records-sync, the
 #       cadence bin/fm-watch.sh's hourly sync reads, and records its outcome in
 #       state/records-sync.last. --notify (the watcher's run) also queues one
 #       `check: records-sync` wake when a scan finding or refusal differs from
 #       the previously recorded outcome; a stand-down queues only its own
 #       supervisor-lease-lost wake.
+#
+# PUBLICATION SCAN. Every push by sync, push, acquire, release, or steal scans
+# all outgoing blobs, including earlier local commits and files later deleted,
+# with config/secret-scan-allowlist. A finding or incomplete scan withholds
+# publication; findings identify a blob object id, line, and rule, never the
+# matched value. Remove credentials from all unpushed history before retrying;
+# deleting them in a later commit is insufficient. Never allowlist credentials.
+# sync and push exit 4 when withheld; lease-changing commands refuse (exit 1).
+# bin/fm-secret-scan.sh's header owns scan rules and allowlist expression syntax.
 #
 # STAND-DOWN. state/.supervisor-lease-lost (one line: reason and UTC time)
 # records that this home no longer holds the lease. While it exists,
@@ -117,7 +124,7 @@
 # Output lines start with `supervisor-lease:`. Exit status: 0 held, confirmed,
 # unconfirmed, released, synced, or off; 1 refused (stay read-only); 2 usage;
 # 3 push or sync deferred because the remote is unreachable or another sync is
-# running; 4 sync withheld by the secret scan.
+# running; 4 sync or push withheld by the secret scan.
 #
 # Environment: FM_HOME, FM_DATA_OVERRIDE, FM_STATE_OVERRIDE, FM_CONFIG_OVERRIDE
 # select the home. FM_SUPERVISOR_LEASE_TIMEOUT bounds each network call in
