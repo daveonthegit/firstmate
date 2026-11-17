@@ -89,7 +89,8 @@ The `answer` subcommand records the captain's exact words and resolves the call 
 | `answer --release` | Frees a captain-gated work item to proceed without completing it. |
 
 It requires a non-empty captain decision file of at most 8192 bytes.
-`answer --release` is attended-only: while the away-posture record exists it is refused before anything is written, and the keyed-answer intake refuses a `release` line the same way, because only the captain in an attended session releases a captain hold.
+`answer --release` is attended-only: while the away-posture record exists it is refused before anything is written, and the keyed-answer intake refuses a `release` line the same way.
+The same attended-only restriction applies to [PR settlement releases](#pr-settlement).
 A quiet record is a present captain and does not refuse.
 It then works in this order:
 
@@ -440,7 +441,7 @@ Re-holding through the wrapper with `--until` remains the durable fix rather tha
 [`bin/fm-landed-lib.sh`](../bin/fm-landed-lib.sh) owns Recently Landed's shared selection and artifact-display compatibility rules.
 A local-only landing's note is written by `tasks-axi done --note` as the last of the row's indented body lines rather than into the row title.
 The snapshot therefore reads that final line as the note as well as parsing the title, and the landing is published carrying its recorded note.
-A body that carries a captain resolution record is the captain's own prose and is never mined for that note, so a decision worded `local main` does not become a delivery artifact.
+A body that carries a captain resolution record is never mined for that note, so captain answers and reconciliation evidence worded `local main` do not become delivery artifacts.
 The projection remains read-only and uses the canonical snapshot's structured fields, including the machine-written hold-set timestamp.
 
 ### Merge-to-cleanup window

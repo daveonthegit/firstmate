@@ -560,7 +560,7 @@ fm_backlog_row_artifact_supported() {
 # artifacts on the row, and return it to Queued, the conventional post-cleanup
 # shape for an open captain call.
 # bin/fm-fleet-snapshot.sh classifies that retained hold from its structured
-# fields; only bin/fm-captain-hold.sh answer resolves the call.
+# fields; bin/fm-captain-hold.sh owns the allowed resolution paths.
 fm_backlog_retain() {  # <data-dir> <id> [flag...]
   local data authorized_data=$1 id=$2 out command_status previous_arg=''
   local arg deliverable='' line body new_body tmp
