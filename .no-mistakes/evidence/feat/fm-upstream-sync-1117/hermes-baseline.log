@@ -1,0 +1,3 @@
+not ok - NUL argv identity lost when names/ps args are blind
+
+Base-commit Hermes test exit: 1

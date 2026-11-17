@@ -1,0 +1,680 @@
+SCENARIO: retained synthetic terminal PR evidence settles declared close/release policies, with idempotent replay
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-merged-dw3zsmxx [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-merged-dw3zsmxx
+$ fm-tasks-axi.sh add close Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added close -> Queued
+task:
+  id: close
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start close` to move it to in flight
+  - Run `tasks-axi block close --by <other>` to record a dependency
+$ fm-captain-hold.sh hold close --reason Approve this integration? [exit 0 ]
+close
+$ fm-captain-hold.sh pr-policy close https://github.com/example/isolated-validation/pull/8 terminal close [exit 0 ]
+pr-policy: close https://github.com/example/isolated-validation/pull/8 terminal close
+$ fm-tasks-axi.sh add release Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added release -> Queued
+task:
+  id: release
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start release` to move it to in flight
+  - Run `tasks-axi block release --by <other>` to record a dependency
+$ fm-captain-hold.sh hold release --reason Approve this integration? [exit 0 ]
+release
+$ fm-captain-hold.sh pr-policy release https://github.com/example/isolated-validation/pull/8 terminal release [exit 0 ]
+pr-policy: release https://github.com/example/isolated-validation/pull/8 terminal release
+$ fm-tasks-axi.sh add unrelated Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added unrelated -> Queued
+task:
+  id: unrelated
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start unrelated` to move it to in flight
+  - Run `tasks-axi block unrelated --by <other>` to record a dependency
+$ fm-captain-hold.sh hold unrelated --reason Approve this integration? [exit 0 ]
+unrelated
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-captain-hold.sh open close [exit 1 ]
+$ fm-tasks-axi.sh show close --full [exit 0 ]
+task:
+  id: close
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "Approve this integration?"
+  hold_kind: captain
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-17
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: ee5cfbccfb107c76954bff4cf5fa199f2b3664087396f987943bf025777e7f80\nResolution mode: forge-closed\n\nReconciliation evidence:\nForge PR merged: https://github.com/example/isolated-validation/pull/8\nObserved at: 2026-09-16T08:00:00Z\nSettlement policy: terminal -> close"
+$ fm-captain-hold.sh open release [exit 1 ]
+$ fm-tasks-axi.sh show release --full [exit 0 ]
+task:
+  id: release
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: b21f6b3397e4b359646ffeacb493e163d8dfb24034c421b57aaa4d60ab44efb0\nResolution mode: forge-released\n\nReconciliation evidence:\nForge PR merged: https://github.com/example/isolated-validation/pull/8\nObserved at: 2026-09-16T08:00:00Z\nSettlement policy: terminal -> release"
+$ fm-captain-hold.sh open unrelated [exit 0 ]
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-closed-937k1uz_ [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-closed-937k1uz_
+$ fm-tasks-axi.sh add close Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added close -> Queued
+task:
+  id: close
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start close` to move it to in flight
+  - Run `tasks-axi block close --by <other>` to record a dependency
+$ fm-captain-hold.sh hold close --reason Approve this integration? [exit 0 ]
+close
+$ fm-captain-hold.sh pr-policy close https://github.com/example/isolated-validation/pull/8 terminal close [exit 0 ]
+pr-policy: close https://github.com/example/isolated-validation/pull/8 terminal close
+$ fm-tasks-axi.sh add release Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added release -> Queued
+task:
+  id: release
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start release` to move it to in flight
+  - Run `tasks-axi block release --by <other>` to record a dependency
+$ fm-captain-hold.sh hold release --reason Approve this integration? [exit 0 ]
+release
+$ fm-captain-hold.sh pr-policy release https://github.com/example/isolated-validation/pull/8 terminal release [exit 0 ]
+pr-policy: release https://github.com/example/isolated-validation/pull/8 terminal release
+$ fm-tasks-axi.sh add unrelated Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added unrelated -> Queued
+task:
+  id: unrelated
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start unrelated` to move it to in flight
+  - Run `tasks-axi block unrelated --by <other>` to record a dependency
+$ fm-captain-hold.sh hold unrelated --reason Approve this integration? [exit 0 ]
+unrelated
+$ fm-contributions.sh poll [exit 0 ]
+contribution-wake: check: contributions unrelated 7ed71e3726281225c44b915dcf9717c3cf2133b2a88482313abea13128566797
+$ fm-captain-hold.sh open close [exit 1 ]
+$ fm-tasks-axi.sh show close --full [exit 0 ]
+task:
+  id: close
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: done
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "Approve this integration?"
+  hold_kind: captain
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: "-"
+  closed: 2026-11-17
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: aaa68d5d7437f224f7dd128380277a4e92b11ddff31b695a9d515537f0dc4f6f\nResolution mode: forge-closed\n\nReconciliation evidence:\nForge PR closed: https://github.com/example/isolated-validation/pull/8\nObserved at: 2026-09-16T08:00:00Z\nSettlement policy: terminal -> close"
+$ fm-captain-hold.sh open release [exit 1 ]
+$ fm-tasks-axi.sh show release --full [exit 0 ]
+task:
+  id: release
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: bd52390060f2dff391d51ef51231d2e5bd9ca72bcc46a621fb155c41a6ed5b53\nResolution mode: forge-released\n\nReconciliation evidence:\nForge PR closed: https://github.com/example/isolated-validation/pull/8\nObserved at: 2026-09-16T08:00:00Z\nSettlement policy: terminal -> release"
+$ fm-captain-hold.sh open unrelated [exit 0 ]
+$ fm-contributions.sh poll [exit 0 ]
+RESULT: terminal close/release and replay passed
+SCENARIO: disabled feature, mismatched event, changed question, wrong PR and errored evidence preserve holds
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-disabled-8z5jdss6 [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-disabled-8z5jdss6
+$ fm-tasks-axi.sh add decision Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added decision -> Queued
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start decision` to move it to in flight
+  - Run `tasks-axi block decision --by <other>` to record a dependency
+$ fm-captain-hold.sh hold decision --reason Approve this integration? [exit 0 ]
+decision
+$ fm-captain-hold.sh pr-policy decision https://github.com/example/isolated-validation/pull/8 merged close [exit 0 ]
+pr-policy: decision https://github.com/example/isolated-validation/pull/8 merged close
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 0 ]
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 1 ]
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-mismatch-0wtt2ra4 [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-mismatch-0wtt2ra4
+$ fm-tasks-axi.sh add decision Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added decision -> Queued
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start decision` to move it to in flight
+  - Run `tasks-axi block decision --by <other>` to record a dependency
+$ fm-captain-hold.sh hold decision --reason Approve this integration? [exit 0 ]
+decision
+$ fm-captain-hold.sh pr-policy decision https://github.com/example/isolated-validation/pull/8 merged close [exit 0 ]
+pr-policy: decision https://github.com/example/isolated-validation/pull/8 merged close
+$ fm-contributions.sh poll [exit 0 ]
+contributions: PR hold settlement failed for decision https://github.com/example/isolated-validation/pull/8: fm-captain-hold: dropped the PR policy for decision: the PR is closed and can no longer reach the declared event; the hold stays open
+contribution-wake: check: contributions decision 7ed71e3726281225c44b915dcf9717c3cf2133b2a88482313abea13128566797
+$ fm-captain-hold.sh open decision [exit 0 ]
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-changed-wsce5ld_ [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-changed-wsce5ld_
+$ fm-tasks-axi.sh add decision Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added decision -> Queued
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start decision` to move it to in flight
+  - Run `tasks-axi block decision --by <other>` to record a dependency
+$ fm-captain-hold.sh hold decision --reason Approve this integration? [exit 0 ]
+decision
+$ fm-captain-hold.sh pr-policy decision https://github.com/example/isolated-validation/pull/8 merged close [exit 0 ]
+pr-policy: decision https://github.com/example/isolated-validation/pull/8 merged close
+$ fm-tasks-axi.sh update decision --title A different question [exit 0 ]
+ok: updated decision (title)
+task:
+  id: decision
+  title: A different question
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: yes
+  hold_reason: "fm-hold-v1:QXBwcm92ZSB0aGlzIGludGVncmF0aW9uPw=="
+  hold_kind: captain
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: none
+  body: "Captain hold set: 2026-11-17T05:14:35Z"
+help[1]:
+  - Run `tasks-axi show decision --full` to see the result
+$ fm-contributions.sh poll [exit 0 ]
+contributions: PR hold settlement failed for decision https://github.com/example/isolated-validation/pull/8: fm-captain-hold: dropped the PR policy for decision: its question changed after the policy was declared; the hold stays open
+$ fm-captain-hold.sh open decision [exit 0 ]
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-wrong-url-rutpbolf [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-wrong-url-rutpbolf
+$ fm-tasks-axi.sh add decision Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added decision -> Queued
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start decision` to move it to in flight
+  - Run `tasks-axi block decision --by <other>` to record a dependency
+$ fm-captain-hold.sh hold decision --reason Approve this integration? [exit 0 ]
+decision
+$ fm-captain-hold.sh pr-policy decision https://github.com/example/isolated-validation/pull/8 merged close [exit 0 ]
+pr-policy: decision https://github.com/example/isolated-validation/pull/8 merged close
+$ fm-captain-hold.sh settle-pr decision https://github.com/example/isolated-validation/pull/89 [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 0 ]
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-error-vmsf3tp6 [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-error-vmsf3tp6
+$ fm-tasks-axi.sh add decision Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added decision -> Queued
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start decision` to move it to in flight
+  - Run `tasks-axi block decision --by <other>` to record a dependency
+$ fm-captain-hold.sh hold decision --reason Approve this integration? [exit 0 ]
+decision
+$ fm-captain-hold.sh pr-policy decision https://github.com/example/isolated-validation/pull/8 merged close [exit 0 ]
+pr-policy: decision https://github.com/example/isolated-validation/pull/8 merged close
+$ fm-captain-hold.sh settle-pr decision https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 0 ]
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-reheld-88l0_656 [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-reheld-88l0_656
+$ fm-tasks-axi.sh add decision Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added decision -> Queued
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start decision` to move it to in flight
+  - Run `tasks-axi block decision --by <other>` to record a dependency
+$ fm-captain-hold.sh hold decision --reason Approve this integration? [exit 0 ]
+decision
+$ fm-captain-hold.sh pr-policy decision https://github.com/example/isolated-validation/pull/8 merged close [exit 0 ]
+pr-policy: decision https://github.com/example/isolated-validation/pull/8 merged close
+$ fm-captain-hold.sh hold decision --reason A different question [exit 0 ]
+decision
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 0 ]
+RESULT: policy/evidence guards passed
+SCENARIO: release waits for away posture and task contention, then settles when attended/unlocked
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-away-fl3zbm_2 [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-away-fl3zbm_2
+$ fm-tasks-axi.sh add decision Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added decision -> Queued
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start decision` to move it to in flight
+  - Run `tasks-axi block decision --by <other>` to record a dependency
+$ fm-captain-hold.sh hold decision --reason Approve this integration? [exit 0 ]
+decision
+$ fm-captain-hold.sh pr-policy decision https://github.com/example/isolated-validation/pull/8 terminal release [exit 0 ]
+pr-policy: decision https://github.com/example/isolated-validation/pull/8 terminal release
+$ fm-afk-contract.sh enter --words watch the fleet [exit 0 ]
+Away posture recorded at 2026-11-17T05:14:52Z: hold-for-return only. No phone channel is configured; anything that needs you waits for your return. Your away instructions are recorded verbatim; the away session will carry them out where it can, and anything it is unsure of, or that needs you, waits for your return. Destructive, irreversible, and security-sensitive actions are never pre-authorizable, whatever the words say. Expected return: not given. Spend cap: 4 concurrent workers.
+Away posture (recorded):
+  entered: 2026-11-17T05:14:52Z
+  expected return: not given
+  spend cap: 4 concurrent workers
+  reach: hold-for-return only. No phone channel is configured; anything that needs you waits for your return.
+  your words (verbatim):
+    watch the fleet
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 0 ]
+$ fm-afk-contract.sh archive [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-away-fl3zbm_2/state/afk-contracts/1794892492.afk-contract
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 1 ]
+$ fm-tasks-axi.sh show decision --full [exit 0 ]
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: b21f6b3397e4b359646ffeacb493e163d8dfb24034c421b57aaa4d60ab44efb0\nResolution mode: forge-released\n\nReconciliation evidence:\nForge PR merged: https://github.com/example/isolated-validation/pull/8\nObserved at: 2026-09-16T08:00:00Z\nSettlement policy: terminal -> release"
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-busy-du3h4u2s [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-busy-du3h4u2s
+$ fm-tasks-axi.sh add decision Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added decision -> Queued
+task:
+  id: decision
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start decision` to move it to in flight
+  - Run `tasks-axi block decision --by <other>` to record a dependency
+$ fm-captain-hold.sh hold decision --reason Approve this integration? [exit 0 ]
+decision
+$ fm-captain-hold.sh pr-policy decision https://github.com/example/isolated-validation/pull/8 terminal close [exit 0 ]
+pr-policy: decision https://github.com/example/isolated-validation/pull/8 terminal close
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 0 ]
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-captain-hold.sh open decision [exit 1 ]
+RESULT: away and busy deferral passed
+SCENARIO: retained unmerged closures notify only open holds and only once, including late owners
+$ fm-lab-home.sh create {run-worktree}/.live-validation/fm-lab-closure-i0n_6gwg [exit 0 ]
+{run-worktree}/.live-validation/fm-lab-closure-i0n_6gwg
+$ fm-tasks-axi.sh add first Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added first -> Queued
+task:
+  id: first
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start first` to move it to in flight
+  - Run `tasks-axi block first --by <other>` to record a dependency
+$ fm-captain-hold.sh hold first --reason Approve this integration? [exit 0 ]
+first
+$ fm-tasks-axi.sh add bystander Unheld task --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added bystander -> Queued
+task:
+  id: bystander
+  title: "Unheld task https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start bystander` to move it to in flight
+  - Run `tasks-axi block bystander --by <other>` to record a dependency
+$ fm-contributions.sh poll [exit 0 ]
+contribution-wake: check: contributions first 7ed71e3726281225c44b915dcf9717c3cf2133b2a88482313abea13128566797
+$ fm-contributions.sh pending [exit 0 ]
+[
+  {
+    "token": "closed",
+    "type": "closed",
+    "source": "https://github.com/example/isolated-validation/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "PR closed without merging",
+    "task": "first",
+    "url": "https://github.com/example/isolated-validation/pull/8"
+  }
+]
+$ fm-tasks-axi.sh add late Decide the integration --pr https://github.com/example/isolated-validation/pull/8 [exit 0 ]
+ok: added late -> Queued
+task:
+  id: late
+  title: "Decide the integration https://github.com/example/isolated-validation/pull/8"
+  state: queued
+  blocked: no
+  blocked_by: none
+  held: no
+  hold_reason: "-"
+  hold_kind: "-"
+  hold_until: "-"
+  kind: task
+  repo: "-"
+  priority: "-"
+  created: 2026-11-17
+  closed: "-"
+  deps: none
+  links: "pr:https://github.com/example/isolated-validation/pull/8"
+  body: ""
+help[2]:
+  - Run `tasks-axi start late` to move it to in flight
+  - Run `tasks-axi block late --by <other>` to record a dependency
+$ fm-captain-hold.sh hold late --reason Approve this integration? [exit 0 ]
+late
+$ fm-contributions.sh poll [exit 0 ]
+$ fm-contributions.sh pending [exit 0 ]
+[
+  {
+    "token": "closed",
+    "type": "closed",
+    "source": "https://github.com/example/isolated-validation/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "PR closed without merging",
+    "task": "first",
+    "url": "https://github.com/example/isolated-validation/pull/8"
+  },
+  {
+    "token": "closed",
+    "type": "closed",
+    "source": "https://github.com/example/isolated-validation/pull/8",
+    "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "body": "PR closed without merging",
+    "task": "late",
+    "url": "https://github.com/example/isolated-validation/pull/8"
+  }
+]
+$ fm-contributions.sh poll [exit 0 ]
+RESULT: closure scope, late owner and deduplication passed

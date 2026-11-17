@@ -1,0 +1,10 @@
+Native shell: GNU bash, version 3.2.57(1)-release (arm64-apple-darwin26)
+after: empty process args returned 1 without crashing
+after command exit=0
+{run-worktree}/.validation-regression/hermes-before.sh: line 6: words[@]: unbound variable
+before command exit=127
+Host: Darwin
+/proc unavailable: Linux NUL-argv assertion cannot run on this host
+Native CLI availability:
+grok is absent from PATH
+hermes is absent from PATH

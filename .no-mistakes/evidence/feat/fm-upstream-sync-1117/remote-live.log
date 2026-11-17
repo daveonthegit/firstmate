@@ -1,0 +1,51 @@
+SCENARIO: real local remote-job lane, login identity present; arbitrary ambient secrets must not cross
+job-RTKAzq
+USER=local-test-user
+LOGNAME=local-test-login
+FM_REMOTE_JOB_ACTIVE=1
+TOP_SECRET=<unset>
+argv=<two words>
+argv=<$(never executed)>
+stdin=identity input
+USER=local-test-user
+LOGNAME=local-test-login
+TOP_SECRET=<unset>
+FM_REMOTE_JOB_ACTIVE=1
+argv=<two words>
+argv=<$(never executed)>
+stdin=identity input
+RESULT: present identity, isolated environment, argv and stdin passed
+SCENARIO: real local remote-job lane, login identity absent; arbitrary ambient secrets must not cross
+job-j1sciB
+USER=<unset>
+LOGNAME=<unset>
+FM_REMOTE_JOB_ACTIVE=1
+TOP_SECRET=<unset>
+argv=<two words>
+argv=<$(never executed)>
+stdin=identity input
+USER=<unset>
+LOGNAME=<unset>
+TOP_SECRET=<unset>
+FM_REMOTE_JOB_ACTIVE=1
+argv=<two words>
+argv=<$(never executed)>
+stdin=identity input
+RESULT: absent identity, isolated environment, argv and stdin passed
+SCENARIO: real local remote-job lane, login identity empty; arbitrary ambient secrets must not cross
+job-Bqoo39
+USER=<unset>
+LOGNAME=<unset>
+FM_REMOTE_JOB_ACTIVE=1
+TOP_SECRET=<unset>
+argv=<two words>
+argv=<$(never executed)>
+stdin=identity input
+USER=<unset>
+LOGNAME=<unset>
+TOP_SECRET=<unset>
+FM_REMOTE_JOB_ACTIVE=1
+argv=<two words>
+argv=<$(never executed)>
+stdin=identity input
+RESULT: empty identity, isolated environment, argv and stdin passed
