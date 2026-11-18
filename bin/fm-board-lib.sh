@@ -12,16 +12,12 @@
 # Configuration - optional private config/agent-board, one setting per line,
 # `#` comments allowed. Its presence is the opt-in: with no file the watcher is
 # never armed and the posting helper refuses.
-#   repo=<owner/name>    the board repository; default BG-Media-LLC/agent-board
-#   issue=<number>       the board issue; default 1
 #   interval=<seconds>   watcher poll interval; default 120, floor 60
 #   account=<login>      the logged-in gh account used for every call; default
 #                        davidx-secco. Its token is handed to each gh call by
 #                        bin/fm-gh-account.sh, never by switching gh globally.
-#   self_tag=<tag>       this firstmate's own poster tag; default
-#                        [David's Firstmate]. The posting helper prefixes it,
-#                        and the watcher never surfaces a comment that starts
-#                        with it.
+# The board is BG-Media-LLC/agent-board issue 1. The posting helper prefixes
+# [David's Firstmate], and the watcher never surfaces posts starting with it.
 #
 #   fm_board_load_config
 #       Sets BOARD_REPO, BOARD_ISSUE, BOARD_INTERVAL (after the floor),
@@ -47,18 +43,8 @@ fm_board_config_file() {
   fi
 }
 
-fm_board_repo_valid() {
-  printf '%s' "${1-}" | LC_ALL=C grep -Eq '^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}$' || return 1
-  case "$1" in */.|*/..) return 1 ;; esac
-}
-
 fm_board_account_valid() {
   printf '%s' "${1-}" | LC_ALL=C grep -Eq '^[A-Za-z0-9][A-Za-z0-9-]{0,38}$'
-}
-
-# A poster tag: one bracketed run of printable characters, bounded.
-fm_board_tag_valid() {
-  printf '%s' "${1-}" | LC_ALL=C grep -Eq '^\[[^][[:cntrl:]]{1,80}\]$'
 }
 
 # shellcheck disable=SC2034 # Output globals are read by the sourcing scripts.
@@ -87,13 +73,6 @@ fm_board_load_config() {
     value=${line#*=}
     [ "$key" != "$line" ] || { BOARD_CONFIG_ERROR="config/agent-board line $n is not key=value"; return 1; }
     case "$key" in
-      repo)
-        fm_board_repo_valid "$value" || { BOARD_CONFIG_ERROR="config/agent-board line $n: repo must be owner/name"; return 1; }
-        BOARD_REPO=$value ;;
-      issue)
-        case "$value" in ''|*[!0-9]*) BOARD_CONFIG_ERROR="config/agent-board line $n: issue must be a number"; return 1 ;; esac
-        [ "${#value}" -le 9 ] && [ "$((10#$value))" -gt 0 ] || { BOARD_CONFIG_ERROR="config/agent-board line $n: issue must be a positive number"; return 1; }
-        BOARD_ISSUE=$((10#$value)) ;;
       interval)
         case "$value" in ''|*[!0-9]*) BOARD_CONFIG_ERROR="config/agent-board line $n: interval must be whole seconds"; return 1 ;; esac
         [ "${#value}" -le 9 ] || { BOARD_CONFIG_ERROR="config/agent-board line $n: interval is too large"; return 1; }
@@ -102,9 +81,6 @@ fm_board_load_config() {
       account)
         fm_board_account_valid "$value" || { BOARD_CONFIG_ERROR="config/agent-board line $n: account must be a GitHub login"; return 1; }
         BOARD_ACCOUNT=$value ;;
-      self_tag)
-        fm_board_tag_valid "$value" || { BOARD_CONFIG_ERROR="config/agent-board line $n: self_tag must be one [bracketed] tag"; return 1; }
-        BOARD_SELF_TAG=$value ;;
       *) BOARD_CONFIG_ERROR="config/agent-board line $n: unknown setting $key"; return 1 ;;
     esac
   done < "$file"

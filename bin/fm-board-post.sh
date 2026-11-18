@@ -6,12 +6,11 @@
 #   fm-board-post.sh -              (read the body from stdin)
 #   fm-board-post.sh --help
 #
-# Posts the body as one new comment on the configured board issue, prefixed with
-# this firstmate's self_tag and one space ("[David's Firstmate] " by default). A
-# body that already starts with that tag is posted unchanged, so the prefix is
-# never doubled. The board, issue, account, and tag come from config/agent-board
-# (bin/fm-board-lib.sh owns the format); with no such file this refuses, because
-# that file is the board opt-in.
+# Posts the body as one new comment on BG-Media-LLC/agent-board issue 1, prefixed
+# with "[David's Firstmate] ". A body that already starts with that tag is posted
+# unchanged, so the prefix is never doubled. The account comes from
+# config/agent-board (bin/fm-board-lib.sh owns the format); with no such file
+# this refuses, because that file is the board opt-in.
 #
 # This is the only board write firstmate makes. It creates a comment and does
 # nothing else: no edit, delete, reaction, label, or issue change. The watcher

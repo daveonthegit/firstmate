@@ -168,17 +168,18 @@ assert_contains "$out" "issue=1" "the default board issue"
 assert_contains "$out" "interval=120" "the default interval is two minutes"
 assert_contains "$out" "account=davidx-secco" "the default account"
 assert_contains "$out" "self_tag=[David's Firstmate]" "the default self tag"
-printf 'repo=acme/board\nissue=7\ninterval=30\naccount=other-acct\nself_tag=[Ops Bot]\n' > "$H/config/agent-board"
+printf 'interval=30\naccount=other-acct\n' > "$H/config/agent-board"
 out=$(bd config)
-assert_contains "$out" "repo=acme/board" "repo is configurable"
-assert_contains "$out" "issue=7" "issue is configurable"
+assert_contains "$out" "repo=BG-Media-LLC/agent-board" "the board repository stays fixed"
+assert_contains "$out" "issue=1" "the board issue stays fixed"
 assert_contains "$out" "interval=60 (floor applied; configured 30)" "an interval below the floor is raised to 60"
 assert_contains "$out" "account=other-acct" "account is configurable"
-assert_contains "$out" "self_tag=[Ops Bot]" "self_tag is configurable"
-for bad in 'interval=soon' 'repo=not a repo' 'issue=0' 'account=-x' 'self_tag=no brackets' 'colour=blue' 'novalue'; do
+assert_contains "$out" "self_tag=[David's Firstmate]" "the poster tag stays fixed"
+for bad in 'interval=soon' 'repo=acme/board' 'issue=7' 'account=-x' 'self_tag=[Ops Bot]' 'colour=blue' 'novalue'; do
   printf '%s\n' "$bad" > "$H/config/agent-board"
   if bd config >/dev/null 2>&1; then fail "an invalid config line must be refused: $bad"; fi
   if bd arm >/dev/null 2>&1; then fail "arm must refuse an invalid config: $bad"; fi
+  if printf 'hi\n' | post - >/dev/null 2>&1; then fail "posting must refuse an invalid config: $bad"; fi
 done
 pass "config/agent-board is the opt-in, with defaults, overrides, a 60s floor, and refusals"
 
@@ -242,6 +243,8 @@ set_comments "$(comment 102 reagan-bot 2026-11-01T10:09:00Z 2026-11-01T10:09:00Z
 wait_runner || fail "a same-second comment completes the source"
 R=$(last_result)
 assert_grep "SAME-SECOND" "$R" "a new comment in the cursor's own second is delivered"
+assert_grep "edited=0" "$R" "an unchanged same-second comment is not counted as edited"
+assert_no_grep "(edited " "$R" "an unchanged same-second comment is not labeled edited"
 assert_no_grep "please review PR 16" "$R" "an already-seen comment in that second is not repeated"
 [ "$(cursor)" = $'2026-11-01T10:09:00Z\t102,103' ] || fail "both same-second ids are remembered: $(cursor)"
 start_runner

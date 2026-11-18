@@ -326,7 +326,7 @@ for my $c (@shown) {
   my $login = ref $c->{user} eq "HASH" ? substr($one->($c->{user}{login}), 0, 40) : "";
   $login = "unknown" if $login eq "";
   my $url = $one->($c->{html_url}); $url = "(no comment URL)" unless $url =~ m{^https://github\.com/\S+$};
-  my $was = $c->{created_at} le $from ? 1 : 0;
+  my $was = $c->{created_at} le $from && $c->{created_at} lt $c->{updated_at} ? 1 : 0;
   $edited += $was;
   my $bytes = length encode("UTF-8", $text);
   if ($bytes > $max) {
