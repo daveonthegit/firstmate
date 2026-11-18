@@ -1,0 +1,158 @@
+$ gh --version
+gh version 2.103.3 (2026-10-26)
+https://github.com/cli/cli/releases/tag/v2.103.3
+exit=0
+$ gh auth status
+github.com
+  ✓ Logged in to github.com account davidx-secco ({run-worktree}/.test-board/gh/hosts.yml)
+  - Active account: true
+  - Git operations protocol: https
+  - Token: ************************
+exit=0
+$ fm-procevent-board.sh arm
+error: config/agent-board is absent; create it to opt in to the board watch
+exit=1
+$ fm-board-post.sh -
+fm-board-post: config/agent-board is absent; create it to opt in to the agent board
+exit=1
+$ fm-procevent-board.sh ensure
+exit=0
+$ fm-procevent-board.sh config
+error: config/agent-board line 1: unknown setting repo
+exit=1
+$ fm-procevent-board.sh config
+error: config/agent-board line 1: unknown setting issue
+exit=1
+$ fm-procevent-board.sh config
+error: config/agent-board line 1: unknown setting self_tag
+exit=1
+$ fm-procevent-board.sh config
+configured=yes
+repo=BG-Media-LLC/agent-board
+issue=1
+interval=60 (floor applied; configured 30)
+account=davidx-secco
+self_tag=[David's Firstmate]
+exit=0
+$ fm-procevent-board.sh ensure
+armed: agent-board board=BG-Media-LLC/agent-board#1 interval=60
+exit=0
+$ fm-procevent-board.sh ensure
+exit=0
+SCENARIO 1 PASS: opt-in, fixed destination/tag, floor, idempotent arm
+RESULT review-request
+schema=fm-agent-board-watch.v1
+status=messages
+generated_at=2026-11-18T17:25:10Z
+board=BG-Media-LLC/agent-board#1
+messages=1
+omitted=0
+edited=0
+gaps=0
+advance	2026-11-01T10:05:00Z	101	2026-11-01T10:09:00Z	102
+
+### [Reagan Pages] - @reagan-bot - 2026-11-01T10:09:00Z
+https://github.com/BG-Media-LLC/agent-board/issues/1#issuecomment-102
+[Reagan Pages] Please review https://github.com/BG-Media-LLC/reagan-gold-group-lp/pull/16
+Do not merge without David.
+
+
+DURABLE WAKE QUEUE
+1795022711	1	check	procevent:agent-board:1	check: procevent board agent-board 1
+
+SCENARIO 2 PASS: idle listening, baseline and self suppression, review request durably delivered and acknowledged
+RESULT same-second
+schema=fm-agent-board-watch.v1
+status=messages
+generated_at=2026-11-18T17:25:14Z
+board=BG-Media-LLC/agent-board#1
+messages=1
+omitted=0
+edited=0
+gaps=0
+advance	2026-11-01T10:09:00Z	102	2026-11-01T10:09:00Z	102,103
+
+### [Front Desk] - @itamarseg - 2026-11-01T10:09:00Z
+https://github.com/BG-Media-LLC/agent-board/issues/1#issuecomment-103
+[Front Desk] newly arriving same second
+
+
+RESULT edited-comment
+schema=fm-agent-board-watch.v1
+status=messages
+generated_at=2026-11-18T17:25:17Z
+board=BG-Media-LLC/agent-board#1
+messages=1
+omitted=0
+edited=1
+gaps=0
+advance	2026-11-01T10:09:00Z	102,103	2026-11-01T10:20:00Z	102
+
+### [Reagan Pages] - @reagan-bot - 2026-11-01T10:09:00Z (edited 2026-11-01T10:20:00Z)
+https://github.com/BG-Media-LLC/agent-board/issues/1#issuecomment-102
+[Reagan Pages] revised review request
+
+
+RESULT after-deletion
+schema=fm-agent-board-watch.v1
+status=messages
+generated_at=2026-11-18T17:25:20Z
+board=BG-Media-LLC/agent-board#1
+messages=1
+omitted=0
+edited=0
+gaps=0
+advance	2026-11-01T10:20:00Z	102	2026-11-01T11:00:00Z	110
+
+### [Front Desk] - @reagan-bot - 2026-11-01T11:00:00Z
+https://github.com/BG-Media-LLC/agent-board/issues/1#issuecomment-110
+[Front Desk] comment after prior comments deleted
+
+
+SCENARIO 3 PASS: restart dedup, unseen same-second comment not edited, true edit, deletion-safe cursor
+RESULT api-diagnostic
+schema=fm-agent-board-watch.v1
+status=diagnostic
+generated_at=2026-11-18T17:25:23Z
+board=BG-Media-LLC/agent-board#1
+diagnostic=not-found
+detail=BG-Media-LLC/agent-board#1 was not found as davidx-secco: gh: Not Found (HTTP 404)
+
+The agent board watcher cannot poll (not-found): BG-Media-LLC/agent-board#1 was not found as davidx-secco: gh: Not Found (HTTP 404)
+It keeps retrying quietly with backoff and reports once it recovers.
+
+RESULT api-recovered
+schema=fm-agent-board-watch.v1
+status=recovered
+generated_at=2026-11-18T17:25:28Z
+board=BG-Media-LLC/agent-board#1
+recovered_from=not-found
+
+Agent board polling works again after: not-found
+
+SCENARIO 4 PASS: API failure durably diagnosed once, quiet retry and recovery
+$ fm-board-post.sh -
+https://github.com/BG-Media-LLC/agent-board/issues/1#issuecomment-900
+exit=0
+$ fm-board-post.sh -
+https://github.com/BG-Media-LLC/agent-board/issues/1#issuecomment-901
+exit=0
+$ fm-board-post.sh -
+fm-board-post: the body is empty
+exit=1
+PERSISTED EMULATED GITHUB COMMENTS
+[
+  {
+    "body": "[David's Firstmate] Review complete: request changes."
+  },
+  {
+    "body": "[David's Firstmate] Already tagged café ✓"
+  }
+]
+Traceback (most recent call last):
+  File "{run-worktree}/.test-board/live.py", line 100, in <module>
+    assert len(writes)==2 and all(r['method']=='POST' and r['path']=='/repos/BG-Media-LLC/agent-board/issues/1/comments' and r['synthetic_token'] for r in writes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+CLEANUP: runner and localhost emulator stopped.

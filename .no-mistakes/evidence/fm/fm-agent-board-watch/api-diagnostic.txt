@@ -1,0 +1,9 @@
+schema=fm-agent-board-watch.v1
+status=diagnostic
+generated_at=2026-11-18T17:26:41Z
+board=BG-Media-LLC/agent-board#1
+diagnostic=not-found
+detail=BG-Media-LLC/agent-board#1 was not found as fm-board-lab: gh: Not Found (HTTP 404)
+
+The agent board watcher cannot poll (not-found): BG-Media-LLC/agent-board#1 was not found as fm-board-lab: gh: Not Found (HTTP 404)
+It keeps retrying quietly with backoff and reports once it recovers.

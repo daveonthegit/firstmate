@@ -1,0 +1,7 @@
+schema=fm-agent-board-watch.v1
+status=recovered
+generated_at=2026-11-18T17:26:46Z
+board=BG-Media-LLC/agent-board#1
+recovered_from=not-found
+
+Agent board polling works again after: not-found
