@@ -884,6 +884,7 @@ tests/fm-pr-check-security.test.sh 300675
 tests/fm-pr-reviewers.test.sh 157
 tests/fm-pr-state-live-e2e.test.sh 47
 tests/fm-pr-state.test.sh 525
+tests/fm-procevent-board.test.sh 35000
 tests/fm-procevent-grokbot.test.sh 38958
 tests/fm-procevent-quota.test.sh 2459
 tests/fm-procevent-when.test.sh 25674

@@ -16,6 +16,8 @@
 #                 "HOME_SUMMARY: <ledger never published|not republished since
 #                 <stamp>>; <n> failed attempt(s) ... last: <recorded failure>",
 #                 "BACKLOG_RECONCILE: <id>: <what this home could not reconcile>",
+#                 "AGENT_BOARD: the board watch is not armed: <reason>" (only with
+#                 config/agent-board present; a successful arm stays silent),
 #                 "RECORD_HYGIENE: <record inconsistency found in this home>"
 #                 (only with config/record-hygiene present),
 #                 "BACKLOG_RECONCILE: code-root <file> is not this home's <file>; ...",
@@ -1736,6 +1738,22 @@ detect_local_config() {
   fi
   detect_code_root_backlog_fork
   detect_home_summary_publication
+  agent_board_ensure
+}
+
+# The agent board watch is opt-in through config/agent-board; while that file
+# exists its source stays armed (bin/fm-procevent-board.sh owns the source;
+# bin/fm-board-lib.sh owns config). A read-only session leaves registration alone.
+agent_board_ensure() {
+  local out
+  [ -e "$CONFIG/agent-board" ] || [ -L "$CONFIG/agent-board" ] || return 0
+  if [ "${FM_BOOTSTRAP_DETECT_ONLY:-0}" = 1 ] && [ "${FM_BOOTSTRAP_LOCKED:-0}" != 1 ]; then
+    return 0
+  fi
+  if ! out=$(FM_HOME="$FM_HOME" FM_CONFIG_OVERRIDE="$CONFIG" FM_STATE_OVERRIDE="$STATE" \
+    "$SCRIPT_DIR/fm-procevent-board.sh" ensure 2>&1); then
+    echo "AGENT_BOARD: the board watch is not armed: $(printf '%s\n' "$out" | head -1)"
+  fi
 }
 
 # Shadow-backlog check. When this home's data directory is not the code root's,
