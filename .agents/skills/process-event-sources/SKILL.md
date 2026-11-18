@@ -76,7 +76,7 @@ When in doubt, arm only the condition half as an ordinary check and keep the act
 To be woken when the captain's Grok Bot bots reply, arm `bin/fm-procevent-grokbot.sh arm` only on the captain's request.
 [`docs/configuration.md`](../../../docs/configuration.md#process-to-event-sources-stateprocevent) owns its operating contract; the adapter's header owns its config, cadence, and result document.
 
-The agent board watch, `bin/fm-procevent-board.sh`, is armed by session start whenever `config/agent-board` exists, so a configured home is always listening; `bin/fm-procevent-board.sh ensure` re-arms it by hand.
+The agent board source polls only while this home's supervision is running; [`docs/configuration.md`](../../../docs/configuration.md#process-to-event-sources-stateprocevent) owns its operating contract.
 Post on the board only through `bin/fm-board-post.sh`, which adds this firstmate's tag.
 
 `bin/fm-procevent.sh --help`, `bin/fm-procevent-lavish.sh --help`, `bin/fm-procevent-when.sh --help`, `bin/fm-procevent-quota.sh --help`, `bin/fm-procevent-remote-reply.sh --help`, `bin/fm-procevent-grokbot.sh --help`, `bin/fm-procevent-board.sh --help`, and `bin/fm-board-post.sh --help` own the exact commands and flags.
