@@ -3176,6 +3176,13 @@ A first-seen or lost cursor baselines without replaying history; delivered curso
 Named bot errors are reported once while other bots continue; overall failures back off quietly until one recovery notice.
 The adapter header owns the bounded payload, config, cadence, and result mechanics; [`process-event-sources`](../.agents/skills/process-event-sources/SKILL.md) owns handling and the rule that bot approval requests are only relayed, never answered.
 
+The optional agent board adapter, [`bin/fm-procevent-board.sh`](../bin/fm-procevent-board.sh), wakes Firstmate when anyone other than this firstmate comments on the agent board, the GitHub issue whose comments agents and people use as a shared message board.
+Private `config/agent-board` is the opt-in: while it exists, session start keeps the source armed, and without it nothing is armed and [`bin/fm-board-post.sh`](../bin/fm-board-post.sh) refuses to post.
+It selects the board repository and issue (default `BG-Media-LLC/agent-board` issue 1), the interval (default 120 seconds, minimum 60), the GitHub account every call runs as (default `davidx-secco`, through [`bin/fm-gh-account.sh`](../bin/fm-gh-account.sh)), and this firstmate's own poster tag (default `[David's Firstmate]`), which the posting helper prefixes and the watcher never surfaces.
+The watcher only reads the issue and its comments; the posting helper only creates one tagged comment.
+A first-seen or unreadable cursor baselines without replaying history, delivered cursors are committed only after durable notification publication, and failures back off quietly until one recovery notice.
+[`bin/fm-board-lib.sh`](../bin/fm-board-lib.sh) owns the config format, the adapter header owns the cursor, payload, cadence, and result mechanics, and [`process-event-sources`](../.agents/skills/process-event-sources/SKILL.md) owns handling.
+
 A long-polling external process is registered as a *source* through its adapter, whose header and `--help` own the commands and flags.
 `bin/fm-procevent.sh` owns the generic contract; built-in adapters retain their tracked `bin/fm-procevent-<adapter>.sh` commands, while an explicitly bound external adapter routes through the trusted host contract above.
 
@@ -3678,6 +3685,10 @@ FM_WHEN_OUTPUT_TAIL_BYTES=8192          # bound on the command-output tail insid
 FM_GROKBOT_MAX_MESSAGES=20              # newest bot messages kept per reply-watcher result
 FM_GROKBOT_MAX_MESSAGE_BYTES=4096       # per-message truncation bound
 FM_GROKBOT_CALL_TIMEOUT=120             # seconds per read-only gbot call
+FM_BOARD_MAX_MESSAGES=20                # newest board comments kept per board-watch result
+FM_BOARD_MAX_MESSAGE_BYTES=4096         # per-comment truncation bound
+FM_BOARD_MAX_PAGES=10                   # 100-comment pages one board poll reads
+FM_BOARD_CALL_TIMEOUT=60                # seconds per board gh call, watcher and posting helper
 FM_GH_ACCOUNT=                         # invocation account override; none opts out
 FM_GH_ACCOUNT_TIMEOUT=10               # seconds per repository-visibility probe
 FM_GH_SHIM_ALLOW_LINKED_WORKTREE=0      # explicit warned override for installing from a disposable copy

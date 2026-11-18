@@ -1512,6 +1512,47 @@ test_pr_health_monitor_arms_only_with_its_flag() {
   pass "bootstrap arms the PR health monitor only when config/pr-health-monitor exists"
 }
 
+test_agent_board_armed_only_with_its_config() {
+  local case_dir fakebin out flag
+  for flag in on off bad; do
+    case_dir="$TMP_ROOT/agent-board-$flag"
+    mkdir -p "$case_dir/home/config" "$case_dir/home/data" "$case_dir/home/state"
+    # The home doubles as the code root here, so the runner finds the adapter.
+    ln -s "$ROOT/bin" "$case_dir/home/bin"
+    printf '%s\n' manual > "$case_dir/home/config/backlog-backend"
+    case "$flag" in
+      on) printf 'interval=300\n' > "$case_dir/home/config/agent-board" ;;
+      bad) printf 'interval=soon\n' > "$case_dir/home/config/agent-board" ;;
+    esac
+    fakebin=$(make_fake_toolchain "$case_dir")
+    add_real_jq "$fakebin"
+    out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$case_dir/home" FM_ROOT_OVERRIDE="$case_dir/home" \
+      FM_FAKE_TREEHOUSE_LEASE_HELP=1 "$ROOT/bin/fm-bootstrap.sh")
+    case "$flag" in
+      on)
+        [ -z "$out" ] || fail "bootstrap with config/agent-board printed: $out"
+        grep -qx 'adapter=board' "$case_dir/home/state/procevent/agent-board.source" 2>/dev/null \
+          || fail "bootstrap did not arm the agent board watch: $(ls -A "$case_dir/home/state")"
+        out=$(PATH="$fakebin:$BASE_PATH" FM_HOME="$case_dir/home" FM_ROOT_OVERRIDE="$case_dir/home" \
+          FM_FAKE_TREEHOUSE_LEASE_HELP=1 "$ROOT/bin/fm-bootstrap.sh")
+        [ -z "$out" ] || fail "a second bootstrap with the board already armed printed: $out"
+        ;;
+      off)
+        [ -z "$out" ] || fail "bootstrap without config/agent-board printed: $out"
+        [ ! -e "$case_dir/home/state/procevent/agent-board.source" ] \
+          || fail "bootstrap armed the agent board watch without config/agent-board"
+        ;;
+      bad)
+        assert_contains "$out" 'AGENT_BOARD: the board watch is not armed: error: config/agent-board line 1: interval must be whole seconds' \
+          "bootstrap did not report an agent board config it could not arm"
+        [ ! -e "$case_dir/home/state/procevent/agent-board.source" ] \
+          || fail "bootstrap armed the agent board watch from an invalid config"
+        ;;
+    esac
+  done
+  pass "bootstrap keeps the agent board watch armed only while config/agent-board exists"
+}
+
 test_preferred_provider_validation() {
   local case_dir fakebin out value key
   case_dir="$TMP_ROOT/preferred-provider"
@@ -1950,5 +1991,6 @@ test_network_phases_record_per_step_elapsed_times
 test_tasks_axi_verdict_handoff_is_consumed_once
 test_crew_dispatch_active_rules_are_verbose_bootstrap_info
 test_pr_health_monitor_arms_only_with_its_flag
+test_agent_board_armed_only_with_its_config
 test_preferred_provider_validation
 test_crew_dispatch_validation
