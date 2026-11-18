@@ -10,8 +10,9 @@
 # every poster prefixes its message with its own tag, such as "[Front Desk]".
 #
 # Configuration - optional private config/agent-board, one setting per line,
-# `#` comments allowed. Its presence is the opt-in: with no file the watcher is
-# never armed and the posting helper refuses.
+# `#` comments allowed. An empty file accepts defaults. Its presence is the
+# opt-in: with no file no new watch registration is made and posting refuses.
+# bin/fm-procevent-board.sh's header owns retirement of an existing source.
 #   interval=<seconds>   watcher poll interval; default 120, floor 60
 #   account=<login>      the logged-in gh account used for every call; default
 #                        davidx-secco. Its token is handed to each gh call by

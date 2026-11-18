@@ -1742,8 +1742,8 @@ detect_local_config() {
 }
 
 # The agent board watch is opt-in through config/agent-board; while that file
-# exists its source stays armed (bin/fm-procevent-board.sh owns the source and
-# the config). A read-only session leaves registration alone.
+# exists its source stays armed (bin/fm-procevent-board.sh owns the source;
+# bin/fm-board-lib.sh owns config). A read-only session leaves registration alone.
 agent_board_ensure() {
   local out
   [ -e "$CONFIG/agent-board" ] || [ -L "$CONFIG/agent-board" ] || return 0

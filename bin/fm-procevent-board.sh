@@ -21,10 +21,13 @@
 #            the board watched across firstmate restarts.
 # ensure     Arm only when config/agent-board exists and the current
 #            registration differs; silent when there is nothing to do.
-#            bin/fm-bootstrap.sh runs it at every session start, so a configured
-#            home is always listening.
+#            bin/fm-bootstrap.sh runs it at every session start. Polling depends
+#            on ordinary home supervision; this is not a standalone service.
 # retire     Stop watching and retire the registration. The saved cursor under
 #            state/agent-board-watch/ is kept, so a later arm continues from it.
+#            Also remove config/agent-board to prevent session-start re-arming.
+#            Removing that file alone does not retire an existing registration;
+#            its child reports config-absent and keeps retrying.
 # classify   Print the captured result's class: messages, diagnostic,
 #            recovered, or malformed.
 # config     Print the effective settings (bin/fm-board-lib.sh owns the file).
@@ -61,7 +64,8 @@
 #   - Each comment body is truncated to FM_BOARD_MAX_MESSAGE_BYTES (4096) and
 #     each result shows at most FM_BOARD_MAX_MESSAGES (20), keeping the newest
 #     and counting the omitted ones. One poll reads at most FM_BOARD_MAX_PAGES
-#     (10) pages of 100 comments; a larger backlog is counted as omitted.
+#     (10) pages of 100 comments; reaching the cap sets gaps=1 because unread
+#     pages may remain. omitted counts only fetched comments not shown.
 #   - Any failure (gh missing, the account unavailable, the repository or issue
 #     not found, a rate limit, an API error, a timeout, an unrecognised
 #     response, or an invalid config) produces one diagnostic result. While that
