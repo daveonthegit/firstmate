@@ -17,8 +17,14 @@
 #   account=<login>      the logged-in gh account used for every call; default
 #                        davidx-secco. Its token is handed to each gh call by
 #                        bin/fm-gh-account.sh, never by switching gh globally.
-# The board is BG-Media-LLC/agent-board issue 1. The posting helper prefixes
-# [David's Firstmate], and the watcher never surfaces posts starting with it.
+#   repo=<owner/name>    the board repository; default BG-Media-LLC/agent-board
+#   issue=<number>       the board issue, a positive integer; default 1
+#   tag=<poster tag>     this firstmate's poster tag; default [David's Firstmate].
+#                        Non-empty, without leading or trailing whitespace.
+# A home watches and posts to exactly one board. The posting helper prefixes the
+# tag, and the watcher never surfaces posts starting with it. Changing repo or
+# issue keeps the watcher's saved cursor; remove state/agent-board-watch/ first
+# so the new board is baselined without replaying its history.
 #
 #   fm_board_load_config
 #       Sets BOARD_REPO, BOARD_ISSUE, BOARD_INTERVAL (after the floor),
@@ -46,6 +52,12 @@ fm_board_config_file() {
 
 fm_board_account_valid() {
   printf '%s' "${1-}" | LC_ALL=C grep -Eq '^[A-Za-z0-9][A-Za-z0-9-]{0,38}$'
+}
+
+# owner/name: a GitHub login, then a repository name other than . or ..
+fm_board_repo_valid() {
+  case "${1-}" in */.|*/..) return 1 ;; esac
+  printf '%s' "${1-}" | LC_ALL=C grep -Eq '^[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9._-]{1,100}$'
 }
 
 # shellcheck disable=SC2034 # Output globals are read by the sourcing scripts.
@@ -82,6 +94,16 @@ fm_board_load_config() {
       account)
         fm_board_account_valid "$value" || { BOARD_CONFIG_ERROR="config/agent-board line $n: account must be a GitHub login"; return 1; }
         BOARD_ACCOUNT=$value ;;
+      repo)
+        fm_board_repo_valid "$value" || { BOARD_CONFIG_ERROR="config/agent-board line $n: repo must be owner/name"; return 1; }
+        BOARD_REPO=$value ;;
+      issue)
+        case "$value" in ''|*[!0-9]*) BOARD_CONFIG_ERROR="config/agent-board line $n: issue must be a positive integer"; return 1 ;; esac
+        { [ "${#value}" -le 9 ] && [ "$((10#$value))" -gt 0 ]; } || { BOARD_CONFIG_ERROR="config/agent-board line $n: issue must be a positive integer"; return 1; }
+        BOARD_ISSUE=$((10#$value)) ;;
+      tag)
+        case "$value" in ''|[[:space:]]*|*[[:space:]]) BOARD_CONFIG_ERROR="config/agent-board line $n: tag must be non-empty without surrounding whitespace"; return 1 ;; esac
+        BOARD_SELF_TAG=$value ;;
       *) BOARD_CONFIG_ERROR="config/agent-board line $n: unknown setting $key"; return 1 ;;
     esac
   done < "$file"

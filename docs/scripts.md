@@ -116,7 +116,7 @@ The shared no-mistakes gate lifecycle boundary is summarized in [architecture.md
 | `fm-procevent-grokbot.sh` | Wake on bot-authored Grok Bot replies through gateway-backed read-only polling |
 | `fm-procevent-board.sh`  | Wake on agent board comments posted by anyone other than this firstmate, through read-only GitHub polling |
 | `fm-board-post.sh`       | Post one tagged comment on the agent board as this firstmate                        |
-| `fm-board-lib.sh`        | Single owner of the `config/agent-board` format and the board's GitHub account selection |
+| `fm-board-lib.sh`        | Single owner of the `config/agent-board` format: board target, poster tag, and GitHub account |
 | `fm-procevent-when.sh`   | Fire a trust-bound deterministic action at most once when its registered condition holds, then wake with the outcome |
 | `fm-gate-refuse-lib.sh`  | Shared gate-context lifecycle boundary for real and lab homes                      |
 | `fm-watch-arm.sh`        | Verified home-scoped watcher arm wrapper with loud cycle endings and bounded lifecycle ledger |
