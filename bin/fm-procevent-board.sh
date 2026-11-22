@@ -55,7 +55,10 @@
 #     the cursor, so a deleted comment simply stops appearing and never breaks
 #     the cursor. With no saved cursor the board is baselined at its current
 #     state without replaying history; an unreadable cursor is re-baselined the
-#     same way and reported once.
+#     same way and reported once. The saved cursor is not keyed by board:
+#     before changing repo or issue, retire the source, remove this home's
+#     state/agent-board-watch/ directory, then configure and arm the new board
+#     so its history is baselined rather than replayed or skipped by an old cursor.
 #   - A comment whose body starts with this firstmate's self_tag is its own post
 #     and is never surfaced. A round that sees only those advances the cursor
 #     directly; a round that delivers comments is committed only by autohandle,

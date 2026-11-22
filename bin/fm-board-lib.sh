@@ -18,13 +18,13 @@
 #                        davidx-secco. Its token is handed to each gh call by
 #                        bin/fm-gh-account.sh, never by switching gh globally.
 #   repo=<owner/name>    the board repository; default BG-Media-LLC/agent-board
-#   issue=<number>       the board issue, a positive integer; default 1
+#   issue=<number>       the board issue, 1-9 decimal digits with value > 0;
+#                        default 1. Leading zeros are normalized away.
 #   tag=<poster tag>     this firstmate's poster tag; default [David's Firstmate].
 #                        Non-empty, without leading or trailing whitespace.
 # A home watches and posts to exactly one board. The posting helper prefixes the
-# tag, and the watcher never surfaces posts starting with it. Changing repo or
-# issue keeps the watcher's saved cursor; remove state/agent-board-watch/ first
-# so the new board is baselined without replaying its history.
+# tag, and the watcher never surfaces posts starting with it. See
+# bin/fm-procevent-board.sh's cursor semantics before changing repo or issue.
 #
 #   fm_board_load_config
 #       Sets BOARD_REPO, BOARD_ISSUE, BOARD_INTERVAL (after the floor),
