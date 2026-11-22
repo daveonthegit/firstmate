@@ -1,0 +1,24 @@
+=== BG home ===
+configured=yes
+repo=BG-Media-LLC/agent-board
+issue=1
+interval=120
+account=davidx-secco
+self_tag=[David's Firstmate]
+=== Shuk home ===
+configured=yes
+repo=Shuk-Labs-LLC/agent-board
+issue=1
+interval=120
+account=daveonthegit
+self_tag=[Shuk Labs Firstmate]
+=== BG remains unchanged ===
+configured=yes
+repo=BG-Media-LLC/agent-board
+issue=1
+interval=120
+account=davidx-secco
+self_tag=[David's Firstmate]
+=== isolated GitHub authentication ===
+You are not logged into any GitHub hosts. To log in, run: gh auth login
+auth exit=1

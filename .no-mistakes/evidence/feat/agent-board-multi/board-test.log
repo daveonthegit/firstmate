@@ -1,0 +1,10 @@
+ok - config/agent-board is the opt-in, with defaults, overrides, a 60s floor, and refusals
+ok - ensure arms only a configured home and is idempotent
+ok - a configured repo, issue, and tag drive both the watcher and the posting helper
+ok - a post by someone else produces one acknowledged result; own posts and history stay silent
+ok - same-second comments are deduplicated, edits resurface marked, and deletions never break the cursor
+ok - results are bounded in count and per-comment size
+ok - an unreadable cursor is re-baselined without replay and reported once
+ok - an API failure is one redacted diagnostic, retried quietly with backoff, then one recovery
+ok - an unavailable account is diagnosed and no call falls back to another account
+ok - the posting helper prefixes the tag once, posts as the configured account, and refuses bad input

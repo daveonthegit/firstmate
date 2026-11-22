@@ -1,0 +1,19 @@
+=== rejecting repo=Shuk-Labs-LLC/../agent-board ===
+error: config/agent-board line 1: repo must be owner/name
+fm-board-post: config/agent-board line 1: repo must be owner/name
+config exit=1 post exit=1
+=== rejecting issue=0 ===
+error: config/agent-board line 1: issue must be a positive integer
+fm-board-post: config/agent-board line 1: issue must be a positive integer
+config exit=1 post exit=1
+=== rejecting tag= [Shuk] ===
+error: config/agent-board line 1: tag must be non-empty without surrounding whitespace
+fm-board-post: config/agent-board line 1: tag must be non-empty without surrounding whitespace
+config exit=1 post exit=1
+=== rejecting account=-invalid ===
+error: config/agent-board line 1: account must be a GitHub login
+fm-board-post: config/agent-board line 1: account must be a GitHub login
+config exit=1 post exit=1
+=== absent opt-in ===
+fm-board-post: config/agent-board is absent; create it to opt in to the agent board
+post exit=1
