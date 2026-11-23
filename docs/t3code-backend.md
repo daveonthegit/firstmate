@@ -16,6 +16,7 @@ Prerequisites:
   T3 stable 0.0.45 lacks the Orchestrator V2 thread tools, so it is refused; the verified version is recorded in [`verification/runtime-backends.md`](verification/runtime-backends.md#t3-code).
 - `node`, which the adapter uses to speak MCP, and `treehouse`.
 - For `pi` and `agy` tasks, a T3 build whose `t3_thread_launch` takes a per-thread `environment`, and T3's Pi or Antigravity provider enabled and usable; see [Pi and Antigravity workers](#pi-workers).
+  An `agy` spawn also requires an `agy` executable on the spawning session's `PATH`, even though T3 owns its launch and Firstmate does not invoke that executable.
 - For `codex` tasks, Codex trust for each project (the home, for a secondmate) in the Codex configuration T3's Codex provider instance runs with, by default the server user's `~/.codex/config.toml`: a `[projects."<main checkout>"]` table with `trust_level = "trusted"`.
   Codex applies a project's `.codex/config.toml`, which carries a Codex thread's [per-directory environment](#per-directory-harness-environment), only in a trusted project.
   Trusting a project's main checkout covers its Treehouse worktrees; trusting a parent directory does not.
