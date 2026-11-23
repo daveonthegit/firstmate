@@ -1,0 +1,4 @@
+{"ok":false,"error":{"code":"no_credential","message":"no T3 credential at {run-worktree}/.test-tmp/t3-validation.NGNQsA/t3code-token; the captain signs in with: bin/fm-t3-mcp.mjs login --access full-access"}}
+fm-t3-mcp: no T3 credential at {run-worktree}/.test-tmp/t3-validation.NGNQsA/t3code-token; the captain signs in with: bin/fm-t3-mcp.mjs login --access full-access
+
+Exit status: 4
