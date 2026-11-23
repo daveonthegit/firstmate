@@ -7,7 +7,7 @@
 # comments with GitHub's `since` and page semantics and records every call with
 # the token it carried. The real gh is never invoked. The suite proves: the
 # config file is the opt-in and its defaults, overrides, floor, and refusals
-# hold; `ensure` arms only a configured home and is idempotent; the board is
+# hold; a configured repo, issue, and tag drive both watching and posting; `ensure` arms only a configured home and is idempotent; the board is
 # baselined without replaying history; this firstmate's own posts advance the
 # cursor silently; a comment by anyone else produces one announced, acknowledged
 # result carrying its author, tag, URL, timestamp, and text; same-second comments
@@ -170,12 +170,28 @@ assert_contains "$out" "account=davidx-secco" "the default account"
 assert_contains "$out" "self_tag=[David's Firstmate]" "the default self tag"
 printf 'interval=30\naccount=other-acct\n' > "$H/config/agent-board"
 out=$(bd config)
-assert_contains "$out" "repo=BG-Media-LLC/agent-board" "the board repository stays fixed"
-assert_contains "$out" "issue=1" "the board issue stays fixed"
+assert_contains "$out" "repo=BG-Media-LLC/agent-board" "an unset repository keeps the default"
+assert_contains "$out" "issue=1" "an unset issue keeps the default"
 assert_contains "$out" "interval=60 (floor applied; configured 30)" "an interval below the floor is raised to 60"
 assert_contains "$out" "account=other-acct" "account is configurable"
-assert_contains "$out" "self_tag=[David's Firstmate]" "the poster tag stays fixed"
-for bad in 'interval=soon' 'repo=acme/board' 'issue=7' 'account=-x' 'self_tag=[Ops Bot]' 'colour=blue' 'novalue'; do
+assert_contains "$out" "self_tag=[David's Firstmate]" "an unset tag keeps the default"
+printf 'repo=Shuk-Labs-LLC/agent-board\n' > "$H/config/agent-board"
+out=$(bd config)
+assert_contains "$out" "repo=Shuk-Labs-LLC/agent-board" "repo is configurable"
+assert_contains "$out" "issue=1" "repo alone leaves the default issue"
+assert_contains "$out" "self_tag=[David's Firstmate]" "repo alone leaves the default tag"
+printf 'issue=042\n' > "$H/config/agent-board"
+out=$(bd config)
+assert_contains "$out" "issue=42" "issue is configurable and normalized"
+assert_contains "$out" "repo=BG-Media-LLC/agent-board" "issue alone leaves the default repository"
+printf 'tag=[Shuk Labs Firstmate]\n' > "$H/config/agent-board"
+out=$(bd config)
+assert_contains "$out" "self_tag=[Shuk Labs Firstmate]" "tag is configurable"
+assert_contains "$out" "account=davidx-secco" "tag alone leaves the default account"
+for bad in 'interval=soon' 'repo=acme' 'repo=acme/' 'repo=/board' 'repo=acme/board/x' 'repo=-acme/board' 'repo=acme/..' 'repo=' \
+    'issue=0' 'issue=00' 'issue=-1' 'issue=1x' 'issue=' 'issue=1234567890' \
+    'tag=' 'tag= ' 'tag= [Ops Bot]' 'tag=[Ops Bot] ' \
+    'account=-x' 'self_tag=[Ops Bot]' 'colour=blue' 'novalue'; do
   printf '%s\n' "$bad" > "$H/config/agent-board"
   if bd config >/dev/null 2>&1; then fail "an invalid config line must be refused: $bad"; fi
   if bd arm >/dev/null 2>&1; then fail "arm must refuse an invalid config: $bad"; fi
@@ -195,6 +211,34 @@ out=$(bd ensure)
 [ "$(cat "$H/state/procevent/agent-board.source")" = "$before" ] || fail "a second ensure leaves the registration alone"
 bd retire >/dev/null
 pass "ensure arms only a configured home and is idempotent"
+
+# --- a configured board: watched and posted to with its own tag --------------
+new_home custom
+printf 'repo=Shuk-Labs-LLC/agent-board\nissue=3\ntag=[Shuk Mate]\naccount=other-acct\n' > "$H/config/agent-board"
+printf 'Shuk-Labs-LLC/agent-board/3\n' > "$D/board"
+out=$(bd arm)
+assert_contains "$out" "board=Shuk-Labs-LLC/agent-board#3" "arm names the configured board"
+start_runner
+wait_cursor 2026-11-01T10:00:00Z 100 || fail "the configured board is baselined: $(cursor)"
+set_comments "$(comment 100 itamarseg 2026-11-01T10:00:00Z 2026-11-01T10:00:00Z '[Front Desk] OLD-HISTORY')" \
+  "$(comment 101 other-acct 2026-11-01T10:05:00Z 2026-11-01T10:05:00Z '[Shuk Mate] CUSTOM-OWN')"
+wait_cursor 2026-11-01T10:05:00Z 101 || fail "a post with the configured tag advances the cursor silently"
+[ "$(result_count)" -eq 0 ] || fail "a post with the configured tag produces no result"
+set_comments "$(comment 101 other-acct 2026-11-01T10:05:00Z 2026-11-01T10:05:00Z '[Shuk Mate] CUSTOM-OWN')" \
+  "$(comment 102 davidx-secco 2026-11-01T10:07:00Z 2026-11-01T10:07:00Z "[David's Firstmate] DEFAULT-TAG-ELSEWHERE")"
+wait_runner || fail "a post with another tag completes the source"
+R=$(last_result)
+assert_grep "board=Shuk-Labs-LLC/agent-board#3" "$R" "the result names the configured board"
+assert_grep "DEFAULT-TAG-ELSEWHERE" "$R" "the default tag is surfaced when it is not this home's tag"
+assert_no_grep "CUSTOM-OWN" "$R" "this home's configured-tag post is never surfaced"
+url=$(printf 'hello board\n' | post -) || fail "posting to the configured board succeeds"
+[ "$url" = "https://github.com/Shuk-Labs-LLC/agent-board/issues/3#issuecomment-999" ] || fail "the post lands on the configured board: $url"
+[ "$(cat "$D/posts.log")" = '{"body":"[Shuk Mate] hello board"}' ] || fail "the post carries the configured tag: $(cat "$D/posts.log")"
+if grep -v -E '^(GET|POST) repos/Shuk-Labs-LLC/agent-board/issues/3(/comments(\?since=[0-9TZ:-]+&per_page=100&page=[0-9]+)?)? token=gho_token_for_other-acct$' "$D/calls.log" | grep -q .; then
+  fail "a call reached another board or account: $(cat "$D/calls.log")"
+fi
+bd retire >/dev/null
+pass "a configured repo, issue, and tag drive both the watcher and the posting helper"
 
 # --- baseline, self posts, then a post by someone else -----------------------
 new_home msg

@@ -3181,7 +3181,8 @@ Create the private, home-local `config/agent-board` file (empty accepts defaults
 This is periodic polling while the home is supervised, not an independent always-on service.
 Without the file, no new registration is made and [`bin/fm-board-post.sh`](../bin/fm-board-post.sh) refuses to post.
 To opt out, retire the source and remove the file; removing the file alone leaves an existing registration retrying with a configuration diagnostic.
-[`bin/fm-board-lib.sh`](../bin/fm-board-lib.sh) owns the fixed destination and identity, supported settings, and defaults.
+Each home watches and posts to one board, so a second mate can target its own board while the main home keeps the default.
+[`bin/fm-board-lib.sh`](../bin/fm-board-lib.sh) owns the supported settings - the board repository and issue, the poster tag, the account, and the interval - and their defaults and validation.
 The watcher only reads the issue and its comments; the posting helper only creates one tagged comment.
 The adapter header owns the cursor, baseline-without-replay, payload, cadence, retirement commands, and failure/recovery mechanics; [`process-event-sources`](../.agents/skills/process-event-sources/SKILL.md) owns handling and review-request dispatch.
 
