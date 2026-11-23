@@ -26,7 +26,7 @@ Because the injected carrier and the recorded carrier are the same string, an ob
 The delivery sits at the unconditional pre-launch environment site, so it covers ship and scout spawns across `claude`, `codex`, `opencode`, `pi`, `pi-signed`, `grok`, `kimi`, `cursor`, `gemini`, `muse`, `rovo`, `agy`, `devin`, `commandcode`, `polytoken`, `cortex`, `kiro`, and `hermes`, plus Secondmate spawns across that same set except the deliberately crewmate-only `gemini`, `muse`, `rovo`, `devin`, `commandcode`, `polytoken`, `cortex`, `kiro`, and `hermes` adapters.
 This is the same coverage `GOTMPDIR` already has and requires no trace-specific `launch_template()` behavior.
 Ship and scout spawns reach that site on every pane-typed spawn backend, and a Secondmate reaches it on every pane backend that accepts a Secondmate spawn; [runtime backend configuration](configuration.md#runtime-backend-configbackend--fm_backend) owns supported combinations.
-`t3code` has no pane, so its `claude` and `codex` ship, scout, and Secondmate spawns receive the same `TRACEPARENT` value under the same conditions through the backend's [per-directory harness environment](t3code-backend.md#per-directory-harness-environment) instead.
+`t3code` has no pane; its [harness environment contract](t3code-backend.md#per-directory-harness-environment) owns carrier delivery, including the deferred launch and recording sequence for Pi and Antigravity workers.
 
 ### Remote Secondmate routes
 

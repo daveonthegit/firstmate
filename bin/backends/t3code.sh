@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # bin/backends/t3code.sh - the T3 Code orchestration-server adapter.
 #
-# T3 owns the agent session (it launches Claude, Codex, or Pi itself) while
+# T3 owns the agent session (it launches Claude, Codex, Pi, or Antigravity
+# itself) while
 # Treehouse still owns the task worktree. Firstmate drives the T3 server only
 # through its Orchestrator V2 `/mcp` endpoint, signed in as an OAuth
 # `mcp-client`; bin/fm-t3-mcp.mjs owns that transport, the credential, the
@@ -19,15 +20,16 @@
 # Codex read it from per-directory harness config that bin/fm-spawn.sh writes
 # into the launch directory before the first turn: `.claude/settings.local.json`
 # `env` for Claude, `.codex/config.toml` `[shell_environment_policy] set` for
-# Codex. Pi has no such file, so a Pi thread carries it as the per-thread
-# environment of its t3_thread_launch, which only a T3 build that offers that
-# parameter accepts (bin/fm-t3-mcp.mjs owns the check).
+# Codex. Pi and Antigravity have no such file, so their threads carry it as
+# the per-thread environment of their t3_thread_launch, which only a T3 build
+# that offers that parameter accepts (bin/fm-t3-mcp.mjs owns the check;
+# fm_backend_t3code_launch_env_harness names those harnesses).
 #
 # Config (gitignored config/ of the active home):
 #   t3code-token      the mcp-client credential the captain's
 #                     `bin/fm-t3-mcp.mjs login` writes, mode 0600
 #   t3code-instances  optional `harness=instanceId` lines (claude=claudeAgent,
-#                     codex=codex, pi=pi by default)
+#                     codex=codex, pi=pi, agy=antigravity by default)
 
 # T3 has no composer, but the shared submit dispatcher in bin/fm-backend.sh
 # prepares and reads the composer dialog sink around every adapter, so this
@@ -96,17 +98,18 @@ fm_backend_t3code_project_ensure() {  # <project-path> -> project id
 # line each in file order. A line is `harness=instanceId [quota-dir]`, where
 # quota-dir is the Claude config directory that instance signs in with
 # (`ordinary` is ~/.claude), the identity quota-axi measures it by. Claude
-# alone pools: every distinct claude= line is one seat. Codex and pi keep one
-# instance, the last line naming them, and ignore a quota-dir. A harness the
-# file never names gets its default instance (claude=claudeAgent,
-# codex=codex, pi=pi) with no quota identity.
+# alone pools: every distinct claude= line is one seat. Codex, pi, and agy
+# keep one instance, the last line naming them, and ignore a quota-dir. A
+# harness the file never names gets its default instance (claude=claudeAgent,
+# codex=codex, pi=pi, agy=antigravity) with no quota identity.
 fm_backend_t3code_instance_pool() {  # <harness>
   local harness=$1 file line value instance dir pool='' default
   case "$harness" in
     claude) default=claudeAgent ;;
     codex) default=codex ;;
     pi) default=pi ;;
-    *) echo "error: backend=t3code supports only the claude, codex, and pi harnesses, not '$harness'" >&2; return 1 ;;
+    agy) default=antigravity ;;
+    *) echo "error: backend=t3code supports only the claude, codex, pi, and agy harnesses, not '$harness'" >&2; return 1 ;;
   esac
   file="$(fm_backend_t3code_config_dir)/t3code-instances"
   if [ -f "$file" ]; then
@@ -850,8 +853,18 @@ fm_backend_t3code_resume_failed() {  # <thread-id>
 
 fm_backend_t3code_validate_harness() {  # <harness>
   case "$1" in
-    claude|codex|pi) return 0 ;;
-    *) echo "error: backend=t3code runs only the claude, codex, and pi harnesses, not '$1'" >&2; return 1 ;;
+    claude|codex|pi|agy) return 0 ;;
+    *) echo "error: backend=t3code runs only the claude, codex, pi, and agy harnesses, not '$1'" >&2; return 1 ;;
+  esac
+}
+
+# fm_backend_t3code_launch_env_harness <harness>: 0 when <harness> reads no
+# per-directory config in T3, so its whole task environment must ride the
+# thread launch's per-thread environment (Pi and Antigravity).
+fm_backend_t3code_launch_env_harness() {  # <harness>
+  case "$1" in
+    pi|agy) return 0 ;;
+    *) return 1 ;;
   esac
 }
 

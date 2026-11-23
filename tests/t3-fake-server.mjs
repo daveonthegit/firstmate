@@ -122,6 +122,16 @@ const FAKE_PROVIDERS = [
       { id: "local/no-reasoning", label: "local/no-reasoning", options: [] },
     ],
   },
+  {
+    // The live Antigravity catalog shape: bare model ids, a thinking_level
+    // values array, and one model whose own id ends in a level word.
+    providerInstanceId: "antigravity", driverKind: "antigravity", displayName: "Antigravity", constraints: [],
+    models: [
+      { id: "gemini-4-neon", label: "Gemini 4 Neon", options: [{ id: "thinking_level", values: ["low", "medium", "high", "xhigh"], default: "high" }] },
+      { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash", options: [{ id: "thinking_level", values: ["low", "medium", "high"], default: "high" }] },
+      { id: "gpt-oss-120b-medium", label: "GPT-OSS 120B (Medium)", options: [{ id: "thinking_level", values: ["low", "medium", "high"] }] },
+    ],
+  },
 ];
 const LAUNCH_ENVIRONMENT_PROPERTY = { type: "object", additionalProperties: { type: "string" } };
 function inputSchema(w, name) {

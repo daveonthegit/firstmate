@@ -2946,6 +2946,26 @@ Paths are in the T3 Code repository at that commit.
 
 The [live transport guard](#live-transport-guard) reports whether the signed-in server's `t3_thread_launch` lists `environment`; refresh this record with a live Pi scout once the server runs such a build.
 
+### Antigravity workers
+
+The Antigravity mapping was checked on 2026-11-23 against a live `t3 0.1.9+fork.1` server on macOS 27.2.1 arm64, read-only, and against the T3 fork's source at commit `cc0ddc78` (its rebase onto upstream v0.1.11); no Antigravity worker has yet run on a live T3 server through Firstmate.
+Paths are in the T3 Code repository at that commit.
+
+- `orchestrator_capabilities` lists the provider instance `antigravity` with driver kind `antigravity` and no constraints, and `fm-t3-mcp.mjs status` reports `launchEnvironment: true`.
+- Its catalog lists bare model ids, each with one `thinking_level` option as a `values` array defaulting to `high`: `gemini-4-neon` and `gemini-4-hydrogen` over `low`, `medium`, `high`, and `xhigh`; `gemini-4-carbon`, `gemini-4-argon`, `gemini-3.8-flash`, `claude-opus-5-5`, and `claude-sonnet-5-5` over `low`, `medium`, and `high`; and `gpt-oss-120b-medium`, whose own id ends in a level word, over the same three with no default.
+- `agy models` on the same host lists the CLI form of those ids with the level appended, such as `gemini-4-neon-high` and `gemini-3.8-flash-low`, plus `gpt-oss-120b-medium` unchanged.
+- The Antigravity driver merges a thread's launch environment over its instance environment when it starts the agent (`apps/server/src/provider/Drivers/AntigravityDriver.ts`, `processEnvironment: threadEnvironment`), and the shared ACP adapter passes the thread environment through (`packages/provider-acp/src/server/adapter.ts`).
+
+The live read used the configured home credential:
+
+```sh
+node <scratch>/caps.mjs bin/fm-t3-mcp.mjs <home>/config/t3code-token
+node bin/fm-t3-mcp.mjs status --token-file <home>/config/t3code-token
+timeout 20 agy models
+```
+
+where the scratch script runs the exported `readCredential`, `McpSession`, and `gate` and prints each provider's id, driver kind, constraints, and the Antigravity models.
+
 ### Supervisor keep-alive
 
 On 2026-10-30, against the captain's fork as the launchd service `t3@0.1.5+fork.2` on macOS, a scratch Firstmate home (`config/backend` `t3code`, a copy of the credential, and a registered no-op custom check so supervision stayed armed) hosted one `claude-haiku-5-5` primary thread at the home root.

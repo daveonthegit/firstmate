@@ -6,6 +6,8 @@ Verified as a full Firstmate harness (Primary, Secondmate, and Crewmate/Scout).
 
 ## Operating facts
 
+These command-line and terminal facts apply to pane-backed sessions; for an agy worker on T3 Code, which runs as an ordinary T3 thread on T3's Antigravity provider with none of the launch, model-listing, trust, or busy rows below, read [Pi and Antigravity workers](../../../../../docs/t3code-backend.md#pi-workers), its [model and effort mapping](../../../../../docs/t3code-backend.md#provider-instances-and-models), and the [native lifecycle](../../../../../docs/t3code-backend.md#current-lifecycle-and-safety).
+
 | Fact | Value |
 |---|---|
 | Binary | Absolute `agy` from `PATH`, refused if absent; a Go-compiled single binary, so the live process name is exactly `agy` with `argv[0]=agy`. |
