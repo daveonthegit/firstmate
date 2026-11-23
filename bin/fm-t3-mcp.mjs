@@ -35,22 +35,26 @@
 //   fm-t3-mcp.mjs project-read --project <id>
 //     That project's record (defaultModelSelection included); exit 3 with
 //     code project_not_found when T3 lists no live project with that id.
-//   fm-t3-mcp.mjs resolve-selection --harness <claude|codex|pi> --instance <id>
+//   fm-t3-mcp.mjs resolve-selection --harness <claude|codex|pi|agy> --instance <id>
 //       --model <slug|default> --effort <level|default> [--project <id>]
 //       [--pool <id>[,<id>...]]
 //     The model selection a launch sends, resolved against T3's own catalog
 //     (orchestrator_capabilities): the instance must exist, be usable, and run
-//     the harness's driver (claude: claudeAgent, codex: codex, pi: pi); the
-//     model must be one that instance lists; model default takes the
+//     the harness's driver (claude: claudeAgent, codex: codex, pi: pi, agy:
+//     antigravity); the model must be one that instance lists, except that
+//     an agy CLI id naming a listed model plus one of its thinking levels
+//     (gemini-4-neon-high) resolves to that model with that level as its
+//     effort, refused when an explicit --effort names another level; model
+//     default takes the
 //     project's default selection, which must name the same instance or, when
 //     --pool lists the harness's configured instances, any one of them (its
 //     model and options then ride onto the chosen instance). A
 //     non-default effort replaces only the driver's reasoning option (claude:
-//     effort, codex: reasoningEffort, pi: thinking) and keeps every other
-//     default option; every option is then checked against that model's
-//     descriptors. The pi harness reads its task environment only from a
-//     launch's per-thread environment, so it also refuses a T3 whose
-//     t3_thread_launch does not offer one. Exit 4 refuses.
+//     effort, codex: reasoningEffort, pi: thinking, agy: thinking_level) and
+//     keeps every other default option; every option is then checked against
+//     that model's descriptors. The pi and agy harnesses read their task
+//     environment only from a launch's per-thread environment, so they also
+//     refuse a T3 whose t3_thread_launch does not offer one. Exit 4 refuses.
 //   fm-t3-mcp.mjs launch --project <id> --title <title> --model-selection <json>
 //       [--worktree <abs-path>] [--branch <name>] [--message-file <file>]
 //       [--environment <json>]
@@ -340,12 +344,16 @@ const TRANSCRIPT_ROLES = { user_message: "user", assistant_message: "assistant",
 // Each Firstmate harness runs on one T3 driver, whose reasoning option id is
 // part of that driver's protocol; the values come from T3's catalog. Claude
 // and Codex read the task environment from per-directory files in the
-// thread's cwd; Pi has no such file, so its harness needs the launch's
-// per-thread environment.
+// thread's cwd; Pi and Antigravity have no such file, so their harnesses need
+// the launch's per-thread environment. The agy CLI names a model and its
+// thinking level as one id (gemini-4-neon-high) where T3's Antigravity
+// catalog lists the model (gemini-4-neon) with a thinking_level option, so
+// agy accepts that suffix form too (effortSuffix).
 const DRIVERS = {
   claude: { driverKind: "claudeAgent", effortOption: "effort" },
   codex: { driverKind: "codex", effortOption: "reasoningEffort" },
   pi: { driverKind: "pi", effortOption: "thinking", launchEnvironment: true },
+  agy: { driverKind: "antigravity", effortOption: "thinking_level", launchEnvironment: true, effortSuffix: true },
 };
 // T3's per-thread environment limits (OrchestrationV2ThreadEnvironment).
 const ENVIRONMENT_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -1013,15 +1021,30 @@ function optionProblem(model, option) {
   return values.includes(option.value) ? null : `option '${option.id}' value '${option.value}' is not one of ${values.join(", ")} for model ${model.id}`;
 }
 
+// effortSuffixModel: the catalog model and level an id like
+// gemini-4-neon-high names, when it is a listed model id followed by `-` and
+// one of the values that model lists for <optionId>; the longest listed id
+// wins, so a model whose own id ends in a level word is never split short.
+function effortSuffixModel(models, id, optionId) {
+  let best = null;
+  for (const m of models) {
+    if (!id.startsWith(`${m.id}-`)) continue;
+    const level = id.slice(m.id.length + 1);
+    if (optionProblem(m, { id: optionId, value: level })) continue;
+    if (!best || m.id.length > best.model.id.length) best = { model: m, level };
+  }
+  return best;
+}
+
 async function resolveSelection(flags) {
   const harness = need(flags, "harness");
   const driver = DRIVERS[harness];
-  if (!driver) throw new Refusal("harness_unsupported", `backend=t3code supports only the claude, codex, and pi harnesses, not '${harness}'`);
+  if (!driver) throw new Refusal("harness_unsupported", `backend=t3code supports only the claude, codex, pi, and agy harnesses, not '${harness}'`);
   const instanceId = need(flags, "instance");
   const wantModel = need(flags, "model");
-  const effort = need(flags, "effort");
+  let effort = need(flags, "effort");
   const { session, gate: g } = await verifiedSession(flags);
-  if (driver.launchEnvironment) requireLaunchEnvironment(session, g, `a ${harness} worker`);
+  if (driver.launchEnvironment) requireLaunchEnvironment(session, g, `${/^[aeiou]/.test(harness) ? "an" : "a"} ${harness} worker`);
   const caps = await session.call("orchestrator_capabilities", {});
   const provider = (caps?.providers ?? []).find((p) => p.providerInstanceId === instanceId);
   if (!provider) throw new Refusal("instance_unknown", `T3 has no provider instance '${instanceId}' (config/t3code-instances maps the ${harness} harness to it)`);
@@ -1042,7 +1065,18 @@ async function resolveSelection(flags) {
     }
     base = { instanceId, model: def.model, ...(def.options !== undefined ? { options: def.options } : {}) };
   }
-  const model = (provider.models ?? []).find((m) => m.id === base.model);
+  let model = (provider.models ?? []).find((m) => m.id === base.model);
+  if (!model && driver.effortSuffix && wantModel !== "default") {
+    const split = effortSuffixModel(provider.models ?? [], wantModel, driver.effortOption);
+    if (split) {
+      if (effort !== "default" && effort !== split.level) {
+        throw new Refusal("effort_conflict", `model '${wantModel}' names thinking level '${split.level}' but --effort is '${effort}'; pass --model ${split.model.id} with --effort, or drop one of them`);
+      }
+      model = split.model;
+      base = { ...base, model: model.id };
+      effort = split.level;
+    }
+  }
   if (!model) throw new Refusal("model_unknown", `T3 instance '${instanceId}' does not list model '${base.model}'; pass --model with a slug from its catalog`);
   let options = base.options;
   if (effort !== "default") {

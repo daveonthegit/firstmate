@@ -377,7 +377,7 @@ test_model_selection_table() {
   rm -f "$CONFIG/t3code-instances"
   t3_world_set 'w.projects[0].defaultModelSelection = { instanceId: "claudeAgent", model: "claude-sonnet-5" }'
   out=$(t3_run 'fm_backend_t3code_model_selection cursor x high proj-1' 2>&1) && fail "a non-T3 harness must be refused"
-  assert_contains "$out" "only the claude, codex, and pi harnesses" "the harness refusal must name the supported set"
+  assert_contains "$out" "only the claude, codex, pi, and agy harnesses" "the harness refusal must name the supported set"
   t3_world_set 'w.projects[0].defaultModelSelection = null'
   out=$(t3_run 'fm_backend_t3code_model_selection claude default default proj-1' 2>&1) && fail "model default with no project default must be refused"
   assert_contains "$out" "has no default model; pass --model" "the default-model refusal must name the fix"
@@ -422,6 +422,43 @@ test_pi_selection_needs_launch_environment() {
   out=$(t3_run 'fm_backend_t3code_model_selection pi anthropic/claude-sonnet-5 default proj-1' 2>&1) && fail "a disabled Pi instance must be refused"
   assert_contains "$out" "cannot run threads: Provider instance is disabled." "the refusal must carry T3's own constraint"
   pass "fm_backend_t3code_model_selection pi: refuses without T3's per-thread launch environment, else resolves on the Pi driver with thinking as its effort"
+}
+
+# An agy worker runs on T3's Antigravity driver: its task environment rides the
+# launch like Pi's, its effort is the catalog's thinking_level option, and an
+# agy CLI id that appends a thinking level to a listed model resolves to that
+# model and level.
+test_agy_selection_maps_cli_ids_to_thinking_level() {
+  local out
+  t3_case agy-selection
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon high proj-1' 2>&1) && fail "agy must refuse a T3 without per-thread environment"
+  assert_contains "$out" "an agy worker needs" "the refusal must name the harness"
+  [ -z "$(t3_dispatch_types)" ] || fail "the refusal must not mutate T3, got '$(t3_dispatch_types)'"
+  t3_world_set 'w.launchEnvironment = true'
+  [ "$(t3_run 'fm_backend_t3code_instance_id agy')" = antigravity ] || fail "agy must default to the antigravity instance"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon xhigh proj-1')
+  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"xhigh"}]}' ] \
+    || fail "agy effort should ride options id thinking_level on instance antigravity, got '$out'"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon-high default proj-1')
+  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"high"}]}' ] \
+    || fail "an agy CLI id must resolve to the catalog model plus its thinking level, got '$out'"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon-low low proj-1')
+  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"low"}]}' ] \
+    || fail "a matching --effort must agree with the CLI id's level, got '$out'"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon-high low proj-1' 2>&1) && fail "a CLI id level that contradicts --effort must be refused"
+  assert_contains "$out" "names thinking level 'high' but --effort is 'low'" "the conflict refusal must name both levels"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gpt-oss-120b-medium default proj-1')
+  [ "$out" = '{"instanceId":"antigravity","model":"gpt-oss-120b-medium"}' ] \
+    || fail "a listed id that ends in a level word must resolve as itself, got '$out'"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-3.8-flash-xhigh default proj-1' 2>&1) && fail "a level the model does not list must not split the id"
+  assert_contains "$out" "does not list model 'gemini-3.8-flash-xhigh'" "an unsplittable id is an unknown model"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-3.8-flash max proj-1' 2>&1) && fail "an effort the catalog does not list must be refused"
+  assert_contains "$out" "cannot pass effort 'max' to harness 'agy'" "the effort refusal must name the harness"
+  printf 'agy=claudeAgent\n' > "$CONFIG/t3code-instances"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy claude-sonnet-5 default proj-1' 2>&1) && fail "agy mapped onto a Claude instance must be refused"
+  assert_contains "$out" "runs the claudeAgent driver, not antigravity" "the refusal names the driver T3's catalog reports"
+  rm -f "$CONFIG/t3code-instances"
+  pass "fm_backend_t3code_model_selection agy: needs T3's launch environment, rides thinking_level, and maps agy CLI ids onto catalog model plus level"
 }
 
 test_thread_create_carries_environment() {
@@ -998,8 +1035,8 @@ test_harness_admission_and_typing_refusals() {
   [ "$out" = 'error: backend=t3code has no pane to type into' ] || fail "the typing refusal changed: $out"
   [ ! -s "$LOG" ] || fail 'refused typing must not dispatch or read a thread'
   t3_run 'fm_backend_send_key t3code thread-live Enter' || fail 'runtime Enter remains a no-op'
-  t3_run 'fm_backend_validate_harness t3code claude; fm_backend_validate_harness t3code codex; fm_backend_validate_harness t3code pi' || fail 'T3 supported harnesses changed'
-  for op in opencode pi-signed grok kimi cursor gemini muse rovo omp agy devin; do
+  t3_run 'fm_backend_validate_harness t3code claude; fm_backend_validate_harness t3code codex; fm_backend_validate_harness t3code pi; fm_backend_validate_harness t3code agy' || fail 'T3 supported harnesses changed'
+  for op in opencode pi-signed grok kimi cursor gemini muse rovo omp devin; do
     if out=$(t3_run 'fm_backend_validate_harness t3code "$1"' "$op" 2>&1); then fail "T3 must refuse harness $op"; fi
     assert_contains "$out" "not '$op'" 'harness refusal must name the unsupported adapter'
   done
@@ -1350,7 +1387,7 @@ test_control_lib_tables() {
 # A recorded t3code scout for the control plane: the fake thread in the given
 # V2 status, the ordinary meta lines, and a brief so relaunch's own checks are
 # the ones that decide.
-make_t3_control_task() {  # <case-name> <id> <thread-id> <thread-status>
+make_t3_control_task() {  # <case-name> <id> <thread-id> <thread-status> [harness]
   t3_case "$1" "$4"
   t3_world "$(t3_thread_json "$3" "$4" false)"
   CTRL_PROJ="$CASE_DIR/project"; CTRL_WT="$CASE_DIR/wt"; CTRL_DATA="$CASE_DIR/data"; CTRL_STATE="$CASE_DIR/state"
@@ -1360,7 +1397,7 @@ make_t3_control_task() {  # <case-name> <id> <thread-id> <thread-status>
   touch "$CTRL_STATE/.last-watcher-beat"
   fm_write_meta "$CTRL_STATE/$2.meta" \
     "window=fm-$2" "endpoint_task_id=$2" "worktree=$CTRL_WT" "project=$CTRL_PROJ" \
-    "harness=claude" "kind=scout" "mode=no-mistakes" "yolo=off" \
+    "harness=${5:-claude}" "kind=scout" "mode=no-mistakes" "yolo=off" \
     "backend=t3code" "t3_thread_id=$3" "t3_project_id=proj-1" \
     "decisions_reviewed=1" "decision_keys="
 }
@@ -1489,6 +1526,32 @@ test_control_relaunch_refused_before_any_dispatch() {
   assert_contains "$out" "cannot launch a replacement agent" "the launch owner's refusal must name the missing replacement"
   [ -z "$(t3_dispatch_types)" ] || fail "the launch owner's refusal must send nothing to T3, got '$(t3_dispatch_types)'"
   pass "fm-control.sh relaunch backend=t3code: refused before anything is stopped, by the control plane and by the launch owner"
+}
+
+# An agy worker's thread is an ordinary T3 thread, so interrupt, exit, and the
+# relaunch refusal behave exactly as for the other T3 harnesses.
+test_control_agy_thread_interrupt_exit_and_relaunch() {
+  local id out rc thread=mcp:5a6b7c8d-9e0f-4a1b-8c2d-6789abcdef01
+  id=$(t3_uid t3agyctlz1)
+  make_t3_control_task control-agy "$id" "$thread" running agy
+  FM_T3_THREAD="$thread" t3_world_set 'w.sessionStop = true; w.threads[process.env.FM_T3_THREAD].providerSessions = ["psess:agy"]'
+  [ "$(t3_run 'fm_backend_busy_state t3code "$1"' "$thread")" = busy ] || fail "a running agy thread reads busy from T3's status"
+  out=$(run_t3_control "$id" interrupt); rc=$?
+  expect_code 0 "$rc" "interrupt on an agy t3code task should succeed"$'\n'"$out"
+  case "$(t3_dispatch_types)" in t3_thread_interrupt*) ;; *) fail "interrupt must call t3_thread_interrupt, got '$(t3_dispatch_types)'" ;; esac
+  assert_contains "$out" "cancel=confirmed" "T3's confirmation of the run's end must reach the interrupt verdict"
+  : > "$LOG"
+  out=$(run_t3_control "$id" exit); rc=$?
+  expect_code 0 "$rc" "exit on an agy t3code task should succeed"$'\n'"$out"
+  assert_contains "$out" "stopped $id harness=agy backend=t3code endpoint=$thread" "exit must report the stopped agy agent and its kept endpoint"
+  [ "$(t3_dispatch_types)" = t3_thread_session ] || fail "exit must be one session stop with no typed /quit, got '$(t3_dispatch_types)'"
+  : > "$LOG"
+  out=$(run_t3_control "$id" relaunch --note "why"); rc=$?
+  expect_code 1 "$rc" "relaunch on an agy t3code task must refuse"$'\n'"$out"
+  assert_contains "$out" "keeps its conversation" "the refusal must name why no fresh agent can replace it"
+  [ -z "$(t3_dispatch_types)" ] || fail "a refused relaunch must send nothing to T3, got '$(t3_dispatch_types)'"
+  assert_present "$CTRL_STATE/$id.meta" "control verbs preserve the agy task record"
+  pass "fm-control.sh backend=t3code agy: interrupt and exit act natively on the thread and relaunch is refused, as for every T3 harness"
 }
 
 test_spawn_codex_refuses_tracked_codex_config() {
@@ -2281,6 +2344,87 @@ test_spawn_pi_secondmate_refused() {
   pass "fm-spawn.sh --backend t3code --secondmate pi: refused before any mutation, since its supervisor target cannot ride the launch"
 }
 
+# t3_agy_path <command...>: run <command> with a stand-in `agy` first on PATH
+# that logs each invocation to $CASE_DIR/agy.log, so an agy spawn resolves its
+# executable without a real Antigravity install and a test can prove the T3
+# path never runs the agy CLI.
+t3_agy_path() {
+  local bin="$CASE_DIR/agy-bin"
+  mkdir -p "$bin"
+  printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >> %q\necho "gemini-4-neon-high\tGemini 4 Neon (High)"\n' "$CASE_DIR/agy.log" > "$bin/agy"
+  chmod +x "$bin/agy"
+  PATH="$bin:$PATH" "$@"
+}
+
+# An agy worker runs as an ordinary top-level T3 thread on the Antigravity
+# provider: its task environment rides t3_thread_launch as Pi's does, an agy
+# CLI model id becomes the catalog model plus thinking_level, and none of the
+# agy CLI's own pane steps (model listing, workspace-trust store, readiness
+# gate) run.
+test_spawn_agy_worker_launches_with_environment() {
+  local id out rc launch thread env
+  id=$(t3_uid t3agyz1)
+  t3_case spawn-agy
+  t3_world_set 'w.launchEnvironment = true'
+  t3_worker_setup "$id"
+  FM_T3_PROBE="$CASE_DIR/state/$id.git-hooks" t3_world_set 'w.probePath = process.env.FM_T3_PROBE'
+  out=$(t3_agy_path t3_worker_spawn "$id" agy --model gemini-4-neon-high); rc=$?
+  expect_code 0 "$rc" "an agy scout on t3code should spawn against the fake T3 server"$'\n'"$out"
+  [ "$(t3_dispatch_types)" = "t3_thread_launch t3_thread_send" ] || fail "spawn must launch then send the brief, got '$(t3_dispatch_types)'"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  [ "$(t3_request "$launch" 'r.probe')" = true ] || fail "the agy thread must launch only after its Git hook directory exists"
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"high"}]}' ] \
+    || fail "the launch must carry the Antigravity selection, got '$(t3_request "$launch" 'r.arguments.modelSelection')'"
+  [ "$(t3_request "$launch" 'r.arguments.workspaceStrategy.worktreePath')" = "$WORKER_WT" ] || fail "the launch must bind the leased worktree"
+  env=$(t3_request "$launch" 'r.arguments.environment')
+  [ "$(printf '%s' "$env" | node -e 'const e = JSON.parse(require("fs").readFileSync(0, "utf8")); process.stdout.write([e.FM_TASK_ID, e.FM_TASK_INBOX, e.GOTMPDIR, e.GIT_CONFIG_KEY_0].join("|"))')" = \
+    "$id|$CASE_DIR/state/$id.inbox|/tmp/fm-$id/gotmp|core.hooksPath" ] \
+    || fail "the launch environment must carry the task id, inbox, temp dir, and Git hook entry, got '$env'"
+  thread=$(bash -c '. "$1"; fm_meta_get "$2" t3_thread_id' _ "$ROOT/bin/fm-backend.sh" "$CASE_DIR/state/$id.meta")
+  case "$thread" in mcp:*) ;; *) fail "meta t3_thread_id should be the id T3 assigned, got '$thread'" ;; esac
+  [ "$(t3_request "$(t3_log_line_of 'r.tool === "t3_thread_send"')" 'r.arguments.threadId')" = "$thread" ] || fail "the brief must go to the launched thread"
+  assert_grep "harness=agy" "$CASE_DIR/state/$id.meta" "meta must record the agy harness"
+  assert_grep "t3_instance=antigravity" "$CASE_DIR/state/$id.meta" "meta must record the Antigravity instance"
+  assert_absent "$CASE_DIR/agy.log" "a T3 agy spawn must never run the agy CLI (no 'agy models' listing)"
+  if [ -e "$SPAWN_HOME/.gemini/antigravity-cli/settings.json" ] && grep -qF "$WORKER_WT" "$SPAWN_HOME/.gemini/antigravity-cli/settings.json"; then
+    fail "a T3 agy spawn must not pre-register the worktree in the agy CLI trust store"
+  fi
+  assert_absent "$WORKER_WT/.claude/settings.local.json" "an agy worker writes no Claude settings"
+  assert_absent "$WORKER_WT/.codex/config.toml" "an agy worker writes no Codex config"
+  assert_absent "$WORKER_WT/CLAUDE.local.md" "an agy worker gets no Claude channel statement"
+  [ "$(t3_run 'fm_backend_busy_state t3code "$1"' "$thread")" = busy ] || fail "the launched agy thread's liveness must come from T3's status table"
+  pass "fm-spawn.sh --backend t3code agy: a top-level Antigravity thread whose environment rides t3_thread_launch, with no agy CLI pane steps"
+}
+
+test_spawn_agy_refuses_without_launch_environment() {
+  local id out rc
+  id=$(t3_uid t3agynoenvz)
+  t3_case spawn-agy-no-environment
+  t3_worker_setup "$id"
+  out=$(t3_agy_path t3_worker_spawn "$id" agy --model gemini-4-neon); rc=$?
+  expect_code 1 "$rc" "an agy spawn on a T3 without per-thread environment must refuse"$'\n'"$out"
+  assert_contains "$out" "does not offer a per-thread environment" "the refusal must name the missing launch environment"
+  [ -z "$(t3_dispatch_types)" ] || fail "the refusal must come before any T3 mutation, got '$(t3_dispatch_types)'"
+  [ "$(t3_log_line_of 'r.tool === "treehouse"')" -eq 0 ] || fail "the refusal must come before the slot is leased"
+  assert_absent "$CASE_DIR/state/$id.meta" "a refused spawn records nothing"
+  pass "fm-spawn.sh --backend t3code agy: refuses before any lease or launch when T3 cannot carry the task environment"
+}
+
+test_spawn_agy_secondmate_refused() {
+  local id home out rc
+  id=$(t3_uid t3agysmz)
+  t3_case spawn-agy-secondmate
+  t3_world_set 'w.launchEnvironment = true'
+  home="$CASE_DIR/sm-home"
+  make_t3_secondmate_home "$home" "$id"
+  out=$(t3_agy_path spawn_t3_secondmate "$id" "$home" agy gemini-4-neon); rc=$?
+  expect_code 1 "$rc" "an agy secondmate on t3code must refuse"$'\n'"$out"
+  assert_contains "$out" "runs agy only for ship and scout workers" "the refusal must name the worker-only scope"
+  [ -z "$(t3_dispatch_types)" ] || fail "the refusal must come before any T3 mutation, got '$(t3_dispatch_types)'"
+  assert_absent "$home/config/t3code-token" "the refusal must come before the credential link"
+  pass "fm-spawn.sh --backend t3code --secondmate agy: refused before any mutation, since its supervisor target cannot ride the launch"
+}
+
 # The default posture is T3's own full-access mode, so an explicit bypass file
 # changes nothing and the codex worker still launches.
 test_spawn_codex_accepts_bypass_approval_mode() {
@@ -2420,13 +2564,13 @@ test_launch_gate_failure_returns_lease() {
 
 test_refused_launch_turn_archives_thread_and_returns_lease() {
   local harness model id out rc
-  for harness in claude codex pi; do
-    case "$harness" in claude) model=claude-sonnet-5 ;; codex) model=gpt-5.6-sol ;; pi) model=anthropic/claude-sonnet-5 ;; esac
+  for harness in claude codex pi agy; do
+    case "$harness" in claude) model=claude-sonnet-5 ;; codex) model=gpt-5.6-sol ;; pi) model=anthropic/claude-sonnet-5 ;; agy) model=gemini-4-neon ;; esac
     id=$(t3_uid "t3turnz$harness")
     t3_case "spawn-launch-turn-refused-$harness"
     t3_world_set 'w.failTools = { t3_thread_send: { code: "turn_refused", message: "launch turn refused" } }; w.launchEnvironment = true'
     t3_worker_setup "$id"
-    out=$(t3_pi_path t3_worker_spawn "$id" "$harness" --model "$model"); rc=$?
+    out=$(t3_agy_path t3_pi_path t3_worker_spawn "$id" "$harness" --model "$model"); rc=$?
     expect_code 1 "$rc" "a refused $harness launch turn must abort spawn"$'\n'"$out"
     assert_contains "$out" "T3 refused the launch turn" "the refusal is reported"
     [ "$(t3_log_line_of 'r.tool === "t3_thread_organize"')" -gt "$(t3_log_line_of 'r.tool === "t3_thread_send"')" ] \
@@ -2559,8 +2703,8 @@ test_scout_teardown_stops_and_archives_before_slot_return() {  # [harness]
     "harness=$harness" "kind=scout" "mode=no-mistakes" "yolo=off" \
     "backend=t3code" "t3_thread_id=$thread" "t3_project_id=proj-1" \
     "decisions_reviewed=1" "decision_keys="
-  # A pi worker's environment rode its launch, so its slot holds no env files.
-  if [ "$harness" != pi ]; then
+  # A pi or agy worker's environment rode its launch, so its slot holds no env files.
+  if [ "$harness" != pi ] && [ "$harness" != agy ]; then
     mkdir -p "$wt/.codex"
     printf '# Generated by Firstmate T3 Code\n[shell_environment_policy]\nset = { FM_TASK_ID = "%s" }\n' "$id" > "$wt/.codex/config.toml"
     printf 'statement\n' > "$wt/CLAUDE.local.md"
@@ -3831,12 +3975,15 @@ test_t3_stale_watcher failed dead
 test_t3_stale_watcher running surface codex '' hung
 test_t3_stale_watcher waiting absorb pi
 test_t3_stale_watcher completed surface pi
+test_t3_stale_watcher waiting absorb agy
+test_t3_stale_watcher completed surface agy
 test_missing_credential_names_signin
 test_revoked_credential_names_signin
 test_capability_gate_refuses_control
 test_project_ensure_matches_realpath_or_creates
 test_model_selection_table
 test_pi_selection_needs_launch_environment
+test_agy_selection_maps_cli_ids_to_thinking_level
 test_thread_create_and_turn_start_payloads
 test_thread_create_carries_environment
 test_thread_create_uncertain_and_refused_outcomes
@@ -3869,6 +4016,7 @@ test_control_exit_stops_the_session
 test_control_exit_failed_run_stops_the_session
 test_control_exit_lost_stop_reply_retries_the_same_request
 test_control_relaunch_refused_before_any_dispatch
+test_control_agy_thread_interrupt_exit_and_relaunch
 test_spawn_leases_slot_creates_thread_and_starts_launch_turn
 test_claude_pr_tool_clause_version_boundary
 test_spawn_codex_preserves_tracked_codex_config
@@ -3886,6 +4034,7 @@ test_spawn_codex_secondmate_writes_toml_env
 test_spawn_refuses_t3code_when_token_rejected
 test_scout_teardown_stops_and_archives_before_slot_return
 test_scout_teardown_stops_and_archives_before_slot_return pi
+test_scout_teardown_stops_and_archives_before_slot_return agy
 test_secondmate_teardown_archives_thread_before_home_removal_without_project_delete
 test_secondmate_teardown_archives_thread_before_home_removal_without_project_delete codex
 test_pooled_t3_secondmate_home_returned_only_after_provider_exits
@@ -3900,6 +4049,9 @@ test_spawn_effort_default_keeps_driver_default
 test_spawn_pi_worker_launches_with_environment
 test_spawn_pi_refuses_without_launch_environment
 test_spawn_pi_deferred_launch_gate_failure_returns_lease
+test_spawn_agy_worker_launches_with_environment
+test_spawn_agy_refuses_without_launch_environment
+test_spawn_agy_secondmate_refused
 test_spawn_pi_secondmate_refused
 test_spawn_refuses_raw_launch_command
 test_spawn_abort_returns_lease_only_after_archive ok

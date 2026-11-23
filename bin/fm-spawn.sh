@@ -238,11 +238,14 @@
 #   t3code is experimental (docs/t3code-backend.md): T3 Code
 #   owns the agent session, so the spawn leases a treehouse slot durably,
 #   launches a T3 thread on it, and sends the launch brief over T3's /mcp
-#   endpoint instead of typing into a pane; only claude, codex, and pi
-#   harnesses, and pi only for ship and scout workers.
+#   endpoint instead of typing into a pane; only claude, codex, pi, and agy
+#   harnesses, and pi and agy only for ship and scout workers.
 #   The exports a pane would receive before launch travel as per-directory
-#   harness config instead (spawn_t3code_env_install), or, for pi, as the
-#   thread's per-thread launch environment (spawn_t3code_launch_pi).
+#   harness config instead (spawn_t3code_env_install), or, for pi and agy, as
+#   the thread's per-thread launch environment (spawn_t3code_launch_with_env).
+#   An agy worker on T3 skips the agy CLI's model listing, workspace-trust
+#   pre-registration, and pane readiness gate: T3's Antigravity catalog checks
+#   the model and T3 itself starts and reports the agent.
 #   When config/t3code-instances names several Claude seats, a claude launch
 #   takes the seat fm_backend_t3code_instance_choose picks (quota-axi
 #   spendPriority, else rotation); the seat and how it was chosen are recorded
@@ -4256,7 +4259,9 @@ OMP_PROFILE_PIN=$(fm_omp_profile_select "$HARNESS" "$CONFIG" "$OMP_PROFILE_MATE"
 if [ "$HARNESS" = omp ]; then
   omp_model_validate "$OMP_BIN" "$MODEL" "$OMP_PROFILE_PIN" || exit 1
 fi
-if [ "$HARNESS" = agy ]; then
+# On T3 the model is T3's Antigravity catalog id, which resolve-selection
+# checks, not an `agy models` id.
+if [ "$HARNESS" = agy ] && [ "$BACKEND" != t3code ]; then
   agy_model_validate "$AGY_BIN" "$MODEL" || exit 1
 fi
 # polytoken's model validation composes firstmate's model and effort axes into
@@ -4323,10 +4328,10 @@ if [ "$BACKEND" = t3code ]; then
     echo "error: backend=t3code cannot apply the $HARNESS worker account pin because T3's provider instance owns the account; select that instance in config/t3code-instances instead" >&2
     exit 1
   fi
-  # A pi thread's environment is fixed at launch, before its thread id
+  # A pi or agy thread's environment is fixed at launch, before its thread id
   # exists, so a secondmate's own supervisor target cannot ride it.
-  if [ "$HARNESS" = pi ] && [ "$KIND" = secondmate ]; then
-    echo "error: backend=t3code runs pi only for ship and scout workers: a pi secondmate needs its own thread id in its launch environment, which T3 assigns only after launch; choose claude or codex, or another backend" >&2
+  if fm_backend_t3code_launch_env_harness "$HARNESS" && [ "$KIND" = secondmate ]; then
+    echo "error: backend=t3code runs $HARNESS only for ship and scout workers: a $HARNESS secondmate needs its own thread id in its launch environment, which T3 assigns only after launch; choose claude or codex, or another backend" >&2
     exit 1
   fi
   if [ -n "$EXCLUDE_TOOLS" ]; then
@@ -6326,9 +6331,9 @@ EOF
         fi
         exit 1
       }
-      if [ "$HARNESS" = pi ]; then
+      if fm_backend_t3code_launch_env_harness "$HARNESS"; then
         # Its environment is the launch's own, and not all of it exists yet:
-        # spawn_t3code_launch_pi launches this slot's thread once it does.
+        # spawn_t3code_launch_with_env launches this slot's thread once it does.
         T=
       else
         spawn_t3code_thread_create "$WT"
@@ -7094,9 +7099,14 @@ spawn_assert_agent_worktree
 # Unlike claude's dialog, agy's preselects the safe answer, so a failed
 # registration is not fatal here: the post-launch gate (agy_wait_for_working)
 # answers the dialog itself and, on a path that was not pre-registered, refuses
-# to count a busy turn as ready until it has done so.
+# to count a busy turn as ready until it has done so. The agy CLI's folder
+# trust does not apply to T3's Antigravity provider, which starts the agent
+# in the bound worktree itself (docs/t3code-backend.md#pi-workers), so a T3
+# agy launch writes nothing to agy's trust store.
 AGY_TRUST_PREREGISTERED=0
-case "$HARNESS" in
+SPAWN_TRUST_HARNESS=$HARNESS
+[ "$BACKEND" != t3code ] || [ "$HARNESS" != agy ] || SPAWN_TRUST_HARNESS=
+case "$SPAWN_TRUST_HARNESS" in
 claude*)
   if [ "$KIND" = secondmate ]; then
     spawn_trust_args=(--secondmate-home "$PROJ_ABS" "$ID")
@@ -7265,15 +7275,16 @@ spawn_t3code_env_base() {
     T3CODE_ENV+=("FM_TASK_ID=$ID" "FM_HOME=$FM_HOME")
   fi
 }
-# spawn_t3code_launch_pi - a pi worker's thread launch, deferred until every
-# fact in its environment exists and run before the task record is written,
-# so the record names the thread. Pi reads no per-directory environment file,
-# so the facts ride the launch as T3's per-thread environment, which T3
-# applies to the pi process it starts for the thread's first turn; the thread
-# is idle until the launch brief, and every abort before that archives it.
-# TRACEPARENT rides whenever trace context is on and is recorded once the
-# record exists (the pi branch below).
-spawn_t3code_launch_pi() {
+# spawn_t3code_launch_with_env - a pi or agy worker's thread launch, deferred
+# until every fact in its environment exists and run before the task record
+# is written, so the record names the thread. Pi and Antigravity read no
+# per-directory environment file, so the facts ride the launch as T3's
+# per-thread environment, which T3 applies to the agent process it starts for
+# the thread's first turn; the thread is idle until the launch brief, and
+# every abort before that archives it. TRACEPARENT rides whenever trace
+# context is on and is recorded once the record exists (the launch-env branch
+# below).
+spawn_t3code_launch_with_env() {
   spawn_t3code_env_base
   [ -z "$SPAWN_TRACEPARENT" ] || T3CODE_ENV+=("TRACEPARENT=$SPAWN_TRACEPARENT")
   spawn_t3code_thread_create "$WT" "${T3CODE_ENV[@]}"
@@ -7408,7 +7419,7 @@ busy_notify_turnend=true
 WIRING_HARNESS=$HARNESS
 # T3 starts pi with its provider instance's own arguments, so the -e busy
 # extension would never load; T3's native thread status is that worker's busy
-# source, as it is for codex there.
+# source, as it is for codex and agy there.
 [ "$BACKEND" != t3code ] || [ "$HARNESS" != pi ] || WIRING_HARNESS=
 if [ "$KIND" = secondmate ]; then
   busy_notify_turnend=false
@@ -8249,8 +8260,8 @@ else
   fi
 fi
 
-if [ "$BACKEND" = t3code ] && [ "$HARNESS" = pi ]; then
-  spawn_t3code_launch_pi
+if [ "$BACKEND" = t3code ] && fm_backend_t3code_launch_env_harness "$HARNESS"; then
+  spawn_t3code_launch_with_env
 fi
 META_WINDOW=$T
 [ "$BACKEND" = orca ] && META_WINDOW=$W
@@ -8833,10 +8844,10 @@ spawn_record_traceparent() {
   return "$status"
 }
 
-if [ "$BACKEND" = t3code ] && [ "$HARNESS" = pi ]; then
+if [ "$BACKEND" = t3code ] && fm_backend_t3code_launch_env_harness "$HARNESS"; then
   # The thread launched with its environment; the TRACEPARENT that rode it is
   # recorded now or the spawn aborts, archiving the thread before any turn
-  # could start pi with an unrecorded carrier.
+  # could start the agent with an unrecorded carrier.
   if [ -n "$SPAWN_TRACEPARENT" ] && ! spawn_record_traceparent; then
     echo "error: could not record the trace context $ID's T3 thread launched with" >&2
     exit 1
@@ -9154,7 +9165,9 @@ if [ "$HARNESS" = opencode ] && [ "$OPENCODE_MAJOR" -ge 2 ]; then
     exit 1
   fi
 fi
-if [ "$HARNESS" = agy ]; then
+# On T3 there is no pane: T3 starts agy in the bound worktree and the
+# accepted launch turn above is the delivery proof, as for every T3 harness.
+if [ "$HARNESS" = agy ] && [ "$BACKEND" != t3code ]; then
   if ! agy_wait_for_working; then
     if [ "$AGY_TRUST_ANSWERED" -eq 1 ]; then
       agy_spawn_fail "agy did not start processing its brief after the folder-trust dialog was answered in window $T"
