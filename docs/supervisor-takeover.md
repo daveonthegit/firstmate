@@ -1,6 +1,7 @@
 # Supervising from another machine
 
 This page is for an operator whose supervising machine is unreachable and who wants to run Firstmate from another machine for a while.
+For a planned primary-home migration to a new machine, follow [Multi-host and macOS setup](host-setup.md#2-migrate-the-primary-firstmate-home).
 It applies only to a home whose `data/` is a records repository with a remote, the setup the [supervisor lease](configuration.md#supervisor-lease-datasupervisorlease) describes.
 
 ## What the records remote holds

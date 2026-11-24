@@ -6,8 +6,9 @@
 #       <project>[=<origin-url>]...
 #
 # Seeding is bin/fm-worker-host-doctor.sh --fix with the declarations a new host
-# needs made explicit: the lane cap for its config/lane-capacity, and the
-# projects it should work on. That doctor's header owns what is sent and what
+# needs made explicit: the lane cap (a whole number or `auto`) for its
+# config/lane-capacity, and the projects it should work on. That doctor's header
+# owns what is sent and what
 # is checked, and bin/fm-worker-host-home.sh owns every repair on the host:
 # the home beside (never inside) the code root with data/, state/, config/, and
 # projects/; the .fm-worker-host marker; config/backlog-backend set to manual;

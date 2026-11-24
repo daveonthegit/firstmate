@@ -433,4 +433,16 @@ assert_contains "$OUT" "check t3-primary=human" "the unresolved comparison disap
 assert_contains "$OUT" "check t3-credential=human" "an unavailable primary was treated as non-T3"
 pass "unavailable primary T3 evidence remains unresolved with or without host credentials"
 
+# --- --lanes auto support for equal worker hosts -------------------------------
+rm -f "$PARENT/config/t3code-token" "$HOST/config/t3code-token" "$HOST/config/lane-capacity"
+run "$ROOT/bin/fm-worker-host-seed.sh" m1 --lanes auto alpha
+expect_code 0 "$RC" "seeding a worker host with --lanes auto must succeed: $OUT"
+assert_equals "auto" "$(cat "$HOST/config/lane-capacity")" "--lanes auto must write auto to config/lane-capacity"
+assert_contains "$OUT" "check lane-capacity=ok: auto (budget " "doctor must verify auto lane budgeting"
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1 --lanes 6 alpha
+expect_code 1 "$RC" "requesting a fixed cap against an existing auto declaration must report a human mismatch"
+assert_contains "$OUT" "uses auto mode, not the requested cap 6" "doctor must explain auto vs fixed mismatch without overwriting"
+assert_equals "auto" "$(cat "$HOST/config/lane-capacity")" "doctor must never overwrite an existing auto declaration"
+pass "--lanes auto seeds, verifies, and refuses silent overwrite against a fixed cap"
+
 echo "all fm-worker-host-seed-doctor tests passed"

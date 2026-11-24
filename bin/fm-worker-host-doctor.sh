@@ -103,7 +103,7 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
-case "$LANES" in ''|[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) ;; *) die "--lanes must be a whole number below 1000: $LANES" ;; esac
+case "$LANES" in ''|auto|[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) ;; *) die "--lanes must be a whole number below 1000 or auto: $LANES" ;; esac
 
 WORKER_REG=$(worker_host_registry_path "$DATA")
 [ -f "$WORKER_REG" ] && [ ! -L "$WORKER_REG" ] \

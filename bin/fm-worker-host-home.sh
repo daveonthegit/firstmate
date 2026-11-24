@@ -23,7 +23,7 @@
 # Manifest schema fm-worker-host-home.v1, one key=value per line:
 #   schema=fm-worker-host-home.v1
 #   host_id_b64=<worker host id>
-#   lanes=<cap>                       optional: the config/lane-capacity cap
+#   lanes=<cap|auto>                  optional: the config/lane-capacity cap or auto
 #   capacity=<name_b64>|<n>           optional, repeatable: config/project-capacity
 #   t3_required=0|1                  required: whether the primary has a T3 sign-in
 #   t3_version_b64=<version>          optional: the T3 version the primary runs
@@ -119,7 +119,7 @@ manifest_value() { # <key>; the one value, empty when absent
 HOST_ID=$(base64_decode "$(manifest_value host_id_b64)") || die "the manifest host id is not valid base64"
 safe_id "$HOST_ID" || die "the manifest carries an unsafe worker host id"
 LANES=$(manifest_value lanes)
-case "$LANES" in ''|[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) ;; *) die "the manifest lane cap is invalid: $LANES" ;; esac
+case "$LANES" in ''|auto|[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) ;; *) die "the manifest lane cap is invalid: $LANES" ;; esac
 T3_REQUIRED=$(manifest_value t3_required)
 case "$T3_REQUIRED" in 0|1) ;; *) die "the manifest T3 requirement is invalid" ;; esac
 T3_EXPECT_VERSION=
@@ -323,20 +323,23 @@ check_backlog_backend() {
   record backlog-backend "fixable: config/backlog-backend is not manual" "rerun the doctor with --fix"
 }
 
-# The cap bin/fm-capacity.sh reads, from its own report line: a number, "none"
-# when absent, "invalid" for a malformed file, or empty when no report printed.
+# The cap and mode bin/fm-capacity.sh reads, from its own report line.
 # Its exit status is not used, because it also fails for reasons other than the
 # declaration.
-lane_capacity_target() {
-  local out
-  out=$(FM_HOME="$FM_HOME" "$SCRIPT_DIR/fm-capacity.sh" 2>/dev/null || true)
-  printf '%s\n' "$out" | sed -n 's/^capacity: .* target=\([^ ]*\).*/\1/p' | head -n 1
+lane_capacity_report() {
+  FM_HOME="$FM_HOME" "$SCRIPT_DIR/fm-capacity.sh" 2>/dev/null | head -n 1 || true
+}
+
+report_kv() { # <report-line> <key>
+  printf '%s\n' "$1" | tr ' ' '\n' | sed -n "s/^$2=//p" | head -n 1
 }
 
 check_lane_capacity() {
-  local target
+  local report target cap_mode
   if [ ! -e "$LANE_FILE" ] && [ ! -L "$LANE_FILE" ]; then
-    if [ -n "$LANES" ]; then
+    if [ "$LANES" = auto ]; then
+      record lane-capacity "fixable: no config/lane-capacity; the primary asks for auto lane budgeting" "rerun the seed or the doctor with --fix"
+    elif [ -n "$LANES" ]; then
       record lane-capacity "fixable: no config/lane-capacity; the primary asks for a cap of $LANES" "rerun the seed or the doctor with --fix"
     else
       record lane-capacity "ok: absent, so this home caps no lanes"
@@ -348,7 +351,25 @@ check_lane_capacity() {
       "inspect it yourself and replace it with a plain lane capacity declaration"
     return 0
   fi
-  target=$(lane_capacity_target)
+  report=$(lane_capacity_report)
+  target=$(report_kv "$report" target)
+  cap_mode=$(report_kv "$report" mode)
+  if [ "$cap_mode" = auto ]; then
+    case "$target" in
+      ''|unknown|none|invalid|*[!0-9]*)
+        record lane-capacity "human: $LANE_FILE uses auto mode, but its budget is unavailable (${target:-empty})" \
+          "run 'FM_HOME=$FM_HOME $FM_ROOT/bin/fm-capacity.sh' on that machine (auto mode requires jq and readable memory probes)"
+        return 0
+        ;;
+    esac
+    if [ -n "$LANES" ] && [ "$LANES" != auto ]; then
+      record lane-capacity "human: $LANE_FILE uses auto mode, not the requested cap $LANES" \
+        "edit the cap on the host yourself; Firstmate never overwrites an existing capacity declaration"
+      return 0
+    fi
+    record lane-capacity "ok: auto (budget $target)"
+    return 0
+  fi
   case "$target" in
     '')
       record lane-capacity "human: bin/fm-capacity.sh printed no report for $FM_HOME, so its lane cap cannot be read" \
@@ -361,6 +382,11 @@ check_lane_capacity() {
       return 0
       ;;
   esac
+  if [ "$LANES" = auto ]; then
+    record lane-capacity "human: $LANE_FILE caps lanes at $target, not the requested auto mode" \
+      "edit the cap on the host yourself; Firstmate never overwrites an existing capacity declaration"
+    return 0
+  fi
   if [ -n "$LANES" ] && [ "$target" != "$LANES" ]; then
     record lane-capacity "human: $LANE_FILE caps lanes at $target, not the requested $LANES" \
       "edit the cap on the host yourself; Firstmate never overwrites an existing capacity declaration"
@@ -666,7 +692,11 @@ fix_lane_capacity() {
   [ -n "$LANES" ] || return 0
   [ ! -e "$LANE_FILE" ] && [ ! -L "$LANE_FILE" ] || return 0
   if write_file "$LANE_FILE" "$LANES"; then
-    fix_report lane-capacity applied "declared a cap of $LANES lanes"
+    if [ "$LANES" = auto ]; then
+      fix_report lane-capacity applied "declared auto lane budgeting"
+    else
+      fix_report lane-capacity applied "declared a cap of $LANES lanes"
+    fi
   else
     fix_report lane-capacity failed "could not write config/lane-capacity"
   fi

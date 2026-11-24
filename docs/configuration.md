@@ -170,6 +170,7 @@ Worker-host and secondmate homes never sync.
 The [script header](../bin/fm-supervisor-lease.sh) owns sync ordering, exclusion recovery for tracked files, publication scanning of unpushed history, allowlist configuration, and outcome files.
 Follow its recovery instructions when a scan withholds publication; ignore rules alone do not exclude tracked files, and only known false positives, never real credentials, may be allowlisted.
 To supervise from another machine while this one is unreachable, follow [Supervising from another machine](supervisor-takeover.md).
+For a planned primary-home move to a new machine, follow [Multi-host and macOS setup](host-setup.md#2-migrate-the-primary-firstmate-home).
 
 ## Orchestrator behavior (AGENTS.md)
 
@@ -956,6 +957,7 @@ admit-spawns           # opt-in: bin/fm-spawn.sh defers a fresh ship or scout th
 ```
 
 `pressure-file` and `reserve-flag` may repeat and take an absolute or `~/` path; a `reserve-flag` path may be followed by the label it is reported by.
+For temporary interactive pause or capacity reduction (such as gaming or server hosting) without editing `config/lane-capacity`, use [`bin/fm-host-reserve.sh`](../bin/fm-host-reserve.sh), which writes `state/host-reserve` and composes with `reserve-flag` ([owner-reserved use](host-setup.md#4-owner-reserved-use-gaming-or-server-hosting)).
 Every other key may appear at most once.
 An unknown key, a repeated single key, or a malformed value makes the whole file invalid: the report exits 1 naming the line, and the published facts carry the cap as invalid, because the captain's limits are never guessed.
 
@@ -1449,6 +1451,7 @@ Each line beginning with `- ` must be a record; other lines are ignored prose:
 
 `bin/fm-worker-host-lib.sh` owns parsing; the [`fm-on.sh` header](../bin/fm-on.sh) owns route selection across the worker host and remote second-mate registries.
 A malformed record stops routing rather than being skipped.
+See [Multi-host and macOS setup](host-setup.md#3-equal-worker-hosts-and-load-balancing) for bringing up, balancing, and removing equal worker hosts.
 
 ## Automatic placement (config/auto-placement)
 

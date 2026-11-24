@@ -13,7 +13,9 @@
 #                             a spawn, 1 when it would admit unconditionally
 #
 # It reads this home's state/*.meta, the optional config/lane-capacity, the
-# pressure files and reserve flags that file names, and the host's own probes.
+# pressure files and reserve flags that file names, the optional runtime
+# owner reservation state/host-reserve (bin/fm-host-reserve.sh), and the host's
+# own probes.
 # It never spawns, locks, or changes anything; --publish writes its files
 # (state/lane-capacity.json, and in auto mode state/lane-footprint.json and the
 # Windows host cache state/.lane-vitals-host).
@@ -251,6 +253,7 @@ STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 PROJECTS="${FM_PROJECTS_OVERRIDE:-$FM_HOME/projects}"
 LANE_CONFIG="$CONFIG/lane-capacity"
+HOST_RESERVE="$STATE/host-reserve"
 PUBLISHED="$STATE/lane-capacity.json"
 PROC_ROOT=${FM_PROC_ROOT_OVERRIDE:-/proc}
 
@@ -297,7 +300,8 @@ file_mtime() {
 now=$(date +%s)
 
 case "$mode" in
-  admit|publish|spawn_gate) [ -e "$LANE_CONFIG" ] || exit 0 ;;
+  admit) [ -e "$LANE_CONFIG" ] || [ -e "$HOST_RESERVE" ] || [ -L "$HOST_RESERVE" ] || exit 0 ;;
+  publish|spawn_gate) [ -e "$LANE_CONFIG" ] || exit 0 ;;
   spawn_gate_enabled) [ -e "$LANE_CONFIG" ] || exit 1 ;;
 esac
 if [ "$mode" = publish ]; then
@@ -661,6 +665,105 @@ while IFS='	' read -r rpath rlabel; do
 done <<EOF
 $reserve_flags
 EOF
+
+# Optional runtime owner reservation (bin/fm-host-reserve.sh) at
+# state/host-reserve: pause admits nothing; reduce lowers the effective lane
+# cap and/or raises the available memory floor without disturbing running work.
+# A symlinked, unreadable, or malformed file fails closed as a pause.
+host_reserve_active=0
+host_reserve_mode=
+host_reserve_reason=
+host_reserve_max_lanes=
+host_reserve_keep_gb=
+host_reserve_until=
+if [ -e "$HOST_RESERVE" ] || [ -L "$HOST_RESERVE" ]; then
+  hr_bad=0
+  hr_seen=
+  if [ -L "$HOST_RESERVE" ] || [ ! -f "$HOST_RESERVE" ] || [ ! -r "$HOST_RESERVE" ]; then
+    hr_bad=1
+  else
+    while IFS= read -r hr_line || [ -n "$hr_line" ]; do
+      case "$hr_line" in ''|'#'*) continue ;; esac
+      case "$hr_line" in *=*) ;; *) hr_bad=1; break ;; esac
+      hr_key=${hr_line%%=*}
+      hr_val=${hr_line#*=}
+      case " $hr_seen " in *" $hr_key "*) hr_bad=1; break ;; esac
+      hr_seen="$hr_seen $hr_key"
+      case "$hr_key" in
+        mode) host_reserve_mode=$hr_val ;;
+        reason) host_reserve_reason=$hr_val ;;
+        max_lanes) host_reserve_max_lanes=$hr_val ;;
+        keep_gb) host_reserve_keep_gb=$hr_val ;;
+        until) host_reserve_until=$hr_val ;;
+        set_at) is_uint "$hr_val" || { hr_bad=1; break; } ;;
+        *) hr_bad=1; break ;;
+      esac
+    done < "$HOST_RESERVE"
+    if [ "$hr_bad" -eq 0 ]; then
+      case "$host_reserve_mode" in
+        pause)
+          [ -z "$host_reserve_keep_gb" ] || hr_bad=1
+          [ -z "$host_reserve_max_lanes" ] || [ "$host_reserve_max_lanes" = 0 ] || hr_bad=1
+          ;;
+        reduce)
+          [ -n "$host_reserve_max_lanes" ] || [ -n "$host_reserve_keep_gb" ] || hr_bad=1
+          if [ -n "$host_reserve_max_lanes" ]; then
+            is_uint "$host_reserve_max_lanes" && [ "${#host_reserve_max_lanes}" -le 9 ] || hr_bad=1
+            [ "$hr_bad" -ne 0 ] || host_reserve_max_lanes=$((10#$host_reserve_max_lanes))
+          fi
+          [ -z "$host_reserve_keep_gb" ] || is_num "$host_reserve_keep_gb" || hr_bad=1
+          ;;
+        *) hr_bad=1 ;;
+      esac
+      if [ -n "$host_reserve_until" ]; then
+        is_uint "$host_reserve_until" && [ "${#host_reserve_until}" -le 12 ] && [ "$((10#$host_reserve_until))" -gt 0 ] || hr_bad=1
+        [ "$hr_bad" -ne 0 ] || host_reserve_until=$((10#$host_reserve_until))
+      fi
+    fi
+  fi
+  if [ "$hr_bad" -eq 1 ]; then
+    host_reserve_active=1
+    host_reserve_mode=pause
+    host_reserve_reason="state/host-reserve unreadable or malformed"
+    host_reserve_max_lanes='' host_reserve_keep_gb='' host_reserve_until=''
+  elif [ -n "$host_reserve_until" ] && [ "$now" -ge "$host_reserve_until" ]; then
+    host_reserve_active=0
+    host_reserve_mode='' host_reserve_reason='' host_reserve_max_lanes='' host_reserve_keep_gb='' host_reserve_until=''
+  else
+    host_reserve_active=1
+    [ -n "$host_reserve_reason" ] || host_reserve_reason="owner reserved"
+  fi
+  if [ "$host_reserve_active" -eq 1 ]; then
+    if [ "$host_reserve_mode" = pause ] || [ "$host_reserve_max_lanes" = 0 ]; then
+      host_reserve_mode=pause
+      if [ "$reserve_flag" != present ]; then
+        reserve_flag=present reserve_label=$host_reserve_reason
+      else
+        reserve_label="$reserve_label; $host_reserve_reason"
+      fi
+    else
+      if [ -n "$host_reserve_max_lanes" ]; then
+        if [ "$cap_mode" = auto ]; then
+          if [ -z "$max_lanes" ] || [ "$host_reserve_max_lanes" -lt "$max_lanes" ]; then
+            max_lanes=$host_reserve_max_lanes
+          fi
+        elif [ "$target" = none ]; then
+          target=$host_reserve_max_lanes
+        elif [ "$target" != invalid ] && [ "$host_reserve_max_lanes" -lt "$target" ]; then
+          target=$host_reserve_max_lanes
+        fi
+      fi
+      if [ -n "$host_reserve_keep_gb" ]; then
+        if [ -z "$min_avail_gb" ] || num_lt "$min_avail_gb" "$host_reserve_keep_gb"; then
+          min_avail_gb=$host_reserve_keep_gb
+        fi
+      fi
+    fi
+  fi
+fi
+if [ "$mode" = admit ] && [ ! -e "$LANE_CONFIG" ] && [ "$host_reserve_active" -eq 0 ]; then
+  exit 0
+fi
 
 # --- auto budget --------------------------------------------------------------
 # Auto mode (first line `auto`): the lane budget is computed from measured
@@ -1165,7 +1268,17 @@ if [ "$cap_mode" = auto ]; then
   auto_budget
 else
 case "$target" in
-  none) reason=no-target ;;
+  none)
+    if [ "$host_reserve_active" -eq 1 ] && [ -n "$constraints" ]; then
+      free_lanes=0
+      reason=$constraints
+    elif [ "$host_reserve_active" -eq 1 ]; then
+      reason=no-target
+      admit=true
+    else
+      reason=no-target
+    fi
+    ;;
   invalid) reason=invalid-target ;;
   *)
     free_lanes=$((target - lanes))
@@ -1235,6 +1348,12 @@ if [ "$mode" = report ]; then
   if [ -n "$pressure_files" ]; then
     why_text=$(printf '%s' "$why" | paste -sd ';' - | sed 's/;/; /g')
     echo "Pressure: $level from $basis${why_text:+ ($why_text)}."
+  fi
+  if [ "$host_reserve_active" -eq 1 ]; then
+    hr_desc=$host_reserve_mode
+    [ -z "$host_reserve_max_lanes" ] || hr_desc="$hr_desc, max_lanes=$host_reserve_max_lanes"
+    [ -z "$host_reserve_keep_gb" ] || hr_desc="$hr_desc, keep_gb=$host_reserve_keep_gb"
+    echo "Reserve: $hr_desc ($host_reserve_reason)."
   fi
   if [ "$cap_mode" = auto ]; then
     [ "$admit" = true ] || echo "Constrained: $reason - hold new dispatch until it clears."
@@ -1335,6 +1454,18 @@ verdict_reasons=$pub_reasons
 [ "$target" != invalid ] || verdict_reasons="$target_reason
 "
 
+reserve_override_json=null
+if [ "$host_reserve_active" -eq 1 ]; then
+  reserve_override_json=$(jq -cn \
+    --arg mode "$host_reserve_mode" \
+    --arg reason "$host_reserve_reason" \
+    --arg max_lanes "$host_reserve_max_lanes" \
+    --arg keep_gb "$host_reserve_keep_gb" \
+    --arg until "$host_reserve_until" '
+    def num: if . == "" then null else tonumber + 0 end;
+    {mode: $mode, reason: $reason, max_lanes: ($max_lanes | num), keep_gb: ($keep_gb | num), until: ($until | num)}')
+fi
+
 doc=$(jq -n \
   --argjson now "$now" --arg home "$home" --arg machine "$machine" \
   --arg lanes "$lanes" --arg pr_ready "$pr_ready" --arg lane_ids "$lane_ids" --arg placed "$placed" \
@@ -1345,7 +1476,7 @@ doc=$(jq -n \
   --arg battery "$on_battery" --arg disks "$disks" \
   --arg uptime "$uptime_s" --arg boot_id "$boot_id" --argjson prev_boots "$prev_boots" \
   --arg new_boot "$new_boot" --argjson kept "$BOOTS_KEPT" --arg watcher_age "$watcher_age" \
-  --arg reserve_flag "$reserve_flag" --arg reserve_label "$reserve_label" \
+  --arg reserve_flag "$reserve_flag" --arg reserve_label "$reserve_label" --argjson reserve_override "$reserve_override_json" \
   --arg captain "$captain" --argjson quota "$quota_json" \
   --arg min_avail "$min_avail_gb" --arg min_disk "$min_disk_gb" --arg max_load1 "$max_load1" \
   --arg admit "$admit" --arg free_lanes "$free_lanes" --arg reasons "$verdict_reasons" \
@@ -1365,7 +1496,7 @@ doc=$(jq -n \
    uptime_s: ($uptime | num), boot_id: (if $boot_id == "" then null else $boot_id end),
    boots: (($prev_boots + (if $new_boot == "" then [] else [$new_boot | tonumber] end)) | .[-$kept:]),
    watcher_beat_age_s: ($watcher_age | num),
-   reserve: {flag: $reserve_flag, label: (if $reserve_label == "" then null else $reserve_label end)},
+   reserve: {flag: $reserve_flag, label: (if $reserve_label == "" then null else $reserve_label end), override: $reserve_override},
    captain: $captain, quota: $quota,
    limits: {min_avail_gb: ($min_avail | num), min_disk_gb: ($min_disk | num), max_load1: ($max_load1 | num)},
    verdict: {admit: ($admit == "true"), free_lanes: ($free_lanes | if . == "unknown" then null else tonumber end),

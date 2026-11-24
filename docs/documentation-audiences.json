@@ -37,7 +37,8 @@
     "docs/tern-backend.md",
     "docs/hc-backend.md",
     "docs/remote-secondmates.md",
-    "docs/remote-workers.md"
+    "docs/remote-workers.md",
+    "docs/host-setup.md"
   ],
   "requiredOwnerPointers": [
     {
@@ -448,6 +449,10 @@
     },
     {
       "path": "docs/herdr-backend.md",
+      "audience": "operator-current"
+    },
+    {
+      "path": "docs/host-setup.md",
       "audience": "operator-current"
     },
     {

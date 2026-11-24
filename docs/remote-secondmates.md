@@ -11,7 +11,7 @@ Firstmate does not support placing an individual worker remotely or failing a re
 
 | Task | Start here |
 | --- | --- |
-| Prepare the primary and the remote host | [Prerequisites](#prerequisites) and [non-interactive tool contract](#non-interactive-tool-contract) |
+| Prepare the primary and the remote host | [Prerequisites](#prerequisites), [non-interactive tool contract](#non-interactive-tool-contract), and [multi-host and macOS setup](host-setup.md) |
 | Check whether a host is ready, or repair it | [Readiness, repair, and the human steps](#readiness-repair-and-the-human-steps) |
 | Create the route and the remote home | [Provision a route](#provision-a-route) |
 | Launch, recover, message, and read a remote second mate | [Normal operation](#normal-operation) |
