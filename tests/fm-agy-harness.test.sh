@@ -22,8 +22,8 @@
 #      ready on an unregistered path until the dialog has been answered (the
 #      Herdr native-busy-before-dialog race), and fails the spawn with endpoint
 #      cleanup when the brief cannot be confirmed to run in the worktree.
-#   5. agy is a crewmate/scout adapter only: a secondmate launch is refused,
-#      and nothing is armed as busy wiring because no writer could clear it.
+#   5. agy supports crewmate, scout, and secondmate launches; nothing is armed
+#      as busy wiring because no writer could clear it.
 #   6. The busy signature is the pinned `esc to cancel` status row alone; the
 #      free-floating `Generating...` word must never read busy on its own.
 #   7. Herdr's registry already tracks agy, and exit detection proves the
@@ -39,10 +39,12 @@ set -u
 
 # bin/fm-harness.sh checks verified ENV markers before ancestry. A suite run
 # from inside another harness inherits those markers, which outrank the fake
-# ancestry the detection cases set up. Drop the ambient markers so the asserted
-# verdict does not depend on which harness launched the suite.
+# ancestry the detection cases set up. Drop the ambient markers (and any
+# inherited GitHub account pin from a crewmate worker) so the asserted verdicts
+# do not depend on which harness launched the suite.
 unset CLAUDECODE PI_CODING_AGENT FM_PI_HARNESS GROK_AGENT CURSOR_AGENT CURSOR_INVOKED_AS \
-  ATLASSIAN_AGENT_TYPE ROVODEV_CLI GEMINI_CLI AGENT FM_OMP_HARNESS
+  ATLASSIAN_AGENT_TYPE ROVODEV_CLI GEMINI_CLI AGENT FM_OMP_HARNESS \
+  ANTIGRAVITY_AGENT ANTIGRAVITY_HARNESS_PATH FM_GH_ACCOUNT
 
 # shellcheck source=/dev/null
 . "$ROOT/bin/fm-control-lib.sh"
@@ -119,10 +121,12 @@ SH
 }
 
 test_agy_claims_no_inherited_launcher_marker() {
-  local fakebin out
+  local fakebin blind out
   # AGENT=1 was observed on a live agy TUI as inherited launcher state, so it
   # must never promote to an agy identity the way GEMINI_CLI does for gemini.
-  out=$(AGENT=1 "$HARNESS")
+  blind=$(fm_fakebin "$TMP_ROOT/anc-blind-agent")
+  fm_fake_blind_ancestry "$blind"
+  out=$(AGENT=1 PATH="$blind:$PATH" "$HARNESS")
   [ "$out" != agy ] \
     || fail "an inherited AGENT=1 must never claim the agy identity, got '$out'"
   # Drive the hazard the other way: agy does not clear an inherited CLAUDECODE,
@@ -143,6 +147,58 @@ SH
   [ "$out" = agy ] \
     || fail "a structural agy ancestor must outrank an inherited CLAUDECODE, got '$out'"
   pass "fm-harness.sh: no inherited launcher marker claims the agy identity"
+}
+
+test_agy_acp_server_ancestry_and_env_marker() {
+  local fakebin blind out
+  fakebin=$(fm_fakebin "$TMP_ROOT/anc-acp")
+  cat > "$fakebin/ps" <<'SH'
+#!/usr/bin/env bash
+case "$*" in
+  *"comm="*) printf '%s\n' "${FAKE_PS_COMM:?}"; exit 0 ;;
+  *"args="*) printf '%s\n' "${FAKE_PS_ARGS:?}"; exit 0 ;;
+  *"ppid="*) printf '%s\n' 1; exit 0 ;;
+esac
+exit 1
+SH
+  chmod +x "$fakebin/ps"
+  blind=$(fm_fakebin "$TMP_ROOT/anc-acp-blind")
+  fm_fake_blind_ancestry "$blind"
+
+  out=$(FAKE_PS_COMM='/Users/u/.t3/userdata/providers/antigravity/antigravity-acp/agy_acp_server.par' \
+    FAKE_PS_ARGS='/Users/u/.t3/userdata/providers/antigravity/antigravity-acp/agy_acp_server.par --stdio' \
+    PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" = agy ] || fail "agy_acp_server.par must detect agy, got '$out'"
+
+  out=$(FAKE_PS_COMM='/opt/t3/bin/agy_acp_server' FAKE_PS_ARGS='agy_acp_server --stdio' \
+    PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" = agy ] || fail "agy_acp_server must detect agy, got '$out'"
+
+  out=$(FAKE_PS_COMM='agy_acp_server.' FAKE_PS_ARGS='/opt/t3/antigravity-acp/agy_acp_server.par --stdio' \
+    PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" = agy ] || fail "Linux-truncated agy_acp_server. with agy_acp_server.par argv0 must detect agy, got '$out'"
+
+  out=$(FAKE_PS_COMM='/Users/u/.t3/userdata/providers/antigravity/antigravity-acp/agy_acp_server.par' \
+    FAKE_PS_ARGS='/Users/u/.t3/userdata/providers/antigravity/antigravity-acp/agy_acp_server.par --stdio' \
+    CLAUDECODE=1 PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" = agy ] || fail "structural agy_acp_server.par ancestry must outrank inherited CLAUDECODE, got '$out'"
+
+  out=$(FAKE_PS_COMM='agy_acp_server_helper' FAKE_PS_ARGS='agy_acp_server_helper --stdio' \
+    PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" != agy ] || fail "agy_acp_server_helper must not detect agy, got '$out'"
+
+  out=$(ANTIGRAVITY_AGENT=1 ANTIGRAVITY_HARNESS_PATH='/Users/u/.t3/localharness_external' \
+    PATH="$blind:$PATH" "$HARNESS")
+  [ "$out" = agy ] || fail "ANTIGRAVITY_AGENT=1 + ANTIGRAVITY_HARNESS_PATH must detect agy when ancestry is silent, got '$out'"
+
+  out=$(ANTIGRAVITY_AGENT=1 PATH="$blind:$PATH" "$HARNESS")
+  [ "$out" != agy ] || fail "ANTIGRAVITY_AGENT=1 without ANTIGRAVITY_HARNESS_PATH must not claim agy, got '$out'"
+
+  out=$(CLAUDECODE=1 ANTIGRAVITY_AGENT=1 ANTIGRAVITY_HARNESS_PATH='/Users/u/.t3/localharness_external' \
+    PATH="$blind:$PATH" "$HARNESS")
+  [ "$out" = claude ] || fail "CLAUDECODE must still outrank the Antigravity env fallback when ancestry is silent, got '$out'"
+
+  pass "fm-harness.sh: Antigravity ACP ancestry and env marker resolve agy cleanly"
 }
 
 test_agy_control_mechanics_are_the_verified_ones() {
@@ -208,11 +264,17 @@ test_agy_tmux_names_the_native_binary_an_agent() {
   fm_backend_source tmux || fail "fm_backend_source tmux failed"
   got=$(fm_agent_process_classify_name agy)
   [ "$got" = agent ] || fail "tmux liveness must read the agy binary as an agent, got '$got'"
+  got=$(fm_agent_process_classify_name agy_acp_server)
+  [ "$got" = agent ] || fail "tmux liveness must read agy_acp_server as an agent, got '$got'"
+  got=$(fm_agent_process_classify_name agy_acp_server.par)
+  [ "$got" = agent ] || fail "tmux liveness must read agy_acp_server.par as an agent, got '$got'"
+  got=$(fm_agent_process_classify_name agy_acp_server_helper)
+  [ "$got" = other ] || fail "tmux liveness must not read agy_acp_server_helper as an agent, got '$got'"
   got=$(fm_agent_process_classify_name magyk)
   [ "$got" = other ] || fail "tmux liveness must not read magyk as an agent, got '$got'"
   got=$(fm_agent_process_classify_name bash)
   [ "$got" = shell ] || fail "tmux liveness must still read bash as a shell, got '$got'"
-  pass "bin/fm-agent-process-lib.sh: agy is an agent, fragments are not"
+  pass "bin/fm-agent-process-lib.sh: agy and agy_acp_server are agents, fragments are not"
 }
 
 # Canned `pane process-info` bodies for the herdr fixtures. The shared
@@ -917,6 +979,7 @@ test_agy_spawn_arms_no_busy_wiring() {
 test_agy_ancestry_detects_the_native_command_name
 test_agy_ancestry_rejects_unrelated_mentions
 test_agy_claims_no_inherited_launcher_marker
+test_agy_acp_server_ancestry_and_env_marker
 test_agy_control_mechanics_are_the_verified_ones
 test_agy_busy_tail_needs_the_pinned_status_row
 test_agy_busy_signatures_are_harness_scoped

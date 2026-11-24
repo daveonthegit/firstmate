@@ -63,7 +63,8 @@ set -u
 # everything these cases set up wherever ancestry is silent. Drop the ambient
 # markers so what this suite asserts does not depend on which harness it was
 # launched from; every case states the marker it means to test.
-unset CLAUDECODE PI_CODING_AGENT FM_PI_HARNESS GROK_AGENT CURSOR_AGENT CURSOR_INVOKED_AS
+unset CLAUDECODE PI_CODING_AGENT FM_PI_HARNESS GROK_AGENT CURSOR_AGENT CURSOR_INVOKED_AS \
+  ANTIGRAVITY_AGENT ANTIGRAVITY_HARNESS_PATH
 
 BASE_PATH=${FM_TEST_BASE_PATH:-/usr/bin:/bin:/usr/sbin:/sbin}
 fm_git_identity fmtest fmtest@example.com
@@ -116,7 +117,7 @@ crew=cursor, secondmate absent -> cursor is secondmate-capable and inherited^cur
 crew=muse, secondmate absent -> crew-only harness skipped, own^muse^-^claude^muse
 crew=muse, secondmate=default -> crew-only harness skipped, own^muse^default^claude^muse
 crew=gemini -> crew-only fallback skipped^gemini^-^claude^gemini
-crew=agy -> crew-only fallback skipped^agy^-^claude^agy
+crew=agy, secondmate absent -> agy is secondmate-capable and inherited^agy^-^agy^agy
 crew=devin -> crew-only fallback skipped^devin^-^claude^devin
 crew=rovo -> crew-only fallback skipped^rovo^-^claude^rovo
 crew absent, secondmate set -> secondmate value, crew own^-^grok^grok^claude

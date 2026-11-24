@@ -156,7 +156,14 @@ harness_marker() {
   # identified, and any rule that must be RELIABLE under grok has to test the hook
   # markers too (see .claude/settings.json Stop entries, docs/turnend-guard.md).
   [ "${GROK_AGENT:-}" = "1" ] && { echo grok; return; }
-  # codex, opencode, kimi, muse, agy, devin, commandcode, polytoken, cortex, and kiro publish no harness-identity marker at all, so
+  # T3 Code's Antigravity ACP host sets ANTIGRAVITY_AGENT=1 and
+  # ANTIGRAVITY_HARNESS_PATH=.../localharness_external on tool subprocesses
+  # (verified live on T3 Code 0.1.9+fork.1 / Antigravity ACP 1.4.5). Ordered
+  # after foreign markers so tests setting CLAUDECODE/CURSOR_AGENT/GEMINI_CLI
+  # inside an ACP host keep their precedence, while structural `comm agy`
+  # ancestry below still outranks any inherited foreign marker in detect_own.
+  [ "${ANTIGRAVITY_AGENT:-}" = "1" ] && [ -n "${ANTIGRAVITY_HARNESS_PATH:-}" ] && { echo agy; return; }
+  # codex, opencode, kimi, muse, standalone agy, devin, commandcode, polytoken, cortex, and kiro publish no harness-identity marker at all, so
   # they are never named here and are identified by ancestry alone. That is the
   # whole reason a foreign marker must not outrank ancestry: with markers winning
   # unconditionally, any retained CLAUDECODE would silently rename one of them.
@@ -251,13 +258,17 @@ harness_process_verdict() {  # <pid>
     pi) echo "comm pi"; return ;;
     # agy (Antigravity CLI) is a Go-compiled single binary whose process name
     # is exactly `agy` (verified, agy 1.2.0: `ps -o comm=` reports agy and
-    # Herdr's process-info reports name agy with argv[0] agy). Anchored, never
-    # *agy*, so unrelated commands cannot be misread as this harness. agy
-    # publishes no harness-identity marker of its own (a live 1.2.0 TUI
-    # carries no AGY_* or ANTIGRAVITY_* variable; AGENT=1 seen there is an
-    # inherited launcher value, not an agy identity), so like muse it is
-    # detected by ancestry alone.
-    agy) echo "comm agy"; return ;;
+    # Herdr's process-info reports name agy with argv[0] agy). T3 Code hosts
+    # Antigravity as `agy_acp_server.par` (or `agy_acp_server`); on Linux
+    # /proc/<pid>/comm truncates `agy_acp_server.par` (18 bytes) to
+    # `agy_acp_server.` (15 bytes), verified from argv[0]. Anchored, never
+    # *agy*, so unrelated commands cannot be misread as this harness.
+    agy|agy_acp_server|agy_acp_server.par) echo "comm agy"; return ;;
+    agy_acp_server.)
+      case "$(basename -- "${args%% *}")" in
+        agy_acp_server.par) echo "comm agy"; return ;;
+      esac
+      ;;
     # polytoken (Polytoken CLI) is a daemon-plus-TUI whose per-session daemon
     # process name is exactly `polytoken` (verified live on 0.8.19: a TUI
     # session's daemon runs as comm `polytoken` at ppid 1, and a shell tool
@@ -652,7 +663,7 @@ secondmate_field() {
 # Keep this set aligned with fm-spawn.sh's explicit secondmate refusals.
 harness_is_crew_only() {
   case "$1" in
-    muse|gemini|agy|devin|rovo|commandcode|polytoken|cortex) return 0 ;;
+    muse|gemini|devin|rovo|commandcode|polytoken|cortex) return 0 ;;
     *) return 1 ;;
   esac
 }

@@ -3612,7 +3612,9 @@ test_discover_supervisor_t3code_after_env_tmux_and_herdr() {
   printf 'tok\n' > "$dir/config/t3code-token"
   (
     t3_discovery_stub
+    # shellcheck disable=SC2030 # Subshell isolates test env overrides from later tests.
     export FM_FAKE_T3_CALLS="$dir/calls" FM_FAKE_T3_THREAD=thread-captain
+    # shellcheck disable=SC2030 # Subshell isolates test env overrides from later tests.
     export FM_HOME="$dir" FM_BACKEND_CONFIG_DIR="$dir/config" FM_T3CODE_ORIGIN=http://127.0.0.1:9 FM_BACKEND=
     local out
     if out=$(FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND='' TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_target); then
@@ -3676,6 +3678,68 @@ test_discover_supervisor_t3code_after_env_tmux_and_herdr() {
     [ ! -s "$dir/calls" ] || fail "without a bearer the adapter must not be consulted"
   ) || fail "t3code discovery subshell failed"
   pass "discover_supervisor_*: t3code resolves from the home's live thread after env, TMUX_PANE, and herdr; zero, ambiguous, and no-bearer fall through"
+}
+
+test_discover_supervisor_t3code_recorded_thread_file() {
+  local dir
+  dir=$(make_supercase discover-t3code-recorded)
+  mkdir -p "$dir/config" "$dir/state"
+  printf 't3code\n' > "$dir/config/backend"
+  printf 'tok\n' > "$dir/config/t3code-token"
+  (
+    t3_discovery_stub
+    # shellcheck disable=SC2031 # Subshell isolates test env overrides from earlier tests.
+    export FM_FAKE_T3_CALLS="$dir/calls" FM_FAKE_T3_THREAD=thread-fallback
+    # shellcheck disable=SC2031 # Subshell isolates test env overrides from earlier tests.
+    export FM_HOME="$dir" FM_STATE_OVERRIDE="$dir/state" FM_BACKEND_CONFIG_DIR="$dir/config" FM_BACKEND=
+    local out
+
+    # Valid recorded thread wins over live-thread query without touching the adapter.
+    printf 'mcp:recorded-sm-thread\n' > "$dir/state/.t3-supervisor-thread"
+    out=$(FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND='' TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_target) \
+      || fail "a valid state/.t3-supervisor-thread must resolve the supervisor target"
+    [ "$out" = "mcp:recorded-sm-thread" ] || fail "expected recorded thread, got '$out'"
+    out=$(FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND='' TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_backend) \
+      || fail "a valid state/.t3-supervisor-thread must resolve t3code backend"
+    [ "$out" = t3code ] || fail "expected t3code backend, got '$out'"
+    [ ! -s "$dir/calls" ] || fail "a valid recorded thread must resolve without querying T3"
+
+    # Works even when config/backend is absent if FM_SUPERVISOR_BACKEND=t3code is set.
+    rm -f "$dir/config/backend"
+    out=$(FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND=t3code TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_target) \
+      || fail "FM_SUPERVISOR_BACKEND=t3code must read state/.t3-supervisor-thread even without config/backend"
+    [ "$out" = "mcp:recorded-sm-thread" ] || fail "expected recorded thread under FM_SUPERVISOR_BACKEND=t3code, got '$out'"
+    printf 't3code\n' > "$dir/config/backend"
+
+    # Explicit target and pane markers still outrank state/.t3-supervisor-thread.
+    out=$(FM_SUPERVISOR_TARGET=explicit:target FM_SUPERVISOR_BACKEND='' TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_target)
+    [ "$out" = explicit:target ] || fail "FM_SUPERVISOR_TARGET must win over state/.t3-supervisor-thread"
+    out=$(FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND='' TMUX_PANE='%7' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_target)
+    [ "$out" = '%7' ] || fail "TMUX_PANE must win over state/.t3-supervisor-thread"
+
+    # fm_capture_t3_supervisor_thread also picks up state/.t3-supervisor-thread.
+    FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND='' TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' \
+      fm_capture_t3_supervisor_thread
+    [ "$FM_T3_SUPERVISOR_THREAD" = "mcp:recorded-sm-thread" ] \
+      || fail "fm_capture_t3_supervisor_thread did not capture recorded thread, got '$FM_T3_SUPERVISOR_THREAD'"
+
+    # Symlink, whitespace, and multiline values are rejected and fall through to live query.
+    printf 'mcp:outside\n' > "$dir/outside"
+    rm -f "$dir/state/.t3-supervisor-thread"
+    ln -s "$dir/outside" "$dir/state/.t3-supervisor-thread"
+    out=$(FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND='' TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_target)
+    [ "$out" = thread-fallback ] || fail "symlinked state/.t3-supervisor-thread must be ignored, got '$out'"
+    rm -f "$dir/state/.t3-supervisor-thread"
+
+    printf 'mcp:bad id\n' > "$dir/state/.t3-supervisor-thread"
+    out=$(FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND='' TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_target)
+    [ "$out" = thread-fallback ] || fail "whitespace in state/.t3-supervisor-thread must be rejected, got '$out'"
+
+    printf 'mcp:line1\nmcp:line2\n' > "$dir/state/.t3-supervisor-thread"
+    out=$(FM_SUPERVISOR_TARGET='' FM_SUPERVISOR_BACKEND='' TMUX_PANE='' HERDR_ENV='' HERDR_PANE_ID='' discover_supervisor_target)
+    [ "$out" = thread-fallback ] || fail "multiline state/.t3-supervisor-thread must be rejected, got '$out'"
+  ) || fail "t3code recorded thread discovery subshell failed"
+  pass "discover_supervisor_*: state/.t3-supervisor-thread resolves before live T3 query and rejects symlinks, whitespace, and multiline values"
 }
 
 test_pane_is_busy_t3code_trusts_native_verdict_without_capture() {
@@ -4024,6 +4088,7 @@ test_discover_supervisor_backend_precedence
 test_discover_supervisor_target_herdr
 test_discover_supervisor_hc
 test_discover_supervisor_t3code_after_env_tmux_and_herdr
+test_discover_supervisor_t3code_recorded_thread_file
 test_pane_is_busy_t3code_trusts_native_verdict_without_capture
 test_pane_is_busy_herdr_native_busy_state
 test_primary_busy_guard_is_harness_scoped

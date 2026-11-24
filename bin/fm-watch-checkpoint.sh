@@ -156,7 +156,11 @@ positive_or() {  # <value> <default>
 
 # shellcheck source=bin/fm-supervision-engine-lib.sh
 . "$SCRIPT_DIR/fm-supervision-engine-lib.sh"
-if fm_supervision_host_enabled "$CONFIG" codex; then
+CHECKPOINT_PRIMARY=codex
+case "$("$SCRIPT_DIR/fm-harness.sh" 2>/dev/null || true)" in
+  agy) CHECKPOINT_PRIMARY=agy ;;
+esac
+if fm_supervision_host_enabled "$CONFIG" "$CHECKPOINT_PRIMARY"; then
   BOUND=$SECONDS_ARG
   if [ -f "$STATE/.afk-contract" ] \
     && [ "$(FM_STATE_OVERRIDE="$STATE" "$SCRIPT_DIR/fm-afk-contract.sh" mode 2>/dev/null)" != quiet ]; then
@@ -169,7 +173,7 @@ if fm_supervision_host_enabled "$CONFIG" codex; then
   set +e
   # The host ends its own park; the outer bound only catches a host that
   # outlived every one of its own bounds.
-  FM_SUPERVISION_HOST_PRIMARY=codex FM_SUPERVISION_HOST_PARK_SECONDS=$BOUND FM_SUPERVISION_HOST_PARK_LIMIT=$LIMIT \
+  FM_SUPERVISION_HOST_PRIMARY=$CHECKPOINT_PRIMARY FM_SUPERVISION_HOST_PARK_SECONDS=$BOUND FM_SUPERVISION_HOST_PARK_LIMIT=$LIMIT \
     run_bounded $((LIMIT + 120)) TERM 0 "$SCRIPT_DIR/fm-supervision-host.sh" park >"$OUT" 2>"$ERR"
   RC=$?
   set -e

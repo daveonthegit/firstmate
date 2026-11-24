@@ -187,7 +187,7 @@ T3 starts every agent with the T3 server's own environment, not a login shell's,
 Spawn writes its own `PATH` into this environment, behind the [GitHub account](configuration.md#github-account-selection-configgh-accounts--fm_gh_account) shim directory when an account is selected.
 The value is only as complete as the spawning session's own `PATH` and, for Codex, requires the project trust described above.
 Codex runs each command through `/bin/zsh -lc` from that `PATH`, so login startup files can still prepend to it, but a startup file that rebuilds `PATH` from scratch, such as one that resets it when a marker variable is missing, hides the toolchain from every Codex worker; Claude's shell tool restores its own login-shell snapshot and is unaffected.
-A secondmate additionally receives the launch prefix every other backend types (`FM_ROOT_OVERRIDE`, `FM_STATE_OVERRIDE`, `FM_DATA_OVERRIDE`, `FM_PROJECTS_OVERRIDE`, and `FM_CONFIG_OVERRIDE` empty, `FM_PUBLIC_FOLLOWUP_PRIMARY_HOME`, `FM_HOME`, `FM_TRACE_CONTEXT`, `FM_SUPERVISION_MODEL`) plus `FM_SUPERVISOR_BACKEND=t3code` and its own thread id as `FM_SUPERVISOR_TARGET`, so its away daemon resolves its target exactly.
+A secondmate additionally receives the launch prefix every other backend types (`FM_ROOT_OVERRIDE`, `FM_STATE_OVERRIDE`, `FM_DATA_OVERRIDE`, `FM_PROJECTS_OVERRIDE`, and `FM_CONFIG_OVERRIDE` empty, `FM_PUBLIC_FOLLOWUP_PRIMARY_HOME`, `FM_HOME`, `FM_TRACE_CONTEXT`, `FM_SUPERVISION_MODEL`) plus `FM_SUPERVISOR_BACKEND=t3code`, and its assigned thread id is persisted to its home's `state/.t3-supervisor-thread` (Claude and Codex secondmates also carry `FM_SUPERVISOR_TARGET` in their per-directory env), so its own away daemon and keep-alive pin resolve the thread without relying on cwd discovery.
 A `claude` ship or scout worker also receives the task-worker channel statement that a pane launch appends to the system prompt, written as a `CLAUDE.local.md` in its worktree because T3 owns the system prompt; a secondmate does not, as on every backend.
 Without it a Claude worker can refuse the launch brief as prompt injection, which happened live.
 The statement's pull-request-tool workaround follows the [verified version boundary](verification/runtime-backends.md#claude-pull-request-tools); an older or unreadable server keeps the clause, while a server at or past the verified build gets none.
@@ -196,29 +196,33 @@ A `claude` task checks the leased worktree and refuses a tracked, existing, or s
 
 <a id="pi-workers"></a>
 
-### Pi and Antigravity workers
+### Pi and Antigravity threads
 
-A `pi` thread runs on T3's own Pi provider, which uses the host's existing Pi install, login, and extensions; enable that provider in T3 Code, which ships it disabled.
-An `agy` thread runs on T3's Antigravity provider, which starts the host's `agy` as an ACP agent under its signed-in Google account; it is an ordinary top-level T3 thread, like a Claude or Codex worker.
-Neither reads a per-directory environment file, so the worker's facts above, including `FM_TASK_ID`, `FM_TASK_INBOX`, `GOTMPDIR`, `PATH`, and the Git hook entry, travel as the `environment` of its `t3_thread_launch`, which T3 applies to the agent process it starts for the thread's first turn.
-Upstream T3 does not take that parameter; a build that does lists `environment` in `t3_thread_launch`'s input schema, and a `pi` or `agy` spawn on any other T3 refuses before a slot is leased, so the worker never runs without its task environment.
-Spawn therefore launches such a worker's thread later than a Claude or Codex one: after the Git hook entry is installed and before the task record is written, so the record still names the thread, and an abort before then returns the slot with no thread to archive.
+A `pi` thread runs on T3's own Pi provider, which uses T3's configured Pi driver; enable that provider in T3 Code, which ships it disabled.
+An `agy` thread runs on T3's Antigravity provider, which launches T3's bundled Antigravity ACP server (`agy_acp_server.par`) under its signed-in Google account; it is an ordinary top-level T3 thread, like a Claude or Codex thread.
+Because T3 launches its own Pi and Antigravity providers, `bin/fm-spawn.sh` does not require standalone `pi` or `agy` CLIs on `PATH` when `backend=t3code`.
+Neither reads a per-directory environment file, so the task's facts above, including `FM_TASK_ID` and `FM_HOME` (for ship and scout workers) or the secondmate launch prefix plus `FM_SUPERVISOR_BACKEND=t3code` (for secondmates), `FM_TASK_INBOX`, `GOTMPDIR`, `PATH`, and the Git hook entry, travel as the `environment` of its `t3_thread_launch`, which T3 applies to the agent process it starts for the thread's first turn.
+Upstream T3 does not take that parameter; a build that does lists `environment` in `t3_thread_launch`'s input schema, and a `pi` or `agy` spawn on any other T3 refuses before a slot is leased, so the thread never runs without its task environment.
+Spawn therefore launches such a thread later than a Claude or Codex one: after the Git hook entry is installed and before the task record is written, so the record still names the thread, and an abort before then returns any leased slot with no thread to archive.
+For a `pi` or `agy` secondmate, T3 assigns the thread id only when `t3_thread_launch` returns, so spawn persists that id to the secondmate home's `state/.t3-supervisor-thread` immediately after launch; `bin/fm-supervisor-target-lib.sh` reads that file for away-daemon targeting and keep-alive pinning, and `fm_backend_t3code_home_env_cleanup` removes it on abort or teardown.
 `TRACEPARENT` rides that launch whenever trace context is on and is recorded once the task record exists; a recording failure aborts the spawn, which archives the still-idle thread.
 T3 keeps the environment's values in its event log in plain text and returns only their count, which the launch read-back checks wherever T3 reports it; Firstmate puts no credential in it.
-T3 also owns Pi's command line, so the worker's busy-state extension cannot load and its busy state comes from the [thread status table](#restart-and-liveness-behavior), as for Codex and Antigravity.
+T3 also owns Pi's command line, so a Pi worker's busy-state extension cannot load and its busy state comes from the [thread status table](#restart-and-liveness-behavior), as for Codex and Antigravity.
 
-The agy CLI's pane steps do not apply to an `agy` thread: the model is checked against T3's Antigravity catalog rather than `agy models`, nothing is written to the agy CLI's workspace-trust store, and there is no pane readiness gate, because T3 starts the agent in the bound worktree and the accepted launch turn is the delivery proof.
-Antigravity asks before it runs a workspace's own hooks (`.agents/hooks.json`), and T3 surfaces that prompt as a pending request on the thread, which the watcher escalates as a `blocked` wake like any other.
-A worker in a project worktree normally needs no workspace hooks, so decline it: answer a question with [`bin/fm-t3-answer.sh`](../bin/fm-t3-answer.sh) choosing the option that does not trust the hooks, or deny a permission approval in T3 Code itself.
-This matters most for a worker in a Firstmate worktree, whose tracked `.agents/hooks.json` holds the supervisor's own session-start and turn-end hooks, which a worker must not run.
+The standalone `agy` CLI's pane steps do not apply to an `agy` thread: the model is checked against T3's Antigravity catalog rather than `agy models`, nothing is written to the standalone `agy` CLI's workspace-trust store, and there is no pane readiness gate, because T3 starts the agent in the bound worktree or home and the accepted launch turn is the delivery proof.
+Antigravity ACP (`agy_acp_server.par`) runs `.agents/hooks.json` `Stop` hooks only at `session_end` and ignores `{"decision":"continue"}`, so a T3 Antigravity primary or secondmate uses the bounded foreground-checkpoint protocol (`docs/supervision-protocols/agy-acp.md`, supervision model `persistent`) rather than standalone `agy`'s Stop-hook park (`autoarm`).
+Antigravity ACP asks before it executes a workspace's `.agents/hooks.json` hooks unless that directory is already trusted in `$GEMINI_HOME/antigravity-acp/trusted_workspaces.json`, and T3 surfaces that prompt as a `user_input` pending request on the thread, which the watcher escalates as a `blocked` wake like any other.
+For a ship or scout worker in a project worktree (especially a Firstmate worktree, whose tracked `.agents/hooks.json` holds the supervisor's own hooks), decline it with [`bin/fm-t3-answer.sh`](../bin/fm-t3-answer.sh) choosing `deny` so the worker never runs primary hooks.
+For a primary or secondmate home running inside T3 Antigravity ACP, trust the home (`trust` via [`bin/fm-t3-answer.sh`](../bin/fm-t3-answer.sh) or T3 Code) so the `PreToolUse` seatbelts in `.agents/hooks.json` run.
 
 ## Current lifecycle and safety
 
 Spawn matches the project (the home, for a secondmate) by real path against T3's live projects, creating one titled `fm-<directory name>` with `t3_project_create` when absent, and leases the worktree for a worker.
 It then launches an idle thread with `t3_thread_launch` (the workspace strategy and branch, `full-access` runtime mode, the model selection, and for [pi and agy](#pi-workers), at a later point in the spawn, the per-thread environment) and reads the thread and its configuration back through the [capability gate](#capability-gate)'s configuration tool; a thread T3 bound to another workspace, runtime mode, instance, model, or option value is archived and the spawn refuses.
-For Claude and Codex it installs the harness hooks, records metadata, and installs the [per-directory harness environment](#per-directory-harness-environment); [Pi and Antigravity workers](#pi-workers) use their deferred launch sequence instead.
+For Claude and Codex it installs the harness hooks, records metadata, and installs the [per-directory harness environment](#per-directory-harness-environment); [Pi and Antigravity threads](#pi-workers) use their deferred launch sequence instead.
 It then sends the encoded brief (the charter, for a secondmate) as the thread's first message with `t3_thread_send`.
 Exact call payloads are owned by `bin/fm-t3-mcp.mjs` and `bin/backends/t3code.sh`.
+An idle thread's provider, model, or effort can be switched in place with `bin/fm-t3-mcp.mjs configure --thread <id> --harness <claude|codex|pi|agy> --model <slug|default> [--effort <level|default>] [--instance <id>]`, which validates the target selection against T3's catalog, calls `t3_thread_configure`, and verifies the read-back; without `--harness`, `configure` stays restricted to same-driver moves.
 
 `fm-peek.sh` renders the newest items of the thread's activity view as `[type/status] text` lines followed by a `t3code: status=<status> run=<active run>` line.
 T3 pages that view oldest first, so the helper starts from the thread's visible item count to read the tail.
@@ -378,8 +382,7 @@ If a task's thread no longer reads back, release the task by hand:
 ## Active limits
 
 - T3 Code remains experimental and runs only `claude`, `codex`, `pi`, and `agy`; `pi-signed`, `cursor`, and every other harness are refused.
-- [Pi and Antigravity workers](#pi-workers) require per-thread launch environment support.
-  Pi and Antigravity secondmates are refused because their own thread id belongs in the launch environment but T3 assigns it only after launch, and a [remote second mate](remote-secondmates.md#t3-code-second-mates) on T3 runs only Claude or Codex.
+- [Pi and Antigravity threads](#pi-workers) (workers and local secondmates) require per-thread launch environment support; a [remote second mate](remote-secondmates.md#t3-code-second-mates) on T3 runs only Claude or Codex.
 - A non-empty `config/crew-exclude-tools` refuses a T3 spawn: T3 owns the provider command, so Firstmate cannot add Claude's `--disallowedTools` or Pi's `--exclude-tools` flag.
 - T3 starts the agent at `full-access` with its provider instance's account and environment, so a spawn refuses `config/claude-permission-mode=auto` for `claude`, `config/codex-approval-mode=approve-for-me` or `config/codex-permission-mode=restricted` for `codex`, `config/launch-env-allowlist`, a worker account pin or a [declared Claude account list](configuration.md#several-claude-accounts-configclaude-accounts) entry, and a raw launch command; select the account through `config/t3code-instances` instead.
 - T3 owns the Claude provider command, so Firstmate cannot add its command-line prompt-suggestion, feedback-draft, or attribution controls; configure equivalent provider-instance settings in T3 when those policies are required.

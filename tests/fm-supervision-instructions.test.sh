@@ -8,6 +8,14 @@ set -u
 TMP_ROOT=$(fm_test_tmproot fm-supervision-instructions)
 RENDER="$ROOT/bin/fm-supervision-instructions.sh"
 
+# Drop ambient Antigravity ACP markers and blind host ps so --harness agy tests
+# do not depend on whether this suite runs inside T3 Antigravity ACP.
+unset ANTIGRAVITY_AGENT ANTIGRAVITY_HARNESS_PATH
+BLIND_BIN=$(fm_fakebin "$TMP_ROOT/blind-ps")
+fm_fake_blind_ancestry "$BLIND_BIN"
+PATH="$BLIND_BIN:$PATH"
+export PATH
+
 test_selected_harness_block_only() {
   local out
   out=$("$RENDER" --harness codex)
@@ -396,6 +404,52 @@ test_literal_paths_in_rendered_snippets() {
   pass "snippets preserve literal ampersands, quotes and spaces in paths across primary harnesses"
 }
 
+test_agy_acp_ordinary_wake_and_supervision_host_protocol() {
+  local code home config out ordinary body repair
+  code="$TMP_ROOT/agy-acp-code"
+  home="$TMP_ROOT/agy-acp-home"
+  config="$TMP_ROOT/agy-acp-config"
+  mkdir -p "$code/docs" "$home/state" "$config"
+  cp -R "$ROOT/bin" "$code/bin"
+  cp -R "$ROOT/docs/supervision-protocols" "$code/docs/supervision-protocols"
+
+  # Capable (standalone agy CLI): Stop-hook park.
+  cat > "$code/bin/fm-turnend-guard-agy.sh" <<'SH'
+#!/usr/bin/env bash
+[ "${1:-}" = --capable ]
+SH
+  chmod +x "$code/bin/fm-turnend-guard-agy.sh"
+  out=$(FM_HOME="$home" FM_CONFIG_OVERRIDE="$config" "$code/bin/fm-supervision-instructions.sh" --harness agy)
+  assert_contains "$out" "Mode: Antigravity Stop-hook-owned supervision." "capable agy must emit the Stop-hook park snippet"
+  ordinary=$(printf '%s\n' "$out" | grep -F -- '- Ordinary wake:')
+  assert_contains "$ordinary" "bin/fm-turnend-guard-agy.sh" "capable agy ordinary-wake line must name the Stop hook"
+
+  # Not capable (Antigravity ACP): foreground checkpoint + {agy-acp} supervision-host tags.
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$code/bin/fm-turnend-guard-agy.sh"
+  out=$(FM_HOME="$home" FM_CONFIG_OVERRIDE="$config" "$code/bin/fm-supervision-instructions.sh" --harness agy)
+  assert_contains "$out" "Mode: Antigravity ACP foreground checkpoint." "Antigravity ACP must emit agy-acp.md"
+  ordinary=$(printf '%s\n' "$out" | grep -F -- '- Ordinary wake:')
+  assert_contains "$ordinary" "bin/fm-watch-checkpoint.sh" "Antigravity ACP ordinary-wake line must name the checkpoint helper"
+  assert_not_contains "$ordinary" "bin/fm-turnend-guard-agy.sh" "Antigravity ACP ordinary-wake line must not claim Stop-hook continuity"
+  repair=$(FM_HOME="$home" FM_CONFIG_OVERRIDE="$config" "$code/bin/fm-supervision-instructions.sh" --harness agy --repair-line)
+  assert_contains "$repair" "bin/fm-watch-checkpoint.sh" "Antigravity ACP repair line must name the checkpoint helper"
+
+  : > "$config/supervision-host"
+  out=$(FM_HOME="$home" FM_CONFIG_OVERRIDE="$config" "$code/bin/fm-supervision-instructions.sh" --harness agy)
+  body=$(printf '%s\n' "$out" | sed -n '/^Supervision host: on for this home/,$p')
+  assert_contains "$body" "Every foreground checkpoint runs the supervision host in the watcher's place" \
+    "Antigravity ACP supervision-host must describe foreground checkpoint ownership"
+  assert_contains "$body" "as checkpoint output carrying the close" \
+    "Antigravity ACP supervision-host must describe checkpoint output wake delivery"
+  assert_contains "$body" "checkpoint: no actionable wake within" \
+    "Antigravity ACP supervision-host must describe the checkpoint park boundary"
+  [ "$(printf '%s\n' "$body" | grep -c '^ *Only a wake the host hands back reaches you')" -eq 1 ] \
+    || fail "Antigravity ACP supervision-host must name exactly one wake path: $body"
+  [ "$(printf '%s\n' "$body" | grep -c '^3\. ')" -eq 1 ] \
+    || fail "Antigravity ACP supervision-host must name exactly one park boundary: $body"
+  pass "Antigravity ACP renders foreground checkpoint instructions and {agy-acp} supervision-host protocol"
+}
+
 test_literal_paths_in_rendered_snippets
 test_supervision_host_protocol_on_a_claude_home_unless_off
 test_supervision_host_protocol_on_every_arm_owner
@@ -407,6 +461,7 @@ test_repair_lines
 test_omp_restart_guidance_depends_on_home_vs_checkout
 test_cross_harness_ordinary_continuation_and_repair_matrix
 test_codex_park_ordinary_wake_line_leaves_continuity_to_the_stop_hook
+test_agy_acp_ordinary_wake_and_supervision_host_protocol
 test_pi_signed_preserves_identity_with_pi_supervision_protocol
 test_grok_is_background_notify
 test_grok_command_sources_effective_config

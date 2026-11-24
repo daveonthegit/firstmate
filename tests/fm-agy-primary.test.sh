@@ -41,14 +41,27 @@ int main(int argc, char **argv) {
 C
 "$CC_BIN" -o "$FAKEBIN/agy" "$TMP_ROOT/fake-agy.c" \
   || fail "could not build the fake agy process"
+cp "$FAKEBIN/agy" "$FAKEBIN/agy_acp_server.par"
+chmod +x "$FAKEBIN/agy_acp_server.par"
 FAKE_AGY="$FAKEBIN/agy"
+FAKE_AGY_ACP="$FAKEBIN/agy_acp_server.par"
 
 run_under_agy() {
   env -u CLAUDECODE -u CLAUDE_PID -u CLAUDE_CODE_SESSION_ID \
       -u CURSOR_AGENT -u CURSOR_INVOKED_AS \
       -u GEMINI_CLI -u ATLASSIAN_AGENT_TYPE -u ROVODEV_CLI \
       -u PI_CODING_AGENT -u FM_PI_HARNESS -u FM_OMP_HARNESS -u GROK_AGENT \
+      -u ANTIGRAVITY_AGENT -u ANTIGRAVITY_HARNESS_PATH \
       "$@" "$FAKE_AGY" -c "$AGY_CHILD_CMD"
+}
+
+run_under_agy_acp() {
+  env -u CLAUDECODE -u CLAUDE_PID -u CLAUDE_CODE_SESSION_ID \
+      -u CURSOR_AGENT -u CURSOR_INVOKED_AS \
+      -u GEMINI_CLI -u ATLASSIAN_AGENT_TYPE -u ROVODEV_CLI \
+      -u PI_CODING_AGENT -u FM_PI_HARNESS -u FM_OMP_HARNESS -u GROK_AGENT \
+      ANTIGRAVITY_AGENT=1 ANTIGRAVITY_HARNESS_PATH="$FAKE_AGY_ACP" \
+      "$@" "$FAKE_AGY_ACP" -c "$AGY_CHILD_CMD"
 }
 
 install_scripts() {
@@ -599,7 +612,12 @@ test_session_lock_agy_ancestry_and_supervision_model() {
   model=$(run_under_agy FM_HOME="$dir" 2>/dev/null)
   assert_equals "autoarm" "$model" "fm_supervision_model must return autoarm when fm-harness.sh detects agy"
 
-  block=$("$ROOT/bin/fm-supervision-instructions.sh" --harness agy 2>/dev/null || true)
+  AGY_CHILD_CMD='"$FM_HOME/bin/fm-turnend-guard-agy.sh" --capable'
+  run_under_agy FM_HOME="$dir" 2>/dev/null \
+    || fail "fm-turnend-guard-agy.sh --capable must exit 0 under standalone agy"
+
+  AGY_CHILD_CMD='"$FM_HOME/bin/fm-supervision-instructions.sh" --harness agy'
+  block=$(run_under_agy FM_HOME="$dir" 2>/dev/null || true)
   assert_contains "$block" "SUPERVISION OPERATING INSTRUCTIONS - primary harness: agy" \
     "fm-supervision-instructions.sh --harness agy must emit the agy header"
   assert_contains "$block" "Mode: Antigravity Stop-hook-owned supervision." \
@@ -607,11 +625,72 @@ test_session_lock_agy_ancestry_and_supervision_model() {
   assert_contains "$block" "bin/fm-turnend-guard-agy.sh" \
     "fm-supervision-instructions.sh --harness agy must reference bin/fm-turnend-guard-agy.sh"
 
-  repair=$("$ROOT/bin/fm-supervision-instructions.sh" --harness agy --repair-line 2>/dev/null || true)
+  AGY_CHILD_CMD='"$FM_HOME/bin/fm-supervision-instructions.sh" --harness agy --repair-line'
+  repair=$(run_under_agy FM_HOME="$dir" 2>/dev/null || true)
   assert_contains "$repair" "Stop-hook park" \
     "fm-supervision-instructions.sh --harness agy --repair-line must mention Stop-hook park"
 
   pass "session-lock & supervision model: agy ancestry, autoarm model, and supervision instructions verified"
+}
+
+test_antigravity_acp_supervision_model_and_instructions() {
+  local dir out model block repair hosted
+  dir=$(make_primary_dir "$TMP_ROOT/lock-acp")
+
+  AGY_CHILD_CMD='
+    . "$FM_HOME/bin/fm-session-lock-lib.sh"
+    anc=$(fm_harness_ancestry_pid) || exit 11
+    [ "$anc" = "$PPID" ] || exit 12
+    fm_harness_pid_alive "$anc" || exit 13
+    printf "%s\n" "$anc" > "$FM_HOME/state/.lock"
+    fm_session_lock_owned_by_self "$FM_HOME/state" || exit 14
+    printf "owned:%s\n" "$anc"
+  '
+  out=$(run_under_agy_acp FM_HOME="$dir" 2>/dev/null)
+  assert_contains "$out" "owned:" "session-lock-lib must resolve agy_acp_server.par ancestry, liveness, and ownership"
+
+  AGY_CHILD_CMD='"$FM_HOME/bin/fm-turnend-guard-agy.sh" --capable'
+  if run_under_agy_acp FM_HOME="$dir" 2>/dev/null; then
+    fail "fm-turnend-guard-agy.sh --capable must exit 1 under Antigravity ACP"
+  fi
+
+  AGY_CHILD_CMD='
+    . "$FM_HOME/bin/fm-wake-lib.sh"
+    fm_supervision_model
+  '
+  model=$(run_under_agy_acp FM_HOME="$dir" 2>/dev/null)
+  assert_equals "persistent" "$model" "fm_supervision_model must return persistent under Antigravity ACP"
+
+  AGY_CHILD_CMD='"$FM_HOME/bin/fm-supervision-instructions.sh"'
+  block=$(run_under_agy_acp FM_HOME="$dir" 2>/dev/null || true)
+  assert_contains "$block" "SUPERVISION OPERATING INSTRUCTIONS - primary harness: agy" \
+    "Antigravity ACP supervision instructions must emit the agy header"
+  assert_contains "$block" "Mode: Antigravity ACP foreground checkpoint." \
+    "Antigravity ACP must emit the foreground checkpoint protocol"
+  assert_contains "$block" "bin/fm-watch-checkpoint.sh" \
+    "Antigravity ACP must direct bounded checkpoints"
+  assert_not_contains "$block" "Mode: Antigravity Stop-hook-owned supervision." \
+    "Antigravity ACP must not emit the standalone Stop-hook park mode"
+
+  AGY_CHILD_CMD='"$FM_HOME/bin/fm-supervision-instructions.sh" --repair-line'
+  repair=$(run_under_agy_acp FM_HOME="$dir" 2>/dev/null || true)
+  assert_contains "$repair" "bin/fm-watch-checkpoint.sh" \
+    "Antigravity ACP repair line must direct a bounded checkpoint"
+
+  : > "$dir/config/supervision-host"
+  AGY_CHILD_CMD='"$FM_HOME/bin/fm-supervision-instructions.sh"'
+  hosted=$(run_under_agy_acp FM_HOME="$dir" 2>/dev/null || true)
+  assert_contains "$hosted" "Every foreground checkpoint runs the supervision host in the watcher's place" \
+    "Antigravity ACP supervision-host protocol must use foreground checkpoint wording"
+  assert_contains "$hosted" "as checkpoint output carrying the close" \
+    "Antigravity ACP supervision-host protocol must describe checkpoint wake delivery"
+
+  # A standalone agy CLI spawned inside an ACP host still prefers the nearer agy ancestor.
+  AGY_CHILD_CMD='"$FAKE_AGY" -c "\"\$FM_HOME/bin/fm-turnend-guard-agy.sh\" --capable"'
+  run_under_agy_acp FM_HOME="$dir" FAKE_AGY="$FAKE_AGY" 2>/dev/null \
+    || fail "standalone agy nested inside Antigravity ACP must still report --capable"
+
+  pass "antigravity ACP: session-lock, persistent supervision model, and foreground checkpoint instructions verified"
 }
 
 fm_test_run \
@@ -628,4 +707,5 @@ fm_test_run \
   test_arm_pretool_check_agy \
   test_cd_pretool_check_agy \
   test_subagent_pretool_check_agy \
-  test_session_lock_agy_ancestry_and_supervision_model
+  test_session_lock_agy_ancestry_and_supervision_model \
+  test_antigravity_acp_supervision_model_and_instructions

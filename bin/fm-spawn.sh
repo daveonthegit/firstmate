@@ -2329,6 +2329,51 @@ spawn_t3code_thread_create() {
   fi
   T3CODE_CREATE_UNCERTAIN=0
 }
+spawn_t3code_secondmate_thread_create() {
+  local rc=0
+  T3CODE_CREATE_UNCERTAIN=1
+  T=$(fm_backend_t3code_thread_create "$T3CODE_PROJECT_ID" "$W" \
+    "$(git -C "$PROJ_ABS" branch --show-current 2>/dev/null || true)" "" "$T3CODE_MODEL_SELECTION" "$@") || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq 1 ] || T3CODE_CREATE_UNCERTAIN=0
+    exit 1
+  fi
+  T3CODE_CREATE_UNCERTAIN=0
+}
+# Record a T3 secondmate's assigned thread id inside its own home state so
+# supervisor-target discovery and keep-alive work even when the thread's launch
+# environment was fixed before T3 assigned the id (pi and agy).
+spawn_t3code_record_supervisor_thread() {
+  local state_dir="$PROJ_ABS/state" target tmp
+  target="$state_dir/.t3-supervisor-thread"
+  mkdir -p "$state_dir" || return 1
+  if [ -L "$target" ]; then
+    echo "error: $target is a symlink; refusing to record T3 supervisor thread through it" >&2
+    return 1
+  fi
+  tmp=$(mktemp "$state_dir/.t3-supervisor-thread.XXXXXX") || return 1
+  if ! printf '%s\n' "$T" > "$tmp" || ! mv -f "$tmp" "$target"; then
+    rm -f "$tmp" 2>/dev/null || true
+    return 1
+  fi
+}
+# Keep this in step with fm_supervision_model (bin/fm-wake-lib.sh): standalone
+# agy uses its Stop-hook park (autoarm), while T3 Antigravity ACP runs
+# foreground checkpoints (persistent).
+spawn_secondmate_supervision_model() {
+  case "$HARNESS" in
+  claude | cursor) printf 'autoarm' ;;
+  agy)
+    if [ "$BACKEND" = t3code ]; then
+      printf 'persistent'
+    else
+      printf 'autoarm'
+    fi
+    ;;
+  pi | pi-signed | omp) printf 'extension' ;;
+  *) printf 'persistent' ;;
+  esac
+}
 HERDR_LEASED=0
 HERDR_PROJECTION_ABORT_CLEANUP=0
 HERDR_PROJECTION_ABORT_SESSION=
@@ -4152,28 +4197,32 @@ cortex)
   }
   ;;
 pi | pi-signed)
-  PI_BIN=$(resolve_pi_executable "$HARNESS") || {
-    echo "error: $HARNESS executable not found on PATH; install it or select a different verified harness" >&2
-    exit 1
-  }
-  PI_TUI_MODE=
-  if pi_supports_tui_mode "$PI_BIN"; then
-    PI_TUI_MODE=' --tui-mode regular'
+  if [ "$BACKEND" = t3code ]; then
+    PI_BIN=
+  else
+    PI_BIN=$(resolve_pi_executable "$HARNESS") || {
+      echo "error: $HARNESS executable not found on PATH; install it or select a different verified harness" >&2
+      exit 1
+    }
+    PI_TUI_MODE=
+    if pi_supports_tui_mode "$PI_BIN"; then
+      PI_TUI_MODE=' --tui-mode regular'
+    fi
+    LAUNCH=${LAUNCH//__PITUIMODE__/$PI_TUI_MODE}
+    # Seeded-home signal is .fm-secondmate-home (required by
+    # validate_firstmate_home_for_spawn before any secondmate launch reaches
+    # the pane). Session-only --approve; never expand to a parent path or
+    # rewrite the operator trust store.
+    PI_APPROVE=
+    if [ "$KIND" = secondmate ] && pi_supports_approve "$PI_BIN"; then
+      PI_APPROVE=' --approve'
+    fi
+    LAUNCH=${LAUNCH//__PIAPPROVE__/$PI_APPROVE}
+    PI_EXCLUDE=
+    [ -z "$EXCLUDE_TOOLS" ] || PI_EXCLUDE=" --exclude-tools $(shell_quote "$EXCLUDE_TOOLS")"
+    LAUNCH=${LAUNCH//__PIEXCLUDE__/$PI_EXCLUDE}
+    LAUNCH="FM_PI_HARNESS=$HARNESS $LAUNCH"
   fi
-  LAUNCH=${LAUNCH//__PITUIMODE__/$PI_TUI_MODE}
-  # Seeded-home signal is .fm-secondmate-home (required by
-  # validate_firstmate_home_for_spawn before any secondmate launch reaches
-  # the pane). Session-only --approve; never expand to a parent path or
-  # rewrite the operator trust store.
-  PI_APPROVE=
-  if [ "$KIND" = secondmate ] && pi_supports_approve "$PI_BIN"; then
-    PI_APPROVE=' --approve'
-  fi
-  LAUNCH=${LAUNCH//__PIAPPROVE__/$PI_APPROVE}
-  PI_EXCLUDE=
-  [ -z "$EXCLUDE_TOOLS" ] || PI_EXCLUDE=" --exclude-tools $(shell_quote "$EXCLUDE_TOOLS")"
-  LAUNCH=${LAUNCH//__PIEXCLUDE__/$PI_EXCLUDE}
-  LAUNCH="FM_PI_HARNESS=$HARNESS $LAUNCH"
   ;;
 cursor)
   # `cursor` is not the CLI name, and the legacy alias `agent` is far too
@@ -4195,10 +4244,14 @@ omp)
   }
   ;;
 agy)
-  AGY_BIN=$(resolve_pi_executable agy) || {
-    echo "error: agy executable not found on PATH; install Antigravity CLI or select a different verified harness" >&2
-    exit 1
-  }
+  if [ "$BACKEND" = t3code ]; then
+    AGY_BIN=
+  else
+    AGY_BIN=$(resolve_pi_executable agy) || {
+      echo "error: agy executable not found on PATH; install Antigravity CLI or select a different verified harness" >&2
+      exit 1
+    }
+  fi
   ;;
 kiro)
   KIRO_BIN=$(resolve_pi_executable kiro-cli) || {
@@ -4297,7 +4350,19 @@ if [ "$RELAUNCH" -eq 1 ]; then
   WORKER_ACCOUNT_REQUEST=$(fm_worker_account_relaunch_request "$HARNESS" "$CONFIG" "$RELAUNCH_PRIOR_HARNESS" \
     "$(fm_meta_get "$RELAUNCH_META" account)" "$ACCOUNT_ARG" "$WORKER_ACCOUNT_MATE") || exit 1
 fi
-WORKER_ACCOUNT=$(fm_worker_account_select "$HARNESS" "$CONFIG" "$MODEL" "${PI_BIN:-$HARNESS}" "$RAW_COMMAND" "$WORKER_ACCOUNT_MATE" "$WORKER_ACCOUNT_REQUEST") || exit 1
+# On backend=t3code, T3 runs its own Pi provider and never needs a standalone
+# pi binary on PATH, so detect a declared pi-account pin here without invoking
+# `pi auth check` and let the T3 refusal block below reject it cleanly.
+if [ "$BACKEND" = t3code ] && [ -z "${PI_BIN:-}" ] && { [ "$HARNESS" = pi ] || [ "$HARNESS" = pi-signed ]; }; then
+  T3_PI_ACC_DIR=$(fm_worker_account_config "$HARNESS" "$CONFIG" "$WORKER_ACCOUNT_MATE") || exit 1
+  if [ -e "$T3_PI_ACC_DIR/pi-account" ] || [ -L "$T3_PI_ACC_DIR/pi-account" ]; then
+    echo "error: backend=t3code cannot apply the $HARNESS worker account pin because T3's provider instance owns the account; select that instance in config/t3code-instances instead" >&2
+    exit 1
+  fi
+  WORKER_ACCOUNT=
+else
+  WORKER_ACCOUNT=$(fm_worker_account_select "$HARNESS" "$CONFIG" "$MODEL" "${PI_BIN:-$HARNESS}" "$RAW_COMMAND" "$WORKER_ACCOUNT_MATE" "$WORKER_ACCOUNT_REQUEST") || exit 1
+fi
 WORKER_ACCOUNT_DECLARED=${WORKER_ACCOUNT%%$'\t'*}
 WORKER_ACCOUNT_ROOT=${WORKER_ACCOUNT#*$'\t'}
 WORKER_ACCOUNT_PROVIDER=${WORKER_ACCOUNT_ROOT#*$'\t'}
@@ -4326,12 +4391,6 @@ if [ "$BACKEND" = t3code ]; then
   fi
   if [ -n "$WORKER_ACCOUNT" ]; then
     echo "error: backend=t3code cannot apply the $HARNESS worker account pin because T3's provider instance owns the account; select that instance in config/t3code-instances instead" >&2
-    exit 1
-  fi
-  # A pi or agy thread's environment is fixed at launch, before its thread id
-  # exists, so a secondmate's own supervisor target cannot ride it.
-  if fm_backend_t3code_launch_env_harness "$HARNESS" && [ "$KIND" = secondmate ]; then
-    echo "error: backend=t3code runs $HARNESS only for ship and scout workers: a $HARNESS secondmate needs its own thread id in its launch environment, which T3 assigns only after launch; choose claude or codex, or another backend" >&2
     exit 1
   fi
   if [ -n "$EXCLUDE_TOOLS" ]; then
@@ -6284,7 +6343,7 @@ EOF
     fi
     # The T3 project is the directory the agent runs in: the project for a
     # worker, the home itself for a secondmate.
-    T3CODE_PROJECT_ID=$(fm_backend_t3code_project_ensure "$PROJ_ABS") || exit 1
+    T3CODE_PROJECT_ID=$(fm_backend_t3code_project_ensure "$PROJ_ABS" "$HARNESS") || exit 1
     spawn_t3code_choose_instance || exit 1
     T3CODE_MODEL_SELECTION=$(fm_backend_t3code_model_selection "$HARNESS" "${MODEL:-default}" "${EFFORT:-default}" "$T3CODE_PROJECT_ID" "$T3CODE_INSTANCE") || exit 1
     if [ "$KIND" = secondmate ]; then
@@ -6304,15 +6363,20 @@ EOF
         echo "error: could not link the T3 credential into $PROJ_ABS/config for $ID" >&2
         exit 1
       fi
-      # No worktree of its own: the root workspace strategy runs the thread in
-      # the project's workspaceRoot, the home, on whatever branch it is on.
-      T3CODE_CREATE_UNCERTAIN=1
-      T=$(fm_backend_t3code_thread_create "$T3CODE_PROJECT_ID" "$W" \
-        "$(git -C "$PROJ_ABS" branch --show-current 2>/dev/null || true)" "" "$T3CODE_MODEL_SELECTION") || {
-          [ "$?" -eq 1 ] || T3CODE_CREATE_UNCERTAIN=0
+      if fm_backend_t3code_launch_env_harness "$HARNESS"; then
+        # Pi and Antigravity take their environment at launch, so the thread
+        # launches later in spawn_t3code_launch_with_env once every fact exists.
+        T=
+      else
+        # No worktree of its own: the root workspace strategy runs the thread in
+        # the project's workspaceRoot, the home, on whatever branch it is on.
+        spawn_t3code_secondmate_thread_create
+        spawn_t3code_record_supervisor_thread || {
+          T3CODE_ABORT_CLEANUP=1
+          echo "error: could not record T3 supervisor thread $T for $ID into $PROJ_ABS/state/.t3-supervisor-thread" >&2
           exit 1
         }
-      T3CODE_CREATE_UNCERTAIN=0
+      fi
     else
       # A durable lease (bin/fm-home-seed.sh's pattern): there is no pane to run
       # the interactive `treehouse get` in, and a slot a live T3 thread points at
@@ -7275,20 +7339,37 @@ spawn_t3code_env_base() {
     T3CODE_ENV+=("FM_TASK_ID=$ID" "FM_HOME=$FM_HOME")
   fi
 }
-# spawn_t3code_launch_with_env - a pi or agy worker's thread launch, deferred
-# until every fact in its environment exists and run before the task record
-# is written, so the record names the thread. Pi and Antigravity read no
+# spawn_t3code_launch_with_env - a pi or agy thread launch, deferred until
+# every fact in its environment exists and run before the task record is
+# written, so the record names the thread. Pi and Antigravity read no
 # per-directory environment file, so the facts ride the launch as T3's
 # per-thread environment, which T3 applies to the agent process it starts for
 # the thread's first turn; the thread is idle until the launch brief, and
 # every abort before that archives it. TRACEPARENT rides whenever trace
 # context is on and is recorded once the record exists (the launch-env branch
-# below).
+# below). For a secondmate, the thread runs at the home root with the
+# secondmate launch prefix and FM_SUPERVISOR_BACKEND=t3code, and the assigned
+# thread id is recorded to $PROJ_ABS/state/.t3-supervisor-thread right after
+# launch because T3 assigns the id only when the launch returns.
 spawn_t3code_launch_with_env() {
   spawn_t3code_env_base
   [ -z "$SPAWN_TRACEPARENT" ] || T3CODE_ENV+=("TRACEPARENT=$SPAWN_TRACEPARENT")
-  spawn_t3code_thread_create "$WT" "${T3CODE_ENV[@]}"
-  T3CODE_ABORT_CLEANUP=1
+  if [ "$KIND" = secondmate ]; then
+    local supervision_model
+    supervision_model=$(spawn_secondmate_supervision_model)
+    T3CODE_ENV+=(FM_ROOT_OVERRIDE= FM_STATE_OVERRIDE= FM_DATA_OVERRIDE= FM_PROJECTS_OVERRIDE= FM_CONFIG_OVERRIDE= \
+      "FM_PUBLIC_FOLLOWUP_PRIMARY_HOME=$FM_HOME" "FM_HOME=$PROJ_ABS" "FM_TRACE_CONTEXT=$SPAWN_TRACE_EFFECTIVE" \
+      "FM_SUPERVISION_MODEL=$supervision_model" FM_SUPERVISOR_BACKEND=t3code)
+    spawn_t3code_secondmate_thread_create "${T3CODE_ENV[@]}"
+    T3CODE_ABORT_CLEANUP=1
+    spawn_t3code_record_supervisor_thread || {
+      echo "error: could not record T3 supervisor thread $T for $ID into $PROJ_ABS/state/.t3-supervisor-thread" >&2
+      exit 1
+    }
+  else
+    spawn_t3code_thread_create "$WT" "${T3CODE_ENV[@]}"
+    T3CODE_ABORT_CLEANUP=1
+  fi
 }
 spawn_t3code_env_install() {
   local harness=$1
@@ -8554,7 +8635,7 @@ LAUNCH=${LAUNCH//__OMPEXT__/$sq_ompext}
 LAUNCH=${LAUNCH//__OMPWORKERCFG__/$sq_ompcfg}
 LAUNCH=${LAUNCH//__OPINPUT__/$sq_opinput}
 case "$HARNESS" in
-pi | pi-signed) LAUNCH=${LAUNCH//__PIBIN__/"$(shell_quote "$PI_BIN")"} ;;
+pi | pi-signed) LAUNCH=${LAUNCH//__PIBIN__/"$(shell_quote "${PI_BIN:-$HARNESS}")"} ;;
 cursor) LAUNCH=${LAUNCH//__CURSORBIN__/"$(shell_quote "$CURSOR_BIN")"} ;;
 gemini) LAUNCH=${LAUNCH//__GEMINISETTINGS__/"$(shell_quote "$STATE_REAL/$ID.gemini-settings.json")"} ;;
 omp)
@@ -8591,7 +8672,7 @@ cortex)
   LAUNCH=${LAUNCH//__CORTEXBIN__/"$(shell_quote "$CORTEX_BIN")"}
   LAUNCH=${LAUNCH//__CORTEXPLUGIN__/"$(shell_quote "$STATE_REAL/$ID.cortex-plugin")"}
   ;;
-agy) LAUNCH=${LAUNCH//__AGYBIN__/"$(shell_quote "$AGY_BIN")"} ;;
+agy) LAUNCH=${LAUNCH//__AGYBIN__/"$(shell_quote "${AGY_BIN:-agy}")"} ;;
 opencode)
   # The resolved absolute path probed for the version gate above, so the pane
   # runs exactly the binary whose major was recorded. An unresolved executable
@@ -8681,17 +8762,7 @@ fi
 if [ "$KIND" = secondmate ]; then
   sq_home=$(shell_quote "$PROJ_ABS")
   sq_primary_home=$(shell_quote "$FM_HOME")
-  # Keep this in step with fm_supervision_model (bin/fm-wake-lib.sh): Claude's
-  # Stop auto-arm and Cursor's stop-hook park both run the watcher only BETWEEN
-  # turns, so a fresh beacon with no live watcher is their healthy mid-turn state.
-  # Pi and pi-signed secondmates previously received persistent here and now
-  # receive extension to match fm_supervision_model's own table, so their pull
-  # guard tolerates the extension hand-off exactly as a Pi primary does.
-  case "$HARNESS" in
-  claude | cursor | agy) supervision_model=autoarm ;;
-  pi | pi-signed | omp) supervision_model=extension ;;
-  *) supervision_model=persistent ;;
-  esac
+  supervision_model=$(spawn_secondmate_supervision_model)
   # Deliver the primary's EFFECTIVE trace-context decision as a normalized on/off
   # literal (never the raw FM_TRACE_CONTEXT string) so a FM_TRACE_CONTEXT override
   # on the primary reaches the secondmate's OWN workers, not just the copied

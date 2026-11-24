@@ -1070,6 +1070,24 @@ test_remote_full_probe_t3code_route() {
   pass "full probe: a t3code route stays alive through the t3code readiness gate and relaunches on its host"
 }
 
+test_probe_classifies_agy_secondmate_as_verified() {
+  local w fb tmuxfb out
+  w=$(new_world probe-agy-verified)
+  add_sm_home "$w" sm1 firstmate:fm-sm1 agy
+  fb=$(make_toolchain "$w"); tmuxfb=$(make_liveness_tmux "$w")
+  # shellcheck disable=SC2016 # positional params expand in the child shell.
+  out=$(PATH="$tmuxfb:$fb:$BASE_PATH" FM_HOME="$w/home" FM_BACKEND=tmux \
+    FM_ROOT="$ROOT" FM_TEST_PANE_CMD=zsh FM_TMUX_CALL_LOG="$w/calls.log" \
+    STATE="$w/home/state" bash -c '
+    . "$1/bin/fm-secondmate-liveness-lib.sh"
+    fm_secondmate_liveness_probe "$2" sm1 poll
+    printf "%s|%s\n" "$FM_SM_LIVE_STATUS" "$FM_SM_LIVE_STATE"
+  ' _ "$ROOT" "$w/home/state/sm1.meta")
+  [ "$out" = "relaunchable|dead" ] \
+    || fail "an agy secondmate with a dead endpoint must classify relaunchable|dead, got '$out'"
+  pass "probe: agy is a verified secondmate harness for liveness recovery"
+}
+
 test_tmux_agent_state_classifies
 test_tmux_agent_state_rejects_malformed_targets_before_probe
 test_herdr_agent_state_preserves_husk_classifier
@@ -1088,6 +1106,7 @@ test_sweep_never_acts_on_transient_unreadability
 test_sweep_reports_missing_endpoint_relaunch_failure
 test_sweep_failure_cause_excludes_substitution_notice
 test_sweep_never_acts_on_unverified_harness_dead_reading
+test_probe_classifies_agy_secondmate_as_verified
 test_sweep_converges_no_retouch_once_alive
 test_sweep_skipped_under_detect_only
 test_sweep_noop_with_no_secondmate_meta

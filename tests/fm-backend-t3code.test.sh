@@ -8,9 +8,10 @@
 # shellcheck disable=SC2016  # $1/$2 inside single quotes belong to the bash -c snippet t3_run forwards.
 set -u
 
-# A fleet pane already carries GIT_CONFIG core.hooksPath. These cases set the
-# Git config they assert on themselves, so drop the inherited one before any git command.
-unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0 GIT_CONFIG_PARAMETERS
+# A fleet pane already carries GIT_CONFIG core.hooksPath and FM_GH_ACCOUNT.
+# Drop those inherited worker variables so each case controls its own Git config
+# and GitHub account selection.
+unset GIT_CONFIG_COUNT GIT_CONFIG_KEY_0 GIT_CONFIG_VALUE_0 GIT_CONFIG_PARAMETERS FM_GH_ACCOUNT
 
 # shellcheck source=tests/lib.sh
 . "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -402,7 +403,7 @@ test_pi_selection_needs_launch_environment() {
   t3_case pi-selection
   out=$(t3_run 'fm_backend_t3code_model_selection pi anthropic/claude-sonnet-5 high proj-1' 2>&1) && fail "pi must refuse a T3 without per-thread environment"
   assert_contains "$out" "does not offer a per-thread environment on t3_thread_launch" "the refusal must name the missing launch environment"
-  assert_contains "$out" "a pi worker needs" "the refusal must name the harness"
+  assert_contains "$out" "a pi thread needs" "the refusal must name the harness"
   [ -z "$(t3_dispatch_types)" ] || fail "the refusal must not mutate T3, got '$(t3_dispatch_types)'"
   t3_world_set 'w.launchEnvironment = true'
   [ "$(t3_run 'fm_backend_t3code_mcp status | fm_backend_t3code_json_get launchEnvironment')" = true ] || fail "status must report the offered launch environment"
@@ -432,7 +433,7 @@ test_agy_selection_maps_cli_ids_to_thinking_level() {
   local out
   t3_case agy-selection
   out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon high proj-1' 2>&1) && fail "agy must refuse a T3 without per-thread environment"
-  assert_contains "$out" "an agy worker needs" "the refusal must name the harness"
+  assert_contains "$out" "an agy thread needs" "the refusal must name the harness"
   [ -z "$(t3_dispatch_types)" ] || fail "the refusal must not mutate T3, got '$(t3_dispatch_types)'"
   t3_world_set 'w.launchEnvironment = true'
   [ "$(t3_run 'fm_backend_t3code_instance_id agy')" = antigravity ] || fail "agy must default to the antigravity instance"
@@ -2093,6 +2094,8 @@ test_spawn_secondmate_runs_thread_in_home_with_env() {
   assert_absent "$home/CLAUDE.local.md" "a secondmate runs under its own supervisor contract and gets no task-worker statement"
   assert_grep "t3_thread_id=$thread" "$CASE_DIR/home/state/$id.meta" "meta missing the created thread id"
   assert_grep "t3_project_id=$project" "$CASE_DIR/home/state/$id.meta" "meta missing the created project id"
+  [ ! -L "$home/state/.t3-supervisor-thread" ] && [ "$(cat "$home/state/.t3-supervisor-thread" 2>/dev/null)" = "$thread" ] \
+    || fail "the secondmate home must record its T3 thread id in state/.t3-supervisor-thread"
   settings="$home/.claude/settings.local.json"
   assert_present "$settings" "a claude secondmate home gets .claude/settings.local.json"
   [ "$(t3_json_field "$settings" 'd.hooks')" = undefined ] || fail "a secondmate home carries no busy hooks"
@@ -2329,19 +2332,98 @@ test_spawn_pi_deferred_launch_gate_failure_returns_lease() {
   pass "fm-spawn.sh --backend t3code pi: a gate failure at the deferred launch returns the lease with no thread"
 }
 
-test_spawn_pi_secondmate_refused() {
-  local id home out rc
+# t3_no_cli_path <command...>: run <command> on a clean PATH carrying node, git,
+# jq, and standard POSIX tools, with neither `agy` nor `pi` resolvable, so T3
+# tests prove neither standalone CLI is required on PATH.
+t3_no_cli_path() {
+  local bin="$CASE_DIR/no-cli-bin" tool target clean_path
+  mkdir -p "$bin"
+  for tool in node git jq bash python3 treehouse; do
+    target=$(command -v "$tool" 2>/dev/null || true)
+    [ -n "$target" ] && ln -sf "$target" "$bin/$tool"
+  done
+  clean_path="$bin:/usr/bin:/bin"
+  if PATH="$clean_path" command -v agy >/dev/null 2>&1 || PATH="$clean_path" command -v pi >/dev/null 2>&1; then
+    fail "t3_no_cli_path fixture is vacuous: agy or pi is still resolvable on $clean_path"
+  fi
+  PATH="$clean_path" "$@"
+}
+
+test_spawn_agy_and_pi_need_no_standalone_cli_on_t3code() {
+  local id out rc
+  # 1. agy worker spawns cleanly under backend=t3code with no standalone agy on PATH.
+  id=$(t3_uid t3agynoagycli)
+  t3_case spawn-agy-no-cli
+  t3_world_set 'w.launchEnvironment = true'
+  t3_worker_setup "$id"
+  out=$(t3_no_cli_path t3_worker_spawn "$id" agy --model gemini-4-neon-high); rc=$?
+  expect_code 0 "$rc" "an agy worker on t3code must not require standalone agy on PATH"$'\n'"$out"
+  assert_grep "harness=agy" "$CASE_DIR/state/$id.meta" "agy worker without host CLI did not record harness=agy"
+
+  # 2. pi worker spawns cleanly under backend=t3code with no standalone pi on PATH.
+  id=$(t3_uid t3pinopicli)
+  t3_case spawn-pi-no-cli
+  t3_world_set 'w.launchEnvironment = true'
+  t3_worker_setup "$id"
+  out=$(t3_no_cli_path t3_worker_spawn "$id" pi --model anthropic/claude-sonnet-5); rc=$?
+  expect_code 0 "$rc" "a pi worker on t3code must not require standalone pi on PATH"$'\n'"$out"
+  assert_grep "harness=pi" "$CASE_DIR/state/$id.meta" "pi worker without host CLI did not record harness=pi"
+
+  # 3. A declared config/pi-account pin still refuses on backend=t3code without running pi.
+  id=$(t3_uid t3piacctnocli)
+  t3_case spawn-pi-account-no-cli
+  t3_world_set 'w.launchEnvironment = true'
+  printf 'work-pi\n' > "$CONFIG/pi-account"
+  t3_worker_setup "$id"
+  out=$(t3_no_cli_path t3_worker_spawn "$id" pi --model anthropic/claude-sonnet-5); rc=$?
+  expect_code 1 "$rc" "a declared config/pi-account pin on t3code must still refuse without pi on PATH"$'\n'"$out"
+  assert_contains "$out" "pi worker account pin" "the refusal must explain the pi worker account pin"
+  [ -z "$(t3_dispatch_types)" ] || fail "a refused pi-account pin must not mutate T3, got '$(t3_dispatch_types)'"
+  pass "fm-spawn.sh --backend t3code: agy and pi launch with no standalone CLI on PATH, and config/pi-account still refuses"
+}
+
+test_spawn_pi_secondmate_launches_with_environment() {
+  local id home out rc project thread launch env
   id=$(t3_uid t3pismz)
   t3_case spawn-pi-secondmate
-  t3_world_set 'w.launchEnvironment = true'
   home="$CASE_DIR/sm-home"
   make_t3_secondmate_home "$home" "$id"
-  out=$(t3_pi_path spawn_t3_secondmate "$id" "$home" pi anthropic/claude-sonnet-5); rc=$?
-  expect_code 1 "$rc" "a pi secondmate on t3code must refuse"$'\n'"$out"
-  assert_contains "$out" "runs pi only for ship and scout workers" "the refusal must name the worker-only scope"
+
+  # Without launchEnvironment, T3 refuses cleanly before any mutation or credential link.
+  out=$(t3_no_cli_path spawn_t3_secondmate "$id" "$home" pi anthropic/claude-sonnet-5); rc=$?
+  expect_code 1 "$rc" "a pi secondmate without T3 launchEnvironment must refuse"$'\n'"$out"
+  assert_contains "$out" "does not offer a per-thread environment" "the refusal must name the missing launch environment"
   [ -z "$(t3_dispatch_types)" ] || fail "the refusal must come before any T3 mutation, got '$(t3_dispatch_types)'"
   assert_absent "$home/config/t3code-token" "the refusal must come before the credential link"
-  pass "fm-spawn.sh --backend t3code --secondmate pi: refused before any mutation, since its supervisor target cannot ride the launch"
+
+  # With launchEnvironment, pi secondmate launches natively without pi on PATH.
+  t3_world_set 'w.launchEnvironment = true'
+  FM_T3_PROBE="$CASE_DIR/home/state/$id.git-hooks" t3_world_set 'w.probePath = process.env.FM_T3_PROBE'
+  out=$(t3_no_cli_path spawn_t3_secondmate "$id" "$home" pi anthropic/claude-sonnet-5); rc=$?
+  expect_code 0 "$rc" "a pi secondmate on t3code should launch"$'\n'"$out"
+  [ "$(t3_dispatch_types)" = "t3_project_create t3_thread_launch t3_thread_send" ] \
+    || fail "pi secondmate spawn must create project, launch thread, then send charter, got '$(t3_dispatch_types)'"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  [ "$(t3_request "$launch" 'r.probe')" = true ] || fail "pi secondmate must launch only after its Git hook directory exists"
+  [ "$(t3_request "$launch" 'r.arguments.workspaceStrategy')" = '{"type":"root","branch":"sm/home"}' ] \
+    || fail "pi secondmate must use root workspace strategy, got '$(t3_request "$launch" 'r.arguments.workspaceStrategy')'"
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"pi","model":"anthropic/claude-sonnet-5"}' ] \
+    || fail "pi secondmate must carry Pi model selection, got '$(t3_request "$launch" 'r.arguments.modelSelection')'"
+  env=$(t3_request "$launch" 'r.arguments.environment')
+  [ "$(printf '%s' "$env" | node -e 'const e = JSON.parse(require("fs").readFileSync(0, "utf8")); process.stdout.write([e.FM_HOME, e.FM_SUPERVISOR_BACKEND, e.FM_SUPERVISION_MODEL, e.FM_TASK_INBOX, e.GOTMPDIR, e.GIT_CONFIG_KEY_0, String(e.FM_TASK_ID), String(e.FM_SUPERVISOR_TARGET)].join("|"))')" = \
+    "$home|t3code|extension|$CASE_DIR/home/state/$id.inbox|/tmp/fm-$id/gotmp|core.hooksPath|undefined|undefined" ] \
+    || fail "pi secondmate launch environment mismatch, got '$env'"
+  project=$(bash -c '. "$1"; fm_meta_get "$2" t3_project_id' _ "$ROOT/bin/fm-backend.sh" "$CASE_DIR/home/state/$id.meta")
+  thread=$(bash -c '. "$1"; fm_meta_get "$2" t3_thread_id' _ "$ROOT/bin/fm-backend.sh" "$CASE_DIR/home/state/$id.meta")
+  [ -n "$project" ] && [ -n "$thread" ] || fail "pi secondmate meta missing project or thread id"
+  [ ! -L "$home/state/.t3-supervisor-thread" ] && [ "$(cat "$home/state/.t3-supervisor-thread" 2>/dev/null)" = "$thread" ] \
+    || fail "pi secondmate must record its thread id in state/.t3-supervisor-thread"
+  [ -L "$home/config/t3code-token" ] || fail "pi secondmate home must link the primary credential"
+  assert_grep "kind=secondmate" "$CASE_DIR/home/state/$id.meta" "pi secondmate meta missing kind=secondmate"
+  assert_grep "harness=pi" "$CASE_DIR/home/state/$id.meta" "pi secondmate meta missing harness=pi"
+  assert_absent "$home/.claude/settings.local.json" "pi secondmate writes no Claude settings"
+  assert_absent "$home/.codex/config.toml" "pi secondmate writes no Codex config"
+  pass "fm-spawn.sh --backend t3code --secondmate pi: launches with per-thread environment and records state/.t3-supervisor-thread"
 }
 
 # t3_agy_path <command...>: run <command> with a stand-in `agy` first on PATH
@@ -2410,19 +2492,52 @@ test_spawn_agy_refuses_without_launch_environment() {
   pass "fm-spawn.sh --backend t3code agy: refuses before any lease or launch when T3 cannot carry the task environment"
 }
 
-test_spawn_agy_secondmate_refused() {
-  local id home out rc
+test_spawn_agy_secondmate_launches_with_environment() {
+  local id home out rc project thread launch env
   id=$(t3_uid t3agysmz)
   t3_case spawn-agy-secondmate
-  t3_world_set 'w.launchEnvironment = true'
   home="$CASE_DIR/sm-home"
   make_t3_secondmate_home "$home" "$id"
-  out=$(t3_agy_path spawn_t3_secondmate "$id" "$home" agy gemini-4-neon); rc=$?
-  expect_code 1 "$rc" "an agy secondmate on t3code must refuse"$'\n'"$out"
-  assert_contains "$out" "runs agy only for ship and scout workers" "the refusal must name the worker-only scope"
+
+  # Without launchEnvironment, T3 refuses cleanly before any mutation or credential link.
+  out=$(t3_no_cli_path spawn_t3_secondmate "$id" "$home" agy gemini-4-neon-high); rc=$?
+  expect_code 1 "$rc" "an agy secondmate without T3 launchEnvironment must refuse"$'\n'"$out"
+  assert_contains "$out" "does not offer a per-thread environment" "the refusal must name the missing launch environment"
   [ -z "$(t3_dispatch_types)" ] || fail "the refusal must come before any T3 mutation, got '$(t3_dispatch_types)'"
   assert_absent "$home/config/t3code-token" "the refusal must come before the credential link"
-  pass "fm-spawn.sh --backend t3code --secondmate agy: refused before any mutation, since its supervisor target cannot ride the launch"
+
+  # With launchEnvironment, agy secondmate launches natively without agy on PATH.
+  t3_world_set 'w.launchEnvironment = true'
+  FM_T3_PROBE="$CASE_DIR/home/state/$id.git-hooks" t3_world_set 'w.probePath = process.env.FM_T3_PROBE'
+  out=$(t3_no_cli_path spawn_t3_secondmate "$id" "$home" agy gemini-4-neon-high); rc=$?
+  expect_code 0 "$rc" "an agy secondmate on t3code should launch"$'\n'"$out"
+  [ "$(t3_dispatch_types)" = "t3_project_create t3_thread_launch t3_thread_send" ] \
+    || fail "agy secondmate spawn must create project, launch thread, then send charter, got '$(t3_dispatch_types)'"
+  launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
+  [ "$(t3_request "$launch" 'r.probe')" = true ] || fail "agy secondmate must launch only after its Git hook directory exists"
+  [ "$(t3_request "$launch" 'r.arguments.workspaceStrategy')" = '{"type":"root","branch":"sm/home"}' ] \
+    || fail "agy secondmate must use root workspace strategy, got '$(t3_request "$launch" 'r.arguments.workspaceStrategy')'"
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"high"}]}' ] \
+    || fail "agy secondmate must carry Antigravity model selection, got '$(t3_request "$launch" 'r.arguments.modelSelection')'"
+  env=$(t3_request "$launch" 'r.arguments.environment')
+  [ "$(printf '%s' "$env" | node -e 'const e = JSON.parse(require("fs").readFileSync(0, "utf8")); process.stdout.write([e.FM_HOME, e.FM_SUPERVISOR_BACKEND, e.FM_SUPERVISION_MODEL, e.FM_TASK_INBOX, e.GOTMPDIR, e.GIT_CONFIG_KEY_0, String(e.FM_TASK_ID), String(e.FM_SUPERVISOR_TARGET)].join("|"))')" = \
+    "$home|t3code|persistent|$CASE_DIR/home/state/$id.inbox|/tmp/fm-$id/gotmp|core.hooksPath|undefined|undefined" ] \
+    || fail "agy secondmate launch environment mismatch (expected persistent supervision model), got '$env'"
+  project=$(bash -c '. "$1"; fm_meta_get "$2" t3_project_id' _ "$ROOT/bin/fm-backend.sh" "$CASE_DIR/home/state/$id.meta")
+  thread=$(bash -c '. "$1"; fm_meta_get "$2" t3_thread_id' _ "$ROOT/bin/fm-backend.sh" "$CASE_DIR/home/state/$id.meta")
+  [ -n "$project" ] && [ -n "$thread" ] || fail "agy secondmate meta missing project or thread id"
+  [ ! -L "$home/state/.t3-supervisor-thread" ] && [ "$(cat "$home/state/.t3-supervisor-thread" 2>/dev/null)" = "$thread" ] \
+    || fail "agy secondmate must record its thread id in state/.t3-supervisor-thread"
+  [ -L "$home/config/t3code-token" ] || fail "agy secondmate home must link the primary credential"
+  assert_grep "kind=secondmate" "$CASE_DIR/home/state/$id.meta" "agy secondmate meta missing kind=secondmate"
+  assert_grep "harness=agy" "$CASE_DIR/home/state/$id.meta" "agy secondmate meta missing harness=agy"
+  assert_grep "t3_instance=antigravity" "$CASE_DIR/home/state/$id.meta" "agy secondmate meta missing t3_instance=antigravity"
+  if [ -e "$SPAWN_HOME/.gemini/antigravity-cli/settings.json" ] && grep -qF "$home" "$SPAWN_HOME/.gemini/antigravity-cli/settings.json"; then
+    fail "a T3 agy secondmate must not pre-register the home in the standalone agy CLI trust store"
+  fi
+  assert_absent "$home/.claude/settings.local.json" "agy secondmate writes no Claude settings"
+  assert_absent "$home/.codex/config.toml" "agy secondmate writes no Codex config"
+  pass "fm-spawn.sh --backend t3code --secondmate agy: launches with persistent supervision model and records state/.t3-supervisor-thread"
 }
 
 # The default posture is T3's own full-access mode, so an explicit bypass file
@@ -2643,23 +2758,36 @@ test_clean_slot_refresh_failure_returns_lease() {
 # home's own settings stay.
 test_aborted_t3_secondmate_spawn_removes_home_env() {
   local harness model id home out rc settings
-  for harness in claude codex; do
-    case "$harness" in claude) model=claude-sonnet-5 ;; codex) model=gpt-5.6-sol ;; esac
+  for harness in claude codex pi agy; do
+    case "$harness" in
+      claude) model=claude-sonnet-5 ;;
+      codex) model=gpt-5.6-sol ;;
+      pi) model=anthropic/claude-sonnet-5 ;;
+      agy) model=gemini-4-neon-high ;;
+    esac
     id=$(t3_uid "t3smabortz$harness")
     t3_case "spawn-secondmate-abort-$harness"
     t3_world_set 'w.failTools = { t3_thread_send: { code: "turn_refused", message: "launch turn refused" } }'
+    if [ "$harness" = pi ] || [ "$harness" = agy ]; then
+      t3_world_set 'w.launchEnvironment = true'
+    fi
     home="$CASE_DIR/sm-home"
     make_t3_secondmate_home "$home" "$id"
     settings="$home/.claude/settings.local.json"
     mkdir -p "$home/.claude"
     printf '{"permissions":{"allow":["Bash(ls:*)"]},"env":{"CAPTAIN_VAR":"keep"}}\n' > "$settings"
-    out=$(spawn_t3_secondmate "$id" "$home" "$harness" "$model"); rc=$?
+    if [ "$harness" = pi ] || [ "$harness" = agy ]; then
+      out=$(t3_no_cli_path spawn_t3_secondmate "$id" "$home" "$harness" "$model"); rc=$?
+    else
+      out=$(spawn_t3_secondmate "$id" "$home" "$harness" "$model"); rc=$?
+    fi
     expect_code 1 "$rc" "a refused $harness secondmate launch turn must abort spawn"$'\n'"$out"
     [ "$(t3_log_line_of 'r.tool === "t3_thread_organize"')" -gt "$(t3_log_line_of 'r.tool === "t3_thread_send"')" ] \
       || fail "the aborted $harness secondmate's thread must be archived"$'\n'"$out"
     [ "$(t3_json_field "$settings" 'JSON.stringify(d)')" = '{"permissions":{"allow":["Bash(ls:*)"]},"env":{"CAPTAIN_VAR":"keep"}}' ] \
       || fail "an aborted $harness secondmate spawn must leave only the home's own settings, got '$(cat "$settings")'"
     assert_absent "$home/.codex/config.toml" "an aborted $harness secondmate spawn must not leave its Codex environment"
+    assert_absent "$home/state/.t3-supervisor-thread" "an aborted $harness secondmate spawn must not leave a recorded supervisor thread id"
     [ ! -L "$home/config/t3code-token" ] || fail "an aborted $harness secondmate spawn must not leave the credential link"
     [ -e "$CONFIG/t3code-token" ] || fail "removing the home's credential link must leave the primary's credential"
     assert_absent "$CASE_DIR/home/state/$id.meta" "the rolled-back secondmate leaves no record"
@@ -4049,10 +4177,11 @@ test_spawn_effort_default_keeps_driver_default
 test_spawn_pi_worker_launches_with_environment
 test_spawn_pi_refuses_without_launch_environment
 test_spawn_pi_deferred_launch_gate_failure_returns_lease
+test_spawn_agy_and_pi_need_no_standalone_cli_on_t3code
 test_spawn_agy_worker_launches_with_environment
 test_spawn_agy_refuses_without_launch_environment
-test_spawn_agy_secondmate_refused
-test_spawn_pi_secondmate_refused
+test_spawn_agy_secondmate_launches_with_environment
+test_spawn_pi_secondmate_launches_with_environment
 test_spawn_refuses_raw_launch_command
 test_spawn_abort_returns_lease_only_after_archive ok
 test_spawn_abort_returns_lease_only_after_archive fail

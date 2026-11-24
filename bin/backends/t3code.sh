@@ -85,12 +85,17 @@ fm_backend_t3code_runtime_check() {
   fm_backend_t3code_mcp status >/dev/null
 }
 
-fm_backend_t3code_project_ensure() {  # <project-path> -> project id
-  local project=$1 real
+fm_backend_t3code_project_ensure() {  # <project-path> [harness] -> project id
+  local project=$1 harness=${2:-} real
+  local -a args=()
   real=$(cd "$project" 2>/dev/null && pwd -P) || { echo "error: project path $project is not a directory" >&2; return 1; }
+  args=(project-ensure --root "$real" --title "fm-$(basename "$real")")
+  if [ -n "$harness" ] && fm_backend_t3code_launch_env_harness "$harness"; then
+    args+=(--require-launch-env "$harness")
+  fi
   # The fm- prefix keeps firstmate's projects apart from the owner's own T3
   # project names; matching stays by real path, so the title never binds.
-  fm_backend_t3code_mcp project-ensure --root "$real" --title "fm-$(basename "$real")" | fm_backend_t3code_json_get projectId
+  fm_backend_t3code_mcp "${args[@]}" | fm_backend_t3code_json_get projectId
 }
 
 # fm_backend_t3code_instance_pool <harness>: the provider instances (seats)
@@ -705,6 +710,9 @@ if (env && typeof env === "object" && !Array.isArray(env) && typeof env.FM_T3COD
   fi
   if [ -L "$home/config/t3code-token" ]; then
     rm -f "$home/config/t3code-token" || return 1
+  fi
+  if [ -f "$home/state/.t3-supervisor-thread" ] && [ ! -L "$home/state/.t3-supervisor-thread" ]; then
+    rm -f "$home/state/.t3-supervisor-thread" || return 1
   fi
 }
 

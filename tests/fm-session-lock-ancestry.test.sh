@@ -1657,7 +1657,64 @@ test_reanchor_keeps_autoarm_midturn_healthy() {
   pass "session-lock: a re-anchor during a rewake turn keeps the mid-turn auto-arm proof healthy"
 }
 
+test_antigravity_acp_server_is_identified_on_both_platforms() {
+  local dir fakebin shape got
+  dir="$TMP_ROOT/antigravity-acp"
+  fakebin=$(fm_fakebin "$dir")
+  mkdir -p "$dir/state"
+  cat > "$fakebin/ps" <<'SH'
+#!/usr/bin/env bash
+set -u
+field= pid=
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o) field=$2; shift 2 ;;
+    -p) pid=$2; shift 2 ;;
+    *) shift ;;
+  esac
+done
+case "$pid:$field:${FM_TEST_ACP_SHAPE:-macos}" in
+  700:comm=:macos) printf '%s\n' '/Users/u/.t3/userdata/providers/antigravity/antigravity-acp/agy_acp_server.par' ;;
+  700:args=:macos) printf '%s\n' '/Users/u/.t3/userdata/providers/antigravity/antigravity-acp/agy_acp_server.par --stdio' ;;
+  700:comm=:bare) printf '%s\n' '/opt/t3/bin/agy_acp_server' ;;
+  700:args=:bare) printf '%s\n' '/opt/t3/bin/agy_acp_server --stdio' ;;
+  700:comm=:linux-trunc) printf '%s\n' 'agy_acp_server.' ;;
+  700:args=:linux-trunc) printf '%s\n' '/opt/t3/antigravity-acp/agy_acp_server.par --stdio' ;;
+  700:comm=:lookalike) printf '%s\n' '/opt/t3/bin/agy_acp_server_helper' ;;
+  700:args=:lookalike) printf '%s\n' '/opt/t3/bin/agy_acp_server_helper --stdio' ;;
+  700:ppid=:*) printf '%s\n' 1 ;;
+  701:comm=:*) printf '%s\n' '/Users/u/.t3/userdata/providers/antigravity/localharness_external' ;;
+  701:args=:*) printf '%s\n' 'localharness_external' ;;
+  701:ppid=:*) printf '%s\n' 700 ;;
+  *:comm=:*) printf '%s\n' bash ;;
+  *:args=:*) printf '%s\n' 'bash /repo/bin/fm-lock.sh' ;;
+  *:ppid=:*) printf '%s\n' 701 ;;
+esac
+SH
+  chmod +x "$fakebin/ps"
+  printf '700\n' > "$dir/state/.lock"
+
+  for shape in macos bare linux-trunc; do
+    got=$(FM_TEST_ACP_SHAPE="$shape" lib_eval "$fakebin" 'fm_harness_ancestry_pid') \
+      || fail "$shape: Antigravity ACP server was not found in ancestry past localharness_external"
+    [ "$got" = 700 ] || fail "$shape: ancestry resolved '$got', expected Antigravity ACP server pid 700"
+    FM_TEST_ACP_SHAPE="$shape" lib_eval "$fakebin" 'fm_harness_pid_alive 700' \
+      || fail "$shape: live Antigravity ACP server was not recognized as a harness"
+    FM_TEST_ACP_SHAPE="$shape" lib_eval "$fakebin" "fm_session_lock_owned_by_self '$dir/state'" \
+      || fail "$shape: Antigravity ACP server holding the lock did not recognize itself as the owner"
+  done
+
+  if FM_TEST_ACP_SHAPE=lookalike lib_eval "$fakebin" 'fm_harness_ancestry_pid' >/dev/null 2>&1; then
+    fail "an unrelated agy_acp_server_helper process was treated as a harness"
+  fi
+  if FM_TEST_ACP_SHAPE=lookalike lib_eval "$fakebin" 'fm_harness_pid_alive 700'; then
+    fail "an unrelated agy_acp_server_helper process passed harness liveness"
+  fi
+  pass "session-lock: Antigravity ACP server is identified across macOS, bare, and Linux-truncated names, while lookalikes are rejected"
+}
+
 test_version_named_session_is_identified_on_both_platforms
+test_antigravity_acp_server_is_identified_on_both_platforms
 test_harness_at_namespace_pid1_is_examined
 test_bun_run_omp_is_identified_on_both_platforms
 test_ordinary_paths_are_never_harness_processes

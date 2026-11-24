@@ -88,15 +88,40 @@ discover_supervisor_target() {
   return 1
 }
 
+# fm_supervisor_t3code_recorded_thread: read the thread id a T3 secondmate
+# spawn persisted to state/.t3-supervisor-thread (used when the thread's launch
+# environment was fixed before T3 assigned its id, as for pi and agy). Rejects
+# symlinks, empty files, and anything containing whitespace or multiple lines.
+fm_supervisor_t3code_recorded_thread() {
+  local state_dir file val
+  state_dir="${FM_STATE_OVERRIDE:-${FM_HOME:-.}/state}"
+  file="$state_dir/.t3-supervisor-thread"
+  [ -f "$file" ] && [ ! -L "$file" ] && [ -r "$file" ] || return 1
+  [ "$(wc -l < "$file" 2>/dev/null | tr -d ' ')" -le 1 ] || return 1
+  IFS= read -r val < "$file" || [ -n "$val" ] || return 1
+  case "$val" in
+    ''|*[[:space:]]*) return 1 ;;
+  esac
+  printf '%s' "$val"
+}
+
 # discover_supervisor_t3code_thread: the t3code rule both resolvers share.
-# Cheap gate first so a home that never selected t3code makes no T3 call:
-# explicit t3code selection (fm_backend_explicit_name) and a T3 credential
-# (which carries the server origin) must both be present. Then the adapter's cwd
-# match over this home (bin/backends/t3code.sh
-# fm_backend_t3code_thread_for_home): exactly one live thread prints its id;
-# none or an unreadable server returns 1 silently; more than one returns 2
-# after the adapter has named the ids on stderr. Anything but 0 falls through.
+# First checks a persisted T3 secondmate thread id in state/.t3-supervisor-thread,
+# which needs no live T3 query and works for launch-env harnesses (pi and agy)
+# whose thread id was assigned after launch. Otherwise, cheap gate first so a
+# home that never selected t3code makes no T3 call: explicit t3code selection
+# (fm_backend_explicit_name) and a T3 credential (which carries the server
+# origin) must both be present. Then the adapter's cwd match over this home
+# (bin/backends/t3code.sh fm_backend_t3code_thread_for_home): exactly one live
+# thread prints its id; none or an unreadable server returns 1 silently; more
+# than one returns 2 after the adapter has named the ids on stderr. Anything
+# but 0 falls through.
 discover_supervisor_t3code_thread() {
+  local recorded
+  if recorded=$(fm_supervisor_t3code_recorded_thread); then
+    printf '%s' "$recorded"
+    return 0
+  fi
   command -v fm_backend_source >/dev/null 2>&1 || return 1
   [ "$(fm_backend_explicit_name)" = t3code ] || return 1
   fm_backend_source t3code 2>/dev/null || return 1
@@ -112,6 +137,8 @@ fm_capture_t3_supervisor_thread() {
     backend=$FM_SUPERVISOR_BACKEND
   elif [ -n "${TMUX_PANE:-}" ] || { [ "${HERDR_ENV:-}" = 1 ] && [ -n "${HERDR_PANE_ID:-}" ]; } || fm_supervisor_in_rex; then
     return 0
+  elif fm_supervisor_t3code_recorded_thread >/dev/null 2>&1; then
+    backend=t3code
   else
     backend=$(fm_backend_explicit_name)
   fi

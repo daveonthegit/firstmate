@@ -62,6 +62,35 @@ continue_turn() {  # <reason>
   exit 0
 }
 
+# --capable: exit 0 when this Antigravity runtime supports synchronous Stop-hook
+# parking (standalone agy CLI), and exit 1 when it runs under Antigravity ACP
+# (agy_acp_server.par), whose SDK runs Stop hooks only at session_end and
+# ignores {"decision":"continue"}. Checks the nearest agy-family ancestor first
+# so a standalone agy CLI nested inside an ACP host still reads capable.
+if [ "${1:-}" = "--capable" ]; then
+  pid=$$
+  for _ in 1 2 3 4 5 6 7 8; do
+    comm=$(ps -o comm= -p "$pid" 2>/dev/null) || break
+    base=$(basename -- "$comm")
+    case "$base" in
+      agy) exit 0 ;;
+      agy_acp_server|agy_acp_server.par) exit 1 ;;
+      agy_acp_server.)
+        args=$(ps -o args= -p "$pid" 2>/dev/null) || args=
+        case "$(basename -- "${args%% *}")" in
+          agy_acp_server.par) exit 1 ;;
+        esac
+        ;;
+    esac
+    pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    [ -n "$pid" ] && [ "$pid" -gt 1 ] || break
+  done
+  if [ "${ANTIGRAVITY_AGENT:-}" = "1" ] && [ -n "${ANTIGRAVITY_HARNESS_PATH:-}" ]; then
+    exit 1
+  fi
+  exit 0
+fi
+
 # shellcheck source=bin/fm-primary-scope-lib.sh
 . "$SCRIPT_DIR/fm-primary-scope-lib.sh"
 # shellcheck source=bin/fm-supervision-lib.sh

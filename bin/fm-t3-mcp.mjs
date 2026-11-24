@@ -105,16 +105,24 @@
 //     notice (USAGE_LIMIT_NOTICE): an ordinary message that merely mentions a
 //     limit never matches. Prints runId, runStatus, instanceId (the run's, else
 //     the thread's), limited, and evidence. Changes nothing.
-//   fm-t3-mcp.mjs configure --thread <id> --instance <id>
-//     Move an idle thread to another provider instance of the same driver
-//     with t3_thread_configure modelSelection, keeping its model and options,
-//     transcript, and workspace (T3 hands the conversation to the new
-//     instance on the next turn). The target is checked against T3's catalog
-//     first (exists, same driver, usable, lists the model, accepts every
-//     option), and a thread with an active run refuses, so nothing is written
-//     on a refusal (exit 4). The binding is then read back and must name the
-//     target instance, model, and options; a read-back that does not exits 1
-//     (configure_unproven). Prints from, to, and model.
+//   fm-t3-mcp.mjs configure --thread <id> [--instance <id>]
+//       [--harness <claude|codex|pi|agy>] [--model <slug|default>]
+//       [--effort <level|default>] [--project <id>] [--pool <id>[,<id>...]]
+//     Reconfigure an idle thread with t3_thread_configure modelSelection while
+//     keeping its transcript and workspace (T3 hands the conversation to the
+//     new binding on the next turn). Without --harness, --model, or --effort,
+//     moves the thread to another provider instance of the same driver
+//     (--instance required), keeping its model and options; cross-driver moves
+//     refuse unless --harness is given explicitly. With --harness, --model, or
+//     --effort, validates the target selection against T3's catalog using the
+//     same rules as resolve-selection (defaulting --instance to the harness's
+//     driver kind when --harness is passed, and defaulting --project to the
+//     thread's projectId for --model default). A thread with an active run
+//     refuses (exit 4), so nothing is written on refusal. The binding is read
+//     back and must name the target instance, model, and options; a read-back
+//     that does not exits 1 (configure_unproven). Prints from, to, and model
+//     (plus fromModel, driverKind, and options when reconfiguring model or
+//     driver).
 //   fm-t3-mcp.mjs read --thread <id> [--limit <n>]
 //     t3_thread_read: the thread record and its latest run, unchanged. T3
 //     caps --limit at 100.
@@ -944,7 +952,11 @@ async function projectForRoot(session, rootPath) {
 async function projectEnsure(flags) {
   const rootPath = need(flags, "root");
   if (!path.isAbsolute(rootPath)) usage("--root must be an absolute path");
-  const { session } = await verifiedSession(flags);
+  const { session, gate: g } = await verifiedSession(flags);
+  if (flags["require-launch-env"]) {
+    const h = String(flags["require-launch-env"]);
+    requireLaunchEnvironment(session, g, `${/^[aeiou]/.test(h) ? "an" : "a"} ${h} thread`);
+  }
   const found = await projectForRoot(session, rootPath);
   if (found) return { ok: true, projectId: found.id, created: false };
   let made;
@@ -1036,16 +1048,9 @@ function effortSuffixModel(models, id, optionId) {
   return best;
 }
 
-async function resolveSelection(flags) {
-  const harness = need(flags, "harness");
+async function resolveModelSelection(session, caps, { harness, instanceId, wantModel, effort, projectId = null, pool = [] }) {
   const driver = DRIVERS[harness];
   if (!driver) throw new Refusal("harness_unsupported", `backend=t3code supports only the claude, codex, pi, and agy harnesses, not '${harness}'`);
-  const instanceId = need(flags, "instance");
-  const wantModel = need(flags, "model");
-  let effort = need(flags, "effort");
-  const { session, gate: g } = await verifiedSession(flags);
-  if (driver.launchEnvironment) requireLaunchEnvironment(session, g, `${/^[aeiou]/.test(harness) ? "an" : "a"} ${harness} worker`);
-  const caps = await session.call("orchestrator_capabilities", {});
   const provider = (caps?.providers ?? []).find((p) => p.providerInstanceId === instanceId);
   if (!provider) throw new Refusal("instance_unknown", `T3 has no provider instance '${instanceId}' (config/t3code-instances maps the ${harness} harness to it)`);
   if (provider.driverKind !== driver.driverKind) {
@@ -1054,12 +1059,11 @@ async function resolveSelection(flags) {
   if ((provider.constraints ?? []).length) throw new Refusal("instance_unavailable", `T3 instance '${instanceId}' cannot run threads: ${provider.constraints.join(" ")}`);
   let base = { instanceId, model: wantModel };
   if (wantModel === "default") {
-    const projectId = need(flags, "project");
+    if (!projectId) usage("missing required --project");
     const project = (await liveProjects(session)).find((p) => p.id === projectId);
     if (!project) throw new Refusal("project_not_found", `T3 lists no live project ${projectId}`);
     const def = project.defaultModelSelection;
     if (!def) throw new Refusal("no_default_model", `T3 project ${projectId} has no default model; pass --model with a slug from the T3 model catalog`);
-    const pool = flags.pool ? String(flags.pool).split(",").filter(Boolean) : [];
     if (def.instanceId !== instanceId && !pool.includes(def.instanceId)) {
       throw new Refusal("default_instance_mismatch", `T3 project ${projectId} defaults to instance ${def.instanceId}, but config/t3code-instances selects ${instanceId}; pass --model explicitly`);
     }
@@ -1090,7 +1094,23 @@ async function resolveSelection(flags) {
     const problem = optionProblem(model, option);
     if (problem) throw new Refusal("option_unsupported", `the selection for harness '${harness}' is not valid in T3's catalog: ${problem}`);
   }
-  return { ok: true, driverKind: provider.driverKind, selection: { instanceId, model: base.model, ...(options !== undefined ? { options } : {}) } };
+  return { driverKind: provider.driverKind, selection: { instanceId, model: base.model, ...(options !== undefined ? { options } : {}) } };
+}
+
+async function resolveSelection(flags) {
+  const harness = need(flags, "harness");
+  const driver = DRIVERS[harness];
+  if (!driver) throw new Refusal("harness_unsupported", `backend=t3code supports only the claude, codex, pi, and agy harnesses, not '${harness}'`);
+  const instanceId = need(flags, "instance");
+  const wantModel = need(flags, "model");
+  const effort = need(flags, "effort");
+  const { session, gate: g } = await verifiedSession(flags);
+  if (driver.launchEnvironment) requireLaunchEnvironment(session, g, `${/^[aeiou]/.test(harness) ? "an" : "a"} ${harness} thread`);
+  const caps = await session.call("orchestrator_capabilities", {});
+  const projectId = wantModel === "default" ? need(flags, "project") : (flags.project ? String(flags.project) : null);
+  const pool = flags.pool ? String(flags.pool).split(",").filter(Boolean) : [];
+  const { driverKind, selection } = await resolveModelSelection(session, caps, { harness, instanceId, wantModel, effort, projectId, pool });
+  return { ok: true, driverKind, selection };
 }
 
 // What a launch must read back: the workspace, full access, and exactly the
@@ -1279,37 +1299,122 @@ function instanceProblem(provider, instanceId, driverKind, model, options) {
   return null;
 }
 
-// configure: move an idle thread to another instance of the same driver.
+// configure: move an idle thread to another instance of the same driver, or
+// explicitly rebind it to a new harness/model/effort validated against T3's
+// catalog. Cross-driver moves refuse unless --harness is given explicitly.
 async function configure(flags) {
   const threadId = need(flags, "thread");
-  const to = need(flags, "instance");
+  const wantHarness = flags.harness ? String(flags.harness) : null;
+  const wantModel = flags.model ? String(flags.model) : null;
+  const wantEffort = flags.effort ? String(flags.effort) : null;
+  const explicitReconfig = Boolean(wantHarness || wantModel || wantEffort);
+  if (!explicitReconfig) {
+    const to = need(flags, "instance");
+    const { session } = await verifiedSession(flags);
+    const t = threadOf(await session.call("t3_thread_read", { threadId, limit: 1, runLimit: 1 }));
+    if (t.activeRunId) throw new Refusal("thread_busy", `T3 thread ${threadId} has an active run ${t.activeRunId}; move it only once the run has ended`, 4, { threadId });
+    const current = (await threadConfiguration(session, threadId))?.modelSelection ?? {};
+    const from = current.instanceId ?? t.providerInstanceId ?? null;
+    if (!current.model || !from) throw new Refusal("configuration_unknown", `T3 thread ${threadId} reports no current instance and model`, 4, { threadId });
+    const caps = await session.call("orchestrator_capabilities", {});
+    const providers = caps?.providers ?? [];
+    const driverKind = providers.find((p) => p.providerInstanceId === from)?.driverKind;
+    if (!driverKind) throw new Refusal("instance_unknown", `T3 has no provider instance '${from}', the one thread ${threadId} runs on`, 4, { threadId });
+    const options = current.options;
+    const problem = instanceProblem(providers.find((p) => p.providerInstanceId === to), to, driverKind, current.model, options);
+    if (problem) throw new Refusal("instance_unusable", `cannot move T3 thread ${threadId} to '${to}': ${problem}`, 4, { threadId, from });
+    const selection = { instanceId: to, model: current.model, ...(options !== undefined ? { options } : {}) };
+    await session.call("t3_thread_configure", { threadId, modelSelection: selection });
+    let bound;
+    try {
+      bound = (await threadConfiguration(session, threadId))?.modelSelection ?? {};
+    } catch (e) {
+      throw new Refusal("configure_unproven", `T3 accepted the move of thread ${threadId} to '${to}' but reading it back failed (${e.message})`, 1, { threadId, from, to });
+    }
+    const mismatch = bound.instanceId !== to || bound.model !== current.model
+      || (options ?? []).some((o) => (bound.options ?? []).find((b) => b.id === o.id)?.value !== o.value);
+    if (mismatch) {
+      throw new Refusal("configure_unproven", `T3 thread ${threadId} reads back instance ${bound.instanceId ?? "none"} model ${bound.model ?? "none"} after the move to '${to}'`, 1, { threadId, from, to });
+    }
+    return { ok: true, threadId, from, to, model: current.model };
+  }
+
+  if (wantHarness && !DRIVERS[wantHarness]) {
+    throw new Refusal("harness_unsupported", `backend=t3code supports only the claude, codex, pi, and agy harnesses, not '${wantHarness}'`, 4, { threadId });
+  }
   const { session } = await verifiedSession(flags);
   const t = threadOf(await session.call("t3_thread_read", { threadId, limit: 1, runLimit: 1 }));
-  if (t.activeRunId) throw new Refusal("thread_busy", `T3 thread ${threadId} has an active run ${t.activeRunId}; move it only once the run has ended`, 4, { threadId });
+  if (t.activeRunId) throw new Refusal("thread_busy", `T3 thread ${threadId} has an active run ${t.activeRunId}; reconfigure it only once the run has ended`, 4, { threadId });
   const current = (await threadConfiguration(session, threadId))?.modelSelection ?? {};
   const from = current.instanceId ?? t.providerInstanceId ?? null;
-  if (!current.model || !from) throw new Refusal("configuration_unknown", `T3 thread ${threadId} reports no current instance and model`, 4, { threadId });
+  const fromModel = current.model ?? null;
   const caps = await session.call("orchestrator_capabilities", {});
   const providers = caps?.providers ?? [];
-  const driverKind = providers.find((p) => p.providerInstanceId === from)?.driverKind;
-  if (!driverKind) throw new Refusal("instance_unknown", `T3 has no provider instance '${from}', the one thread ${threadId} runs on`, 4, { threadId });
-  const options = current.options;
-  const problem = instanceProblem(providers.find((p) => p.providerInstanceId === to), to, driverKind, current.model, options);
-  if (problem) throw new Refusal("instance_unusable", `cannot move T3 thread ${threadId} to '${to}': ${problem}`, 4, { threadId, from });
-  const selection = { instanceId: to, model: current.model, ...(options !== undefined ? { options } : {}) };
+  const fromDriverKind = from ? providers.find((p) => p.providerInstanceId === from)?.driverKind ?? null : null;
+
+  let harness = wantHarness;
+  let to;
+  let modelArg;
+  if (harness) {
+    const driver = DRIVERS[harness];
+    to = flags.instance ? String(flags.instance) : driver.driverKind;
+    if (wantModel) {
+      modelArg = wantModel;
+    } else if (fromDriverKind === driver.driverKind && fromModel) {
+      modelArg = fromModel;
+    } else {
+      throw new Refusal("model_required", `switching T3 thread ${threadId} to harness '${harness}' requires --model <slug|default>`, 4, { threadId, from });
+    }
+  } else {
+    to = flags.instance ? String(flags.instance) : from;
+    if (!to) throw new Refusal("configuration_unknown", `T3 thread ${threadId} reports no current instance; pass --instance or --harness`, 4, { threadId });
+    const targetProvider = providers.find((p) => p.providerInstanceId === to);
+    if (!targetProvider) throw new Refusal("instance_unknown", `T3 has no provider instance '${to}'`, 4, { threadId, from });
+    if (fromDriverKind && targetProvider.driverKind !== fromDriverKind) {
+      throw new Refusal("driver_mismatch", `cannot switch T3 thread ${threadId} from driver ${fromDriverKind} to ${targetProvider.driverKind} without explicit --harness`, 4, { threadId, from, to });
+    }
+    harness = Object.entries(DRIVERS).find(([, d]) => d.driverKind === targetProvider.driverKind)?.[0] ?? null;
+    if (!harness) {
+      throw new Refusal("harness_unsupported", `T3 instance '${to}' runs unsupported driver '${targetProvider.driverKind}'`, 4, { threadId, from, to });
+    }
+    modelArg = wantModel ?? fromModel;
+    if (!modelArg) throw new Refusal("configuration_unknown", `T3 thread ${threadId} reports no current model; pass --model`, 4, { threadId, from, to });
+  }
+
+  const effortArg = wantEffort ?? "default";
+  const projectId = flags.project ? String(flags.project) : (t.projectId ?? null);
+  const pool = flags.pool ? String(flags.pool).split(",").filter(Boolean) : [];
+  const { driverKind: toDriverKind, selection } = await resolveModelSelection(session, caps, {
+    harness,
+    instanceId: to,
+    wantModel: modelArg,
+    effort: effortArg,
+    projectId,
+    pool,
+  });
+
   await session.call("t3_thread_configure", { threadId, modelSelection: selection });
   let bound;
   try {
     bound = (await threadConfiguration(session, threadId))?.modelSelection ?? {};
   } catch (e) {
-    throw new Refusal("configure_unproven", `T3 accepted the move of thread ${threadId} to '${to}' but reading it back failed (${e.message})`, 1, { threadId, from, to });
+    throw new Refusal("configure_unproven", `T3 accepted reconfiguring thread ${threadId} to '${selection.instanceId}' (${selection.model}) but reading it back failed (${e.message})`, 1, { threadId, from, to: selection.instanceId });
   }
-  const mismatch = bound.instanceId !== to || bound.model !== current.model
-    || (options ?? []).some((o) => (bound.options ?? []).find((b) => b.id === o.id)?.value !== o.value);
+  const mismatch = bound.instanceId !== selection.instanceId || bound.model !== selection.model
+    || (selection.options ?? []).some((o) => (bound.options ?? []).find((b) => b.id === o.id)?.value !== o.value);
   if (mismatch) {
-    throw new Refusal("configure_unproven", `T3 thread ${threadId} reads back instance ${bound.instanceId ?? "none"} model ${bound.model ?? "none"} after the move to '${to}'`, 1, { threadId, from, to });
+    throw new Refusal("configure_unproven", `T3 thread ${threadId} reads back instance ${bound.instanceId ?? "none"} model ${bound.model ?? "none"} after configuring '${selection.instanceId}' (${selection.model})`, 1, { threadId, from, to: selection.instanceId });
   }
-  return { ok: true, threadId, from, to, model: current.model };
+  return {
+    ok: true,
+    threadId,
+    from,
+    to: selection.instanceId,
+    fromModel,
+    model: selection.model,
+    driverKind: toDriverKind,
+    ...(selection.options !== undefined ? { options: selection.options } : {}),
+  };
 }
 
 function itemText(item) {

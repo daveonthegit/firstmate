@@ -291,7 +291,14 @@ fm_supervision_model() {
   esac
   harness=$("$FM_WAKE_LIB_DIR/fm-harness.sh" 2>/dev/null || printf unknown)
   case "$harness" in
-    claude|cursor|agy) printf 'autoarm\n' ;;
+    claude|cursor) printf 'autoarm\n' ;;
+    agy)
+      if [ -x "$FM_WAKE_LIB_DIR/fm-turnend-guard-agy.sh" ] && "$FM_WAKE_LIB_DIR/fm-turnend-guard-agy.sh" --capable; then
+        printf 'autoarm\n'
+      else
+        printf 'persistent\n'
+      fi
+      ;;
     codex)
       if [ -x "$FM_WAKE_LIB_DIR/fm-codex-stop-park.sh" ] && "$FM_WAKE_LIB_DIR/fm-codex-stop-park.sh" --capable; then
         printf 'autoarm\n'

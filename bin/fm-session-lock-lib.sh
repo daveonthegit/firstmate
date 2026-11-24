@@ -32,14 +32,18 @@ unset _FM_SESSION_LOCK_LIB_DIR
 # Known harness command names; extend when a new adapter is verified. omp and
 # agy are anchored exactly like pi: their process names are the bare words `omp`
 # (verified, omp 18.1.11) and `agy`, and a substring match would claim ompd or
-# comp.
-FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$|^omp$|^agy$'
+# comp. T3 Code hosts Antigravity as `agy_acp_server.par` (or `agy_acp_server`);
+# anchoring those exact names anchors the session lock to the long-lived ACP
+# server rather than its transient `localharness_external` child, and listing
+# them in FM_HARNESS_NAMES lets path matching recover Linux's 15-byte comm
+# truncation (`agy_acp_server.`) from argv[0].
+FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$|^omp$|^agy$|^agy_acp_server(\.par)?$'
 
 # The same harnesses as exact executable names. Keep in sync with
 # FM_HARNESS_RE. Used only for the stricter path evidence below, where the
 # loose regex would also match ordinary firstmate paths such as
 # bin/fm-claude-stop-autoarm.sh.
-FM_HARNESS_NAMES=(claude codex opencode grok kimi pi-signed pi omp agy)
+FM_HARNESS_NAMES=(claude codex opencode grok kimi pi-signed pi omp agy agy_acp_server agy_acp_server.par)
 
 # Print the exact harness name carried by executable path $1 - its own basename
 # or any directory component - or return 1.

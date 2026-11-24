@@ -1139,6 +1139,94 @@ test_both_generations_pick_the_working_tools() {
   pass "fm-t3-mcp gate: with both generations offered, the configuration read stays on the dedicated tool and pending requests use the merged tool"
 }
 
+test_configure_same_driver_and_cross_driver_switches() {
+  local project thread sel_codex='{"instanceId":"codex","model":"gpt-5.6-sol","options":[{"id":"reasoningEffort","value":"high"}]}'
+  fresh_case configure-drivers '{"toolset":"current"}'
+  t3_fake_set '
+w.providers = [
+  { providerInstanceId: "claudeAgent", driverKind: "claudeAgent", constraints: [],
+    models: [{ id: "claude-sonnet-5-5", options: [{ id: "effort", type: "select", options: ["low","medium","high"].map((id) => ({ id })) }] }] },
+  { providerInstanceId: "claudeAgent_b", driverKind: "claudeAgent", constraints: [],
+    models: [{ id: "claude-sonnet-5-5", options: [{ id: "effort", type: "select", options: ["low","medium","high"].map((id) => ({ id })) }] }] },
+  { providerInstanceId: "codex", driverKind: "codex", constraints: [],
+    models: [{ id: "gpt-5.6-sol", options: [{ id: "reasoningEffort", type: "select", options: ["low","medium","high","xhigh"].map((id) => ({ id })) }] }] },
+  { providerInstanceId: "antigravity", driverKind: "antigravity", constraints: [],
+    models: [{ id: "gemini-4-neon", options: [{ id: "thinking_level", values: ["low","medium","high","xhigh"], default: "high" }] }] }
+];'
+  mcp project-ensure --root "$TMP_ROOT/proj"
+  project=$(field "$OUT" projectId)
+
+  # 1. Same-driver seat move works without --harness; cross-driver is still refused without --harness.
+  mcp launch --project "$project" --title cfg-claude --model-selection "$SEL" --worktree "$WT"
+  expect_code 0 "$RC" "launch claude thread: $ERR"
+  thread=$(field "$OUT" threadId)
+  mcp configure --thread "$thread" --instance claudeAgent_b
+  expect_code 0 "$RC" "same-driver configure should succeed: $ERR"
+  assert_equals claudeAgent_b "$(field "$OUT" to)" "same-driver configure must move instance"
+  assert_equals claude-sonnet-5-5 "$(field "$OUT" model)" "same-driver configure must preserve model"
+
+  mcp configure --thread "$thread" --instance antigravity
+  expect_code 4 "$RC" "cross-driver configure without --harness must be refused"
+  assert_equals instance_unusable "$(field "$OUT" error.code)" "cross-driver refusal code without --harness"
+
+  # 2. Explicit cross-driver switch: claudeAgent -> antigravity with agy CLI-style model id.
+  mcp configure --thread "$thread" --harness agy --model gemini-4-neon-high
+  expect_code 0 "$RC" "cross-driver switch claude -> antigravity should succeed: $ERR"
+  assert_equals antigravity "$(field "$OUT" to)" "cross-driver switch must default instance to antigravity"
+  assert_equals gemini-4-neon "$(field "$OUT" model)" "agy model suffix must normalize to gemini-4-neon"
+  assert_equals antigravity "$(field "$OUT" driverKind)" "cross-driver switch must report target driverKind"
+  assert_equals '[{"id":"thinking_level","value":"high"}]' "$(field "$OUT" options)" "agy model suffix must set thinking_level"
+
+  # 3. Explicit cross-driver switch: codex -> antigravity with explicit --effort xhigh.
+  mcp launch --project "$project" --title cfg-codex --model-selection "$sel_codex" --worktree "$WT"
+  expect_code 0 "$RC" "launch codex thread: $ERR"
+  thread=$(field "$OUT" threadId)
+  mcp configure --thread "$thread" --harness agy --model gemini-4-neon --effort xhigh
+  expect_code 0 "$RC" "cross-driver switch codex -> antigravity should succeed: $ERR"
+  assert_equals antigravity "$(field "$OUT" to)" "codex -> antigravity instance"
+  assert_equals gemini-4-neon "$(field "$OUT" model)" "codex -> antigravity model"
+  assert_equals '[{"id":"thinking_level","value":"xhigh"}]' "$(field "$OUT" options)" "codex -> antigravity xhigh effort"
+
+  # 4. --model default uses the thread's own project defaultModelSelection.
+  FM_T3_ID="$project" t3_fake_set 'w.projects.find((p) => p.id === process.env.FM_T3_ID).defaultModelSelection = { instanceId: "antigravity", model: "gemini-4-neon", options: [{ id: "thinking_level", value: "medium" }] }'
+  mcp configure --thread "$thread" --harness agy --model default
+  expect_code 0 "$RC" "configure with --model default should resolve from the thread project: $ERR"
+  assert_equals '[{"id":"thinking_level","value":"medium"}]' "$(field "$OUT" options)" "--model default must inherit project options"
+
+  # 5. Usage and validation refusals must not mutate T3.
+  : > "$T3_FAKE_LOG"
+  mcp configure --thread "$thread" --harness claude
+  expect_code 4 "$RC" "switching to a different harness without --model must refuse"
+  assert_equals model_required "$(field "$OUT" error.code)" "refusal must report model_required"
+  assert_equals "" "$(t3_fake_calls t3_thread_configure | grep '"modelSelection"')" "missing model must not write t3_thread_configure"
+
+  mcp configure --thread "$thread" --harness agy --model nonexistent-model
+  expect_code 4 "$RC" "unknown target model must refuse"
+  assert_equals "" "$(t3_fake_calls t3_thread_configure | grep '"modelSelection"')" "invalid model must not write t3_thread_configure"
+
+  mcp configure --thread "$thread" --harness agy --model gemini-4-neon --effort max
+  expect_code 4 "$RC" "unsupported target effort must refuse"
+  assert_equals "" "$(t3_fake_calls t3_thread_configure | grep '"modelSelection"')" "invalid effort must not write t3_thread_configure"
+
+  mcp configure --thread "$thread" --harness agy --instance codex --model gemini-4-neon
+  expect_code 4 "$RC" "mismatched --instance for --harness must refuse"
+  assert_equals "" "$(t3_fake_calls t3_thread_configure | grep '"modelSelection"')" "mismatched driver instance must not write t3_thread_configure"
+
+  # 6. Active run refusal (thread_busy).
+  FM_T3_THREAD="$thread" t3_fake_set 'w.threads[process.env.FM_T3_THREAD].status = "running"; w.threads[process.env.FM_T3_THREAD].activeRunId = "run-live"; w.threads[process.env.FM_T3_THREAD].runs = [{ runId: "run-live", ordinal: 1, status: "running" }]'
+  mcp configure --thread "$thread" --harness claude --model claude-sonnet-5-5
+  expect_code 4 "$RC" "configuring a running thread must refuse"
+  assert_equals thread_busy "$(field "$OUT" error.code)" "busy thread refusal code"
+
+  # 7. Unproven read-back refusal (configure_unproven).
+  FM_T3_THREAD="$thread" t3_fake_set 'w.threads[process.env.FM_T3_THREAD].status = "completed"; w.threads[process.env.FM_T3_THREAD].activeRunId = null; w.threads[process.env.FM_T3_THREAD].runs = [{ runId: "run-live", ordinal: 1, status: "completed" }]; w.configureIgnored = true'
+  mcp configure --thread "$thread" --harness claude --model claude-sonnet-5-5
+  expect_code 1 "$RC" "an ignored configure write must fail read-back verification"
+  assert_equals configure_unproven "$(field "$OUT" error.code)" "unproven configure code"
+
+  pass "fm-t3-mcp configure: same-driver moves stay safe, explicit --harness switches drivers with validation and read-back verification"
+}
+
 t3_fake_start "$TMP_ROOT/server"
 test_login_writes_private_credential_and_never_prints_token
 test_login_origin_defaults
@@ -1170,6 +1258,7 @@ test_requests_and_respond
 test_gate_accepts_either_tool_generation
 test_current_tool_names_drive_launch_and_requests
 test_both_generations_pick_the_working_tools
+test_configure_same_driver_and_cross_driver_switches
 test_watch_is_event_driven_and_bounded
 test_watch_reports_failed_waits_not_timeout
 test_helper_runs_through_symlinked_path

@@ -40,9 +40,9 @@ The unauthenticated failure mode was not observed, so treat any auth prompt or r
 
 ## Detection
 
-Detected by ancestry alone: `../../../../../bin/fm-harness.sh` matches the anchored process name `agy`, never `*agy*`.
-No environment marker is promoted: `AGENT=1` observed on a live TUI is an inherited launcher value, not an agy identity, and agy does not clear an inherited `CLAUDECODE` - but a structural agy ancestor now outranks that retained marker, which `../../../../../bin/fm-harness.sh` decides without depending on the spawn's own launch-boundary marker clearing.
-agy is included in the session-lock name vocabulary in `../../../../../bin/fm-session-lock-lib.sh`, allowing an agy session to hold a home session lock.
+Detected by ancestry first: `../../../../../bin/fm-harness.sh` matches the anchored process names `agy` (standalone CLI) and `agy_acp_server` / `agy_acp_server.par` (T3 Code Antigravity ACP, including Linux's 15-byte `agy_acp_server.` comm truncation verified against `argv[0]`), never `*agy*`.
+Standalone `agy` CLI publishes no environment marker (`AGENT=1` is an inherited launcher value), while T3 Code's Antigravity ACP sets `ANTIGRAVITY_AGENT=1` and `ANTIGRAVITY_HARNESS_PATH` on tool subprocesses as a fallback marker when ancestry is unavailable; structural `comm agy` ancestry outranks retained foreign markers such as `CLAUDECODE`.
+Both `agy` and `agy_acp_server` / `agy_acp_server.par` are included in the session-lock name vocabulary in `../../../../../bin/fm-session-lock-lib.sh` and the agent process classifier in `../../../../../bin/fm-agent-process-lib.sh`, anchoring a T3 Antigravity session lock to the long-lived ACP server rather than its transient `localharness_external` child.
 
 ## Worker busy state and turn end
 
@@ -52,11 +52,15 @@ Teardown removes nothing agy-specific because the spawn leaves nothing behind.
 
 ## Primary and secondmate integration
 
-Antigravity CLI loads `<workspace>/.agents/hooks.json` for hook lifecycle events, running each command from `.agents/` itself.
+Standalone Antigravity CLI loads `<workspace>/.agents/hooks.json` for hook lifecycle events, running each command from `.agents/` itself.
 agy 1.4.9 reads every top-level key as a named hook spec (firstmate ships one, `firstmate`), with flat `SessionStart` and `Stop` handler lists and `PreToolUse` grouped under `matcher` and `hooks`; any other top-level key, such as a `version` field, silently disables the whole file (verified live).
 A PreToolUse handler that prints nothing allows the call, while a printed object without a `decision` denies it, so the seatbelts print only on deny.
 SessionStart executes `bin/fm-sessionstart-agy.sh` to inject the session-start digest into model context.
 PreToolUse invokes `bin/fm-arm-pretool-check.sh --agy`, `bin/fm-cd-pretool-check.sh --agy`, and `bin/fm-subagent-pretool-check.sh --agy`.
 Stop executes `bin/fm-turnend-guard-agy.sh`, which parks on a home-scoped watcher cycle through `bin/fm-watch-arm.sh` (or `bin/fm-supervision-host.sh park` on a home that runs the host) under the registered 28800s hook timeout and delivers actionable wake output; only an optional `FM_AGY_PARK_TIMEOUT` bound re-arms via `{"decision":"continue","reason":"..."}` with `[supervision-park]`, and `FM_AGY_TURNEND_LOOP_CEILING` (default 180) bounds hook-driven turns.
 A bounded 3-block repair nag is enforced via `bin/fm-turnend-guard.sh --agy` before failing open with `{}`.
-See `../../../../../docs/supervision-protocols/agy.md` for the complete supervision protocol.
+See `../../../../../docs/supervision-protocols/agy.md` for the standalone CLI supervision protocol.
+
+Under T3 Code's Antigravity ACP server (`agy_acp_server.par`), the ACP SDK ignores `injectSteps` in `SessionStart` and executes `Stop` hooks only on `session_end` while ignoring `{"decision":"continue"}`, so Stop-hook turn-boundary parking cannot run there.
+`bin/fm-turnend-guard-agy.sh --capable` returns nonzero under ACP, routing `bin/fm-supervision-instructions.sh` to `../../../../../docs/supervision-protocols/agy-acp.md` (bounded `bin/fm-watch-checkpoint.sh` checkpoints) and `fm_supervision_model` to `persistent`.
+When a workspace has `.agents/hooks.json` and is not yet in `$GEMINI_HOME/antigravity-acp/trusted_workspaces.json`, ACP raises a `user_input` pending question (`trust` or `deny`); answer `deny` for workers and `trust` for primary or secondmate homes.
