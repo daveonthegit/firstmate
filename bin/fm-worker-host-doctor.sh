@@ -2,7 +2,7 @@
 # Check, and with --fix converge, one registered worker host from the primary.
 #
 # Usage:
-#   fm-worker-host-doctor.sh <worker-host-id> [--fix] [--lanes <cap>]
+#   fm-worker-host-doctor.sh <worker-host-id> [--fix] [--lanes <cap|auto>]
 #       [--capacity <project>=<n>]... [<project>[=<origin-url>]...]
 #
 # The host must already have a record in this home's data/worker-hosts.md
