@@ -1498,7 +1498,8 @@ doc=$(jq -n \
    uptime_s: ($uptime | num), boot_id: (if $boot_id == "" then null else $boot_id end),
    boots: (($prev_boots + (if $new_boot == "" then [] else [$new_boot | tonumber] end)) | .[-$kept:]),
    watcher_beat_age_s: ($watcher_age | num),
-   reserve: {flag: $reserve_flag, label: (if $reserve_label == "" then null else $reserve_label end), override: $reserve_override},
+   reserve: ({flag: $reserve_flag, label: (if $reserve_label == "" then null else $reserve_label end)}
+     + (if $reserve_override == null then {} else {override: $reserve_override} end)),
    captain: $captain, quota: $quota,
    limits: {min_avail_gb: ($min_avail | num), min_disk_gb: ($min_disk | num), max_load1: ($max_load1 | num)},
    verdict: {admit: ($admit == "true"), free_lanes: ($free_lanes | if . == "unknown" then null else tonumber end),
