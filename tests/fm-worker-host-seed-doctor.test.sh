@@ -239,6 +239,18 @@ assert_not_contains "$OUT" "fix " "a repeated seed changed something"
 assert_equals "init alpha" "$(cat "$NM_LOG")" "a repeated seed initialized no-mistakes again"
 pass "a repeated seed converges without changing anything"
 
+# The remote job runs under the host account's real HOME, so drive the host
+# side of the doctor directly with the machine reservation it would read.
+printf 'mode=reduce\nreason=game server\nmax_lanes=1\n' > "$TMP_ROOT/host-reserve"
+OUT=$(printf 'schema=fm-worker-host-home.v1\nhost_id_b64=%s\nlanes=2\nt3_required=0\nproject_scope=present\nproject_count=0\n' \
+  "$(printf m1 | base64)" | FM_HOME="$HOST" FM_HOST_RESERVE_FILE="$TMP_ROOT/host-reserve" \
+  "$ROOT/bin/fm-worker-host-home.sh" 2>&1 || true)
+rm -f "$TMP_ROOT/host-reserve"
+assert_contains "$OUT" "check lane-capacity=ok: cap 2" "an owner reservation was read as the declared lane cap"
+assert_not_contains "$OUT" "caps lanes at 1" "an owner reservation was reported as a lane-cap mismatch"
+assert_equals 2 "$(cat "$HOST/config/lane-capacity")" "the doctor changed the lane cap under a reservation"
+pass "the doctor reads the declared lane cap, not a temporary owner reservation"
+
 # --- drift, check, and repair ----------------------------------------------------------
 
 rm -f "$HOST/.fm-worker-host"
@@ -432,5 +444,17 @@ expect_code 1 "$RC" "unavailable primary evidence must not pass without a host t
 assert_contains "$OUT" "check t3-primary=human" "the unresolved comparison disappeared without a host token"
 assert_contains "$OUT" "check t3-credential=human" "an unavailable primary was treated as non-T3"
 pass "unavailable primary T3 evidence remains unresolved with or without host credentials"
+
+# --- --lanes auto support for equal worker hosts -------------------------------
+rm -f "$PARENT/config/t3code-token" "$HOST/config/t3code-token" "$HOST/config/lane-capacity"
+run "$ROOT/bin/fm-worker-host-seed.sh" m1 --lanes auto alpha
+expect_code 0 "$RC" "seeding a worker host with --lanes auto must succeed: $OUT"
+assert_equals "auto" "$(cat "$HOST/config/lane-capacity")" "--lanes auto must write auto to config/lane-capacity"
+assert_contains "$OUT" "check lane-capacity=ok: auto (budget " "doctor must verify auto lane budgeting"
+run "$ROOT/bin/fm-worker-host-doctor.sh" m1 --lanes 6 alpha
+expect_code 1 "$RC" "requesting a fixed cap against an existing auto declaration must report a human mismatch"
+assert_contains "$OUT" "uses auto mode, not the requested cap 6" "doctor must explain auto vs fixed mismatch without overwriting"
+assert_equals "auto" "$(cat "$HOST/config/lane-capacity")" "doctor must never overwrite an existing auto declaration"
+pass "--lanes auto seeds, verifies, and refuses silent overwrite against a fixed cap"
 
 echo "all fm-worker-host-seed-doctor tests passed"

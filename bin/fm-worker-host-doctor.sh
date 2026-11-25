@@ -2,7 +2,7 @@
 # Check, and with --fix converge, one registered worker host from the primary.
 #
 # Usage:
-#   fm-worker-host-doctor.sh <worker-host-id> [--fix] [--lanes <cap>]
+#   fm-worker-host-doctor.sh <worker-host-id> [--fix] [--lanes <cap|auto>]
 #       [--capacity <project>=<n>]... [<project>[=<origin-url>]...]
 #
 # The host must already have a record in this home's data/worker-hosts.md
@@ -103,7 +103,7 @@ while [ "$#" -gt 0 ]; do
   esac
   shift
 done
-case "$LANES" in ''|[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) ;; *) die "--lanes must be a whole number below 1000: $LANES" ;; esac
+case "$LANES" in ''|auto|[0-9]|[0-9][0-9]|[0-9][0-9][0-9]) ;; *) die "--lanes must be a whole number below 1000 or auto: $LANES" ;; esac
 
 WORKER_REG=$(worker_host_registry_path "$DATA")
 [ -f "$WORKER_REG" ] && [ ! -L "$WORKER_REG" ] \

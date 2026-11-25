@@ -990,6 +990,9 @@ tests/fm-wake-queue.test.sh 165906
 tests/fm-warm-compact-herdr-live-e2e.test.sh 170
 tests/fm-warm-compact.test.sh 1500
 tests/fm-worker-host-seed-doctor.test.sh 59810
+tests/fm-host-bootstrap.test.sh 1500
+tests/fm-host-reserve.test.sh 6500
+tests/fm-primary-migrate.test.sh 5000
 tests/fm-watch-arm.test.sh 113076
 tests/fm-watch-checkpoint.test.sh 11234
 tests/fm-watch-inbox-meta.test.sh 283
@@ -1717,6 +1720,16 @@ families_for_changed_path() {
 ' "__script__:fm-project-capacity.test.sh"
       printf '%s
 ' "__script__:fm-lane-capacity-integration.test.sh"
+      printf '%s\n' "__script__:fm-host-reserve.test.sh"
+      ;;
+    bin/fm-host-reserve.sh)
+      printf '%s\n' "__script__:fm-host-reserve.test.sh"
+      ;;
+    bin/fm-host-bootstrap.sh)
+      printf '%s\n' "__script__:fm-host-bootstrap.test.sh"
+      ;;
+    bin/fm-primary-migrate.sh)
+      printf '%s\n' "__script__:fm-primary-migrate.test.sh"
       ;;
     bin/fm-placement.sh)
       printf '%s

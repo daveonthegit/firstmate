@@ -77,7 +77,8 @@ Register the host first, then let the primary seed its home and check it:
 
 1. Meet the [remote second mate prerequisites](remote-secondmates.md#prerequisites): an SSH alias with strict host keys and no agent forwarding, a Firstmate clone at an absolute code root, at a build that carries these commands, and the fixed entrypoint on the non-interactive `PATH`.
 2. Add the host's record to the primary's `data/worker-hosts.md`, naming a home outside the code root ([register a worker host](#register-a-worker-host)).
-3. From the primary, run `bin/fm-worker-host-seed.sh <id> --lanes <cap> [--capacity <project>=<n>]... <project>[=<origin-url>]...`.
+3. From the primary, run `bin/fm-worker-host-seed.sh <id> --lanes <cap|auto> [--capacity <project>=<n>]... <project>[=<origin-url>]...`.
+   For fresh-host macOS bring-up, adding or removing hosts, and owner-reserved pause or reduction, see [Multi-host and macOS setup](host-setup.md).
 4. On the host, as the worker account, sign in to every worker tool, model account, and forge identity its workers will use, including the home's own T3 sign-in when its workers use T3; every login is the operator's own step.
 5. Select the host's runtime in its home's `config/backend` when it should differ from the default.
 6. From the primary, run `bin/fm-worker-host-doctor.sh <id>` until it reports the host ready, and rerun it whenever the host or the primary changes.
