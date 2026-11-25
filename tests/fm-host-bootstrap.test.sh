@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # tests/fm-host-bootstrap.test.sh - behavioral tests for bin/fm-host-bootstrap.sh
 # covering check mode, --fix idempotent installation and entrypoint linking,
-# human-only sign-in reporting (Apple/macOS, GitHub, Claude, Antigravity, T3),
+# sign-in reporting (verifiable sign-ins gate, unverifiable or unused ones are
+# non-gating reminders), convergence to exit 0,
 # refusal to overwrite non-Firstmate entrypoint files, and safe --ssh forwarding.
 set -u
 
@@ -122,18 +123,29 @@ assert_contains "$out" "check remote-entrypoint=fixable:" "missing entrypoint sy
 assert_contains "$out" "check remote-account=fixable:" "doctor gap must be fixable"
 assert_contains "$out" "check signin-apple-macos=human:" "missing Aqua GUI session must be human"
 assert_contains "$out" "check signin-github=human:" "unauthenticated gh must be human"
-assert_contains "$out" "check signin-claude=human:" "claude /login must be listed as human"
-assert_contains "$out" "check signin-antigravity=human:" "antigravity login must be listed as human"
-assert_contains "$out" "check signin-t3code=human:" "missing t3code token must be human"
+assert_contains "$out" "check signin-claude=reminder:" "unverifiable claude /login must be a reminder"
+assert_contains "$out" "check signin-antigravity=reminder:" "unverifiable antigravity login must be a reminder"
+assert_contains "$out" "check signin-t3code=reminder:" "a T3 sign-in the tmux backend does not use must be a reminder"
+assert_contains "$out" "action: signin-claude: " "a reminder must still print its action"
+gap_summary=$(printf '%s\n' "$out" | grep '^summary:')
+for reminder in signin-claude signin-antigravity signin-t3code; do
+  assert_not_contains "$gap_summary" "$reminder" "reminder $reminder must not be counted as a gap"
+done
 [ ! -s "$INSTALL_LOG" ] || fail "check mode must never install packages"
 [ ! -e "$FAKE_HOME/.local/bin/fm-remote-entrypoint.sh" ] || fail "check mode must not create entrypoint symlink"
 pass "check mode is read-only and lists automatable gaps plus all human sign-ins"
 
+rc=0
+out=$(FM_TEST_GH_OK=1 FM_TEST_GUI_OK=1 run_boot --role primary --backend t3code 2>&1) || rc=$?
+expect_code 1 "$rc" "the t3code backend must gate on a missing T3 sign-in"
+assert_contains "$out" "check signin-t3code=human:" "missing t3code token must be human for the t3code backend"
+pass "a T3 Code sign-in gates only when the backend uses it"
+
 # 2. --fix installs missing tools, creates entrypoint symlink, and runs fm-remote-doctor.sh --fix; idempotent on rerun.
 rc=0
 out=$(FM_TEST_GH_OK=1 FM_TEST_GUI_OK=1 run_boot --fix --role both --backend tmux 2>&1) || rc=$?
-# Claude and Antigravity interactive sign-ins remain human steps, so exit is still 1.
-expect_code 1 "$rc" "interactive human sign-ins keep exit 1 until completed"
+expect_code 0 "$rc" "a converged --fix run with every verifiable sign-in done must exit 0: $out"
+assert_contains "$out" "ok: host bootstrap verified for role=both backend=tmux" "a converged run must report ready"
 assert_contains "$out" "fix tool:tasks-axi=applied:" "--fix must install missing automatable tool"
 assert_contains "$out" "fix remote-entrypoint=applied:" "--fix must create entrypoint symlink"
 assert_contains "$out" "fix remote-account=applied:" "--fix must run fm-remote-doctor.sh --fix"
@@ -146,7 +158,9 @@ assert_contains "$out" "check signin-apple-macos=ok:" "active Aqua session must 
 
 # Rerun --fix: no duplicate installs, same clean state.
 install_count_before=$(wc -l < "$INSTALL_LOG" | tr -d ' ')
-FM_TEST_GH_OK=1 FM_TEST_GUI_OK=1 run_boot --fix --role both --backend tmux >/dev/null 2>&1 || true
+rc=0
+FM_TEST_GH_OK=1 FM_TEST_GUI_OK=1 run_boot --fix --role both --backend tmux >/dev/null 2>&1 || rc=$?
+expect_code 0 "$rc" "rerunning --fix on a converged host must still exit 0"
 install_count_after=$(wc -l < "$INSTALL_LOG" | tr -d ' ')
 assert_equals "$install_count_before" "$install_count_after" "rerunning --fix must not reinstall already-present tools"
 pass "--fix installs tools, links entrypoint, delegates doctor, and is idempotent"

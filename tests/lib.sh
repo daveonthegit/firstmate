@@ -34,6 +34,12 @@ FM_TEST_LIB_SOURCED=1
 # suite's fixtures were written against.
 umask 022
 
+# The machine-wide owner reservation (bin/fm-host-reserve.sh) lives in the
+# account's ~/.firstmate by default; point it at a path that never exists so a
+# real reservation on the test machine cannot change any suite's capacity
+# verdicts. A suite that exercises reservations sets its own path.
+export FM_HOST_RESERVE_FILE="${FM_HOST_RESERVE_FILE:-/nonexistent/fm-test-host-reserve}"
+
 # Fixture Git isolation for every suite that reaches this library; the helper's
 # header owns the invariant and the layers it deliberately leaves in force.
 # shellcheck source=tests/git-config-helpers.sh

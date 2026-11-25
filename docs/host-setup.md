@@ -20,11 +20,13 @@ bin/fm-host-bootstrap.sh --ssh <ssh-alias> --remote-root <abs-firstmate-root> --
 
 - `--role` selects `primary`, `worker`, or `both` (default `both`, so the machine can act as either a primary or a remote worker and second-mate host).
 - `--fix` installs missing automatable tools through `bin/fm-bootstrap.sh install`, upgrades outdated automatable tools, links `~/.local/bin/fm-remote-entrypoint.sh` when absent without overwriting non-Firstmate files, and delegates Aqua LaunchAgents and version-manager wrappers to [`bin/fm-remote-doctor.sh`](remote-secondmates.md#readiness-repair-and-the-human-steps).
-- Rerunning converges and exits `0` once every automated and human check passes; the [`bin/fm-host-bootstrap.sh` header](../bin/fm-host-bootstrap.sh) owns the exact flags and line protocol.
+- Rerunning converges and exits `0` once every automated check and every verifiable sign-in passes; the [`bin/fm-host-bootstrap.sh` header](../bin/fm-host-bootstrap.sh) owns the exact flags and line protocol.
 
 ### Human-only sign-ins
 
-Firstmate never automates interactive logins, passwords, or macOS security settings; `fm-host-bootstrap.sh` keeps listing each remaining `human:` step until completed on that Mac:
+Firstmate never automates interactive logins, passwords, or macOS security settings.
+`fm-host-bootstrap.sh` keeps listing each sign-in it can verify (macOS console session, GitHub, and T3 Code on the `t3code` backend) as a gating `human:` step until it is completed on that Mac.
+Claude and Antigravity sign-ins cannot be verified non-interactively, and T3 Code is not needed on other backends, so those print as non-gating `reminder:` lines with their action:
 
 | Sign-in | What a person does at the Mac |
 | --- | --- |
@@ -135,13 +137,14 @@ bin/fm-host-reserve.sh status --all
 bin/fm-host-reserve.sh release --host <host-id>
 ```
 
-- Omit `--host` (or pass `--host local`) to reserve the primary itself.
-- `bin/fm-capacity.sh` reads `state/host-reserve` live on every check, so `bin/fm-placement.sh` and `admit-spawns` skip a paused host or compute the shrunk capacity of a reduced host immediately while leaving running lanes untouched.
+- Omit `--host` (or pass `--host local`) to reserve the machine this command runs on.
+- The reservation is machine-wide: it lives in the account's `~/.firstmate/host-reserve`, so every Firstmate home on that Mac (the primary or worker host home and any second-mate homes) skips or shrinks new placement together.
+- `bin/fm-capacity.sh` reads that file live on every check, so `bin/fm-placement.sh` and `admit-spawns` skip a paused host or compute the shrunk capacity of a reduced host immediately while leaving running lanes untouched.
 - External automation (such as a game-launch watcher script on a workstation or gaming PC) can continue using `reserve-flag <path> [label]` in `config/lane-capacity` ([lane capacity](configuration.md#lane-capacity-configlane-capacity)); both mechanisms compose cleanly.
 
 ## Verification
 
-- [`tests/fm-host-bootstrap.test.sh`](../tests/fm-host-bootstrap.test.sh) exercises check mode, `--fix` tool installation and entrypoint linking, human-only sign-in reporting, and safe SSH forwarding.
-- [`tests/fm-primary-migrate.test.sh`](../tests/fm-primary-migrate.test.sh) exercises preflight refusals, supervisor-lease release gating, clean export, local-only git bundle preservation, machine-bound config exclusion, and guarded import.
-- [`tests/fm-host-reserve.test.sh`](../tests/fm-host-reserve.test.sh) exercises pause, reduce (`--max-lanes`, `--keep-gb`), timed expiry, fail-closed malformed files, remote `--host` delegation, and `fm-placement.sh` balancing without disturbing running tasks.
+- [`tests/fm-host-bootstrap.test.sh`](../tests/fm-host-bootstrap.test.sh) exercises check mode, `--fix` tool installation and entrypoint linking, gating and reminder sign-in reporting, convergence to exit `0`, and safe SSH forwarding.
+- [`tests/fm-primary-migrate.test.sh`](../tests/fm-primary-migrate.test.sh) exercises preflight refusals, supervisor-lease release gating, clean export, local-only git bundle preservation of every branch and tag, pre-cloned records repositories, machine-bound config exclusion, and guarded import.
+- [`tests/fm-host-reserve.test.sh`](../tests/fm-host-reserve.test.sh) exercises pause, reduce (`--max-lanes`, `--keep-gb`), machine-wide reach across every home on the host, timed expiry, fail-closed malformed files, remote `--host` delegation, and `fm-placement.sh` balancing without disturbing running tasks.
 - [`tests/fm-worker-host-seed-doctor.test.sh`](../tests/fm-worker-host-seed-doctor.test.sh) covers `--lanes auto` worker-host seeding and doctor checks alongside fixed caps.

@@ -323,11 +323,13 @@ check_backlog_backend() {
   record backlog-backend "fixable: config/backlog-backend is not manual" "rerun the doctor with --fix"
 }
 
-# The cap and mode bin/fm-capacity.sh reads, from its own report line.
+# The declared cap and mode bin/fm-capacity.sh reads, from its own report line,
+# with the machine's runtime owner reservation ignored so a temporary pause or
+# reduce never reads as a mismatched declaration.
 # Its exit status is not used, because it also fails for reasons other than the
 # declaration.
 lane_capacity_report() {
-  FM_HOME="$FM_HOME" "$SCRIPT_DIR/fm-capacity.sh" 2>/dev/null | head -n 1 || true
+  FM_HOME="$FM_HOME" FM_HOST_RESERVE_FILE='' "$SCRIPT_DIR/fm-capacity.sh" 2>/dev/null | head -n 1 || true
 }
 
 report_kv() { # <report-line> <key>

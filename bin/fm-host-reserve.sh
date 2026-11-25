@@ -3,15 +3,19 @@
 # owner-reserved use (gaming, server hosting) without disturbing running work.
 #
 # Usage:
-#   fm-host-reserve.sh pause  [--host <id|local>] [--reason <text>] [--for <duration> | --until <epoch>]
+#   fm-host-reserve.sh pause  [--host <id|local>] [--reason <text>] [--for <duration>]
 #   fm-host-reserve.sh reduce [--host <id|local>] [--max-lanes <N>] [--keep-gb <G>]
-#                             [--reason <text>] [--for <duration> | --until <epoch>]
+#                             [--reason <text>] [--for <duration>]
 #   fm-host-reserve.sh release [--host <id|local>]
 #   fm-host-reserve.sh status  [--host <id|local> | --all]
 #
-# Writes or clears this home's runtime reservation record at state/host-reserve,
-# which bin/fm-capacity.sh honors alongside config/lane-capacity and any
-# external reserve-flag file (docs/configuration.md "Lane capacity").
+# Writes or clears this machine's runtime reservation record at
+# ~/.firstmate/host-reserve (FM_HOST_RESERVE_FILE overrides the path for
+# isolated tests). Every Firstmate home on the machine (primary, worker host,
+# and second-mate homes) reads that one file through bin/fm-capacity.sh,
+# alongside its config/lane-capacity and any external reserve-flag file
+# (docs/configuration.md "Lane capacity"), so a reservation covers the whole
+# machine.
 #
 #   pause    Admits no new ship or scout lanes (free_lanes=0, reason=reserve).
 #            bin/fm-placement.sh skips this host, and bin/fm-spawn.sh defers new
@@ -22,20 +26,20 @@
 #            available memory floor to at least G GB. At least one of
 #            --max-lanes or --keep-gb is required. --max-lanes 0 pauses new
 #            admission like `pause`.
-#   release  Removes state/host-reserve so normal capacity resumes. Idempotent.
+#   release  Removes the reservation file so normal capacity resumes. Idempotent.
 #   status   Reports the current state (none, paused, reduced, expired, or
 #            invalid) without changing anything. With --all, inspects this
 #            machine and every registered worker host in data/worker-hosts.md.
 #
 # Duration format for --for: <N><s|m|h|d> (positive integer, e.g. 90m, 4h, 1d).
-# An expired --until timestamp is automatically ignored by bin/fm-capacity.sh,
+# An expired --for reservation is automatically ignored by bin/fm-capacity.sh,
 # so a timed reservation self-releases even if you forget to run `release`.
 #
 # Remote hosts: passing --host <worker-host-id> (anything other than `local`)
 # delegates this exact command to that worker host through bin/fm-on.sh.
 #
 # Safety: never interrupts, exits, or tears down any running worker or
-# secondmate. Refuses a symlinked state/ directory or state/host-reserve file.
+# secondmate. Refuses a symlinked reservation directory or file.
 #
 # Exit status: 0 on success, 1 on refusal/error or invalid reservation file,
 # 2 on usage, 255 on unreachable SSH transport.
@@ -45,9 +49,9 @@ export LC_ALL=C
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
-STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 DATA="${FM_DATA_OVERRIDE:-$FM_HOME/data}"
-RESERVE_FILE="$STATE/host-reserve"
+RESERVE_FILE="${FM_HOST_RESERVE_FILE:-${HOME:-}/.firstmate/host-reserve}"
+RESERVE_DIR=$(dirname "$RESERVE_FILE")
 
 die() { printf 'error: %s\n' "$1" >&2; exit "${2:-1}"; }
 usage() { sed -n '2,/^set -eu$/p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 2; }
@@ -57,13 +61,13 @@ is_num() { case "$1" in ''|*[!0-9.]*|*.*.*|.*|*.) return 1 ;; esac; }
 safe_id() { case "$1" in ''|-*|*[!A-Za-z0-9._-]*) return 1 ;; esac; }
 
 parse_duration_secs() { # <Ns|Nm|Nh|Nd>
-  local raw=$1 num unit mult
+  local raw=$1 num mult
   case "$raw" in
     *[!0-9smhd]*|'') return 1 ;;
-    *s) unit=s; num=${raw%s}; mult=1 ;;
-    *m) unit=m; num=${raw%m}; mult=60 ;;
-    *h) unit=h; num=${raw%h}; mult=3600 ;;
-    *d) unit=d; num=${raw%d}; mult=86400 ;;
+    *s) num=${raw%s}; mult=1 ;;
+    *m) num=${raw%m}; mult=60 ;;
+    *h) num=${raw%h}; mult=3600 ;;
+    *d) num=${raw%d}; mult=86400 ;;
     *) return 1 ;;
   esac
   is_uint "$num" && [ "${#num}" -le 7 ] && [ "$((10#$num))" -gt 0 ] || return 1
@@ -83,11 +87,12 @@ validate_reason() { # <text>
 }
 
 require_safe_state() {
-  if [ -L "$STATE" ]; then
-    die "refusing symlinked state directory: $STATE"
+  if [ -L "$RESERVE_DIR" ]; then
+    die "refusing symlinked reservation directory: $RESERVE_DIR"
   fi
-  if [ ! -d "$STATE" ]; then
-    mkdir -p "$STATE" || die "cannot create state directory: $STATE"
+  if [ ! -d "$RESERVE_DIR" ]; then
+    mkdir -p "$RESERVE_DIR" || die "cannot create reservation directory: $RESERVE_DIR"
+    chmod 0700 "$RESERVE_DIR" 2>/dev/null || true
   fi
   if [ -L "$RESERVE_FILE" ]; then
     die "refusing symlinked reservation file: $RESERVE_FILE"
@@ -121,7 +126,6 @@ while [ "$#" -gt 0 ]; do
     --max-lanes) [ "$#" -ge 2 ] || usage; MAX_LANES=$2; shift 2 ;;
     --keep-gb) [ "$#" -ge 2 ] || usage; KEEP_GB=$2; shift 2 ;;
     --for) [ "$#" -ge 2 ] || usage; FOR_DUR=$2; shift 2 ;;
-    --until) [ "$#" -ge 2 ] || usage; UNTIL_EPOCH=$2; shift 2 ;;
     -h|--help) usage ;;
     *) usage ;;
   esac
@@ -132,7 +136,6 @@ if [ "$ALL_HOSTS" -eq 1 ]; then
   [ "$VERB" = status ] || die "--all is valid only with status"
   [ "$HOST" = local ] || die "cannot combine --all with --host"
 fi
-[ -z "$FOR_DUR" ] || [ -z "$UNTIL_EPOCH" ] || die "pass at most one of --for or --until"
 [ -z "$REASON" ] || validate_reason "$REASON"
 
 case "$VERB" in
@@ -150,20 +153,14 @@ case "$VERB" in
     fi
     ;;
   release|status)
-    [ -z "$REASON" ] && [ -z "$MAX_LANES" ] && [ -z "$KEEP_GB" ] && [ -z "$FOR_DUR" ] && [ -z "$UNTIL_EPOCH" ] \
+    [ -z "$REASON" ] && [ -z "$MAX_LANES" ] && [ -z "$KEEP_GB" ] && [ -z "$FOR_DUR" ] \
       || die "$VERB does not accept reservation parameters"
     ;;
 esac
 
 if [ -n "$FOR_DUR" ]; then
   dur_secs=$(parse_duration_secs "$FOR_DUR") || die "invalid --for duration '$FOR_DUR' (expected e.g. 90m, 4h, 1d)"
-  if [ "$HOST" = local ]; then
-    UNTIL_EPOCH=$(($(date +%s) + dur_secs))
-  fi
-elif [ -n "$UNTIL_EPOCH" ]; then
-  is_uint "$UNTIL_EPOCH" && [ "${#UNTIL_EPOCH}" -le 12 ] && [ "$((10#$UNTIL_EPOCH))" -gt 0 ] \
-    || die "--until must be a positive Unix epoch in seconds: $UNTIL_EPOCH"
-  UNTIL_EPOCH=$((10#$UNTIL_EPOCH))
+  UNTIL_EPOCH=$(($(date +%s) + dur_secs))
 fi
 
 # Delegate non-local single-host commands through fm-on.sh.
@@ -173,15 +170,14 @@ if [ "$HOST" != local ]; then
   [ -z "$MAX_LANES" ] || REMOTE_ARGS+=(--max-lanes "$MAX_LANES")
   [ -z "$KEEP_GB" ] || REMOTE_ARGS+=(--keep-gb "$KEEP_GB")
   [ -z "$FOR_DUR" ] || REMOTE_ARGS+=(--for "$FOR_DUR")
-  [ -z "$UNTIL_EPOCH" ] || REMOTE_ARGS+=(--until "$UNTIL_EPOCH")
   exec "$SCRIPT_DIR/fm-on.sh" "$HOST" fm-host-reserve.sh "${REMOTE_ARGS[@]}"
 fi
 
 print_local_status() { # <label>
   local label=$1 now line key val r_mode='' r_reason='' r_lanes='' r_keep='' r_until='' r_set='' bad=0 detail=''
   now=$(date +%s)
-  if [ -L "$STATE" ]; then
-    printf 'host-reserve: %s state=invalid (symlinked state directory)\n' "$label"
+  if [ -L "$RESERVE_DIR" ]; then
+    printf 'host-reserve: %s state=invalid (symlinked reservation directory)\n' "$label"
     return 1
   fi
   if [ ! -e "$RESERVE_FILE" ] && [ ! -L "$RESERVE_FILE" ]; then
@@ -224,7 +220,7 @@ print_local_status() { # <label>
     [ -z "$r_set" ] || is_uint "$r_set" || bad=1
   fi
   if [ "$bad" -eq 1 ]; then
-    printf 'host-reserve: %s state=invalid (malformed state/host-reserve; run release or overwrite)\n' "$label"
+    printf 'host-reserve: %s state=invalid (malformed reservation file; run release or overwrite)\n' "$label"
     return 1
   fi
   if [ -n "$r_until" ] && [ "$now" -ge "$r_until" ]; then
@@ -288,7 +284,7 @@ EOF
     eff_mode=$VERB
     [ "$VERB" = reduce ] && [ "$MAX_LANES" = 0 ] && eff_mode=pause
     eff_reason=${REASON:-owner reserved}
-    tmp=$(mktemp "$STATE/.host-reserve.XXXXXX") || die "cannot stage reservation file in $STATE"
+    tmp=$(mktemp "$RESERVE_DIR/.host-reserve.XXXXXX") || die "cannot stage reservation file in $RESERVE_DIR"
     {
       printf 'mode=%s\n' "$eff_mode"
       printf 'reason=%s\n' "$eff_reason"

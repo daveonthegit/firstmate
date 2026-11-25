@@ -13,9 +13,10 @@
 #                             a spawn, 1 when it would admit unconditionally
 #
 # It reads this home's state/*.meta, the optional config/lane-capacity, the
-# pressure files and reserve flags that file names, the optional runtime
-# owner reservation state/host-reserve (bin/fm-host-reserve.sh), and the host's
-# own probes.
+# pressure files and reserve flags that file names, the optional machine-wide
+# runtime owner reservation ~/.firstmate/host-reserve (bin/fm-host-reserve.sh;
+# FM_HOST_RESERVE_FILE overrides the path, and an empty value ignores it so a
+# caller can read the declared capacity alone), and the host's own probes.
 # It never spawns, locks, or changes anything; --publish writes its files
 # (state/lane-capacity.json, and in auto mode state/lane-footprint.json and the
 # Windows host cache state/.lane-vitals-host).
@@ -253,7 +254,7 @@ STATE="${FM_STATE_OVERRIDE:-$FM_HOME/state}"
 CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
 PROJECTS="${FM_PROJECTS_OVERRIDE:-$FM_HOME/projects}"
 LANE_CONFIG="$CONFIG/lane-capacity"
-HOST_RESERVE="$STATE/host-reserve"
+HOST_RESERVE="${FM_HOST_RESERVE_FILE-${HOME:-}/.firstmate/host-reserve}"
 PUBLISHED="$STATE/lane-capacity.json"
 PROC_ROOT=${FM_PROC_ROOT_OVERRIDE:-/proc}
 
@@ -666,9 +667,10 @@ done <<EOF
 $reserve_flags
 EOF
 
-# Optional runtime owner reservation (bin/fm-host-reserve.sh) at
-# state/host-reserve: pause admits nothing; reduce lowers the effective lane
-# cap and/or raises the available memory floor without disturbing running work.
+# Optional machine-wide runtime owner reservation (bin/fm-host-reserve.sh) at
+# $HOST_RESERVE, shared by every Firstmate home on this machine: pause admits
+# nothing; reduce lowers the effective lane cap and/or raises the available
+# memory floor without disturbing running work.
 # A symlinked, unreadable, or malformed file fails closed as a pause.
 host_reserve_active=0
 host_reserve_mode=
@@ -724,7 +726,7 @@ if [ -e "$HOST_RESERVE" ] || [ -L "$HOST_RESERVE" ]; then
   if [ "$hr_bad" -eq 1 ]; then
     host_reserve_active=1
     host_reserve_mode=pause
-    host_reserve_reason="state/host-reserve unreadable or malformed"
+    host_reserve_reason="host-reserve file unreadable or malformed"
     host_reserve_max_lanes='' host_reserve_keep_gb='' host_reserve_until=''
   elif [ -n "$host_reserve_until" ] && [ "$now" -ge "$host_reserve_until" ]; then
     host_reserve_active=0

@@ -239,6 +239,18 @@ assert_not_contains "$OUT" "fix " "a repeated seed changed something"
 assert_equals "init alpha" "$(cat "$NM_LOG")" "a repeated seed initialized no-mistakes again"
 pass "a repeated seed converges without changing anything"
 
+# The remote job runs under the host account's real HOME, so drive the host
+# side of the doctor directly with the machine reservation it would read.
+printf 'mode=reduce\nreason=game server\nmax_lanes=1\n' > "$TMP_ROOT/host-reserve"
+OUT=$(printf 'schema=fm-worker-host-home.v1\nhost_id_b64=%s\nlanes=2\nt3_required=0\nproject_scope=present\nproject_count=0\n' \
+  "$(printf m1 | base64)" | FM_HOME="$HOST" FM_HOST_RESERVE_FILE="$TMP_ROOT/host-reserve" \
+  "$ROOT/bin/fm-worker-host-home.sh" 2>&1 || true)
+rm -f "$TMP_ROOT/host-reserve"
+assert_contains "$OUT" "check lane-capacity=ok: cap 2" "an owner reservation was read as the declared lane cap"
+assert_not_contains "$OUT" "caps lanes at 1" "an owner reservation was reported as a lane-cap mismatch"
+assert_equals 2 "$(cat "$HOST/config/lane-capacity")" "the doctor changed the lane cap under a reservation"
+pass "the doctor reads the declared lane cap, not a temporary owner reservation"
+
 # --- drift, check, and repair ----------------------------------------------------------
 
 rm -f "$HOST/.fm-worker-host"

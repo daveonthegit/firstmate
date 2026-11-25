@@ -17,7 +17,7 @@
 # Roles:
 #   primary  Checks (and with --fix installs/upgrades) the universal fleet
 #            toolchain and selected backend CLI, verifies agent harnesses, and
-#            lists human-only sign-ins (Apple ID/macOS console, GitHub, Claude,
+#            checks human-only sign-ins (Apple ID/macOS console, GitHub, Claude,
 #            Antigravity, T3 Code).
 #   worker   Checks everything in primary plus the fixed remote entrypoint
 #            symlink (~/.local/bin/fm-remote-entrypoint.sh) and delegates
@@ -33,7 +33,7 @@
 #   tool <name>=ok: <path>|outdated: <detail>|missing: <cmd>|manual: <url>
 #   fix <check>=applied: <what changed>         (--fix only)
 #   fix <check>=failed: <why it did not land>   (--fix only)
-#   check <name>=ok|skip|fixable|human: <evidence>
+#   check <name>=ok|skip|reminder|fixable|human: <evidence>
 #   action: <name>: <exact step>
 #
 # Idempotency and safety:
@@ -45,13 +45,16 @@
 #     for worker/both roles.
 #   - It NEVER runs interactive sign-ins, never touches FileVault or auto-login
 #     passwords, never writes credentials, and never modifies another machine's
-#     live fleet config. Every sign-in only a person can do stays reported as
-#     `human:` until completed.
+#     live fleet config. A sign-in it can verify non-interactively (macOS
+#     console session, GitHub CLI, and T3 Code when the backend is t3code)
+#     stays reported as `human:` until completed. A sign-in it cannot verify
+#     (Claude, Antigravity) or that this backend does not use (T3 Code on a
+#     non-t3code backend) is a non-gating `reminder:` with its action line.
 #   - --ssh disables agent forwarding, port forwarding, and SendEnv patterns
 #     and arms bounded SSH dead-peer detection, matching bin/fm-on.sh.
 #
-# Exit status: 0 when every required tool, service, and sign-in check passes;
-# 1 when any automatable or human gap remains; 2 on usage; 255 on SSH failure.
+# Exit status: 0 when every required tool, service, and verifiable sign-in check
+# passes (reminders never gate); 1 when any fixable or human gap remains; 2 on usage; 255 on SSH failure.
 set -eu
 export LC_ALL=C
 
@@ -381,22 +384,20 @@ check_human_signins() {
     record signin-github "human: GitHub CLI is not authenticated" "run 'gh auth login' interactively as this account"
   fi
 
-  # 3. Claude sign-in (human interactive /login)
+  # 3. Claude sign-in (interactive /login; not verifiable non-interactively)
   if command -v claude >/dev/null 2>&1; then
-    record signin-claude "human: interactive sign-in required on a fresh host (claude resolves at $(command -v claude))" \
-      "run 'claude' and complete '/login' in the Aqua GUI session so credentials store in the login keychain"
+    record signin-claude "reminder: sign-in cannot be verified non-interactively (claude resolves at $(command -v claude))" \
+      "if not done yet, run 'claude' and complete '/login' in the Aqua GUI session so credentials store in the login keychain"
   else
-    record signin-claude "human: claude CLI is not installed" \
-      "install Claude Code, then run 'claude' and complete '/login'"
+    record signin-claude "skip: claude CLI is not installed"
   fi
 
-  # 4. Antigravity sign-in (human interactive login)
+  # 4. Antigravity sign-in (interactive login; not verifiable non-interactively)
   if command -v agy >/dev/null 2>&1; then
-    record signin-antigravity "human: interactive sign-in required on a fresh host (agy resolves at $(command -v agy))" \
-      "sign in to Antigravity (agy) interactively on this host"
+    record signin-antigravity "reminder: sign-in cannot be verified non-interactively (agy resolves at $(command -v agy))" \
+      "if not done yet, sign in to Antigravity (agy) interactively on this host"
   else
-    record signin-antigravity "human: agy CLI is not installed (optional unless using Antigravity)" \
-      "install Antigravity CLI (agy) and sign in interactively if this host runs Antigravity"
+    record signin-antigravity "skip: agy CLI is not installed"
   fi
 
   # 5. T3 Code sign-in (loopback host credential check)
@@ -405,9 +406,12 @@ check_human_signins() {
      && out=$(node "$SCRIPT_DIR/fm-t3-mcp.mjs" host-credential --token-file "$token" 2>/dev/null); then
     days=$(printf '%s' "$out" | sed -n 's/.*"daysLeft":[[:space:]]*\([0-9]*\).*/\1/p' | head -n 1)
     record signin-t3code "ok: valid host T3 credential at $token (${days:-unknown} days left)"
-  else
+  elif [ "$BACKEND" = t3code ]; then
     record signin-t3code "human: no valid T3 Code sign-in at $token" \
       "open T3 Code on this host, then run '$FM_ROOT/bin/fm-t3-mcp.mjs login --access full-access --token-file $token'"
+  else
+    record signin-t3code "reminder: no valid T3 Code sign-in at $token (backend $BACKEND does not require it)" \
+      "if this host runs T3 Code, open it, then run '$FM_ROOT/bin/fm-t3-mcp.mjs login --access full-access --token-file $token'"
   fi
 }
 
@@ -436,15 +440,17 @@ if [ "$MODE" = fix ]; then
 fi
 
 GAPS=()
+NOTED=()
 i=0
 while [ "$i" -lt "${#CHECK_NAMES[@]}" ]; do
   printf 'check %s=%s\n' "${CHECK_NAMES[$i]}" "${CHECK_VALUES[$i]}"
   case "${CHECK_VALUES[$i]}" in
-    fixable:*|human:*) GAPS+=("$i") ;;
+    fixable:*|human:*) GAPS+=("$i"); NOTED+=("$i") ;;
+    reminder:*) NOTED+=("$i") ;;
   esac
   i=$((i + 1))
 done
-for i in ${GAPS[@]+"${GAPS[@]}"}; do
+for i in ${NOTED[@]+"${NOTED[@]}"}; do
   [ -z "${CHECK_ACTIONS[$i]}" ] || printf 'action: %s: %s\n' "${CHECK_NAMES[$i]}" "${CHECK_ACTIONS[$i]}"
 done
 

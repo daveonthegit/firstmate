@@ -254,7 +254,7 @@ run_preflight() { # <mode: preflight|export>
           add_blocker "projects/$name has a credential-bearing origin URL; replace it with a credential-free URL"
           continue
         fi
-        unpushed=$(git -C "$proj" log --branches --not --remotes --oneline 2>/dev/null | head -n 5 || true)
+        unpushed=$(git -C "$proj" log --branches --not --remotes=origin --oneline 2>/dev/null | head -n 5 || true)
         if [ -n "$unpushed" ]; then
           add_blocker "projects/$name ($pmode) has unpushed local commits; push them or land them before migrating"
           continue
@@ -283,7 +283,7 @@ run_preflight() { # <mode: preflight|export>
       if [ -n "$data_dirty" ]; then
         add_blocker "records repository data/ has uncommitted changes; run 'bin/fm-supervisor-lease.sh sync' first"
       fi
-      ahead=$(git -C "$DATA" log --branches --not --remotes --oneline 2>/dev/null | head -n 1 || true)
+      ahead=$(git -C "$DATA" log --branches --not --remotes="${remote_name:-origin}" --oneline 2>/dev/null | head -n 1 || true)
       if [ -n "$ahead" ]; then
         add_blocker "records repository data/ has unpushed commits; run 'bin/fm-supervisor-lease.sh sync' first"
       fi
@@ -446,7 +446,8 @@ cmd_export() {
 
 cmd_import() {
   local src=$1 clone_projects=$2 manifest src_machine dst_machine f meta
-  local n_local i name expected_sha actual_sha bpath origin pmode dest_proj has_env lease_mode records_remote
+  local n_local i name expected_sha actual_sha bpath origin pmode dest_proj has_env lease_mode records_remote records_head
+  local keep_records=0
   [ -d "$src" ] && [ ! -L "$src" ] || die "migration bundle directory not found: $src"
   manifest="$src/manifest.json"
   [ -f "$manifest" ] && [ ! -L "$manifest" ] || die "migration bundle has no manifest.json: $src"
@@ -465,7 +466,15 @@ cmd_import() {
       die "destination $FM_HOME already has task records under state/; refusing to overwrite an active home"
     done
   fi
-  if [ -s "$DATA/backlog.md" ]; then
+  lease_mode=$(jq -r '.records_repo.mode // "off"' "$manifest")
+  records_remote=$(jq -r '.records_repo.remote_url // empty' "$manifest")
+  records_head=$(jq -r '.records_repo.head // empty' "$manifest")
+  if [ "$lease_mode" = active ] && [ -d "$DATA/.git" ]; then
+    if [ -n "$records_head" ] && ! git -C "$DATA" merge-base --is-ancestor "$records_head" HEAD 2>/dev/null; then
+      die "destination data/ records repository does not contain source records commit $records_head; pull the records repository first"
+    fi
+    keep_records=1
+  elif [ -s "$DATA/backlog.md" ]; then
     die "destination $DATA/backlog.md already exists and is non-empty; refusing to overwrite an existing home"
   fi
   src_machine=$(jq -r '.source_machine // empty' "$manifest")
@@ -493,9 +502,7 @@ cmd_import() {
   mkdir -p "$DATA" "$STATE" "$CONFIG" "$PROJECTS"
 
   # Restore data/ unless destination data/ is already a cloned records git repository.
-  lease_mode=$(jq -r '.records_repo.mode // "off"' "$manifest")
-  records_remote=$(jq -r '.records_repo.remote_url // empty' "$manifest")
-  if [ "$lease_mode" = active ] && [ -d "$DATA/.git" ]; then
+  if [ "$keep_records" -eq 1 ]; then
     printf 'import: destination data/ is already a git records repository; keeping it intact\n'
   elif [ -d "$src/data" ]; then
     (cd "$src/data" && tar -cf - .) | (cd "$DATA" && tar -xf -)
@@ -529,8 +536,10 @@ cmd_import() {
     name=$(jq -r ".local_projects[$i].name" "$manifest")
     i=$((i + 1))
     bpath="$src/local-projects/$name.bundle"
-    git clone --quiet "$bpath" "$PROJECTS/$name" || die "failed to restore local project $name from $bpath"
-    git -C "$PROJECTS/$name" remote remove origin 2>/dev/null || true
+    { git clone --quiet "$bpath" "$PROJECTS/$name" \
+      && git -C "$PROJECTS/$name" fetch --quiet --update-head-ok "$bpath" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' \
+      && git -C "$PROJECTS/$name" remote remove origin; } \
+      || die "failed to restore local project $name from $bpath"
     printf 'import: restored local project projects/%s from bundle\n' "$name"
   done
 

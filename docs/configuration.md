@@ -957,7 +957,7 @@ admit-spawns           # opt-in: bin/fm-spawn.sh defers a fresh ship or scout th
 ```
 
 `pressure-file` and `reserve-flag` may repeat and take an absolute or `~/` path; a `reserve-flag` path may be followed by the label it is reported by.
-For temporary interactive pause or capacity reduction (such as gaming or server hosting) without editing `config/lane-capacity`, use [`bin/fm-host-reserve.sh`](../bin/fm-host-reserve.sh), which writes `state/host-reserve` and composes with `reserve-flag` ([owner-reserved use](host-setup.md#4-owner-reserved-use-gaming-or-server-hosting)).
+For temporary interactive pause or capacity reduction (such as gaming or server hosting) without editing `config/lane-capacity`, use [`bin/fm-host-reserve.sh`](../bin/fm-host-reserve.sh), which writes the machine-wide `~/.firstmate/host-reserve` read by every Firstmate home on that machine and composes with `reserve-flag` ([owner-reserved use](host-setup.md#4-owner-reserved-use-gaming-or-server-hosting)).
 Every other key may appear at most once.
 An unknown key, a repeated single key, or a malformed value makes the whole file invalid: the report exits 1 naming the line, and the published facts carry the cap as invalid, because the captain's limits are never guessed.
 

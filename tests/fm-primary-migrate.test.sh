@@ -40,6 +40,14 @@ printf 'local commit two\n' > "$SRC/projects/local-notes/note.txt"
 git -C "$SRC/projects/local-notes" add note.txt
 git -C "$SRC/projects/local-notes" -c user.name='Test' -c user.email='test@example.invalid' commit -qm 'local only commit'
 LOCAL_EXPECTED_HEAD=$(git -C "$SRC/projects/local-notes" rev-parse HEAD)
+# An unmerged second branch and a tag must survive the bundle round trip too.
+git -C "$SRC/projects/local-notes" checkout -qb feature-x
+printf 'feature work\n' > "$SRC/projects/local-notes/feature.txt"
+git -C "$SRC/projects/local-notes" add feature.txt
+git -C "$SRC/projects/local-notes" -c user.name='Test' -c user.email='test@example.invalid' commit -qm 'unmerged feature'
+git -C "$SRC/projects/local-notes" tag v-feature
+LOCAL_FEATURE_HEAD=$(git -C "$SRC/projects/local-notes" rev-parse HEAD)
+git -C "$SRC/projects/local-notes" checkout -q -
 
 cat > "$SRC/data/projects.md" <<'EOF'
 - remote-app [direct-PR] - remote app (added 2026-11-01)
@@ -77,8 +85,19 @@ out=$(FM_HOME="$SRC" "$MIGRATE" preflight 2>&1) || rc=$?
 expect_code 1 "$rc" "preflight must refuse unpushed commits on remote-backed project"
 assert_contains "$out" "blocker: projects/remote-app (direct-PR) has unpushed local commits" "must refuse unpushed commits"
 
+# Pushing only to a local no-mistakes gate is not pushing to origin -> still refused.
+git init -q --bare "$TMP_ROOT/gates/remote-app.git"
+git -C "$SRC/projects/remote-app" remote add no-mistakes "$TMP_ROOT/gates/remote-app.git"
+git -C "$SRC/projects/remote-app" push -q no-mistakes HEAD:refs/heads/fm/gated
+git -C "$SRC/projects/remote-app" fetch -q no-mistakes
+rc=0
+out=$(FM_HOME="$SRC" "$MIGRATE" preflight 2>&1) || rc=$?
+expect_code 1 "$rc" "preflight must refuse commits that reached only the local gate, not origin"
+assert_contains "$out" "blocker: projects/remote-app (direct-PR) has unpushed local commits" "gate-only commits must count as unpushed"
+
 # Push the commit -> preflight now passes.
 git -C "$SRC/projects/remote-app" push -q origin HEAD:main
+git -C "$SRC/projects/remote-app" fetch -q origin
 out=$(FM_HOME="$SRC" "$MIGRATE" preflight 2>&1)
 assert_contains "$out" "ok: preflight passed" "clean home must pass preflight"
 assert_contains "$out" "migrate: local_bundle_projects=local-notes" "local-only project must be queued for bundle"
@@ -130,6 +149,11 @@ assert_contains "$out" "verify worker host studio2" "checklist must name worker 
 [ ! -e "$DST/config/t3code-token" ] || fail "t3code-token must not appear in destination"
 assert_equals "$LOCAL_EXPECTED_HEAD" "$(git -C "$DST/projects/local-notes" rev-parse HEAD)" \
   "local-only project must keep exact commit history"
+assert_equals "$LOCAL_FEATURE_HEAD" "$(git -C "$DST/projects/local-notes" rev-parse --verify -q refs/heads/feature-x)" \
+  "an unmerged local branch must survive restore as a local branch"
+assert_equals "$LOCAL_FEATURE_HEAD" "$(git -C "$DST/projects/local-notes" rev-parse --verify -q 'refs/tags/v-feature^{commit}')" \
+  "a local tag must survive restore"
+assert_equals "" "$(git -C "$DST/projects/local-notes" remote)" "a restored local-only project must have no remote"
 assert_equals "$(git -C "$SRC/projects/remote-app" rev-parse HEAD)" "$(git -C "$DST/projects/remote-app" rev-parse HEAD)" \
   "remote project must clone cleanly from origin"
 
@@ -139,5 +163,28 @@ out=$(FM_HOME="$DST" "$MIGRATE" import "$BUNDLE" 2>&1) || rc=$?
 expect_code 1 "$rc" "import into already-populated home must refuse"
 assert_contains "$out" "already exists and is non-empty" "refusal must explain populated destination"
 pass "import enforces destination safety, restores data/config/projects, and prints operator checklist"
+
+# 4. A records repository cloned into data/ before import (the documented flow) is kept, not refused.
+DST2="$TMP_ROOT/dst2-home"
+mkdir -p "$DST2/state" "$DST2/config" "$DST2/projects"
+printf 'studio1\n' > "$DST2/config/machine-id"
+git clone -q -b main "$TMP_ROOT/records-origin.git" "$DST2/data"
+[ -s "$DST2/data/backlog.md" ] || fail "fixture: cloned records repo must carry a non-empty backlog"
+out=$(FM_HOME="$DST2" "$MIGRATE" import "$BUNDLE" 2>&1)
+assert_contains "$out" "keeping it intact" "a pre-cloned records repository must be kept"
+assert_contains "$out" "ok: imported primary migration bundle from old-mac" "import into a pre-cloned records repo must succeed"
+assert_equals "$(git -C "$SRC/data" rev-parse HEAD)" "$(git -C "$DST2/data" rev-parse HEAD)" "the records clone must be untouched"
+
+# A records clone that lacks the exported records commit is refused.
+DST3="$TMP_ROOT/dst3-home"
+mkdir -p "$DST3/state" "$DST3/config" "$DST3/projects"
+printf 'studio1\n' > "$DST3/config/machine-id"
+fm_git_init_commit "$DST3/data"
+rc=0
+out=$(FM_HOME="$DST3" "$MIGRATE" import "$BUNDLE" 2>&1) || rc=$?
+expect_code 1 "$rc" "a records clone missing the exported head must be refused"
+assert_contains "$out" "does not contain source records commit" "refusal must name the missing records commit"
+[ ! -e "$DST3/projects/local-notes" ] || fail "a refused import must not restore projects"
+pass "import keeps a pre-cloned records repository that contains the exported records head"
 
 echo "ALL TESTS PASSED"

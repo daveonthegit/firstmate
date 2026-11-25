@@ -32,7 +32,7 @@ The shared no-mistakes gate lifecycle boundary is summarized in [architecture.md
 | `fm-worker-host-doctor.sh` | Check, and with `--fix` converge, a registered worker host: its account readiness, then its home against the primary's projects, capacity, and T3 build |
 | `fm-worker-host-home.sh` | Host-side check and repair of a worker host home, reached only through `fm-on.sh` with the primary's manifest |
 | `fm-host-bootstrap.sh`   | Idempotent new-host toolchain verification/install, remote readiness delegation, and human sign-in checklist for a primary or worker host ([host setup](host-setup.md)) |
-| `fm-host-reserve.sh`     | Temporarily pause or reduce lane placement on this host or a worker host (`state/host-reserve`) for owner-reserved use without killing running work |
+| `fm-host-reserve.sh`     | Temporarily pause or reduce lane placement on this machine or a worker host, for every home on that machine (`~/.firstmate/host-reserve`) for owner-reserved use without killing running work |
 | `fm-primary-migrate.sh`  | Guarded primary Firstmate home migration (`preflight`, `export`, `import`) with unlanded-work and supervisor-lease refusals ([host setup](host-setup.md)) |
 | `fm-remote-job-lib.sh`   | Shared bounded remote job queue, worker readiness, LaunchAgent contract, and filesystem-composed PATH |
 | `fm-remote-job-worker.sh` | Long-lived remote queue worker for tracked `fm-*.sh` commands in the account runtime |

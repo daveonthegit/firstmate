@@ -13,6 +13,8 @@ TMP_ROOT=$(fm_test_tmproot fm-host-reserve)
 RESERVE="$ROOT/bin/fm-host-reserve.sh"
 CAPACITY="$ROOT/bin/fm-capacity.sh"
 PLACEMENT="$ROOT/bin/fm-placement.sh"
+MACHINE_RESERVE="$TMP_ROOT/machine-account/.firstmate/host-reserve"
+export FM_HOST_RESERVE_FILE="$MACHINE_RESERVE"
 
 make_home() { # <name> [lanes]
   local home="$TMP_ROOT/$1" n=${2:-0} i=0
@@ -110,6 +112,31 @@ out=$(PATH="$PROBES:$PATH" FM_HOME="$home" "$CAPACITY")
 assert_contains "$out" "capacity: free_lanes=10 reason=ok lanes=2 target=12 " "release must restore normal open lanes"
 pass "pause and release close and restore fixed-cap admission without touching running tasks"
 
+# 1b. The reservation is machine-wide: a pause set from one home also closes
+# every other Firstmate home on the same machine (for example a second-mate
+# home beside a worker host home), and release reopens all of them.
+sm_home=$(make_home secondmate-home 1)
+: > "$sm_home/.fm-secondmate-home"
+write_beat "$sm_home/beat.json" 48 64
+printf '6\npressure-file %s\n' "$sm_home/beat.json" > "$sm_home/config/lane-capacity"
+out=$(PATH="$PROBES:$PATH" FM_HOME="$sm_home" "$CAPACITY")
+assert_contains "$out" "capacity: free_lanes=5 reason=ok lanes=1 target=6 " "second-mate home must start open"
+FM_HOME="$home" "$RESERVE" pause --reason "gaming" >/dev/null
+out=$(PATH="$PROBES:$PATH" FM_HOME="$sm_home" "$CAPACITY")
+assert_contains "$out" "capacity: free_lanes=0 reason=reserve lanes=1 target=6 " "a pause from another home must close this machine's second-mate home"
+out=$(FM_HOME="$sm_home" "$RESERVE" status)
+assert_contains "$out" "host-reserve: local state=paused reason=gaming" "every home on the machine must report the machine reservation"
+FM_HOME="$home" "$RESERVE" reduce --max-lanes 2 --reason "game server" >/dev/null
+out=$(PATH="$PROBES:$PATH" FM_HOME="$sm_home" "$CAPACITY")
+assert_contains "$out" "capacity: free_lanes=1 reason=ok lanes=1 target=2 " "a reduce from another home must shrink this machine's second-mate home"
+FM_HOME="$sm_home" "$RESERVE" release >/dev/null
+out=$(PATH="$PROBES:$PATH" FM_HOME="$home" "$CAPACITY")
+assert_contains "$out" "capacity: free_lanes=10 reason=ok lanes=2 target=12 " "release from any home must reopen every home on the machine"
+out=$(PATH="$PROBES:$PATH" FM_HOME="$sm_home" "$CAPACITY")
+assert_contains "$out" "capacity: free_lanes=5 reason=ok lanes=1 target=6 " "release must reopen the second-mate home"
+[ -f "$sm_home/state/task-0.meta" ] || fail "a machine reservation must never touch running task metadata"
+pass "pause, reduce, and release apply to every Firstmate home on the machine"
+
 # 2. Reduce mode: shrinks max_lanes and raises keep_gb floor in fixed and auto mode.
 out=$(FM_HOME="$home" "$RESERVE" reduce --max-lanes 4 --keep-gb 32 --reason "game server")
 assert_contains "$out" "state=reduced max_lanes=4 keep_gb=32 reason=game server" "reduce must report limits"
@@ -136,34 +163,43 @@ FM_HOME="$auto_home" "$RESERVE" reduce --max-lanes 3 --keep-gb 36 --reason "host
 out=$(PATH="$PROBES:$PATH" FM_HOME="$auto_home" "$CAPACITY")
 assert_contains "$out" "capacity: free_lanes=2 reason=ok lanes=1 target=3 " "auto mode must respect reduced max_lanes=3 ceiling"
 FM_HOME="$auto_home" "$RESERVE" release >/dev/null
+FM_HOME="$home" "$RESERVE" release >/dev/null
 pass "reduce mode shrinks fixed and auto capacity and enforces keep_gb floor"
 
 # 3. Timed reservation expiry auto-releases in fm-capacity.sh.
 exp_home=$(make_home expired 0)
 write_beat "$exp_home/beat.json" 48 64
 printf '8\npressure-file %s\n' "$exp_home/beat.json" > "$exp_home/config/lane-capacity"
-FM_HOME="$exp_home" "$RESERVE" pause --until 1000 --reason "old game" >/dev/null
+rc=0
+FM_HOME="$exp_home" "$RESERVE" pause --until 1000 --reason "old game" >/dev/null 2>&1 || rc=$?
+expect_code 2 "$rc" "--until is not an accepted option; --for is the only timed form"
+printf 'mode=pause\nreason=old game\nuntil=1000\nset_at=900\n' > "$MACHINE_RESERVE"
 out=$(FM_HOME="$exp_home" "$RESERVE" status)
-assert_contains "$out" "state=expired" "past --until must report expired"
+assert_contains "$out" "state=expired" "a reservation past its expiry must report expired"
 out=$(PATH="$PROBES:$PATH" FM_HOME="$exp_home" "$CAPACITY")
 assert_contains "$out" "capacity: free_lanes=8 reason=ok lanes=0 target=8 " "expired reservation must not block admission"
+FM_HOME="$exp_home" "$RESERVE" release >/dev/null
+out=$(FM_HOME="$exp_home" "$RESERVE" pause --for 2h --reason "evening game")
+assert_contains "$out" "state=paused until=" "--for must record an expiry"
+FM_HOME="$exp_home" "$RESERVE" release >/dev/null
 pass "expired timed reservations self-release cleanly"
 
-# 4. Malformed or symlinked state/host-reserve fails closed.
+# 4. A malformed or symlinked reservation file fails closed.
 bad_home=$(make_home malformed 0)
 write_beat "$bad_home/beat.json" 48 64
 printf '8\npressure-file %s\n' "$bad_home/beat.json" > "$bad_home/config/lane-capacity"
-printf 'mode=bogus\n' > "$bad_home/state/host-reserve"
+printf 'mode=bogus\n' > "$MACHINE_RESERVE"
 out=$(PATH="$PROBES:$PATH" FM_HOME="$bad_home" "$CAPACITY")
-assert_contains "$out" "capacity: free_lanes=0 reason=reserve " "malformed state/host-reserve must fail closed"
+assert_contains "$out" "capacity: free_lanes=0 reason=reserve " "a malformed reservation file must fail closed"
 rc=0
 FM_HOME="$bad_home" "$RESERVE" status >/dev/null 2>&1 || rc=$?
 expect_code 1 "$rc" "status on malformed reservation must exit 1"
-rm -f "$bad_home/state/host-reserve"
-ln -s /etc/hosts "$bad_home/state/host-reserve"
+rm -f "$MACHINE_RESERVE"
+ln -s /etc/hosts "$MACHINE_RESERVE"
 rc=0
 FM_HOME="$bad_home" "$RESERVE" pause --reason "test" >/dev/null 2>&1 || rc=$?
-expect_code 1 "$rc" "symlinked state/host-reserve must be refused"
+expect_code 1 "$rc" "a symlinked reservation file must be refused"
+rm -f "$MACHINE_RESERVE"
 pass "malformed and symlinked reservation files fail closed"
 
 # 5. Placement skips a paused host and prefers the unreserved host, plus remote --host delegation via fm-on.sh.
@@ -199,7 +235,7 @@ home=\$(decode "\$5")
 argv=()
 while IFS= read -r -d '' arg; do argv+=("\$arg"); done < <(decode "\$6")
 env -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE \\
-  PATH="$PROBES:\$PATH" FM_HOME="\$home" FM_ROOT_OVERRIDE="\$root" \\
+  PATH="$PROBES:\$PATH" FM_HOME="\$home" FM_ROOT_OVERRIDE="\$root" FM_HOST_RESERVE_FILE="\$home/.machine-reserve" \\
   "\$root/bin/\${argv[0]}" "\${argv[@]:1}"
 SH
 chmod +x "$CASE/fake-ssh"
