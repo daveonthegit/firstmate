@@ -1,0 +1,39 @@
+$ FM_HOME=<lab> fm-host-bootstrap.sh --role both --backend tmux   (check mode, read-only)
+mode=check
+role=both
+backend=tmux
+platform=darwin
+check tool:lsof=ok: /usr/sbin/lsof
+check toolchain=ok: universal and tmux toolchain satisfied
+check harnesses=ok: installed (claude, agy, codex, pi, cursor-agent)
+check remote-entrypoint=ok: ~/.local/bin/fm-remote-entrypoint.sh -> ~/kun-agent-workspace/bin/fm-remote-entrypoint.sh (shared entrypoint)
+check remote-account=fixable: fm-remote-doctor.sh (any) reported gaps (check remote-job-worker=fixable: the running remote job worker does not match the current Firstmate code)
+check signin-apple-macos=ok: Aqua GUI session active for uid 501 (sign in to Apple ID, enable Remote Login, and configure automatic login / FileVault at console if running headless)
+check signin-github=ok: gh auth status passed
+check signin-claude=reminder: sign-in cannot be verified non-interactively (claude resolves at ~/.local/bin/claude)
+check signin-antigravity=reminder: sign-in cannot be verified non-interactively (agy resolves at /opt/homebrew/bin/agy)
+check signin-t3code=reminder: no valid T3 Code sign-in at /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.0FuxoW/config/t3code-token (backend tmux does not require it)
+action: remote-account: rerun with --fix, or run 'bin/fm-remote-doctor.sh --fix --backend any'
+action: signin-claude: if not done yet, run 'claude' and complete '/login' in the Aqua GUI session so credentials store in the login keychain
+action: signin-antigravity: if not done yet, sign in to Antigravity (agy) interactively on this host
+action: signin-t3code: if this host runs T3 Code, open it, then run '{run-worktree}/bin/fm-t3-mcp.mjs login --access full-access --token-file /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.0FuxoW/config/t3code-token'
+summary: host bootstrap has remaining gaps (remote-account)
+exit=1
+
+$ fm-host-bootstrap.sh --role bogus
+exit=2
+
+$ FM_HOME=<lab> fm-host-bootstrap.sh --role primary --backend tmux   (check mode)
+check tool:lsof=ok: /usr/sbin/lsof
+check toolchain=ok: universal and tmux toolchain satisfied
+check harnesses=ok: installed (claude, agy, codex, pi, cursor-agent)
+check remote-entrypoint=skip: not required for primary-only role
+check remote-account=skip: not required for primary-only role
+check signin-apple-macos=ok: Aqua GUI session active for uid 501 (sign in to Apple ID, enable Remote Login, and configure automatic login / FileVault at console if running headless)
+check signin-github=ok: gh auth status passed
+check signin-claude=reminder: sign-in cannot be verified non-interactively (claude resolves at ~/.local/bin/claude)
+check signin-antigravity=reminder: sign-in cannot be verified non-interactively (agy resolves at /opt/homebrew/bin/agy)
+check signin-t3code=reminder: no valid T3 Code sign-in at /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.oxZYMn/config/t3code-token (backend tmux does not require it)
+ok: host bootstrap verified for role=primary backend=tmux
+exit=
+exit=0

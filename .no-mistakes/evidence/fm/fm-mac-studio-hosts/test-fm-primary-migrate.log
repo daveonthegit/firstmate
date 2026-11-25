@@ -1,0 +1,5 @@
+ok - preflight refuses unlanded work and passes when clean
+ok - export gates on supervisor-lease release, excludes machine-bound/secret files, and bundles local-only projects
+ok - import enforces destination safety, restores data/config/projects, and prints operator checklist
+ok - import keeps a pre-cloned records repository that contains the exported records head
+ALL TESTS PASSED

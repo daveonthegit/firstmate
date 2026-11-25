@@ -1,0 +1,81 @@
+### S2: commit pushed only to local no-mistakes gate
+$ FM_HOME=src fm-primary-migrate.sh preflight
+migrate: machine=old-m1pro
+migrate: supervisor_lease_mode=off
+migrate: remote_secondmates=none
+migrate: local_bundle_projects=notes
+migrate: remote_clone_projects=none
+migrate: portable_configs=crew-harness
+migrate: skipped_machine_configs=lane-capacity machine-id t3code-token
+warning: .env exists and is never copied into the migration bundle; transfer it securely by hand
+blocker: projects/app (direct-PR) has unpushed local commits; push them or land them before migrating
+error: preflight failed with 1 blocker(s); resolve them before exporting
+exit=1
+$ (after push to origin) preflight
+migrate: machine=old-m1pro
+migrate: supervisor_lease_mode=off
+migrate: remote_secondmates=none
+migrate: local_bundle_projects=notes
+migrate: remote_clone_projects=app
+migrate: portable_configs=crew-harness
+migrate: skipped_machine_configs=lane-capacity machine-id t3code-token
+warning: .env exists and is never copied into the migration bundle; transfer it securely by hand
+ok: preflight passed; safe to release lease (if active) and export
+exit=0
+### S1: records repo + export/import with branch preservation
+$ export (lease held)
+migrate: machine=old-m1pro
+migrate: supervisor_lease_mode=active holder=old-m1pro
+migrate: remote_secondmates=none
+migrate: local_bundle_projects=notes
+migrate: remote_clone_projects=app
+migrate: portable_configs=crew-harness
+migrate: skipped_machine_configs=lane-capacity machine-id t3code-token
+warning: .env exists and is never copied into the migration bundle; transfer it securely by hand
+blocker: supervisor lease is still held by 'old-m1pro'; run 'bin/fm-supervisor-lease.sh release' before exporting
+error: refusing export with 1 blocker(s)
+exit=1
+ls: /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.WFdWiT/bundle: No such file or directory
+$ export (lease released)
+migrate: machine=old-m1pro
+migrate: supervisor_lease_mode=active holder=none
+migrate: remote_secondmates=none
+migrate: local_bundle_projects=notes
+migrate: remote_clone_projects=app
+migrate: portable_configs=crew-harness
+migrate: skipped_machine_configs=lane-capacity machine-id t3code-token
+warning: .env exists and is never copied into the migration bundle; transfer it securely by hand
+ok: exported primary migration bundle to /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.WFdWiT/bundle
+exit=0
+$ ls bundle bundle/config
+/var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.WFdWiT/bundle:
+config
+data
+local-projects
+manifest.json
+remote-projects.tsv
+
+/var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.WFdWiT/bundle/config:
+crew-harness
+### S1b: operator clones records repo into new home data/ first (docs step 7)
+$ FM_HOME=dst fm-primary-migrate.sh import bundle --clone-projects
+import: destination data/ is already a git records repository; keeping it intact
+import: restored config/crew-harness
+import: restored local project projects/notes from bundle
+import: cloned projects/app from /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.WFdWiT/origin.git
+next: transfer .env securely from old-m1pro to /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.WFdWiT/dst/.env
+next: review machine-local config (config/machine-id, config/lane-capacity, config/rescue-ssh) and run bin/fm-host-bootstrap.sh
+next: start the new primary session with bin/fm-session-start.sh to acquire the supervisor lease and session lock
+ok: imported primary migration bundle from old-m1pro
+exit=0
+$ git -C dst/projects/notes branch -a; tag
+  feature-x
+* main
+v1
+feature-x src=ea8a4137377a71368586f3354176aeb5b9514e6e dst=ea8a4137377a71368586f3354176aeb5b9514e6e
+app head: ed13302 gated
+dst t3code-token exists? no; dst .env? no; dst machine-id=studio1
+$ import again (populated destination)
+error: destination project already exists: /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.WFdWiT/dst/projects/notes
+exit=1
+lab removed

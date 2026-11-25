@@ -1,0 +1,6 @@
+ok - check mode is read-only and lists automatable gaps plus all human sign-ins
+ok - a T3 Code sign-in gates only when the backend uses it
+ok - --fix installs tools, links entrypoint, delegates doctor, and is idempotent
+ok - refuses to overwrite a non-Firstmate file at ~/.local/bin/fm-remote-entrypoint.sh
+ok - --ssh mode forwards safely and rejects unsafe remote roots
+ALL TESTS PASSED

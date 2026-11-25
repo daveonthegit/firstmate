@@ -1,0 +1,94 @@
+### baseline (no reservation)
+host-reserve: local state=none
+  [P] capacity: free_lanes=8 reason=ok lanes=0 target=8 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+  [S] capacity: free_lanes=4 reason=ok lanes=0 target=4 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+### $ fm-host-reserve.sh pause --reason gaming
+host-reserve: local state=paused reason=gaming
+exit=0
+mode=pause
+reason=gaming
+set_at=1795573522
+  [P] capacity: free_lanes=0 reason=reserve lanes=0 target=8 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+  [S] capacity: free_lanes=0 reason=reserve lanes=0 target=4 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+### $ fm-host-reserve.sh reduce --max-lanes 2 --keep-gb 24 --reason "minecraft server"
+host-reserve: local state=reduced max_lanes=2 keep_gb=24 reason=minecraft server
+exit=0
+  [P] capacity: free_lanes=0 reason=memory lanes=0 target=2 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+  [S] capacity: free_lanes=0 reason=memory lanes=0 target=2 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+### worker-host doctor (host side) under reduce reservation, declared lanes=8
+mode=check
+home=/var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.fCgnrJ/worker
+check home=ok: /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.fCgnrJ/worker is its own directory, separate from the code root {run-worktree}
+check lane-capacity=ok: cap 8
+  config/lane-capacity still: 8
+### $ fm-host-reserve.sh release
+host-reserve: local released
+exit=0
+host-reserve: local state=none
+  [P] capacity: free_lanes=8 reason=ok lanes=0 target=8 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+  [S] capacity: free_lanes=4 reason=ok lanes=0 target=4 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+### $ pause --for 2s (timed self-release)
+host-reserve: local state=paused until=2026-11-25T02:25:25Z reason=gaming
+  [P] capacity: free_lanes=0 reason=reserve lanes=0 target=8 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+  [S] capacity: free_lanes=0 reason=reserve lanes=0 target=4 secondmates=0 load1=8.10 cores=10 mem_free_pct=49 disk_free_mb=15176 placed=0
+  after 3s:
+host-reserve: local state=expired mode=pause until=2026-11-25T02:25:25Z reason=gaming
+  [P] capacity: free_lanes=8 reason=ok lanes=0 target=8 secondmates=0 load1=7.93 cores=10 mem_free_pct=44 disk_free_mb=15195 placed=0
+  [S] capacity: free_lanes=4 reason=ok lanes=0 target=4 secondmates=0 load1=7.93 cores=10 mem_free_pct=44 disk_free_mb=15195 placed=0
+### adversarial: bad inputs
+error: reduce requires --max-lanes <N> and/or --keep-gb <G>
+exit=1 (reduce without limits)
+error: invalid --for duration '10x' (expected e.g. 90m, 4h, 1d)
+exit=1 (bad duration)
+fm-host-reserve.sh - temporarily pause or reduce lane placement on a host for
+owner-reserved use (gaming, server hosting) without disturbing running work.
+
+Usage:
+  fm-host-reserve.sh pause  [--host <id|local>] [--reason <text>] [--for <duration>]
+  fm-host-reserve.sh reduce [--host <id|local>] [--max-lanes <N>] [--keep-gb <G>]
+                            [--reason <text>] [--for <duration>]
+  fm-host-reserve.sh release [--host <id|local>]
+  fm-host-reserve.sh status  [--host <id|local> | --all]
+
+Writes or clears this machine's runtime reservation record at
+~/.firstmate/host-reserve (FM_HOST_RESERVE_FILE overrides the path for
+isolated tests). Every Firstmate home on the machine (primary, worker host,
+and second-mate homes) reads that one file through bin/fm-capacity.sh,
+alongside its config/lane-capacity and any external reserve-flag file
+(docs/configuration.md "Lane capacity"), so a reservation covers the whole
+machine.
+
+  pause    Admits no new ship or scout lanes (free_lanes=0, reason=reserve).
+           bin/fm-placement.sh skips this host, and bin/fm-spawn.sh defers new
+           launches when admit-spawns is set. Running workers keep running.
+  reduce   Shrinks effective capacity while keeping running work intact:
+           --max-lanes caps fixed mode at min(cap, N) and caps auto mode's
+           ceiling at min(max-lanes, N); --keep-gb raises the minimum
+           available memory floor to at least G GB. At least one of
+           --max-lanes or --keep-gb is required. --max-lanes 0 pauses new
+           admission like `pause`.
+  release  Removes the reservation file so normal capacity resumes. Idempotent.
+  status   Reports the current state (none, paused, reduced, expired, or
+           invalid) without changing anything. With --all, inspects this
+           machine and every registered worker host in data/worker-hosts.md.
+
+Duration format for --for: <N><s|m|h|d> (positive integer, e.g. 90m, 4h, 1d).
+An expired --for reservation is automatically ignored by bin/fm-capacity.sh,
+so a timed reservation self-releases even if you forget to run `release`.
+
+Remote hosts: passing --host <worker-host-id> (anything other than `local`)
+delegates this exact command to that worker host through bin/fm-on.sh.
+
+Safety: never interrupts, exits, or tears down any running worker or
+secondmate. Refuses a symlinked reservation directory or file.
+
+Exit status: 0 on success, 1 on refusal/error or invalid reservation file,
+2 on usage, 255 on unreachable SSH transport.
+exit=2 (--until)
+host-reserve: local state=invalid (malformed reservation file; run release or overwrite)
+exit=1 (malformed file)
+  [P] capacity: free_lanes=0 reason=reserve lanes=0 target=8 secondmates=0 load1=7.93 cores=10 mem_free_pct=44 disk_free_mb=15195 placed=0
+  [S] capacity: free_lanes=0 reason=reserve lanes=0 target=4 secondmates=0 load1=7.93 cores=10 mem_free_pct=44 disk_free_mb=15195 placed=0
+error: refusing symlinked reservation file: /var/folders/nx/2341skp54cx4z9txq8t33h0c0000gn/T//fm-lab.fCgnrJ/machine/host-reserve
+exit=1 (symlinked file)
+lab removed

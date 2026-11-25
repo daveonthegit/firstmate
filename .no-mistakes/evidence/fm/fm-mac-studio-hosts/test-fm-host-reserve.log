@@ -1,0 +1,7 @@
+ok - pause and release close and restore fixed-cap admission without touching running tasks
+ok - pause, reduce, and release apply to every Firstmate home on the machine
+ok - reduce mode shrinks fixed and auto capacity and enforces keep_gb floor
+ok - expired timed reservations self-release cleanly
+ok - malformed and symlinked reservation files fail closed
+ok - remote --host pause/status/release integrates cleanly with automatic placement
+ALL TESTS PASSED
