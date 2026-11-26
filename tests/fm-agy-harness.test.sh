@@ -12,8 +12,11 @@
 #      general boundary.
 #   3. The launch carries the brief via --prompt-interactive with --model,
 #      --effort, and --dangerously-skip-permissions; a requested model a
-#      reachable `agy models` omits refuses loudly instead of wedging a pane,
-#      while a hung or unreachable listing is cut off and never blocks.
+#      reachable `agy models` omits (as an id or as a `<family>-<level>`
+#      family) refuses loudly instead of wedging a pane, while a hung or
+#      unreachable listing is cut off and never blocks. agy validates effort
+#      per model, so the launch never pairs a level-suffixed id with another
+#      --effort and passes a family id only a level its listing offers.
 #   4. A fresh worktree would park agy on its folder-trust dialog, so the spawn
 #      pre-registers the worktree in agy's own trustedWorkspaces store through
 #      bin/fm-agy-trust.sh (scope-refused for anything but a linked worktree
@@ -187,6 +190,26 @@ SH
     PATH="$fakebin:$PATH" "$HARNESS")
   [ "$out" != agy ] || fail "agy_acp_server_helper must not detect agy, got '$out'"
 
+  # agy 1.5.16 (macOS): T3's ACP server and the Homebrew standalone CLI both run
+  # as an executable named exactly `antigravity`; the comm is blinded here so
+  # argv[0] alone must carry the verdict.
+  out=$(FAKE_PS_COMM='/Users/u/.t3/tools/antigravity-acp/darwin-arm64/versions/0f3a' \
+    FAKE_PS_ARGS='/Users/u/.t3/tools/antigravity-acp/darwin-arm64/versions/0f3a/antigravity acp --gemini-dir /tmp/g' \
+    PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" = agy ] || fail "the antigravity ACP executable must detect agy, got '$out'"
+  out=$(FAKE_PS_COMM='/opt/homebrew/Caskroom/antigravity-cli/1.5.16/antigravity' \
+    FAKE_PS_ARGS='/opt/homebrew/Caskroom/antigravity-cli/1.5.16/antigravity -p hi' \
+    PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" = agy ] || fail "the Homebrew standalone antigravity executable must detect agy, got '$out'"
+  out=$(FAKE_PS_COMM='/Users/u/.t3/userdata/providers/antigravity/localharness_external' \
+    FAKE_PS_ARGS='/Users/u/.t3/userdata/providers/antigravity/localharness_external --x' \
+    PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" != agy ] || fail "a providers/antigravity path component must not detect agy, got '$out'"
+  out=$(FAKE_PS_COMM='/Applications/Antigravity.app/Contents/MacOS/Antigravity' \
+    FAKE_PS_ARGS='/Applications/Antigravity.app/Contents/MacOS/Antigravity' \
+    PATH="$fakebin:$PATH" "$HARNESS")
+  [ "$out" != agy ] || fail "the Antigravity desktop app must not detect agy, got '$out'"
+
   out=$(ANTIGRAVITY_AGENT=1 ANTIGRAVITY_HARNESS_PATH='/Users/u/.t3/localharness_external' \
     PATH="$blind:$PATH" "$HARNESS")
   [ "$out" = agy ] || fail "ANTIGRAVITY_AGENT=1 + ANTIGRAVITY_HARNESS_PATH must detect agy when ancestry is silent, got '$out'"
@@ -270,6 +293,12 @@ test_agy_tmux_names_the_native_binary_an_agent() {
   [ "$got" = agent ] || fail "tmux liveness must read agy_acp_server.par as an agent, got '$got'"
   got=$(fm_agent_process_classify_name agy_acp_server_helper)
   [ "$got" = other ] || fail "tmux liveness must not read agy_acp_server_helper as an agent, got '$got'"
+  got=$(fm_agent_process_classify_name /opt/homebrew/Caskroom/antigravity-cli/1.5.16/antigravity)
+  [ "$got" = agent ] || fail "tmux liveness must read the antigravity executable as an agent, got '$got'"
+  got=$(fm_agent_process_classify_name '' /Users/u/.t3/tools/antigravity-acp/v/antigravity)
+  [ "$got" = agent ] || fail "an antigravity argv[0] alone must read as an agent, got '$got'"
+  got=$(fm_agent_process_classify_name Antigravity)
+  [ "$got" = other ] || fail "tmux liveness must not read the Antigravity desktop app as an agent, got '$got'"
   got=$(fm_agent_process_classify_name magyk)
   [ "$got" = other ] || fail "tmux liveness must not read magyk as an agent, got '$got'"
   got=$(fm_agent_process_classify_name bash)
@@ -613,6 +642,9 @@ if [ "${1:-}" = models ]; then
   printf 'gemini-3.8-flash-high\tGemini 3.8 Flash (High)\n'
   printf 'gemini-3.8-flash-medium\tGemini 3.8 Flash (Medium)\n'
   printf 'gemini-3.8-flash-low\tGemini 3.8 Flash (Low)\n'
+  printf 'gemini-4-neon-high\tGemini 4 Neon (High)\n'
+  printf 'gemini-4-neon-xhigh\tGemini 4 Neon (XHigh)\n'
+  printf 'gemini-4-neon-low\tGemini 4 Neon (Low)\n'
   exit 0
 fi
 echo "fake agy must never execute" >&2
@@ -729,6 +761,38 @@ test_agy_effort_xhigh_is_recorded_but_omitted() {
   pass "fm-spawn: agy omits xhigh from the launch but records it in task metadata"
 }
 
+# agy 1.5.16 rejects `--model gemini-4-neon-low --effort xhigh` ("conflicts with
+# --effort") and `--model gemini-3.8-flash --effort xhigh` (no such level), but
+# accepts the unlisted family id with a level its variants offer.
+agy_effort_case() {  # <name> <expected-effort|-> <spawn args...>
+  local name=$1 want=$2 id rec out rc launch meta
+  shift 2
+  id="agy-eff-$name-$$"
+  rec=$(make_agy_spawn_case "eff-$name" "$id")
+  read_agy_spawn_record "$rec"
+  rc=0
+  out=$(run_agy_spawn "$CASE_DIR" "$HOME_DIR" "$PROJ_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" "$@") || rc=$?
+  expect_code 0 "$rc" "agy spawn ($name) should succeed: $out"
+  launch=$(cat "$CASE_DIR/launch.log")
+  if [ "$want" = - ]; then
+    assert_not_contains "$launch" "--effort" "agy launch ($name) passed an effort agy would refuse"
+    assert_contains "$out" "omitting --effort" "agy launch ($name) omitted effort without its notice"
+  else
+    assert_contains "$launch" "--effort '$want'" "agy launch ($name) did not carry effort $want"
+  fi
+  meta="$HOME_DIR/state/$id.meta"
+  assert_grep "effort=${*: -1}" "$meta" "agy meta ($name) did not record the requested effort"
+}
+
+test_agy_effort_follows_the_model_catalog() {
+  agy_effort_case family-xhigh xhigh --model gemini-4-neon --effort xhigh
+  assert_contains "$(cat "$CASE_DIR/launch.log")" "--model 'gemini-4-neon'" "a listed family id was not launched as requested"
+  agy_effort_case family-unoffered - --model gemini-3.8-flash --effort xhigh
+  agy_effort_case suffix-conflict - --model gemini-4-neon-low --effort high
+  agy_effort_case suffix-match high --model gemini-4-neon-high --effort high
+  pass "fm-spawn: agy effort follows the per-model catalog (family levels, suffix conflicts omitted)"
+}
+
 test_agy_unlisted_model_refuses_before_pane_creation() {
   local id rec out rc
   id="agy-badmodel-z3-$$"
@@ -736,7 +800,7 @@ test_agy_unlisted_model_refuses_before_pane_creation() {
   read_agy_spawn_record "$rec"
   rc=0
   out=$(run_agy_spawn "$CASE_DIR" "$HOME_DIR" "$PROJ_DIR" "$WT_DIR" "$FAKEBIN_DIR" "$id" \
-    --model gemini-3.8-flash) || rc=$?
+    --model gemini-3.8-flas) || rc=$?
   [ "$rc" -ne 0 ] || fail "an unlisted agy model should refuse the spawn"
   assert_contains "$out" "not listed by 'agy models'" "unlisted model refusal lacked its concrete reason"
   [ -s "$CASE_DIR/launch.log" ] && fail "an unlisted model created a launch command" || true
@@ -992,6 +1056,7 @@ test_herdr_lone_unregistered_pane_is_agent_free
 test_herdr_malformed_and_failed_reads_stay_unknown
 test_agy_launch_carries_the_brief_with_model_effort_and_autonomy
 test_agy_effort_xhigh_is_recorded_but_omitted
+test_agy_effort_follows_the_model_catalog
 test_agy_unlisted_model_refuses_before_pane_creation
 test_agy_unreachable_listing_launches_unvalidated
 test_agy_hung_listing_is_cut_off_and_launches

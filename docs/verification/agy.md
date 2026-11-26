@@ -162,11 +162,67 @@ In primary and secondmate homes, watcher commands are classified by the shared a
 Supervision continuity uses synchronous Stop-hook parking via `bin/fm-turnend-guard-agy.sh`, running `bin/fm-watch-arm.sh` (or the supervision host) which waits under the 28800s hook timeout until woken by an incoming event (bounded only when the optional `FM_AGY_PARK_TIMEOUT` is set) and falls back to bounded repair nagging via `bin/fm-turnend-guard.sh --agy`.
 Session lock verification recognizes `agy` process ancestry via `bin/fm-session-lock-lib.sh`.
 
+## agy 1.5.16 on macOS: the `antigravity` executable and per-model effort
+
+Verified 2026-11-26 on macOS (Apple silicon) with `agy 1.5.16` from Homebrew and T3 Code `0.1.11+fork.1`.
+
+The Homebrew `agy` command is a wrapper script that runs `exec ".../Caskroom/antigravity-cli/1.5.16,.../antigravity" "$@"`, and T3 Code's Antigravity ACP server is a different build of the same executable name:
+
+```
+$ ps -o ucomm=,args= -p <standalone print-mode pid>
+antigravity      /opt/homebrew/Caskroom/antigravity-cli/1.5.16,5250855658717184/antigravity -p Reply with exactly OK --model gemini-3.8-flash-low
+$ ps -o comm= -p <T3 ACP pid>
+/Users/<user>/.t3/tools/antigravity-acp/darwin-arm64/versions/33f5617d.../antigravity
+$ ps -o args= -p <T3 ACP pid>
+/Users/<user>/.t3/tools/antigravity-acp/darwin-arm64/versions/33f5617d.../antigravity acp --gemini-dir ...
+```
+
+So the exact name `antigravity` identifies agy in the harness, session-lock, and agent-process vocabularies, and only the `acp` subcommand selects ACP supervision in `bin/fm-turnend-guard-agy.sh --capable`.
+The patched classifiers were run against the live T3 ACP process: `fm_agent_process_classify_name` printed `agent` and `fm_harness_process_matches` matched.
+`tests/fm-agy-harness.test.sh` and `tests/fm-agy-primary.test.sh` pin both shapes with real processes, including the standalone executable keeping Stop-hook parking.
+
+`agy models` now lists level-suffixed ids per model (`gemini-4-neon-low|medium|high|xhigh`, `gemini-3.8-flash-low|medium|high`), and agy validates `--effort` against the model before any turn runs.
+Each line below is `agy -p "Reply with exactly AGY_EFFORT_OK and nothing else" --output-format json` with the shown flags:
+
+| Flags | Result |
+|---|---|
+| `--model gemini-4-neon --effort xhigh` | exit 0, `AGY_EFFORT_OK` |
+| `--model gemini-4-neon --effort low` | exit 0, `AGY_EFFORT_OK` |
+| `--model gemini-4-neon-xhigh` | exit 0, `AGY_EFFORT_OK` |
+| `--model gemini-4-neon-high --effort high` | exit 0, `AGY_EFFORT_OK` |
+| `--model gemini-4-neon-low --effort xhigh` | exit 1, `--model gemini-4-neon-low conflicts with --effort=xhigh` |
+| `--model gemini-4-neon-high --effort max` | exit 1, `--model gemini-4-neon-high conflicts with --effort=max` |
+| `--model gemini-4-neon --effort max` | exit 1, `gemini-4-neon has no "max" effort (available: low, medium, high, xhigh)` |
+| `--model gemini-3.8-flash --effort xhigh` | exit 1, `gemini-3.8-flash has no "xhigh" effort (available: low, medium, high)` |
+
+`bin/fm-spawn.sh` therefore accepts the unlisted family id, passes only a level agy accepts for the requested model, and records any other level in task metadata without passing it; `tests/fm-agy-harness.test.sh` pins each row's decision against a fake listing.
+
+On T3 Code the Antigravity catalog names the reasoning option `thought_level` (role `reasoning`), not the older `thinking_level`.
+`bin/fm-t3-mcp.mjs resolve-selection --harness agy --instance antigravity` against the live server resolved `gemini-4-neon` with `high` and `xhigh` to `thought_level`, resolved `gemini-4-neon-xhigh` to `gemini-4-neon` plus `thought_level: xhigh`, and omitted `max` with its notice.
+An idle `launch` with `{"model":"gemini-4-neon","options":[{"id":"thought_level","value":"xhigh"}]}` passed the helper's binding read-back and was then archived (`closed: true`), so T3 binds the level a firstmate agy launch requests.
+
+The TUI keeps the 1.2.0 signals: mid-turn the bottom row is `esc to cancel` beside `auto · Gemini 3.8 Flash · low`, and the settled row is `? for shortcuts`.
+In a tmux pane `#{pane_current_command}` reports `antigravity`, which the agent-process classifier previously read as `other`, so tmux liveness would have treated a live macOS agy worker as gone.
+A fresh workspace still parks on `Do you trust the contents of this project?`, and the turn does not start until it is answered.
+`--settings '{"trustedWorkspaces":["<path>"]}'` trusts a folder for one session without writing `~/.gemini/antigravity-cli/settings.json` (byte-compared before and after).
+Under a throwaway `HOME` holding a copy of `~/.gemini`, macOS agy is signed out and renders `Welcome to the Antigravity CLI. You are currently not signed in.` with `Select login method:`, because its login is not stored under `~/.gemini` there.
+
+```
+$ FM_AGY_SIGNALS_LIVE=1 bin/fm-test-run.sh tests/fm-agy-signals-live-e2e.test.sh
+ok - the real agy worker processed its launch prompt
+ok - tmux liveness reads the live agy pane command 'antigravity' as an agent
+ok - the real agy busy footer matches fm_busy_agy_tail_busy on a long turn
+ok - a single Escape cancels the real agy turn
+ok - /quit stops the real agy process
+```
+
 ## What is still unproven
 
-The unauthenticated failure mode was never observed; this host's agy runs signed in, so any auth prompt is a fail-loud credential blocker, not a handled dialog.
+The signed-out screen is now observed (above), but the spawn has no detector for it; any auth prompt stays a credential blocker, not a handled dialog.
 No slash-skill invocation form was verified, so skill invocation stays natural language.
 `--continue` and `--conversation` resume were never exercised; recovery uses deterministic relaunch from the brief on disk.
+No supervised `bin/fm-spawn.sh` agy task was run on agy 1.5.16 or on macOS; the supervised-task evidence above is agy 1.2.0 on Linux, and the 1.5.16 evidence stops at the live guard.
+A full agy turn on T3 with a non-default `thought_level` was not run; the evidence above stops at the bound selection.
 
 ## Refreshing this record
 

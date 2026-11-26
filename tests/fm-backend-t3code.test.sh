@@ -426,10 +426,11 @@ test_pi_selection_needs_launch_environment() {
 }
 
 # An agy worker runs on T3's Antigravity driver: its task environment rides the
-# launch like Pi's, its effort is the catalog's thinking_level option, and an
+# launch like Pi's, its effort is the model's catalog reasoning option
+# (thought_level on current T3), and an
 # agy CLI id that appends a thinking level to a listed model resolves to that
 # model and level.
-test_agy_selection_maps_cli_ids_to_thinking_level() {
+test_agy_selection_maps_cli_ids_to_the_reasoning_option() {
   local out
   t3_case agy-selection
   out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon high proj-1' 2>&1) && fail "agy must refuse a T3 without per-thread environment"
@@ -438,13 +439,13 @@ test_agy_selection_maps_cli_ids_to_thinking_level() {
   t3_world_set 'w.launchEnvironment = true'
   [ "$(t3_run 'fm_backend_t3code_instance_id agy')" = antigravity ] || fail "agy must default to the antigravity instance"
   out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon xhigh proj-1')
-  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"xhigh"}]}' ] \
-    || fail "agy effort should ride options id thinking_level on instance antigravity, got '$out'"
+  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thought_level","value":"xhigh"}]}' ] \
+    || fail "agy effort should ride the catalog's thought_level option on instance antigravity, got '$out'"
   out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon-high default proj-1')
-  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"high"}]}' ] \
+  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thought_level","value":"high"}]}' ] \
     || fail "an agy CLI id must resolve to the catalog model plus its thinking level, got '$out'"
   out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon-low low proj-1')
-  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"low"}]}' ] \
+  [ "$out" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thought_level","value":"low"}]}' ] \
     || fail "a matching --effort must agree with the CLI id's level, got '$out'"
   out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-4-neon-high low proj-1' 2>&1) && fail "a CLI id level that contradicts --effort must be refused"
   assert_contains "$out" "names thinking level 'high' but --effort is 'low'" "the conflict refusal must name both levels"
@@ -453,13 +454,14 @@ test_agy_selection_maps_cli_ids_to_thinking_level() {
     || fail "a listed id that ends in a level word must resolve as itself, got '$out'"
   out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-3.8-flash-xhigh default proj-1' 2>&1) && fail "a level the model does not list must not split the id"
   assert_contains "$out" "does not list model 'gemini-3.8-flash-xhigh'" "an unsplittable id is an unknown model"
-  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-3.8-flash max proj-1' 2>&1) && fail "an effort the catalog does not list must be refused"
-  assert_contains "$out" "cannot pass effort 'max' to harness 'agy'" "the effort refusal must name the harness"
+  out=$(t3_run 'fm_backend_t3code_model_selection agy gemini-3.8-flash max proj-1' 2>&1) || fail "an agy effort the catalog does not list must be omitted, not refused: $out"
+  assert_contains "$out" "cannot take effort 'max' for harness 'agy'" "the omission notice must name the effort and harness"
+  assert_contains "$out" '{"instanceId":"antigravity","model":"gemini-3.8-flash"}' "the omitted effort must not be bound"
   printf 'agy=claudeAgent\n' > "$CONFIG/t3code-instances"
   out=$(t3_run 'fm_backend_t3code_model_selection agy claude-sonnet-5 default proj-1' 2>&1) && fail "agy mapped onto a Claude instance must be refused"
   assert_contains "$out" "runs the claudeAgent driver, not antigravity" "the refusal names the driver T3's catalog reports"
   rm -f "$CONFIG/t3code-instances"
-  pass "fm_backend_t3code_model_selection agy: needs T3's launch environment, rides thinking_level, and maps agy CLI ids onto catalog model plus level"
+  pass "fm_backend_t3code_model_selection agy: needs T3's launch environment, rides the catalog's reasoning option, omits an unlisted level, and maps agy CLI ids onto catalog model plus level"
 }
 
 test_thread_create_carries_environment() {
@@ -2440,7 +2442,7 @@ t3_agy_path() {
 
 # An agy worker runs as an ordinary top-level T3 thread on the Antigravity
 # provider: its task environment rides t3_thread_launch as Pi's does, an agy
-# CLI model id becomes the catalog model plus thinking_level, and none of the
+# CLI model id becomes the catalog model plus its reasoning level, and none of the
 # agy CLI's own pane steps (model listing, workspace-trust store, readiness
 # gate) run.
 test_spawn_agy_worker_launches_with_environment() {
@@ -2455,7 +2457,7 @@ test_spawn_agy_worker_launches_with_environment() {
   [ "$(t3_dispatch_types)" = "t3_thread_launch t3_thread_send" ] || fail "spawn must launch then send the brief, got '$(t3_dispatch_types)'"
   launch=$(t3_log_line_of 'r.tool === "t3_thread_launch"')
   [ "$(t3_request "$launch" 'r.probe')" = true ] || fail "the agy thread must launch only after its Git hook directory exists"
-  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"high"}]}' ] \
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thought_level","value":"high"}]}' ] \
     || fail "the launch must carry the Antigravity selection, got '$(t3_request "$launch" 'r.arguments.modelSelection')'"
   [ "$(t3_request "$launch" 'r.arguments.workspaceStrategy.worktreePath')" = "$WORKER_WT" ] || fail "the launch must bind the leased worktree"
   env=$(t3_request "$launch" 'r.arguments.environment')
@@ -2517,7 +2519,7 @@ test_spawn_agy_secondmate_launches_with_environment() {
   [ "$(t3_request "$launch" 'r.probe')" = true ] || fail "agy secondmate must launch only after its Git hook directory exists"
   [ "$(t3_request "$launch" 'r.arguments.workspaceStrategy')" = '{"type":"root","branch":"sm/home"}' ] \
     || fail "agy secondmate must use root workspace strategy, got '$(t3_request "$launch" 'r.arguments.workspaceStrategy')'"
-  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thinking_level","value":"high"}]}' ] \
+  [ "$(t3_request "$launch" 'r.arguments.modelSelection')" = '{"instanceId":"antigravity","model":"gemini-4-neon","options":[{"id":"thought_level","value":"high"}]}' ] \
     || fail "agy secondmate must carry Antigravity model selection, got '$(t3_request "$launch" 'r.arguments.modelSelection')'"
   env=$(t3_request "$launch" 'r.arguments.environment')
   [ "$(printf '%s' "$env" | node -e 'const e = JSON.parse(require("fs").readFileSync(0, "utf8")); process.stdout.write([e.FM_HOME, e.FM_SUPERVISOR_BACKEND, e.FM_SUPERVISION_MODEL, e.FM_TASK_INBOX, e.GOTMPDIR, e.GIT_CONFIG_KEY_0, String(e.FM_TASK_ID), String(e.FM_SUPERVISOR_TARGET)].join("|"))')" = \
@@ -4111,7 +4113,7 @@ test_capability_gate_refuses_control
 test_project_ensure_matches_realpath_or_creates
 test_model_selection_table
 test_pi_selection_needs_launch_environment
-test_agy_selection_maps_cli_ids_to_thinking_level
+test_agy_selection_maps_cli_ids_to_the_reasoning_option
 test_thread_create_and_turn_start_payloads
 test_thread_create_carries_environment
 test_thread_create_uncertain_and_refused_outcomes

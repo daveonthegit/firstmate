@@ -10,7 +10,7 @@ These command-line and terminal facts apply to pane-backed sessions; for an agy 
 
 | Fact | Value |
 |---|---|
-| Binary | Absolute `agy` from `PATH`, refused if absent; a Go-compiled single binary, so the live process name is exactly `agy` with `argv[0]=agy`. |
+| Binary | Absolute `agy` from `PATH`, refused if absent; a Go-compiled single binary whose live process name is exactly `agy` (agy 1.2.0, Linux), or exactly `antigravity` behind the Homebrew `agy` wrapper (agy 1.5.16, macOS). |
 | Launch | `agy --prompt-interactive "<brief>" --model <id> --effort <level> --dangerously-skip-permissions`, with the resolved absolute binary; the brief auto-submits with no extra Enter. The spawn pre-registers the worktree in agy's trust store first, then waits for a busy turn (answering the folder-trust dialog if it renders anyway) before reporting success. |
 | Busy state | No hook or plugin writer, so nothing is armed and no record is seeded; on Herdr the native `working` status classifies busy, and everywhere else the `agy-regex` rendered-tail fallback in `../../../../../bin/fm-busy-lib.sh` does. |
 | Rendered tail | Busy status row carries `esc to cancel` on the left; the idle row shows `? for shortcuts` instead. The `Generating...` word beside the braille spinner is free-floating output and is not a signal. |
@@ -21,8 +21,8 @@ These command-line and terminal facts apply to pane-backed sessions; for an agy 
 | Autonomy | `--dangerously-skip-permissions` auto-approves tool calls for the run. |
 | Marker | None; a live TUI carries no `AGY_*` or `ANTIGRAVITY_*` variable. |
 | Resume | `--continue` and `--conversation` exist but carry no verified pane-resume contract; use deterministic relaunch. |
-| Model | `--model <id>` with the bare catalog id from `agy models` (for example `gemini-3.8-flash-high`); `bin/fm-spawn.sh` refuses a requested id a reachable listing omits. The listing is a remote fetch, so the probe runs stdin-detached under the shared hard bound and an unreachable or hung listing launches unvalidated with a notice. |
-| Effort | `--effort low\|medium\|high`; `xhigh` and `max` stay in task metadata under the record-and-omit contract. |
+| Model | `--model <id>` with a catalog id from `agy models` (for example `gemini-4-neon-xhigh`), or the family id its `<family>-<level>` variants imply (`gemini-4-neon`); `bin/fm-spawn.sh` refuses a requested id a reachable listing omits in both forms. The listing is a remote fetch, so the probe runs stdin-detached under the shared hard bound and an unreachable or hung listing launches unvalidated with a notice. |
+| Effort | Per model: a level-suffixed id passes `--effort` only for its own level, a family id passes only a level the listing offers it (Neon has `xhigh`, Flash does not, neither has `max`), and an unsuffixed or unvalidated id passes `low\|medium\|high` only; any other level stays in task metadata under the record-and-omit contract, because agy 1.5.16 refuses the launch otherwise. |
 | Composer | Borderless bare `>` row, which the shared classifier reads as `unknown` under the dead-shell rule, never `empty`; steering confirms delivery through native agent-state and the delivery footer instead, the cursor precedent. |
 
 ## Trust, and where the decision persists
@@ -41,8 +41,9 @@ The unauthenticated failure mode was not observed, so treat any auth prompt or r
 ## Detection
 
 Detected by ancestry first: `../../../../../bin/fm-harness.sh` matches the anchored process names `agy` (standalone CLI) and `agy_acp_server` / `agy_acp_server.par` (T3 Code Antigravity ACP, including Linux's 15-byte `agy_acp_server.` comm truncation verified against `argv[0]`), never `*agy*`.
+agy 1.5.16 on macOS runs both T3 Code's ACP server (`.../antigravity-acp/<platform>/versions/<hash>/antigravity acp`) and the Homebrew standalone CLI as an executable named exactly `antigravity`, so that exact `argv[0]` basename is agy too, never a `providers/antigravity` path component (the transient `localharness_external` child) or the desktop app's `Antigravity`.
 Standalone `agy` CLI publishes no environment marker (`AGENT=1` is an inherited launcher value), while T3 Code's Antigravity ACP sets `ANTIGRAVITY_AGENT=1` and `ANTIGRAVITY_HARNESS_PATH` on tool subprocesses as a fallback marker when ancestry is unavailable; structural `comm agy` ancestry outranks retained foreign markers such as `CLAUDECODE`.
-Both `agy` and `agy_acp_server` / `agy_acp_server.par` are included in the session-lock name vocabulary in `../../../../../bin/fm-session-lock-lib.sh` and the agent process classifier in `../../../../../bin/fm-agent-process-lib.sh`, anchoring a T3 Antigravity session lock to the long-lived ACP server rather than its transient `localharness_external` child.
+`agy`, `agy_acp_server` / `agy_acp_server.par`, and `antigravity` are all included in the session-lock name vocabulary in `../../../../../bin/fm-session-lock-lib.sh` and the agent process classifier in `../../../../../bin/fm-agent-process-lib.sh`, anchoring a T3 Antigravity session lock to the long-lived ACP server rather than its transient `localharness_external` child.
 
 ## Worker busy state and turn end
 
@@ -61,6 +62,6 @@ Stop executes `bin/fm-turnend-guard-agy.sh`, which parks on a home-scoped watche
 A bounded 3-block repair nag is enforced via `bin/fm-turnend-guard.sh --agy` before failing open with `{}`.
 See `../../../../../docs/supervision-protocols/agy.md` for the standalone CLI supervision protocol.
 
-Under T3 Code's Antigravity ACP server (`agy_acp_server.par`), the ACP SDK ignores `injectSteps` in `SessionStart` and executes `Stop` hooks only on `session_end` while ignoring `{"decision":"continue"}`, so Stop-hook turn-boundary parking cannot run there.
-`bin/fm-turnend-guard-agy.sh --capable` returns nonzero under ACP, routing `bin/fm-supervision-instructions.sh` to `../../../../../docs/supervision-protocols/agy-acp.md` (bounded `bin/fm-watch-checkpoint.sh` checkpoints) and `fm_supervision_model` to `persistent`.
+Under T3 Code's Antigravity ACP server (`agy_acp_server.par`, or `antigravity acp`), the ACP SDK ignores `injectSteps` in `SessionStart` and executes `Stop` hooks only on `session_end` while ignoring `{"decision":"continue"}`, so Stop-hook turn-boundary parking cannot run there.
+`bin/fm-turnend-guard-agy.sh --capable` returns nonzero under ACP (for the `antigravity` executable, only its `acp` subcommand counts, so a standalone `antigravity` CLI keeps Stop-hook parking), routing `bin/fm-supervision-instructions.sh` to `../../../../../docs/supervision-protocols/agy-acp.md` (bounded `bin/fm-watch-checkpoint.sh` checkpoints) and `fm_supervision_model` to `persistent`.
 When a workspace has `.agents/hooks.json` and is not yet in `$GEMINI_HOME/antigravity-acp/trusted_workspaces.json`, ACP raises a `user_input` pending question (`trust` or `deny`); answer `deny` for workers and `trust` for primary or secondmate homes.

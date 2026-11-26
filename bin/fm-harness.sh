@@ -225,6 +225,12 @@ harness_process_verdict() {  # <pid>
     echo "comm omp"
     return
   fi
+  # Antigravity's own executable is named exactly `antigravity`: T3 Code's
+  # current ACP server (.../versions/<hash>/antigravity acp) and the Homebrew
+  # standalone CLI behind the `agy` wrapper both run under it (agy 1.5.16,
+  # macOS). Only the exact argv[0] basename counts, never a path component:
+  # providers/antigravity also holds the transient localharness_external child.
+  case "$(basename -- "${args%% *}")" in antigravity) echo "comm agy"; return ;; esac
   case "$(basename -- "$comm")" in
     # gemini precedes claude here for the same precedence reason as the
     # marker layer above, so a gemini worker under a claude primary is never

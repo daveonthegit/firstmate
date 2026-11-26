@@ -50,9 +50,12 @@
 //     --pool lists the harness's configured instances, any one of them (its
 //     model and options then ride onto the chosen instance). A
 //     non-default effort replaces only the driver's reasoning option (claude:
-//     effort, codex: reasoningEffort, pi: thinking, agy: thinking_level) and
+//     effort, codex: reasoningEffort, pi: thinking, agy: the model's own
+//     reasoning option, thought_level on current T3) and
 //     keeps every other default option; every option is then checked against
-//     that model's descriptors. The pi and agy harnesses read their task
+//     that model's descriptors. An agy effort the model's catalog cannot take
+//     is omitted with a stderr notice and reported as effortOmitted rather
+//     than refused, matching the pane-backed agy record-and-omit contract. The pi and agy harnesses read their task
 //     environment only from a launch's per-thread environment, so they also
 //     refuse a T3 whose t3_thread_launch does not offer one. Exit 4 refuses.
 //   fm-t3-mcp.mjs launch --project <id> --title <title> --model-selection <json>
@@ -355,13 +358,15 @@ const TRANSCRIPT_ROLES = { user_message: "user", assistant_message: "assistant",
 // thread's cwd; Pi and Antigravity have no such file, so their harnesses need
 // the launch's per-thread environment. The agy CLI names a model and its
 // thinking level as one id (gemini-4-neon-high) where T3's Antigravity
-// catalog lists the model (gemini-4-neon) with a thinking_level option, so
-// agy accepts that suffix form too (effortSuffix).
+// catalog lists the model (gemini-4-neon) with a reasoning option, so agy
+// accepts that suffix form too (effortSuffix). That option's id is read from
+// each model's catalog (effortOptions): current T3 names it thought_level and
+// marks it role "reasoning"; older catalogs named it thinking_level.
 const DRIVERS = {
   claude: { driverKind: "claudeAgent", effortOption: "effort" },
   codex: { driverKind: "codex", effortOption: "reasoningEffort" },
   pi: { driverKind: "pi", effortOption: "thinking", launchEnvironment: true },
-  agy: { driverKind: "antigravity", effortOption: "thinking_level", launchEnvironment: true, effortSuffix: true },
+  agy: { driverKind: "antigravity", effortOptions: ["thought_level", "thinking_level"], launchEnvironment: true, effortSuffix: true, omitUnsupportedEffort: true },
 };
 // T3's per-thread environment limits (OrchestrationV2ThreadEnvironment).
 const ENVIRONMENT_NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
@@ -1033,22 +1038,34 @@ function optionProblem(model, option) {
   return values.includes(option.value) ? null : `option '${option.id}' value '${option.value}' is not one of ${values.join(", ")} for model ${model.id}`;
 }
 
+// The option id a model's catalog uses for the driver's reasoning effort: a
+// driver with one fixed id uses it; one with several candidate ids takes the
+// descriptor T3 marks role "reasoning", else the first candidate the model
+// offers, else its first candidate (which then names the refusal).
+function effortOptionId(model, driver) {
+  if (!driver.effortOptions) return driver.effortOption;
+  const opts = model?.options ?? [];
+  const d = opts.find((o) => o.role === "reasoning") ?? opts.find((o) => driver.effortOptions.includes(o.id));
+  return d ? d.id : driver.effortOptions[0];
+}
+
 // effortSuffixModel: the catalog model and level an id like
 // gemini-4-neon-high names, when it is a listed model id followed by `-` and
-// one of the values that model lists for <optionId>; the longest listed id
-// wins, so a model whose own id ends in a level word is never split short.
-function effortSuffixModel(models, id, optionId) {
+// one of the values that model lists for its reasoning option; the longest
+// listed id wins, so a model whose own id ends in a level word is never split
+// short.
+function effortSuffixModel(models, id, driver) {
   let best = null;
   for (const m of models) {
     if (!id.startsWith(`${m.id}-`)) continue;
     const level = id.slice(m.id.length + 1);
-    if (optionProblem(m, { id: optionId, value: level })) continue;
+    if (optionProblem(m, { id: effortOptionId(m, driver), value: level })) continue;
     if (!best || m.id.length > best.model.id.length) best = { model: m, level };
   }
   return best;
 }
 
-async function resolveModelSelection(session, caps, { harness, instanceId, wantModel, effort, projectId = null, pool = [] }) {
+async function resolveModelSelection(session, caps, { harness, instanceId, wantModel, effort, projectId = null, pool = [], omitUnsupportedEffort = false }) {
   const driver = DRIVERS[harness];
   if (!driver) throw new Refusal("harness_unsupported", `backend=t3code supports only the claude, codex, pi, and agy harnesses, not '${harness}'`);
   const provider = (caps?.providers ?? []).find((p) => p.providerInstanceId === instanceId);
@@ -1071,7 +1088,7 @@ async function resolveModelSelection(session, caps, { harness, instanceId, wantM
   }
   let model = (provider.models ?? []).find((m) => m.id === base.model);
   if (!model && driver.effortSuffix && wantModel !== "default") {
-    const split = effortSuffixModel(provider.models ?? [], wantModel, driver.effortOption);
+    const split = effortSuffixModel(provider.models ?? [], wantModel, driver);
     if (split) {
       if (effort !== "default" && effort !== split.level) {
         throw new Refusal("effort_conflict", `model '${wantModel}' names thinking level '${split.level}' but --effort is '${effort}'; pass --model ${split.model.id} with --effort, or drop one of them`);
@@ -1079,14 +1096,37 @@ async function resolveModelSelection(session, caps, { harness, instanceId, wantM
       model = split.model;
       base = { ...base, model: model.id };
       effort = split.level;
+    } else if (omitUnsupportedEffort && driver.omitUnsupportedEffort) {
+      // A catalog that offers the model no thinking_level at all cannot split
+      // the suffix above; the listed family still resolves, and the level then
+      // takes the record-and-omit path below.
+      const m = /^(.+)-(low|medium|high|xhigh|max)$/.exec(wantModel);
+      const family = m && (provider.models ?? []).find((x) => x.id === m[1]);
+      if (family && !(family.options ?? []).some((d) => d.id === effortOptionId(family, driver))) {
+        if (effort !== "default" && effort !== m[2]) {
+          throw new Refusal("effort_conflict", `model '${wantModel}' names thinking level '${m[2]}' but --effort is '${effort}'; pass --model ${family.id} with --effort, or drop one of them`);
+        }
+        model = family;
+        base = { ...base, model: model.id };
+        effort = m[2];
+      }
     }
   }
   if (!model) throw new Refusal("model_unknown", `T3 instance '${instanceId}' does not list model '${base.model}'; pass --model with a slug from its catalog`);
   let options = base.options;
+  let effortOmitted = null;
   if (effort !== "default") {
-    const chosen = { id: driver.effortOption, value: effort };
+    const chosen = { id: effortOptionId(model, driver), value: effort };
     const problem = optionProblem(model, chosen);
-    if (problem) throw new Refusal("effort_unsupported", `backend=t3code cannot pass effort '${effort}' to harness '${harness}': ${problem}`);
+    if (problem && omitUnsupportedEffort && driver.omitUnsupportedEffort) {
+      effortOmitted = { effort, reason: problem };
+      effort = "default";
+    } else if (problem) {
+      throw new Refusal("effort_unsupported", `backend=t3code cannot pass effort '${effort}' to harness '${harness}': ${problem}`);
+    }
+  }
+  if (effort !== "default") {
+    const chosen = { id: effortOptionId(model, driver), value: effort };
     const kept = options ?? [];
     options = kept.some((o) => o.id === chosen.id) ? kept.map((o) => (o.id === chosen.id ? chosen : o)) : [...kept, chosen];
   }
@@ -1094,7 +1134,7 @@ async function resolveModelSelection(session, caps, { harness, instanceId, wantM
     const problem = optionProblem(model, option);
     if (problem) throw new Refusal("option_unsupported", `the selection for harness '${harness}' is not valid in T3's catalog: ${problem}`);
   }
-  return { driverKind: provider.driverKind, selection: { instanceId, model: base.model, ...(options !== undefined ? { options } : {}) } };
+  return { driverKind: provider.driverKind, selection: { instanceId, model: base.model, ...(options !== undefined ? { options } : {}) }, ...(effortOmitted ? { effortOmitted } : {}) };
 }
 
 async function resolveSelection(flags) {
@@ -1109,8 +1149,9 @@ async function resolveSelection(flags) {
   const caps = await session.call("orchestrator_capabilities", {});
   const projectId = wantModel === "default" ? need(flags, "project") : (flags.project ? String(flags.project) : null);
   const pool = flags.pool ? String(flags.pool).split(",").filter(Boolean) : [];
-  const { driverKind, selection } = await resolveModelSelection(session, caps, { harness, instanceId, wantModel, effort, projectId, pool });
-  return { ok: true, driverKind, selection };
+  const { driverKind, selection, effortOmitted } = await resolveModelSelection(session, caps, { harness, instanceId, wantModel, effort, projectId, pool, omitUnsupportedEffort: true });
+  if (effortOmitted) process.stderr.write(`notice: T3's catalog cannot take effort '${effortOmitted.effort}' for harness '${harness}' (${effortOmitted.reason}); launching at the model's own reasoning level (effort stays recorded in task metadata)\n`);
+  return { ok: true, driverKind, selection, ...(effortOmitted ? { effortOmitted } : {}) };
 }
 
 // What a launch must read back: the workspace, full access, and exactly the

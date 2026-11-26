@@ -64,14 +64,25 @@ continue_turn() {  # <reason>
 
 # --capable: exit 0 when this Antigravity runtime supports synchronous Stop-hook
 # parking (standalone agy CLI), and exit 1 when it runs under Antigravity ACP
-# (agy_acp_server.par), whose SDK runs Stop hooks only at session_end and
-# ignores {"decision":"continue"}. Checks the nearest agy-family ancestor first
-# so a standalone agy CLI nested inside an ACP host still reads capable.
+# (agy_acp_server.par, or `antigravity acp`), whose SDK runs Stop hooks only at
+# session_end and ignores {"decision":"continue"}. Checks the nearest agy-family
+# ancestor first so a standalone agy CLI nested inside an ACP host still reads
+# capable. Both T3 Code's current ACP server and the Homebrew standalone CLI
+# behind the `agy` wrapper run as an executable named exactly `antigravity`
+# (agy 1.5.16, macOS), so only its `acp` subcommand marks ACP.
 if [ "${1:-}" = "--capable" ]; then
   pid=$$
   for _ in 1 2 3 4 5 6 7 8; do
     comm=$(ps -o comm= -p "$pid" 2>/dev/null) || break
     base=$(basename -- "$comm")
+    args=$(ps -o args= -p "$pid" 2>/dev/null) || args=
+    argv0=${args%% *}
+    if [ "$(basename -- "$argv0")" = antigravity ]; then
+      rest=${args#"$argv0"}
+      read -r sub _ <<< "$rest" || true
+      [ "${sub:-}" = acp ] && exit 1
+      exit 0
+    fi
     case "$base" in
       agy) exit 0 ;;
       agy_acp_server|agy_acp_server.par) exit 1 ;;
@@ -107,6 +118,11 @@ PAYLOAD=$(cat 2>/dev/null || true)
 command -v jq >/dev/null 2>&1 || allow_stop
 
 fm_primary_scope_matches "$FM_ROOT" "$STATE" || allow_stop
+
+# Antigravity ACP (T3 Code) supervises through bounded foreground checkpoints
+# (docs/supervision-protocols/agy-acp.md). A long Stop-hook park there holds the
+# turn with no tool boundary, so queued captain messages cannot be delivered.
+"$SCRIPT_DIR/fm-turnend-guard-agy.sh" --capable || allow_stop
 
 TERM_REASON=$(printf '%s' "$PAYLOAD" | jq -r '.terminationReason // empty' 2>/dev/null || true)
 if [ -n "$TERM_REASON" ] && [ "$TERM_REASON" != "NO_TOOL_CALL" ]; then
