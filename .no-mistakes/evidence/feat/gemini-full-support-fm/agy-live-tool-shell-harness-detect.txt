@@ -1,0 +1,15 @@
+      ▄▀▀▄        Antigravity CLI 1.5.16
+     ▀▀▀▀▀▀       darkflamegod214@gmail.com (Google AI Ultra)
+    ▀▀▀▀▀▀▀▀      Gemini 3.8 Flash (Low)
+   ▄▀▀    ▀▀▄     /private/tmp/fmlab-eff/ws.jkvb
+  ▄▀▀      ▀▀▄
+────────────────────────────────────────────────────────────
+> Run this exact shell command and show its full output verbatim: {run-worktree}/bin/fm-harness.sh;
+  {run-worktree}/bin/fm-turnend-guard-agy.sh --capable; echo CAPABLE_RC=$?
+● Ran 2 commands (~/.no... ×2) (ctrl+o to expand)
+    agy
+    CAPABLE_RC=0
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+>
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+? for shortcuts                                                                                                                                                            auto · Gemini 3.8 Flash · low

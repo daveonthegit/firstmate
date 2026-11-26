@@ -1,0 +1,7 @@
+MODEL=gemini-4-neon EFFORT=xhigh -> passes '--effort xhigh'  | real agy exit=0: AGY_EFFORT_OK
+MODEL=gemini-4-neon EFFORT=max -> passes '--effort <omitted>' [notice: agy model 'gemini-4-neon' offers no 'max' reasoning level; omitting --effort (recorded in task metadata)] | real agy exit=0: AGY_EFFORT_OK
+MODEL=gemini-4-neon-high EFFORT=max -> passes '--effort <omitted>' [notice: agy model 'gemini-4-neon-high' already selects reasoning level 'high'; omitting --effort 'max' (recorded in task metadata)] | real agy exit=0: AGY_EFFORT_OK
+MODEL=gemini-4-neon-xhigh EFFORT=xhigh -> passes '--effort xhigh'  | real agy exit=0: AGY_EFFORT_OK
+MODEL=gemini-3.8-flash EFFORT=xhigh -> passes '--effort <omitted>' [notice: agy model 'gemini-3.8-flash' offers no 'xhigh' reasoning level; omitting --effort (recorded in task metadata)] | real agy exit=0: AGY_EFFORT_OK
+MODEL=gemini-3.8-flash EFFORT=low -> passes '--effort low'  | real agy exit=0: AGY_EFFORT_OK
+MODEL=gemini-9-bogus EFFORT=high -> spawn REFUSED: error: agy model 'gemini-9-bogus' is not listed by 'agy models'; choose a listed id or omit --model

@@ -1,0 +1,9 @@
+pane_current_command=antigravity  pid=27011
+comm=/opt/homebrew/Caskroom/antigravity-cli/1.5.16,5250855658717184/antigravity
+args=/opt/homebrew/Caskroom/antigravity-cli/1.5.16,5250855658717184/antigravity --settings {"trustedWorkspaces":["/tmp/fmlab-eff/ws.jkvb"]} --model gemini-3.8-flash-
+== TARGET(2bfd28c1)
+classify(pane cmd)=agent  classify(argv0)=agent
+session-lock-match=yes
+== BASE(9bbfc271)
+classify(pane cmd)=other  classify(argv0)=other
+session-lock-match=no

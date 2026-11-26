@@ -1,0 +1,24 @@
+$ fm-t3-mcp.mjs resolve-selection --harness agy --instance antigravity --model gemini-4-neon --effort high
+{"ok":false,"error":{"code":"model_unknown","message":"T3 instance 'antigravity' does not list model 'gemini-4-neon'; pass --model with a slug from its catalog"}}
+fm-t3-mcp: T3 instance 'antigravity' does not list model 'gemini-4-neon'; pass --model with a slug from its catalog
+exit=4
+$ fm-t3-mcp.mjs resolve-selection --harness agy --instance antigravity --model gemini-4-neon --effort xhigh
+{"ok":false,"error":{"code":"model_unknown","message":"T3 instance 'antigravity' does not list model 'gemini-4-neon'; pass --model with a slug from its catalog"}}
+fm-t3-mcp: T3 instance 'antigravity' does not list model 'gemini-4-neon'; pass --model with a slug from its catalog
+exit=4
+$ fm-t3-mcp.mjs resolve-selection --harness agy --instance antigravity --model gemini-4-neon-xhigh --effort default
+{"ok":false,"error":{"code":"model_unknown","message":"T3 instance 'antigravity' does not list model 'gemini-4-neon-xhigh'; pass --model with a slug from its catalog"}}
+fm-t3-mcp: T3 instance 'antigravity' does not list model 'gemini-4-neon-xhigh'; pass --model with a slug from its catalog
+exit=4
+$ fm-t3-mcp.mjs resolve-selection --harness agy --instance antigravity --model gemini-4-neon --effort max
+{"ok":false,"error":{"code":"model_unknown","message":"T3 instance 'antigravity' does not list model 'gemini-4-neon'; pass --model with a slug from its catalog"}}
+fm-t3-mcp: T3 instance 'antigravity' does not list model 'gemini-4-neon'; pass --model with a slug from its catalog
+exit=4
+$ fm-t3-mcp.mjs resolve-selection --harness agy --instance antigravity --model gemini-4-neon-high --effort xhigh
+{"ok":false,"error":{"code":"model_unknown","message":"T3 instance 'antigravity' does not list model 'gemini-4-neon-high'; pass --model with a slug from its catalog"}}
+fm-t3-mcp: T3 instance 'antigravity' does not list model 'gemini-4-neon-high'; pass --model with a slug from its catalog
+exit=4
+$ fm-t3-mcp.mjs resolve-selection --harness agy --instance antigravity --model gemini-9-bogus --effort high
+{"ok":false,"error":{"code":"model_unknown","message":"T3 instance 'antigravity' does not list model 'gemini-9-bogus'; pass --model with a slug from its catalog"}}
+fm-t3-mcp: T3 instance 'antigravity' does not list model 'gemini-9-bogus'; pass --model with a slug from its catalog
+exit=4
