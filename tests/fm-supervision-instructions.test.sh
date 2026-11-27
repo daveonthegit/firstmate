@@ -431,6 +431,10 @@ SH
   ordinary=$(printf '%s\n' "$out" | grep -F -- '- Ordinary wake:')
   assert_contains "$ordinary" "bin/fm-watch-checkpoint.sh" "Antigravity ACP ordinary-wake line must name the checkpoint helper"
   assert_not_contains "$ordinary" "bin/fm-turnend-guard-agy.sh" "Antigravity ACP ordinary-wake line must not claim Stop-hook continuity"
+  assert_contains "$out" "start the next checkpoint in this same turn and stop again with no text" \
+    "Antigravity ACP must chain an empty checkpoint silently within the turn"
+  assert_contains "$out" "never reply \`Captain, shipshape.\`" \
+    "Antigravity ACP must not answer an empty checkpoint"
   repair=$(FM_HOME="$home" FM_CONFIG_OVERRIDE="$config" "$code/bin/fm-supervision-instructions.sh" --harness agy --repair-line)
   assert_contains "$repair" "bin/fm-watch-checkpoint.sh" "Antigravity ACP repair line must name the checkpoint helper"
 
@@ -447,6 +451,10 @@ SH
     || fail "Antigravity ACP supervision-host must name exactly one wake path: $body"
   [ "$(printf '%s\n' "$body" | grep -c '^3\. ')" -eq 1 ] \
     || fail "Antigravity ACP supervision-host must name exactly one park boundary: $body"
+  assert_not_contains "$body" "a captain message waits until the checkpoint returns" \
+    "Antigravity ACP supervision-host must not claim a captain message waits on the checkpoint"
+  assert_contains "$body" "a captain message still starts a new turn at once" \
+    "Antigravity ACP supervision-host must say a captain message preempts the away checkpoint"
   pass "Antigravity ACP renders foreground checkpoint instructions and {agy-acp} supervision-host protocol"
 }
 

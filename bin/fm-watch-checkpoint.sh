@@ -32,6 +32,8 @@ Usage: fm-watch-checkpoint.sh [--seconds <n>]
 Run bin/fm-watch.sh in the foreground for a bounded checkpoint.
 On an actionable watcher wake, pass through the watcher output and exit 0.
 On a quiet checkpoint, print "checkpoint: no actionable wake within <n>s" and exit 124.
+Under agy (Antigravity ACP), that line also says to start the next checkpoint
+in the same turn with no reply, because an empty checkpoint needs no answer.
 EOF
 }
 
@@ -160,6 +162,15 @@ CHECKPOINT_PRIMARY=codex
 case "$("$SCRIPT_DIR/fm-harness.sh" 2>/dev/null || true)" in
   agy) CHECKPOINT_PRIMARY=agy ;;
 esac
+
+quiet_checkpoint() {  # <bound>
+  if [ "$CHECKPOINT_PRIMARY" = agy ]; then
+    printf 'checkpoint: no actionable wake within %ss; start the next checkpoint in this turn with no reply\n' "$1"
+  else
+    printf 'checkpoint: no actionable wake within %ss\n' "$1"
+  fi
+}
+
 if fm_supervision_host_enabled "$CONFIG" "$CHECKPOINT_PRIMARY"; then
   BOUND=$SECONDS_ARG
   if [ -f "$STATE/.afk-contract" ] \
@@ -184,7 +195,7 @@ if fm_supervision_host_enabled "$CONFIG" "$CHECKPOINT_PRIMARY"; then
     exit 0
   fi
   if grep -E '^supervision-host: cycle boundary' "$OUT" >/dev/null 2>&1; then
-    printf 'checkpoint: no actionable wake within %ss\n' "$BOUND"
+    quiet_checkpoint "$BOUND"
     exit 124
   fi
   [ ! -s "$OUT" ] || cat "$OUT"
@@ -217,7 +228,7 @@ if grep -E '^watcher: already running' "$OUT" "$ERR" >/dev/null 2>&1; then
 fi
 
 if [ "$RC" -eq 124 ]; then
-  printf 'checkpoint: no actionable wake within %ss\n' "$SECONDS_ARG"
+  quiet_checkpoint "$SECONDS_ARG"
   exit 124
 fi
 

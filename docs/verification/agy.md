@@ -216,6 +216,43 @@ ok - a single Escape cancels the real agy turn
 ok - /quit stops the real agy process
 ```
 
+## Antigravity ACP turns around a long command
+
+Verified 2026-11-27 on macOS (Apple silicon) against `agy acp` 1.5.16, the same version as the T3 Code Antigravity ACP server then running (`.../antigravity-acp/darwin-arm64/versions/33f5617d.../antigravity --version` printed `1.5.16`), with model `gemini-3.8-flash`.
+This is the evidence behind `docs/supervision-protocols/agy-acp.md`'s silent in-turn checkpoint chain.
+
+The bundled `run_command` tool description says `WaitMsBeforeAsync` goes "up to 10000" and that "Commands that do not finish within the specified wait time continue running in the background as tasks; the system will notify you when they finish, so do not poll their status or set timers to check on them."
+
+One prompt asking for two sequential `sleep 40` commands, then exactly `PROBE_END`:
+
+```
+$ acpx --agent "agy acp --dangerously-skip-permissions" --cwd <scratch> --approve-all --format json --model gemini-3.8-flash --timeout 380 exec "<prompt>"
+tool_call  sleep 40; echo PROBE_ONE_DONE  {"WaitMsBeforeAsync": 10000}  in_progress
+agent_message_chunk  "I have launched the probe command and will wait for it to complete."
+tool_call_update  sleep 40; echo PROBE_ONE_DONE  completed  "PROBE_ONE_DONE"
+tool_call  sleep 40; echo PROBE_TWO_DONE  {"WaitMsBeforeAsync": 10000}  in_progress
+tool_call_update  sleep 40; echo PROBE_TWO_DONE  completed  "PROBE_TWO_DONE"
+agent_message_chunk  "PROBE_END"
+session/prompt result  {"stopReason": "end_turn"}   (one result, about 120s after the prompt)
+```
+
+Both commands went to the background at the 10-second cap, the model stopped generating between them (once with a text message, once with none), and each completion resumed the same `session/prompt` rather than ending it.
+The model still called `manage_task` status several times despite the no-poll instruction.
+
+A raw JSON-RPC client then sent one prompt running `sleep 60` and, 25 seconds later while the model waited with no text, a second `session/prompt` asking for exactly `SECOND_SEEN`:
+
+```
+7.5s   tool_call  sleep 60; echo FIRST_DONE  {"WaitMsBeforeAsync": 10000}  in_progress
+26.2s  send session/prompt (second)
+26.2s  first session/prompt result  {"stopReason": "end_turn"}
+33.8s  agent_message_chunk  "SECOND_SEEN"
+67.7s  tool_call_update  sleep 60; echo FIRST_DONE  completed
+74.8s  agent_message_chunk  "END_ONE"
+74.9s  second session/prompt result  {"stopReason": "end_turn"}
+```
+
+A new prompt ends a turn that is waiting on a background command at once, the command keeps running, and its completion arrives in the new turn.
+
 ## What is still unproven
 
 The signed-out screen is now observed (above), but the spawn has no detector for it; any auth prompt stays a credential blocker, not a handled dialog.
@@ -223,6 +260,7 @@ No slash-skill invocation form was verified, so skill invocation stays natural l
 `--continue` and `--conversation` resume were never exercised; recovery uses deterministic relaunch from the brief on disk.
 No supervised `bin/fm-spawn.sh` agy task was run on agy 1.5.16 or on macOS; the supervised-task evidence above is agy 1.2.0 on Linux, and the 1.5.16 evidence stops at the live guard.
 A full agy turn on T3 with a non-default `thought_level` was not run; the evidence above stops at the bound selection.
+The ACP turn evidence above drove `agy acp` directly, not through T3 Code, so how T3 delivers a captain message to a running Antigravity turn was not observed.
 
 ## Refreshing this record
 
