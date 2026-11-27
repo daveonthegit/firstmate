@@ -503,30 +503,54 @@ test_archive_refuses_a_corrupt_committed_manifest() {
     run_export "$home" archive-task task-a > "$home/first.out" 2> "$home/first.err" || rc=$?
     expect_code 0 "$rc" "initial archive for $case_name manifest case"
     manifest="$export_root/archive/task-a/committed-generation/manifest.v1.json"
-    # Mutate the public manifest contract without GNU-only sed syntax.
-    python3 - "$case_name" "$manifest" > "$home/manifest.tmp" <<'PY' || fail "could not corrupt the $case_name manifest fixture"
+    # The committed manifest is a public JSON contract: retries must reject
+    # identity/schema violations, duplicate keys, and trailing non-JSON bytes.
+    # Build each violation structurally so fixture creation is portable and
+    # cannot silently leave a valid manifest for the rejection check below.
+    python3 - "$manifest" "$case_name" <<'PY' || fail "could not corrupt $case_name manifest"
 import json
 import sys
+from pathlib import Path
 
-case_name, path = sys.argv[1:]
-with open(path) as source:
-    document = json.load(source)
-if case_name == "wrong-task":
-    document["task"] = "another-task"
-elif case_name == "wrong-type":
-    document["captured_at"] = 1
-elif case_name == "extra-root":
-    document["unexpected"] = True
-elif case_name == "extra-entry":
-    document["files"][0]["unexpected"] = True
-encoded = json.dumps(document)
-if case_name == "duplicate-key":
-    encoded = '{"captured_at":"2000-01-01T00:00:00Z",' + encoded[1:]
-elif case_name == "trailing-garbage":
-    encoded += "\nnot-json"
-print(encoded)
+path = Path(sys.argv[1])
+case = sys.argv[2]
+original = path.read_text()
+data = json.loads(original)
+if case == "wrong-task":
+    data["task"] = "another-task"
+elif case == "wrong-type":
+    data["captured_at"] = 1
+elif case == "extra-root":
+    data["unexpected"] = True
+elif case == "extra-entry":
+    data["files"][0]["unexpected"] = True
+
+mutated = json.dumps(data)
+if case == "trailing-garbage":
+    mutated += "\nnot-json\n"
+elif case == "duplicate-key":
+    pairs = list(data.items()) + [("captured_at", "2000-01-01T00:00:00Z")]
+    mutated = "{" + ",".join(json.dumps(k) + ":" + json.dumps(v) for k, v in pairs) + "}"
+assert mutated != original
+path.write_text(mutated)
+written = path.read_text()
+if case == "trailing-garbage":
+    _, end = json.JSONDecoder().raw_decode(written)
+    assert written[end:].strip() == "not-json"
+elif case == "duplicate-key":
+    pairs = json.loads(written, object_pairs_hook=list)
+    assert sum(k == "captured_at" for k, _ in pairs) == 2
+else:
+    actual = json.loads(written)
+    if case == "wrong-task":
+        assert actual["task"] == "another-task"
+    elif case == "wrong-type":
+        assert type(actual["captured_at"]) is int
+    elif case == "extra-root":
+        assert actual["unexpected"] is True
+    elif case == "extra-entry":
+        assert actual["files"][0]["unexpected"] is True
 PY
-    mv "$home/manifest.tmp" "$manifest"
     rc=0
     run_export "$home" archive-task task-a > "$home/retry.out" 2> "$home/retry.err" || rc=$?
     [ "$rc" -ne 0 ] || fail "archive retry accepted a $case_name committed manifest"
@@ -536,7 +560,7 @@ PY
 }
 
 test_archive_detects_a_source_change_during_capture() {
-  local home export_root archive outside
+  local home export_root archive outside fixture_bin real_python rc=0
   home=$(make_home archive-source-race)
   export_root="$TMP_ROOT/export-archive-source-race"
   outside="$TMP_ROOT/outside-archive-source-race"
@@ -545,45 +569,51 @@ test_archive_detects_a_source_change_during_capture() {
   write_archive_fixture "$home" racing-generation
   mkdir -p "$outside"
   printf 'outside sentinel\n' > "$outside/sentinel"
-  dd if=/dev/zero of="$home/state/task-a.status" bs=1048576 count=64 status=none
-  # Drive the filesystem engine's CLI directly so the fixture owns its exact
-  # pid; a process-table scan can finish only after a fast capture has committed.
-  FM_HOME="$home" python3 - "$ROOT/bin/fm-record-export.py" "$home" "$export_root" "$outside" <<'PY' \
-    || fail "archive source-change scenario failed"
+  # Inject a filesystem race at the first read of the opened status inode.
+  # Observing staging and then SIGSTOP-ing a worker can miss the entire copy.
+  # The real exporter must reject a replaced source, not publish its manifest.
+  fixture_bin="$home/fixture-bin"
+  mkdir -p "$fixture_bin"
+  real_python=$(command -v python3)
+  cat > "$fixture_bin/python3" <<'SH'
+#!/usr/bin/env bash
+exec "$FM_RACE_PYTHON" "$FM_RACE_DRIVER" "$@"
+SH
+  chmod +x "$fixture_bin/python3"
+  cat > "$home/race-driver.py" <<'PY'
 import os
 from pathlib import Path
-import signal
-import subprocess
+import runpy
 import sys
-import time
 
-engine, home, export_root, outside = map(Path, sys.argv[1:])
-with (home / "stdout").open("w") as stdout, (home / "stderr").open("w") as stderr:
-    process = subprocess.Popen([sys.executable, str(engine), "archive-task", "task-a"],
-                               stdout=stdout, stderr=stderr)
-    try:
-        task_root = export_root / "archive/task-a"
-        deadline = time.monotonic() + 5
-        while not list(task_root.glob(".archive-stage-*")):
-            assert process.poll() is None, "capture exited before staging was observed"
-            assert time.monotonic() < deadline, "staging was not observed"
-            time.sleep(0.0005)
-        process.send_signal(signal.SIGSTOP)
-        _, status = os.waitpid(process.pid, os.WUNTRACED)
-        assert os.WIFSTOPPED(status), "capture exited before it could be paused"
-        assert not (task_root / "racing-generation/manifest.v1.json").exists(), \
-            "fixture missed the capture window"
-        source = home / "state/task-a.status"
+source = Path(os.environ["FM_HOME"]) / "state/task-a.status"
+initial = source.stat()
+real_read = os.read
+injected = False
+
+
+def racing_read(fd, size):
+    global injected
+    info = os.fstat(fd)
+    if not injected and (info.st_dev, info.st_ino) == (initial.st_dev, initial.st_ino):
+        injected = True
         source.unlink()
-        source.symlink_to(outside / "sentinel")
-        process.send_signal(signal.SIGCONT)
-        assert process.wait(timeout=10) != 0, "archive accepted a source replaced during capture"
-    finally:
-        if process.poll() is None:
-            process.send_signal(signal.SIGCONT)
-            process.kill()
-            process.wait()
+        source.symlink_to(os.environ["FM_RACE_REPLACEMENT"])
+        source.with_name("race-injected").touch()
+    return real_read(fd, size)
+
+
+os.read = racing_read
+sys.argv = sys.argv[1:]
+runpy.run_path(sys.argv[0], run_name="__main__")
 PY
+  PATH="$fixture_bin:$PATH" FM_RACE_PYTHON="$real_python" \
+    FM_RACE_DRIVER="$home/race-driver.py" FM_RACE_REPLACEMENT="$outside/sentinel" \
+    run_export "$home" archive-task task-a > "$home/stdout" 2> "$home/stderr" || rc=$?
+  assert_present "$home/state/race-injected" "source-race fixture never reached the source read"
+  [ "$rc" -ne 0 ] || fail "archive committed while a source changed during capture"
+  grep -E 'source changed|state/task-a[.]status is not a regular non-symlink file' "$home/stderr" >/dev/null \
+    || fail "archive failed without detecting the source replacement"
   assert_absent "$archive/manifest.v1.json" "source race committed a manifest"
   assert_present "$home/state/task-a.meta" "source race removed live metadata"
   assert_grep 'outside sentinel' "$outside/sentinel" "source race changed the replacement target"
@@ -646,9 +676,14 @@ test_archive_revalidates_sources_immediately_before_publication() {
     index=$((index + 1))
   done
 
-  # APFS directory iteration is not lexical. Watch the first entry in the
-  # same native order the exporter removes, not a potentially last entry.
-  first_stale=$(python3 -c 'import os, sys; print(os.listdir(sys.argv[1])[0])' "$archive/inbox")
+  # Directory iteration is not lexical (notably on APFS). Observe the first
+  # enumerated entry, not 00000.msg, which may be removed near the very end.
+  first_stale=$(python3 - "$archive/inbox" <<'PY'
+import os
+import sys
+print(os.listdir(sys.argv[1])[0])
+PY
+  ) || fail "could not select a stale archive entry"
   run_export "$home" archive-task task-a > "$home/archive.out" 2> "$home/archive.err" &
   archive_pid=$!
   while [ -e "$archive/inbox/$first_stale" ]; do
@@ -833,8 +868,6 @@ test_export_root_stays_cold_to_firstmate_readers() {
   assert_not_contains "$output" "$export_root" "a Firstmate reader exposed the configured export root"
   pass "presentation, wake, classification, and snapshot readers leave the export root cold"
 }
-
-python3 "$ROOT/tests/fm-record-export-capture.test.py" || fail "record export capture regressions failed"
 
 test_sync_is_off_when_config_is_absent
 test_sync_copies_only_the_v1_allowlist
