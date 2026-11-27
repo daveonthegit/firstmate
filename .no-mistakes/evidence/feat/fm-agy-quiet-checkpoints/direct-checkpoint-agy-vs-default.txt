@@ -1,0 +1,15 @@
+$ # disposable lab home, real bin/fm-watch-checkpoint.sh --seconds 4 x2, T3 Antigravity ACP env markers
+== harness: agy
+checkpoint: no actionable wake within 4s; start the next checkpoint in this turn with no reply
+exit=124
+== second checkpoint
+checkpoint: no actionable wake within 4s; start the next checkpoint in this turn with no reply
+exit=124
+
+$ # same lab home, no harness markers (default/codex checkpoint path)
+== harness: unknown
+checkpoint: no actionable wake within 4s
+exit=124
+== second checkpoint
+checkpoint: no actionable wake within 4s
+exit=124

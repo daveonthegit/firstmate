@@ -1,0 +1,6 @@
+== harness: agy
+checkpoint: no actionable wake within 4s; start the next checkpoint in this turn with no reply
+exit=124
+== second checkpoint
+check: rearm-resurface
+exit=0
