@@ -1,0 +1,17 @@
+ok - taskless merge reaches the outcome store once without a processing request
+Stopped following https://github.com/example/project/pull/1
+ok - closed without merging is an outcome
+Stopped following https://github.com/example/project/pull/1
+ok - checks and review transitions preserve forge words and suppress unchanged reads
+ok - only a newly failing check name or a changed review value adds a line
+ok - bad reads preserve evidence and disabled or unsupported homes do not enroll
+ok - a heartbeat from another owner or Claude session does not enroll
+Stopped following https://github.com/example/project/pull/1
+ok - task-owned failure still wakes supervision for action
+Stopped following https://github.com/example/project/pull/1
+ok - GitLab follows use the shared observer and outcome store
+Stopped following https://gitlab.example/group/project/-/merge_requests/2
+ok - interruption after append cannot make a later observation reuse a different event key
+ok - a pass out of time stops quietly after one follow and the next pass resumes
+ok - enrollment requires explicit request, canonical URL, and a safe durable record
+EXIT=0 secs=28

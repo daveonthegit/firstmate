@@ -1,0 +1,10 @@
+fm-install-treehouse.sh: downloading treehouse-v3.1.8-darwin-arm64.tar.gz from https://github.com/kunchenguid/treehouse/releases/download/v3.1.8/treehouse-v3.1.8-darwin-arm64.tar.gz
+fm-install-treehouse.sh: installed treehouse v3.1.8 to /tmp/fm-th.Upudbv/bin/treehouse
+v3.1.8
+exit=0
+v3.1.8
+9:#                 "OUTDATED: <tool> (installed: <version|unparseable>; requires <floor|capability>; upgrade: <command>)",
+10:#                 "PRESENTATION_UNAVAILABLE: lavish-axi (requires >=<floor>; install: <command>) - nonvisual work may proceed with plain-text decisions and reports; install or upgrade before using Lavish",
+65:#          A present-but-below-floor tool is OUTDATED, never MISSING: its line
+71:#          3.0.1, or when it lacks "treehouse get --lease" or "--root" support.
+73:#          1.46.0 (structured pipeline attestation floor; see CONTRIBUTING.md).

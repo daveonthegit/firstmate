@@ -1,0 +1,16 @@
+ok - exact recovery reaches allocation while a sibling projected spawn is held in Treehouse
+ok - default exact recovery refuses a held session lock without projection mutations
+ok - opt-in concurrent recoveries wait for the session lock and replace only their own husks
+ok - Herdr waits past the former deadline for a delayed shell cwd
+ok - Herdr recovers a dropped initial cd with one resend
+ok - Herdr refuses a never-moving pane with diagnostic context and no launch
+ok - a fresh herdr spawn leases the copy and moves the pane's top-level shell into it
+ok - a local secondmate's herdr spawn leases its copy from a pool of its own clone
+ok - a failed lease refuses the spawn and falls back to nothing
+ok - an aborted spawn keeps the lease and names the command that releases it
+ok - a spawn rolled back after its launch keeps the lease and names the command that releases it
+ok - an abort whose pane Herdr reports gone returns a clean lease
+ok - an abort whose pane Herdr reports gone keeps a copy with uncommitted work leased
+ok - an abort whose pane is still present keeps the lease and names it
+# all fm-spawn-herdr-lease tests passed
+EXIT=0 secs=100

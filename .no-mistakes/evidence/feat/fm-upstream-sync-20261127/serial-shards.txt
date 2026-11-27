@@ -1,0 +1,25 @@
+$ fm-test-run.sh --list --lane portable-serial-3of19
+fm-test-run: lane 'portable-serial-3of19' asks for 19 portable serial shards but this runner is configured for 20 (see --list-lanes)
+exit=2
+
+Serial shard sizes (scripts) and predicted ms from tests/fm-test-ci-timings.tsv:
+shard  1:   1 scripts, ~15.7 min
+shard  2:   1 scripts, ~15.0 min
+shard  3:  17 scripts, ~14.2 min
+shard  4:  16 scripts, ~14.2 min
+shard  5:  15 scripts, ~15.0 min
+shard  6:  16 scripts, ~14.2 min
+shard  7:  17 scripts, ~14.2 min
+shard  8:  17 scripts, ~14.2 min
+shard  9:  18 scripts, ~15.0 min
+shard 10:  18 scripts, ~15.0 min
+shard 11:  19 scripts, ~15.0 min
+shard 12:  19 scripts, ~15.0 min
+shard 13:  20 scripts, ~14.2 min
+shard 14:  19 scripts, ~15.0 min
+shard 15:  20 scripts, ~15.0 min
+shard 16:  19 scripts, ~15.0 min
+shard 17:  19 scripts, ~15.0 min
+shard 18:  20 scripts, ~15.0 min
+shard 19:  19 scripts, ~15.0 min
+shard 20:  18 scripts, ~15.0 min
