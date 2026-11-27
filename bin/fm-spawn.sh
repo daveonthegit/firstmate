@@ -3594,12 +3594,16 @@ omp_model_validate() { # <omp-bin> <model> [<profile>]
   return 1
 }
 
-# agy pre-launch model validation. `agy models` (agy 1.2.0) prints one model per
-# line as "<id>\t<label>" for the account's catalog only; model ids are bare
-# (gemini-3.8-flash-high), never provider-prefixed. A requested model absent
-# from a reachable listing is concrete unsupported evidence and refuses the
-# spawn, so a stale id (the unlisted bare gemini-3.8-flash) fails loudly here
-# instead of wedging a worker pane. The listing is a remote fetch that needs
+# agy pre-launch model validation. `agy models` (agy 1.2.0+) prints one model per
+# line as "<id>\t<label>" for the account's catalog only; model ids are bare and
+# carry their reasoning level as a suffix (gemini-4-neon-xhigh), never a
+# provider prefix. agy 1.5.16 also accepts the unlisted family id
+# (gemini-4-neon) together with --effort, so a family whose `<id>-<level>`
+# variants are listed counts as listed. A requested model absent from a
+# reachable listing in both forms is concrete unsupported evidence and refuses
+# the spawn, so a stale id fails loudly here instead of wedging a worker pane.
+# A reachable listing is kept in AGY_MODEL_IDS for agy_effort_level. The
+# listing is a remote fetch that needs
 # network and a signed-in account, so the probe runs under the shared hard
 # bound (bin/fm-timeout-lib.sh) with stdin detached: a stalled fetch or a
 # sign-in prompt can never block the spawn before any pane exists. An
@@ -3618,11 +3622,58 @@ agy_model_validate() {  # <agy-bin> <model>
     fi
     return 0
   fi
-  if printf '%s\n' "$listing" | awk '{print $1}' | grep -qxF -- "$model"; then
+  AGY_MODEL_IDS=$(printf '%s\n' "$listing" | awk '{print $1}')
+  if printf '%s\n' "$AGY_MODEL_IDS" | grep -qxF -- "$model" || [ -n "$(agy_family_levels "$model")" ]; then
     return 0
   fi
   echo "error: agy model '$model' is not listed by 'agy models'; choose a listed id or omit --model" >&2
   return 1
+}
+
+AGY_MODEL_IDS=
+
+# The reasoning level a level-suffixed agy model id carries, or nothing.
+agy_model_level() {  # <model>
+  case "$1" in
+  *-low) printf low ;; *-medium) printf medium ;; *-high) printf high ;;
+  *-xhigh) printf xhigh ;; *-max) printf max ;;
+  esac
+}
+
+# The levels AGY_MODEL_IDS lists for a family id as `<family>-<level>`.
+agy_family_levels() {  # <family>
+  local id
+  [ -n "$1" ] && [ -n "$AGY_MODEL_IDS" ] || return 0
+  while IFS= read -r id; do
+    case "$id" in "$1"-*) ;; *) continue ;; esac
+    [ "$1-$(agy_model_level "$id")" = "$id" ] && printf '%s\n' "$(agy_model_level "$id")"
+  done <<< "$AGY_MODEL_IDS"
+  return 0
+}
+
+# The --effort value an agy launch may carry, or nothing (record-and-omit).
+# agy 1.5.16 validates effort per model: a level-suffixed id refuses any other
+# --effort ("conflicts with --effort"), and a family id refuses a level it does
+# not offer (gemini-3.8-flash has no xhigh; gemini-4-neon has xhigh, no max).
+# So a suffixed id passes only its own level, a family id passes only a level
+# the reachable listing shows for it, and anything else - an unsuffixed id, or
+# no listing - passes the historically safe low|medium|high only.
+agy_effort_level() {  # <model> <effort>
+  local model=$1 effort=$2 suffix levels
+  case "$effort" in low | medium | high | xhigh | max) ;; *) return 0 ;; esac
+  suffix=$(agy_model_level "$model")
+  if [ -n "$suffix" ]; then
+    if [ "$suffix" = "$effort" ]; then printf '%s' "$effort"; return 0; fi
+    echo "notice: agy model '$model' already selects reasoning level '$suffix'; omitting --effort '$effort' (recorded in task metadata)" >&2
+    return 0
+  fi
+  levels=$(agy_family_levels "$model")
+  if [ -n "$levels" ]; then
+    if printf '%s\n' "$levels" | grep -qxF -- "$effort"; then printf '%s' "$effort"; return 0; fi
+    echo "notice: agy model '$model' offers no '$effort' reasoning level; omitting --effort (recorded in task metadata)" >&2
+    return 0
+  fi
+  case "$effort" in low | medium | high) printf '%s' "$effort" ;; esac
 }
 
 # kiro pre-launch model validation. `kiro-cli chat --agent-engine v2
@@ -4677,11 +4728,10 @@ effort_flag_for_harness() {
     esac
     ;;
   agy)
-    # agy 1.2.0 --effort accepts exactly low|medium|high, so xhigh and max are
-    # omitted rather than passed as known-bad values (record-and-omit).
-    case "$effort" in
-    low | medium | high) printf -- '--effort %s ' "$(shell_quote "$effort")" ;;
-    esac
+    # agy validates effort per model, so agy_effort_level owns which level
+    # passes; any other level is omitted, not passed known-bad (record-and-omit).
+    effort=$(agy_effort_level "$model" "$effort")
+    [ -z "$effort" ] || printf -- '--effort %s ' "$(shell_quote "$effort")"
     ;;
   kiro)
     # kiro-cli 2.21.4 --effort accepts the full shared vocabulary

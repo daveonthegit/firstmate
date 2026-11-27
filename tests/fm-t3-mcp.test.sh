@@ -713,6 +713,44 @@ test_launch_environment_capability() {
 # T3 Code v0.1.3 stable lists a model option's allowed values as a plain `values`
 # array with no `type`; a boolean option lists `[false, true]`. The default
 # fake catalog keeps the older `options: [{id}]` form so both stay covered.
+# An agy launch never refuses over effort: an effort the Antigravity catalog
+# cannot take - the level is unlisted, or the model offers no reasoning option
+# at all - is
+# omitted with a notice and reported, matching the pane-backed agy
+# record-and-omit contract. A suffix that contradicts an explicit effort still
+# refuses, and configure keeps refusing an unsupported effort.
+test_resolve_selection_agy_omits_unsupported_effort() {
+  local project
+  fresh_case resolve-selection-agy-omit
+  mcp project-ensure --root "$TMP_ROOT/proj"
+  project=$(field "$OUT" projectId)
+  t3_fake_set 'w.launchEnvironment = true'
+  mcp resolve-selection --harness agy --instance antigravity --model gemini-4-neon --effort max --project "$project"
+  expect_code 0 "$RC" "an agy effort missing from the model's levels is omitted, not refused: $ERR"
+  assert_equals '{"instanceId":"antigravity","model":"gemini-4-neon"}' "$(field "$OUT" selection)" "the omitted effort is not bound"
+  assert_equals max "$(field "$OUT" effortOmitted.effort)" "the omitted effort is reported"
+  assert_contains "$ERR" "cannot take effort 'max'" "the omission prints its notice"
+  mcp resolve-selection --harness agy --instance antigravity --model gemini-4-neon --effort xhigh --project "$project"
+  expect_code 0 "$RC" "a listed agy effort still binds: $ERR"
+  assert_equals '[{"id":"thought_level","value":"xhigh"}]' "$(field "$OUT" selection.options)" "a listed agy effort binds as the catalog's thought_level"
+  assert_equals "" "$(field "$OUT" effortOmitted)" "a bound effort reports no omission"
+  t3_fake_set 'w.providers = [{ providerInstanceId: "antigravity", driverKind: "antigravity", constraints: [], models: [{ id: "gemini-4-neon", label: "Gemini 4 Neon", options: [] }] }, { providerInstanceId: "pi", driverKind: "pi", constraints: [], models: [{ id: "local/no-reasoning", options: [] }] }]'
+  mcp resolve-selection --harness agy --instance antigravity --model gemini-4-neon --effort high --project "$project"
+  expect_code 0 "$RC" "a model offering no reasoning option omits the agy effort: $ERR"
+  assert_equals '{"instanceId":"antigravity","model":"gemini-4-neon"}' "$(field "$OUT" selection)" "no reasoning option is bound"
+  assert_equals high "$(field "$OUT" effortOmitted.effort)" "the omission names the requested effort"
+  mcp resolve-selection --harness agy --instance antigravity --model gemini-4-neon-high --effort default --project "$project"
+  expect_code 0 "$RC" "a suffixed agy id resolves to its listed family on an option-less catalog: $ERR"
+  assert_equals gemini-4-neon "$(field "$OUT" selection.model)" "the suffixed id resolves to its family"
+  assert_equals high "$(field "$OUT" effortOmitted.effort)" "the suffix level is recorded as omitted"
+  mcp resolve-selection --harness agy --instance antigravity --model gemini-4-neon-high --effort low --project "$project"
+  expect_code 4 "$RC" "a suffix contradicting an explicit effort still refuses"
+  assert_equals effort_conflict "$(field "$OUT" error.code)" "the contradiction names the conflict"
+  mcp resolve-selection --harness pi --instance pi --model local/no-reasoning --effort high --project "$project"
+  expect_code 4 "$RC" "only agy omits; other harnesses keep refusing an unsupported effort"
+  pass "resolve-selection: agy omits an effort the catalog cannot take; contradictions and other harnesses still refuse"
+}
+
 test_resolve_selection_accepts_current_catalog_values() {
   local project
   fresh_case resolve-selection-values
@@ -1252,6 +1290,7 @@ test_keep_alive_capability_idempotence_and_worker_refusal
 test_thread_for_root_pages_and_forks
 test_resolve_selection_uses_t3_catalog
 test_resolve_selection_accepts_current_catalog_values
+test_resolve_selection_agy_omits_unsupported_effort
 test_launch_environment_capability
 test_launch_reads_back_full_configuration
 test_requests_and_respond

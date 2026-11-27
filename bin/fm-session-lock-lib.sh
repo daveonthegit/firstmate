@@ -36,8 +36,10 @@ unset _FM_SESSION_LOCK_LIB_DIR
 # anchoring those exact names anchors the session lock to the long-lived ACP
 # server rather than its transient `localharness_external` child, and listing
 # them in FM_HARNESS_NAMES lets path matching recover Linux's 15-byte comm
-# truncation (`agy_acp_server.`) from argv[0].
-FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$|^omp$|^agy$|^agy_acp_server(\.par)?$'
+# truncation (`agy_acp_server.`) from argv[0]. Antigravity's own executable,
+# `antigravity`, is what T3 Code's current ACP server (`antigravity acp`) and the
+# Homebrew standalone CLI behind the `agy` wrapper both run as.
+FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$|^omp$|^agy$|^agy_acp_server(\.par)?$|^antigravity$'
 
 # The same harnesses as exact executable names. Keep in sync with
 # FM_HARNESS_RE. Used only for the stricter path evidence below, where the
@@ -124,6 +126,12 @@ fm_harness_process_matches() {  # <comm> <args>
     return 0
   fi
   argv0=${args%% *}
+  # Antigravity's own executable is named exactly `antigravity` (T3 Code's ACP
+  # server and the Homebrew standalone CLI alike), so an exact argv[0] basename
+  # is evidence even when the reported command name is not. Only the basename
+  # counts: providers/antigravity is also the directory of the transient
+  # localharness_external child.
+  case "$(basename -- "$argv0")" in antigravity) return 0 ;; esac
   if name=$(fm_harness_path_name "$comm") || name=$(fm_harness_path_name "$argv0"); then
     case "$name" in claude) FM_HARNESS_IS_CLAUDE=1 ;; esac
     return 0

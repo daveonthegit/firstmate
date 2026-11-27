@@ -24,11 +24,15 @@ cat > "$TMP_ROOT/fake-agy.c" <<'C'
 int main(int argc, char **argv) {
   int status;
   pid_t child;
-  if (argc != 3 || strcmp(argv[1], "-c") != 0) return 64;
+  const char *cmd;
+  /* `<exe> -c <cmd>`, or `<exe> <subcommand> -c <cmd>` for `antigravity acp`. */
+  if (argc == 3 && strcmp(argv[1], "-c") == 0) cmd = argv[2];
+  else if (argc == 4 && strcmp(argv[2], "-c") == 0) cmd = argv[3];
+  else return 64;
   child = fork();
   if (child < 0) return 70;
   if (child == 0) {
-    execl("/bin/bash", "bash", "-c", argv[2], (char *)0);
+    execl("/bin/bash", "bash", "-c", cmd, (char *)0);
     _exit(127);
   }
   while (waitpid(child, &status, 0) < 0) {
@@ -45,6 +49,11 @@ cp "$FAKEBIN/agy" "$FAKEBIN/agy_acp_server.par"
 chmod +x "$FAKEBIN/agy_acp_server.par"
 FAKE_AGY="$FAKEBIN/agy"
 FAKE_AGY_ACP="$FAKEBIN/agy_acp_server.par"
+# agy 1.5.16 on macOS: T3's ACP server (`antigravity acp`) and the Homebrew
+# standalone CLI both run as an executable named exactly `antigravity`.
+mkdir -p "$FAKEBIN/antigravity-acp/versions/0f3a"
+cp "$FAKEBIN/agy" "$FAKEBIN/antigravity-acp/versions/0f3a/antigravity"
+FAKE_ANTIGRAVITY="$FAKEBIN/antigravity-acp/versions/0f3a/antigravity"
 
 run_under_agy() {
   env -u CLAUDECODE -u CLAUDE_PID -u CLAUDE_CODE_SESSION_ID \
@@ -693,6 +702,52 @@ test_antigravity_acp_supervision_model_and_instructions() {
   pass "antigravity ACP: session-lock, persistent supervision model, and foreground checkpoint instructions verified"
 }
 
+run_under_antigravity() {  # [acp] [env assignments...]
+  local sub=()
+  if [ "${1:-}" = acp ]; then sub=(acp); shift; fi
+  env -u CLAUDECODE -u CLAUDE_PID -u CLAUDE_CODE_SESSION_ID \
+      -u CURSOR_AGENT -u CURSOR_INVOKED_AS \
+      -u GEMINI_CLI -u ATLASSIAN_AGENT_TYPE -u ROVODEV_CLI \
+      -u PI_CODING_AGENT -u FM_PI_HARNESS -u FM_OMP_HARNESS -u GROK_AGENT \
+      -u ANTIGRAVITY_AGENT -u ANTIGRAVITY_HARNESS_PATH \
+      "$@" "$FAKE_ANTIGRAVITY" "${sub[@]}" -c "$AGY_CHILD_CMD"
+}
+
+test_antigravity_executable_acp_subcommand_selects_the_protocol() {
+  local dir out model
+  dir=$(make_primary_dir "$TMP_ROOT/lock-antigravity")
+
+  AGY_CHILD_CMD='
+    . "$FM_HOME/bin/fm-session-lock-lib.sh"
+    anc=$(fm_harness_ancestry_pid) || exit 11
+    [ "$anc" = "$PPID" ] || exit 12
+    fm_harness_pid_alive "$anc" || exit 13
+    printf "%s\n" "$anc" > "$FM_HOME/state/.lock"
+    fm_session_lock_owned_by_self "$FM_HOME/state" || exit 14
+    printf "owned:%s\n" "$anc"
+  '
+  out=$(run_under_antigravity acp FM_HOME="$dir" 2>/dev/null)
+  assert_contains "$out" "owned:" "session-lock-lib must anchor to the antigravity ACP executable"
+
+  AGY_CHILD_CMD='"$FM_HOME/bin/fm-turnend-guard-agy.sh" --capable'
+  if run_under_antigravity acp FM_HOME="$dir" 2>/dev/null; then
+    fail "fm-turnend-guard-agy.sh --capable must exit 1 under \`antigravity acp\`"
+  fi
+  run_under_antigravity FM_HOME="$dir" 2>/dev/null \
+    || fail "fm-turnend-guard-agy.sh --capable must exit 0 under the standalone antigravity CLI"
+
+  AGY_CHILD_CMD='
+    . "$FM_HOME/bin/fm-wake-lib.sh"
+    fm_supervision_model
+  '
+  model=$(run_under_antigravity acp FM_HOME="$dir" 2>/dev/null)
+  assert_equals "persistent" "$model" "\`antigravity acp\` must select the persistent supervision model"
+  model=$(run_under_antigravity FM_HOME="$dir" 2>/dev/null)
+  assert_equals "autoarm" "$model" "the standalone antigravity CLI must keep Stop-hook autoarm supervision"
+
+  pass "antigravity executable: the acp subcommand alone selects ACP supervision; standalone keeps Stop-hook parking"
+}
+
 fm_test_run \
   test_agents_hooks_json_registration_and_cwd_contract \
   test_sessionstart_agy_primary_secondmate_and_worktree_scope \
@@ -708,4 +763,5 @@ fm_test_run \
   test_cd_pretool_check_agy \
   test_subagent_pretool_check_agy \
   test_session_lock_agy_ancestry_and_supervision_model \
-  test_antigravity_acp_supervision_model_and_instructions
+  test_antigravity_acp_supervision_model_and_instructions \
+  test_antigravity_executable_acp_subcommand_selects_the_protocol

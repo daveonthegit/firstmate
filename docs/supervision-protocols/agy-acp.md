@@ -10,7 +10,7 @@ When this session owns supervision and away mode is not active:
 4. Ordinary wake: if the command prints `signal:`, `stale:`, `check:`, or `heartbeat`, drain queued wakes, handle that wake, then start the next checkpoint.
 5. If the command prints `checkpoint:` or exits 124 with no wake, drain queued wakes anyway, handle any queued captain message now visible, then start the next checkpoint.
 6. Never use shell `&` for firstmate watcher supervision, and do not rely on `.agents/hooks.json` `Stop` hooks to park a turn boundary.
-   Antigravity ACP (`agy_acp_server.par`) runs `Stop` hooks only on `session_end` and ignores `{"decision":"continue"}`, so a turn that ends without an active checkpoint leaves supervision parked nowhere.
+   Antigravity ACP (`agy_acp_server.par` or `antigravity acp`) runs `Stop` hooks only on `session_end` and ignores `{"decision":"continue"}`, so a turn that ends without an active checkpoint leaves supervision parked nowhere.
 7. Do not run `bin/fm-watch-arm.sh` as Antigravity ACP's normal supervision command.
    If the workspace hooks are trusted, a backgrounded, piped, or bundled watcher anti-pattern is denied automatically by the `PreToolUse` seatbelt (`bin/fm-arm-pretool-check.sh --agy`) registered in `.agents/hooks.json`.
 8. Failure or missing cycle only: drain queued wakes, inspect the failure, then start a fresh checkpoint.

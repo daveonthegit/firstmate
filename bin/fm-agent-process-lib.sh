@@ -33,6 +33,9 @@ fm_agent_process_classify_name() {  # <path> [argv0] -> agent|shell|other
   local path=$1 argv0=${2:-} base
   base=${path##*/}
   base=${base#-}
+  # Antigravity's own executable, `antigravity`: T3 Code's current ACP server and
+  # the Homebrew standalone CLI behind the `agy` wrapper (exact argv[0] basename).
+  case "${argv0##*/}" in antigravity) printf 'agent'; return 0 ;; esac
   case "$base" in
     # muse is anchored rather than globbed like its neighbours: its installed
     # binary is muse-bin-<version> (the launcher execs it, so the version is the
@@ -61,8 +64,9 @@ fm_agent_process_classify_name() {  # <path> [argv0] -> agent|shell|other
     # T3 Code hosts Antigravity as `agy_acp_server.par` (or `agy_acp_server`);
     # anchoring those exact names classifies the ACP server as an agent without
     # claiming unrelated helpers, and Linux's 15-byte comm truncation is covered
-    # by fm_harness_path_name on argv[0] below.
-    agy|agy_acp_server|agy_acp_server.par|devin|command-code|polytoken|cortex|hermes) printf 'agent' ;;
+    # by fm_harness_path_name on argv[0] below. agy 1.5.16 on macOS runs as
+    # `antigravity` instead, both standalone and as T3's ACP server.
+    agy|agy_acp_server|agy_acp_server.par|antigravity|devin|command-code|polytoken|cortex|hermes) printf 'agent' ;;
     # kiro (Kiro CLI) is anchored for the same reason as muse, omp, and agy: its
     # live foreground process name is the bare word `kiro-cli` (verified,
     # kiro-cli 2.21.4: a toolbox/aim-sandbox wrapper whose comm and tmux
