@@ -38,8 +38,34 @@ unset _FM_SESSION_LOCK_LIB_DIR
 # them in FM_HARNESS_NAMES lets path matching recover Linux's 15-byte comm
 # truncation (`agy_acp_server.`) from argv[0]. Antigravity's own executable,
 # `antigravity`, is what T3 Code's current ACP server (`antigravity acp`) and the
-# Homebrew standalone CLI behind the `agy` wrapper both run as.
+# Homebrew standalone CLI behind the `agy` wrapper both run as. omp's own daemon
+# workers share omp's name and are excluded by fm_omp_daemon_worker below.
 FM_HARNESS_RE='claude|codex|opencode|grok|kimi|^pi$|^pi-signed$|^omp$|^agy$|^agy_acp_server(\.par)?$|^antigravity$'
+
+# True when full argument string $1 is one of omp's daemon worker processes
+# (`omp __omp_worker_daemon_broker`, `omp __omp_worker_mnemopi_embed`, ...):
+# its first argument after the executable is an `__omp_worker_*` subcommand.
+# Only that position counts, so a session whose prompt merely mentions the
+# token is still a session.
+#
+# They run the same `omp` executable as a session, so the name match above would
+# claim them, but none of them is a session. The daemon broker in particular
+# hosts the bash tool's `name`d services and is shared by every omp process in
+# the same project directory - every firstmate primary, since they all start in
+# this checkout. Its parent is whichever omp launched it (or pid 1 once that
+# process exits), so neither the broker nor anything above it identifies the
+# session that asked for the command. Verified on omp 18.8.0 through 18.8.4: a
+# `name`d bash call running bin/fm-session-start.sh recorded the broker in
+# state/.lock, where it outlived every session and pinned the lock.
+fm_omp_daemon_worker() {  # <args>
+  local rest
+  case "$1" in *" "*) ;; *) return 1 ;; esac
+  rest=${1#* }
+  case "${rest%% *}" in
+    __omp_worker_*) return 0 ;;
+  esac
+  return 1
+}
 
 # The same harnesses as exact executable names. Keep in sync with
 # FM_HARNESS_RE. Used only for the stricter path evidence below, where the
@@ -105,6 +131,8 @@ fm_ps_ppid() {  # <pid> -> parent pid
 # True when the process described by command name $1 and full argument string $2
 # is a verified harness. Sets FM_HARNESS_IS_CLAUDE for the ancestry walk.
 #
+# An omp daemon worker never matches (fm_omp_daemon_worker), whatever its name.
+#
 # Evidence, in order:
 #   1. the basename of the reported command name, against FM_HARNESS_RE.
 #   2. an exact harness component in that command path or in argv[0]. Both are
@@ -120,6 +148,7 @@ FM_HARNESS_IS_CLAUDE=0
 fm_harness_process_matches() {  # <comm> <args>
   local comm=$1 args=$2 base argv0 name
   FM_HARNESS_IS_CLAUDE=0
+  fm_omp_daemon_worker "$args" && return 1
   base=$(basename -- "$comm")
   if printf '%s' "$base" | grep -qE "$FM_HARNESS_RE"; then
     case "$base" in *claude*) FM_HARNESS_IS_CLAUDE=1 ;; esac
@@ -596,6 +625,10 @@ fm_harness_ancestry_pids() {
   local pid=$$ extending=0 printed=0
   for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
     fm_proc_info "$pid" || break
+    # An omp daemon worker ends the walk with no verdict: everything above it
+    # belongs to whichever omp launched that shared worker, not to the session
+    # that asked for this command (see fm_omp_daemon_worker).
+    fm_omp_daemon_worker "$FM_PROC_ARGS" && break
     if fm_harness_process_matches "$FM_PROC_COMM" "$FM_PROC_ARGS"; then
       printf '%s\n' "$pid"
       printed=1
@@ -621,6 +654,22 @@ fm_harness_ancestry_pids() {
     fm_win_harness_ancestry_pids && return 0
   fi
   [ "$printed" -eq 1 ]
+}
+
+# True when this process's ancestry reaches an omp daemon worker before any
+# harness, i.e. the command runs as an omp bash `name`d service rather than an
+# ordinary tool call. Lets callers that cannot find a harness say why.
+fm_harness_ancestry_under_omp_worker() {
+  local pid=$$
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
+    fm_proc_info "$pid" || return 1
+    fm_omp_daemon_worker "$FM_PROC_ARGS" && return 0
+    fm_harness_process_matches "$FM_PROC_COMM" "$FM_PROC_ARGS" && return 1
+    pid=$FM_PROC_PPID
+    case "$pid" in '' | *[!0-9]*) return 1 ;; esac
+    [ "$pid" -ge 1 ] || return 1
+  done
+  return 1
 }
 
 # Print the outermost pid of this session's contiguous harness run for callers
