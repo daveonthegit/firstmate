@@ -4346,7 +4346,7 @@ if [ "$KIND" = secondmate ] && [ -z "$ARG3" ]; then
     SM_MODEL=$("$SCRIPT_DIR/fm-harness.sh" secondmate-model "$ID")
     if [ -n "$SM_MODEL" ]; then
       MODEL=$SM_MODEL
-      MODEL_ORIGIN=secondmate-config
+      MODEL_ORIGIN='secondmate-config'
     fi
   fi
   if [ "$EFFORT_SET" -eq 0 ]; then
