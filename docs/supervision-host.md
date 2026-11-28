@@ -355,7 +355,7 @@ Native thread-queue delivery wakes the model only for an actionable close; user 
 Engine turns retain their own timeout, and the park's next-turn failure guard remains active.
 
 On the foreground checkpoint, the checkpoint's own bound is the park.
-The checkpoint passes it as the boundary and reports the boundary as its ordinary quiet line (`checkpoint: no actionable wake within <n>s`).
+The checkpoint passes it as the boundary and reports the boundary as its ordinary quiet line (`checkpoint: no actionable wake within <n>s`; under Antigravity ACP the line adds a no-reply instruction, which `bin/fm-watch-checkpoint.sh --help` describes).
 
 | Posture | Checkpoint bound |
 |---|---|

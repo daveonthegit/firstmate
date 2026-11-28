@@ -403,6 +403,41 @@ test_host_checkpoint_needs_the_file_and_honors_off() {
   pass "checkpoint: a Codex home without config/supervision-host, or with an off file, never runs the host"
 }
 
+# Under Antigravity ACP every yield to wait on a checkpoint can become chat, so
+# an empty checkpoint itself tells the model to chain the next one silently; a
+# Codex checkpoint keeps the plain line.
+write_harness_stub() {  # <home> <harness>
+  printf '#!/bin/bash\nprintf "%%s\\n" %s\n' "$2" > "$1/root/bin/fm-harness.sh"
+  chmod +x "$1/root/bin/fm-harness.sh"
+}
+
+test_agy_quiet_checkpoint_asks_for_no_reply() {
+  local home no_reply='checkpoint: no actionable wake within 1s; start the next checkpoint in this turn with no reply'
+  home=$(make_home agy-quiet)
+  make_isolated_checkpoint "$home" bash dirname mktemp rm grep cat
+  write_gnu_timeout_stub "$home/fixture-bin/timeout"
+  write_harness_stub "$home" agy
+  expect_gnu_timeout_call "$home" timeout "agy watcher"
+  assert_contains "$(cat "$home/out.txt")" "$no_reply" "an agy empty checkpoint must ask for the next checkpoint with no reply"
+  write_harness_stub "$home" codex
+  : > "$home/timeout-calls"
+  expect_gnu_timeout_call "$home" timeout "codex watcher"
+  assert_not_contains "$(cat "$home/out.txt")" "no reply" "a codex empty checkpoint must keep the plain line"
+
+  home=$(make_host_home agy-host-quiet)
+  mkdir -p "$home/fixture-bin"
+  write_harness_stub "$home" agy
+  : > "$home/config/supervision-host"
+  run_host_checkpoint "$home" boundary --seconds 1
+  expect_code 124 "$STATUS" "an agy host park that reached its bound is a quiet checkpoint"
+  assert_contains "$(cat "$home/host-env")" 'primary=agy' "the agy checkpoint must pin the host to agy"
+  assert_contains "$(cat "$home/out.txt")" "$no_reply" "an agy host boundary must ask for the next checkpoint with no reply"
+  run_host_checkpoint "$home" handback --seconds 1
+  expect_code 0 "$STATUS" "an agy handed-back wake is an actionable checkpoint"
+  assert_not_contains "$(cat "$home/out.txt")" "no reply" "an actionable agy checkpoint must not suppress the reply"
+  pass "checkpoint: an agy empty checkpoint asks for the next checkpoint with no reply, and only then"
+}
+
 # The real host under a fake Codex harness that holds the home's session lock.
 # shellcheck disable=SC2016 # the fake harness's script expands in its own shell
 test_real_host_checkpoint_ends_quietly_at_its_bound() {
@@ -440,3 +475,4 @@ test_host_checkpoint_bounds_the_park_by_posture
 test_host_checkpoint_passes_a_handback_and_reports_a_stand_down
 test_host_checkpoint_needs_the_file_and_honors_off
 test_real_host_checkpoint_ends_quietly_at_its_bound
+test_agy_quiet_checkpoint_asks_for_no_reply
